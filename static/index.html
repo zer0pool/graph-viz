@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workflow Graph Viewer</title>
+
+  <!-- ✅ 외부 스타일만 연결 -->
+  <link rel="stylesheet" href="/static/css/modern-console.css" />
+
+  <!-- ✅ 파비콘 -->
+  <link rel="icon" type="image/png" href="/static/images/favicon.png" />
+
+  <!-- ✅ Cytoscape 라이브러리 -->
+  <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+</head>
+
+<body>
+  <!-- 상단 네비게이션 -->
+  <div id="navbar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img src="/static/images/logo.png" alt="Logo" style="height:32px; width:auto;">
+      <h2>Workflow Graph Viewer</h2>
+    </div>
+
+    <div id="search-bar">
+      <label for="jobId" style="font-size:14px;">Job ID:</label>
+      <input type="text" id="jobId" placeholder="e.g. job_5" />
+      <button id="loadBtn">Load</button>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 -->
+  <div id="main">
+    <div id="cy"></div>
+
+    <div id="side-panel">
+      <h3>
+        Workflow Details
+        <button id="close-panel" title="Close panel">&times;</button>
+      </h3>
+      <div id="controls">
+        <button id="reloadBtn">Reload</button>
+        <button id="fitBtn">Fit</button>
+      </div>
+      <div id="node-info">Click a node to view details</div>
+    </div>
+  </div>
+
+  <script>
+    cytoscape.use(cytoscapeDagre);
+
+    async function fetchGraph(jobId) {
+      // const path = jobId ? `/graph/job/${jobId}/downstream` : "/api/graph";
+      const path = "/api/graph";
+      const res = await fetch(path);
+      return res.json();
+    }
+
+    function toElements(data) {
+      const nodes = data.nodes.map((n) => ({
+        data: { id: n.id, label: n.label, status: n.status || "pending" },
+      }));
+      const edges = data.edges.map((e) => ({
+        data: {
+          id: e.id || e.source + "_" + e.target,
+          source: e.source,
+          target: e.target,
+          label: e.label || "",
+        },
+      }));
+      return [...nodes, ...edges];
+    }
+
+    async function draw(jobId) {
+      const data = await fetchGraph(jobId);
+      if (window.cy && typeof window.cy.destroy === "function") {
+        window.cy.destroy();
+      }
+
+      window.cy = cytoscape({
+        container: document.getElementById("cy"),
+        elements: toElements(data),
+        layout: {
+          name: "dagre",
+          rankDir: "LR",
+          nodeSep: 120,
+          rankSep: 160,
+          fit: true,
+        },
+        style: [
+          {
+            selector: "node",
+            style: {
+              shape: "round-rectangle",
+              width: 200,
+              height: 70,
+              "background-color": "#fff",
+              "border-width": 2,
+              "border-color": "#cdd9e5",
+              "border-radius": 10,
+              "box-shadow": "0 2px 6px rgba(0,0,0,0.06)",
+              label: "data(label)",
+              color: "#24292f",
+              "text-valign": "center",
+              "text-halign": "center",
+              "font-size": "13px",
+              "font-weight": "500",
+              "text-wrap": "wrap",
+              "text-max-width": "180px",
+            },
+          },
+          {
+            selector: "node[status='success']", style: {
+              "background-color": "#e6ffed",
+              "border-color": "#1f883d",
+            }
+          },
+          {
+            selector: "node[status='failure']", style: {
+              "background-color": "#ffeef0",
+              "border-color": "#d1242f",
+            }
+          },
+          {
+            selector: "node[status='pending']", style: {
+              "background-color": "#f6f8fa",
+              "border-color": "#8b949e",
+            }
+          },
+          {
+            selector: "edge", style: {
+              "curve-style": "segments",
+              "target-arrow-shape": "triangle",
+              "arrow-scale": 1.1,
+              "line-color": "#8b949e",
+              "target-arrow-color": "#8b949e",
+              width: 2,
+              opacity: 0.9,
+            }
+          },
+        ],
+      });
+
+      const panel = document.getElementById("side-panel");
+      const cyContainer = document.getElementById("cy");
+      const infoDiv = document.getElementById("node-info");
+      const closeBtn = document.getElementById("close-panel");
+
+      window.cy.on("tap", "node", (evt) => {
+        const node = evt.target;
+        const id = node.data("id");
+        const label = node.data("label");
+        const status = node.data("status");
+        const incoming = node.incomers("node").map((n) => n.data("label"));
+        const outgoing = node.outgoers("node").map((n) => n.data("label"));
+
+        infoDiv.innerHTML = `
+          <p><b>ID:</b> ${id}</p>
+          <p><b>Label:</b> ${label}</p>
+          <p><b>Status:</b> ${status}</p>
+          <p><b>Upstream:</b> ${incoming.join(", ") || "-"}</p>
+          <p><b>Downstream:</b> ${outgoing.join(", ") || "-"}</p>
+        `;
+        panel.classList.add("open");
+        cyContainer.classList.add("shrink");
+      });
+
+      window.cy.on("tap", (evt) => {
+        if (evt.target === window.cy) {
+          panel.classList.remove("open");
+          cyContainer.classList.remove("shrink");
+        }
+      });
+
+      closeBtn.addEventListener("click", () => {
+        panel.classList.remove("open");
+        cyContainer.classList.remove("shrink");
+      });
+
+      window.cy.fit();
+    }
+
+    // 버튼 동작
+    document.getElementById("loadBtn").addEventListener("click", () => {
+      const jobId = document.getElementById("jobId").value.trim();
+      draw(jobId || "job_1");
+    });
+
+    document.getElementById("reloadBtn").addEventListener("click", () => {
+      const jobId = document.getElementById("jobId").value.trim();
+      draw(jobId || "job_1");
+    });
+
+    document.getElementById("fitBtn").addEventListener("click", () => {
+      if (window.cy) window.cy.fit();
+    });
+
+    draw("job_1");
+  </script>
+</body>
+
+</html>
