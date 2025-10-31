@@ -1,10 +1,12 @@
 PY=python3
-APP=app.main:app
+APP=src.app.main:app
 PORT=8000
 DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
 
 .PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop
+
+export PYTHONPATH=$(shell pwd)
 
 all: venv install-dev format lint test
 
@@ -15,7 +17,7 @@ install-dev:
 	. .venv/bin/activate && pip install black pytest pytest-cov flake8
 
 run:
-	. .venv/bin/activate && uvicorn $(APP) --reload --host 0.0.0.0 --port $(PORT)
+	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn $(APP) --reload --host 0.0.0.0 --port $(PORT)
 
 run-prod:
 	. .venv/bin/activate && uvicorn $(APP) --host 0.0.0.0 --port $(PORT) --workers 4
@@ -41,6 +43,28 @@ clean:
 
 requirements:
 	. .venv/bin/activate && pip freeze > requirements.txt
+
+# Database migrations
+db-revision:
+	. .venv/bin/activate && alembic revision --autogenerate -m "$(name)"
+
+db-upgrade:
+	. .venv/bin/activate && alembic upgrade head
+
+db-downgrade:
+	. .venv/bin/activate && alembic downgrade -1
+
+db-history:
+	. .venv/bin/activate && alembic history --verbose
+
+db-current:
+	. .venv/bin/activate && alembic current
+
+# Database management
+db-init:
+	. .venv/bin/activate && python -m scripts.db.init_db
+
+db-reset: db-downgrade db-upgrade
 
 # Docker commands
 docker-build:
