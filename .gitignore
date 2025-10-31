@@ -3,8 +3,10 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .env
+.venv 
 venv/
 .env/
+.venv/
 .idea/
 .vscode/
 *.sqlite3

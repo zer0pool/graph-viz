@@ -5,17 +5,169 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Workflow Graph Viewer</title>
+  <link rel="stylesheet" href="/static/css/modern-console.css">
 
-  <!-- ✅ 외부 스타일만 연결 -->
-  <link rel="stylesheet" href="/static/css/modern-console.css" />
-
-  <!-- ✅ 파비콘 -->
-  <link rel="icon" type="image/png" href="/static/images/favicon.png" />
-
-  <!-- ✅ Cytoscape 라이브러리 -->
+  <!-- favicon (placed in static/images/favicon.ico) -->
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+  <!-- Cytoscape.js & dagre -->
   <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
   <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
   <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #f6f8fa;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: #f6f8fa;
+      color: #24292f;
+      overflow: hidden;
+    }
+
+    /* 상단 네비게이션 바 */
+    #navbar {
+      height: 60px;
+      background-color: #ffffff;
+      /* ✅ 흰색 배경 */
+      border-bottom: 1px solid #d0d7de;
+      /* 얇은 구분선 */
+      color: #24292f;
+      /* 글자색 어두운 회색 */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+    }
+
+    #navbar h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    #search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #jobId {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: none;
+      font-size: 14px;
+    }
+
+    #loadBtn {
+      background: #2ea44f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #loadBtn:hover {
+      background: #2c974b;
+    }
+
+    /* 메인 그래프 영역 */
+    #main {
+      flex: 1;
+      display: flex;
+      position: relative;
+      height: calc(100vh - 60px);
+    }
+
+    #cy {
+      flex: 1;
+      height: 100%;
+      background-color: #ffffff;
+      transition: margin-right 0.3s ease;
+    }
+
+    /* 패널 기본 닫힘 상태 */
+    #side-panel {
+      position: fixed;
+      top: 60px;
+      /* navbar 높이만큼 아래로 */
+      right: -340px;
+      width: 320px;
+      height: calc(100vh - 60px);
+      padding: 20px;
+      background-color: #f6f8fa;
+      box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: right 0.3s ease;
+      z-index: 20;
+    }
+
+    #side-panel.open {
+      right: 0;
+    }
+
+    #side-panel h3 {
+      margin-top: 0;
+      font-size: 18px;
+      border-bottom: 1px solid #d0d7de;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #close-panel {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #57606a;
+    }
+
+    #close-panel:hover {
+      color: #24292f;
+    }
+
+    #node-info p {
+      margin: 6px 0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    #controls {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background: #0969da;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #035fc7;
+    }
+
+    /* 패널 열릴 때 cy 살짝 줄어들게 */
+    #cy.shrink {
+      margin-right: 320px;
+    }
+  </style>
 </head>
 
 <body>
