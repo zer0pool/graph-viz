@@ -59,6 +59,12 @@ async function draw() {
     ],
   });
 
+  // ✅ 미니맵 추가
+  cy.minimap({
+    position: 'top-right',  // 우측 상단
+    zoomFactor: 3.00,       // 축소 비율
+  });
+
   // ✅ 노드 클릭 패널 표시
   const panel = document.getElementById("side-panel");
   const infoDiv = document.getElementById("node-info");
@@ -89,7 +95,7 @@ async function draw() {
   // ✅ 줌 컨트롤
   const zoomInBtn = document.getElementById("zoom-in");
   const zoomOutBtn = document.getElementById("zoom-out");
-  const fitBtn = document.getElementById("fit");
+  const fitBtn = document.getElementById("fitBtn");
   const zoomLevelText = document.getElementById("zoom-level");
 
   function updateZoomDisplay() {

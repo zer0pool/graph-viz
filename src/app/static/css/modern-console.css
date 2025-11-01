@@ -229,3 +229,13 @@ body {
 #loadBtn:hover {
     background: #2c974b;
 }
+
+.cy-minimap {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15) !important;
+    z-index: 40 !important;
+}
