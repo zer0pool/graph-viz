@@ -1,12 +1,14 @@
 PY=python3
-APP=src.app.main:app
+APP_NAME= graph_manager
+APP=graph_manager.main:app
 PORT=8000
 DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
+ 
 
 .PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop
 
-export PYTHONPATH=$(shell pwd)
+export PYTHONPATH=$(shell pwd)/src
 
 all: venv install-dev format lint test
 

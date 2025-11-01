@@ -1,8 +1,9 @@
 cytoscape.use(cytoscapeDagre);
 
-async function fetchGraph() {
-  const res = await fetch("/api/graph");
-  return res.json();
+async function fetchGraph(jobId) {
+  const res = await fetch(`/api/graph?size=${jobId}`);
+  if (!res.ok) throw new Error(`API 호출 실패: ${res.status}`);
+  return res.json(); // ✅ 데이터만 반환
 }
 
 function toElements(data) {
@@ -20,18 +21,19 @@ function toElements(data) {
   return [...nodes, ...edges];
 }
 
-async function draw() {
-  const data = await fetchGraph();
+
+async function draw(jobId = "default") {
+
+  const data = await fetchGraph(jobId);
 
   if (window.cy && typeof window.cy.destroy === "function") window.cy.destroy();
 
-  window.cy = cytoscape({
+  const cy = window.cy = cytoscape({
     container: document.getElementById("cy"),
-    elements: toElements(data),
-    layout: { name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160, fit: true },
+    layout: { name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160 },
     minZoom: 0.6,
-    maxZoom: 2.0,
-    wheelSensitivity: 0.5,
+    maxZoom: 3.0,
+    wheelSensitivity: 0.3,
     style: [
       {
         selector: "node",
@@ -59,9 +61,23 @@ async function draw() {
     ],
   });
 
+
+
+  cy.add([
+    ...data.nodes.map(n => ({ data: n })),
+    ...data.edges.map(e => ({ data: e }))
+  ]);
+
+  cy.layout({
+    name: "dagre",
+    rankDir: "LR",
+    nodeSep: 100,
+    rankSep: 120
+  }).run();  // ✅ 꼭 run() 호출
+
   // ✅ 미니맵 추가
   cy.minimap({
-    position: 'top-right',  // 우측 상단
+    // position: 'top-right',  // 우측 상단
     zoomFactor: 3.00,       // 축소 비율
   });
 
@@ -84,11 +100,17 @@ async function draw() {
     panel.classList.add("open");
   });
 
+
+
+
   window.cy.on("tap", (evt) => {
     if (evt.target === window.cy) panel.classList.remove("open");
   });
 
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
+
+
+
 
   window.cy.fit();
 
@@ -97,6 +119,7 @@ async function draw() {
   const zoomOutBtn = document.getElementById("zoom-out");
   const fitBtn = document.getElementById("fitBtn");
   const zoomLevelText = document.getElementById("zoom-level");
+
 
   function updateZoomDisplay() {
     if (zoomLevelText)
@@ -131,11 +154,23 @@ async function draw() {
     });
   }
 
+  document.getElementById("loadBtn").addEventListener("click", () => {
+    const jobInput = document.getElementById("jobId");
+    console.log("jobInput =", jobInput);
+    console.log("jobInput.value =", jobInput.value);
+    console.log("typeof jobInput.value =", typeof jobInput.value);
+
+    const jobId = jobInput.value.trim() || "default";
+    console.log("최종 jobId =", jobId);
+
+    draw(jobId);
+  });
+
   window.cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
 }
 
 // ✅ DOM 완전히 로드된 후 실행
 document.addEventListener("DOMContentLoaded", () => {
-  draw();
+  draw("default");
 });
