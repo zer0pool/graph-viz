@@ -46,6 +46,10 @@ function renderGraph(data) {
     ],
   }));
 
+  // Prevent native context menu inside the graph container
+  const cyContainer = document.getElementById('cy');
+  cyContainer?.addEventListener('contextmenu', (e) => e.preventDefault());
+
   const nodes = (data.nodes || []).map((n) => ({ data: { id: n.id, label: n.label, type: n.type || "job" } }));
   const edges = (data.edges || []).map((e) => ({ data: { id: e.id || `${e.source}_${e.target}`, source: e.source, target: e.target, io: e.io || "" } }));
   cy.add([...nodes, ...edges]);
@@ -353,3 +357,5 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial empty graph
   renderGraph({ nodes: [], edges: [] });
 });
+  // Prevent native context menu on the overlay/panel as well
+  ctxMenu?.addEventListener('contextmenu', (e) => e.preventDefault());
