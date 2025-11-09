@@ -64,6 +64,14 @@ function renderGraph(data) {
   const panel = document.getElementById("side-panel");
   const infoDiv = document.getElementById("node-info");
   const closeBtn = document.getElementById("close-panel");
+  const ctxMenu = document.getElementById("ctx-menu");
+  const ctxDir = document.getElementById("ctx-direction");
+  const ctxDepth = document.getElementById("ctx-depth");
+  const ctxLimit = document.getElementById("ctx-limit");
+  const ctxCancel = document.getElementById("ctx-cancel");
+  const ctxExpand = document.getElementById("ctx-expand");
+  const ctxHint = document.getElementById("ctx-hint");
+  let ctxTargetNode = null;
 
   cy.on("tap", "node", (evt) => {
     const n = evt.target;
@@ -77,6 +85,68 @@ function renderGraph(data) {
       <p><b>Downstream:</b> ${outgoing.join(", ") || "-"}</p>
     `;
     panel.classList.add("open");
+  });
+
+  // Right-click (context) to open expand menu near cursor
+  cy.on("cxttap", "node", (evt) => {
+    ctxTargetNode = evt.target;
+    // position panel at cursor
+    const ev = evt.originalEvent || {};
+    const x = (ev.clientX || 20);
+    const y = (ev.clientY || 20);
+    ctxMenu.hidden = false;
+    ctxMenu.style.left = "0"; // container covers full screen
+    ctxMenu.style.top = "0";
+    const panelEl = ctxMenu.querySelector('.ctx-panel');
+    if (panelEl) {
+      panelEl.style.position = 'absolute';
+      panelEl.style.left = `${x + 4}px`;
+      panelEl.style.top = `${y + 4}px`;
+    }
+    ctxHint.hidden = true;
+  });
+
+  // Cancel closes menu
+  ctxCancel?.addEventListener('click', () => {
+    ctxMenu.hidden = true;
+  });
+  // Clicking outside closes menu
+  ctxMenu?.addEventListener('click', (e) => {
+    if (e.target === ctxMenu) ctxMenu.hidden = true;
+  });
+
+  // Expand action
+  ctxExpand?.addEventListener('click', async () => {
+    if (!ctxTargetNode) return;
+    const type = ctxTargetNode.data('type') || 'job';
+    const id = ctxTargetNode.id(); // j123 / t456
+    const isJob = type === 'job' || id.startsWith('j');
+    const direction = ctxDir.value;
+    const depth = parseInt(ctxDepth.value || '1', 10);
+    const limitVal = ctxLimit.value ? parseInt(ctxLimit.value, 10) : undefined;
+    const params = new URLSearchParams({
+      node_type: isJob ? 'job' : 'table',
+      direction,
+      depth: String(depth),
+    });
+    if (limitVal) params.set('limit', String(limitVal));
+    if (isJob) params.set('node_id', ctxTargetNode.data('label') || ctxTargetNode.data('id')); // prefer name/id
+    else params.set('table_name', ctxTargetNode.data('label') || ctxTargetNode.data('id'));
+
+    try {
+      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      if (!res.ok) throw new Error(`Expand failed: ${res.status}`);
+      const payload = await res.json();
+      const added = mergeGraph(cy, payload);
+      ctxHint.textContent = `+${added.nodes} nodes, +${added.edges} edges added`;
+      ctxHint.hidden = false;
+      // Partial layout around the target + new nodes
+      const neighborhood = cy.collection([ctxTargetNode]).closedNeighborhood();
+      neighborhood.layout({ name: 'dagre', fit: false, animate: true, nodeSep: 80, rankSep: 100 }).run();
+    } catch (e) {
+      ctxHint.textContent = String(e);
+      ctxHint.hidden = false;
+    }
   });
 
   cy.on("tap", (evt) => {
@@ -115,6 +185,30 @@ function renderGraph(data) {
   });
   cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
+}
+
+function mergeGraph(cy, data) {
+  const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
+  const existingEdgeIds = new Set(cy.edges().map(e => e.id()));
+  let addedNodes = 0;
+  let addedEdges = 0;
+  // Nodes
+  (data.nodes || []).forEach(n => {
+    const id = n.id;
+    if (!existingNodeIds.has(id)) {
+      cy.add({ data: { id: n.id, label: n.label, type: n.type || 'job' } });
+      addedNodes++;
+    }
+  });
+  // Edges
+  (data.edges || []).forEach(e => {
+    const id = e.id || `${e.source}_${e.target}_${e.io || ''}`;
+    if (!existingEdgeIds.has(id)) {
+      cy.add({ data: { id, source: e.source, target: e.target, io: e.io || '' } });
+      addedEdges++;
+    }
+  });
+  return { nodes: addedNodes, edges: addedEdges };
 }
 
 function renderSuggestionsBox(data) {

@@ -38,6 +38,38 @@
             <div id="suggestions" class="suggestions" hidden></div>
         </div>
     </div>
+    
+    <!-- Context menu for graph expansion -->
+    <div id="ctx-menu" class="ctx-menu" hidden>
+        <div class="ctx-panel">
+            <div class="ctx-header">Expand Graph</div>
+            <div class="ctx-row">
+                <label>Direction</label>
+                <select id="ctx-direction">
+                    <option value="both" selected>Both</option>
+                    <option value="upstream">Upstream</option>
+                    <option value="downstream">Downstream</option>
+                </select>
+            </div>
+            <div class="ctx-row">
+                <label>Depth</label>
+                <select id="ctx-depth">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+            <div class="ctx-row">
+                <label>Limit</label>
+                <input id="ctx-limit" type="number" min="1" max="1000" placeholder="e.g. 100" />
+            </div>
+            <div class="ctx-actions">
+                <button id="ctx-cancel" class="btn-secondary">Cancel</button>
+                <button id="ctx-expand" class="btn-primary">Expand</button>
+            </div>
+            <div id="ctx-hint" class="ctx-hint" hidden></div>
+        </div>
+    </div>
 
     <div id="main">
         <div id="cy"></div>
