@@ -196,6 +196,10 @@ function renderGraph(data) {
 function mergeGraph(cy, data, anchorId, direction) {
   const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
   const existingEdgeIds = new Set(cy.edges().map(e => e.id()));
+  // Canonical edge key based on endpoints + io (ignore payload ids)
+  const existingEdgeKeys = new Set(
+    cy.edges().map(e => `${e.data('source')}__${e.data('target')}__${e.data('io') || ''}`)
+  );
   let addedNodes = 0;
   let addedEdges = 0;
   const addedNodeIds = [];
@@ -213,11 +217,20 @@ function mergeGraph(cy, data, anchorId, direction) {
 
   // Add edges (dedup)
   (data.edges || []).forEach(e => {
-    const id = e.id || `${e.source}_${e.target}_${e.io || ''}`;
+    const key = `${e.source}__${e.target}__${e.io || ''}`;
+    if (existingEdgeKeys.has(key)) return;
+    const id = key; // enforce canonical id to avoid dupes from differing payload ids
     if (!existingEdgeIds.has(id)) {
+      // Also ensure no existing edge with same endpoints regardless of id
+      const anyExisting = cy.$(`edge[source='${e.source}'][target='${e.target}']`).nonempty();
+      if (anyExisting) {
+        existingEdgeKeys.add(key);
+        return;
+      }
       cy.add({ data: { id, source: e.source, target: e.target, io: e.io || '' } });
       addedEdges++;
       existingEdgeIds.add(id);
+      existingEdgeKeys.add(key);
     }
   });
 
