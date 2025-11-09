@@ -91,3 +91,14 @@ class JobRepository(BaseRepository):
             query, {"table_ids": tuple(table_ids), "exclude_job_id": exclude_job_id}
         )
         return result.scalars().all()
+
+    def search(self, q: str, limit: int = 10):
+        """Search jobs by job_id or name (ILIKE if supported)."""
+        from sqlalchemy import or_
+
+        stmt = (
+            select(GraphJobNode)
+            .where(or_(GraphJobNode.job_id.like(q), GraphJobNode.name.like(q)))
+            .limit(limit)
+        )
+        return self.db.execute(stmt).scalars().all()

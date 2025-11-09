@@ -104,3 +104,14 @@ class GraphQueryService:
         self._cache_set(key, res)
         return res
 
+    # Simple search (03)
+    def search_suggestions(self, q: str, limit: int = 10):
+        # Search jobs by job_id or name, tables by full_name
+        like = f"%{q}%"
+        jobs = self.uow.jobs.search(q=like, limit=limit)
+        tables = self.uow.tables.search(q=like, limit=limit)
+        return {
+            "query": q,
+            "jobs": [{"job_id": j.job_id, "name": j.name} for j in jobs],
+            "tables": [{"full_name": t.full_name} for t in tables],
+        }
