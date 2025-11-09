@@ -86,21 +86,23 @@ class GraphQueryService:
         self._cache_set(key, res)
         return res
 
-    def get_job_neighbors(self, job_id: str, level: int):
-        key = f"neighbors:job:{job_id}:{level}"
+    def get_job_neighbors(self, job_id: str, level: int, direction: str = "both", limit: int | None = None):
+        lim = "none" if limit is None else str(limit)
+        key = f"neighbors:job:{job_id}:{level}:{direction}:{lim}"
         cached = self._cache_get(key)
         if cached:
             return cached
-        res = self.core.get_job_neighbors(job_id, level)
+        res = self.core.get_job_neighbors(job_id, level, direction=direction, limit=limit)
         self._cache_set(key, res)
         return res
 
-    def get_table_neighbors(self, table_name: str, level: int):
-        key = f"neighbors:table:{table_name}:{level}"
+    def get_table_neighbors(self, table_name: str, level: int, direction: str = "both", limit: int | None = None):
+        lim = "none" if limit is None else str(limit)
+        key = f"neighbors:table:{table_name}:{level}:{direction}:{lim}"
         cached = self._cache_get(key)
         if cached:
             return cached
-        res = self.core.get_table_neighbors(table_name, level)
+        res = self.core.get_table_neighbors(table_name, level, direction=direction, limit=limit)
         self._cache_set(key, res)
         return res
 

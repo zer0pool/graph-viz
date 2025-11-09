@@ -1,176 +1,253 @@
 cytoscape.use(cytoscapeDagre);
 
-async function fetchGraph(jobId) {
-  const res = await fetch(`/api/graph?size=${jobId}`);
-  if (!res.ok) throw new Error(`API 호출 실패: ${res.status}`);
-  return res.json(); // ✅ 데이터만 반환
+// Global selection state for search
+const searchState = {
+  selectedType: null, // 'job' | 'table'
+  selectedValue: null,
+  itemsCount: 0,
+  activeIndex: -1,
+};
+
+function debounce(fn, delay = 200) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delay);
+  };
 }
 
-function toElements(data) {
-  const nodes = data.nodes.map((n) => ({
-    data: { id: n.id, label: n.label, status: n.status || "pending" },
-  }));
-  const edges = data.edges.map((e) => ({
-    data: {
-      id: e.id || e.source + "_" + e.target,
-      source: e.source,
-      target: e.target,
-      label: e.label || "",
-    },
-  }));
-  return [...nodes, ...edges];
+async function fetchSuggestions(q) {
+  const res = await fetch(`/api/v1/search/suggest?q=${encodeURIComponent(q)}`);
+  if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
+  return res.json();
 }
 
+async function fetchNeighbors(kind, value) {
+  const base = `/api/v1/graph/${kind}/${encodeURIComponent(value)}/neighbors?level=1`;
+  const res = await fetch(base);
+  if (!res.ok) throw new Error(`Neighbors failed: ${res.status}`);
+  return res.json();
+}
 
-async function draw(jobId = "default") {
-
-  const data = await fetchGraph(jobId);
-
+function renderGraph(data) {
   if (window.cy && typeof window.cy.destroy === "function") window.cy.destroy();
 
-  const cy = window.cy = cytoscape({
+  const cy = (window.cy = cytoscape({
     container: document.getElementById("cy"),
     layout: { name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160 },
     minZoom: 0.6,
     maxZoom: 3.0,
     wheelSensitivity: 0.3,
     style: [
-      {
-        selector: "node",
-        style: {
-          shape: "round-rectangle",
-          width: 200,
-          height: 70,
-          "background-color": "#fff",
-          "border-width": 2,
-          "border-color": "#cdd9e5",
-          label: "data(label)",
-          color: "#24292f",
-          "text-valign": "center",
-          "text-halign": "center",
-          "font-size": "13px",
-          "font-weight": "500",
-          "text-wrap": "wrap",
-          "text-max-width": "180px",
-        },
-      },
-      { selector: "node[status='success']", style: { "background-color": "#e6ffed", "border-color": "#1f883d" } },
-      { selector: "node[status='failure']", style: { "background-color": "#ffeef0", "border-color": "#d1242f" } },
-      { selector: "node[status='pending']", style: { "background-color": "#f6f8fa", "border-color": "#8b949e" } },
-      { selector: "edge", style: { "curve-style": "segments", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
+      { selector: "node", style: { shape: "round-rectangle", width: 200, height: 60, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "500", "text-wrap": "wrap", "text-max-width": "180px" } },
+      { selector: "node[type='table']", style: { shape: "ellipse", "background-color": "#f0f7ff", "border-color": "#0969da" } },
+      { selector: "edge", style: { "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
+      { selector: "edge[io='input']", style: { "line-style": "dashed" } },
     ],
-  });
+  }));
 
+  const nodes = (data.nodes || []).map((n) => ({ data: { id: n.id, label: n.label, type: n.type || "job" } }));
+  const edges = (data.edges || []).map((e) => ({ data: { id: e.id || `${e.source}_${e.target}`, source: e.source, target: e.target, io: e.io || "" } }));
+  cy.add([...nodes, ...edges]);
 
+  cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 100, rankSep: 120 }).run();
+  cy.minimap({ zoomFactor: 3.0 });
 
-  cy.add([
-    ...data.nodes.map(n => ({ data: n })),
-    ...data.edges.map(e => ({ data: e }))
-  ]);
-
-  cy.layout({
-    name: "dagre",
-    rankDir: "LR",
-    nodeSep: 100,
-    rankSep: 120
-  }).run();  // ✅ 꼭 run() 호출
-
-  // ✅ 미니맵 추가
-  cy.minimap({
-    // position: 'top-right',  // 우측 상단
-    zoomFactor: 3.00,       // 축소 비율
-  });
-
-  // ✅ 노드 클릭 패널 표시
   const panel = document.getElementById("side-panel");
   const infoDiv = document.getElementById("node-info");
   const closeBtn = document.getElementById("close-panel");
 
-  window.cy.on("tap", "node", (evt) => {
+  cy.on("tap", "node", (evt) => {
     const n = evt.target;
     const incoming = n.incomers("node").map((x) => x.data("label"));
     const outgoing = n.outgoers("node").map((x) => x.data("label"));
     infoDiv.innerHTML = `
       <p><b>ID:</b> ${n.data("id")}</p>
+      <p><b>Type:</b> ${n.data("type")}</p>
       <p><b>Label:</b> ${n.data("label")}</p>
-      <p><b>Status:</b> ${n.data("status")}</p>
       <p><b>Upstream:</b> ${incoming.join(", ") || "-"}</p>
       <p><b>Downstream:</b> ${outgoing.join(", ") || "-"}</p>
     `;
     panel.classList.add("open");
   });
 
-
-
-
-  window.cy.on("tap", (evt) => {
-    if (evt.target === window.cy) panel.classList.remove("open");
+  cy.on("tap", (evt) => {
+    if (evt.target === cy) panel.classList.remove("open");
   });
-
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
 
+  cy.fit();
 
-
-
-  window.cy.fit();
-
-  // ✅ 줌 컨트롤
   const zoomInBtn = document.getElementById("zoom-in");
   const zoomOutBtn = document.getElementById("zoom-out");
   const fitBtn = document.getElementById("fitBtn");
   const zoomLevelText = document.getElementById("zoom-level");
 
-
   function updateZoomDisplay() {
-    if (zoomLevelText)
-      zoomLevelText.textContent = `${Math.round(window.cy.zoom() * 100)}%`;
+    if (zoomLevelText) zoomLevelText.textContent = `${Math.round(cy.zoom() * 100)}%`;
   }
-
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      const newZoom = Math.min(window.cy.zoom() * 1.2, window.cy.maxZoom());
-      window.cy.zoom(newZoom);
-      window.cy.center();
-      updateZoomDisplay();
-    });
-  }
-
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      const newZoom = Math.max(window.cy.zoom() * 0.8, window.cy.minZoom());
-      window.cy.zoom(newZoom);
-      window.cy.center();
-      updateZoomDisplay();
-    });
-  }
-
-  if (fitBtn) {
-    fitBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.cy.fit();
-      updateZoomDisplay();
-    });
-  }
-
-  document.getElementById("loadBtn").addEventListener("click", () => {
-    const jobInput = document.getElementById("jobId");
-    console.log("jobInput =", jobInput);
-    console.log("jobInput.value =", jobInput.value);
-    console.log("typeof jobInput.value =", typeof jobInput.value);
-
-    const jobId = jobInput.value.trim() || "default";
-    console.log("최종 jobId =", jobId);
-
-    draw(jobId);
+  zoomInBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const newZoom = Math.min(cy.zoom() * 1.2, cy.maxZoom());
+    cy.zoom(newZoom);
+    cy.center();
+    updateZoomDisplay();
   });
-
-  window.cy.on("zoom", updateZoomDisplay);
+  zoomOutBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const newZoom = Math.max(cy.zoom() * 0.8, cy.minZoom());
+    cy.zoom(newZoom);
+    cy.center();
+    updateZoomDisplay();
+  });
+  fitBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    cy.fit();
+    updateZoomDisplay();
+  });
+  cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
 }
 
-// ✅ DOM 완전히 로드된 후 실행
+function renderSuggestionsBox(data) {
+  const box = document.getElementById("suggestions");
+  if (!box) return;
+  const jobs = data.jobs || [];
+  const tables = data.tables || [];
+  if (jobs.length === 0 && tables.length === 0) {
+    box.innerHTML = '<div class="group">No results</div>';
+    box.hidden = false;
+    return;
+  }
+  let html = "";
+  if (jobs.length) {
+    html += '<div class="group">Jobs</div>';
+    html += jobs
+      .map(
+        (j) =>
+          `<div class=\"item\" data-type=\"job\" data-value=\"${encodeURIComponent(j.job_id)}\"><span class=\"badge\">JOB</span> ${j.name || j.job_id}</div>`
+      )
+      .join("");
+  }
+  if (tables.length) {
+    html += '<div class="group">Tables</div>';
+    html += tables
+      .map(
+        (t) =>
+          `<div class=\"item\" data-type=\"table\" data-value=\"${encodeURIComponent(t.full_name)}\"><span class=\"badge\">TABLE</span> ${t.full_name}</div>`
+      )
+      .join("");
+  }
+  box.innerHTML = html;
+  box.hidden = false;
+
+  // Attach item click handlers
+  const items = Array.from(box.querySelectorAll(".item"));
+  searchState.itemsCount = items.length;
+  searchState.activeIndex = items.length ? 0 : -1;
+  if (items.length) items[0].classList.add("active");
+  items.forEach((el, idx) => {
+    el.addEventListener("mouseenter", () => {
+      items.forEach((i) => i.classList.remove("active"));
+      el.classList.add("active");
+      searchState.activeIndex = idx;
+    });
+    el.addEventListener("click", () => {
+      const type = el.getAttribute("data-type");
+      const value = decodeURIComponent(el.getAttribute("data-value") || "");
+      const input = document.getElementById("jobId");
+      input.value = value;
+      searchState.selectedType = type;
+      searchState.selectedValue = value;
+      box.hidden = true;
+      box.innerHTML = "";
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  draw("default");
+  const input = document.getElementById("jobId");
+  const loadBtn = document.getElementById("loadBtn");
+
+  const onInput = debounce(async () => {
+    const q = input.value.trim();
+    searchState.selectedType = null;
+    searchState.selectedValue = null;
+    if (q.length < 1) {
+      document.getElementById("suggestions").hidden = true;
+      document.getElementById("suggestions").innerHTML = "";
+      return;
+    }
+    // Show loading state
+    const box = document.getElementById("suggestions");
+    box.hidden = false;
+    box.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+      const data = await fetchSuggestions(q);
+      renderSuggestionsBox(data);
+    } catch (_) {
+      // ignore suggest errors for UX
+      box.innerHTML = '<div class="group">No results</div>';
+    }
+  }, 200);
+
+  input.addEventListener("input", onInput);
+  // Hide suggestions when focus leaves the input (small delay to allow click)
+  input.addEventListener("blur", () => setTimeout(() => {
+    const box = document.getElementById("suggestions");
+    if (!box.matches(':hover')) {
+      box.hidden = true;
+      box.innerHTML = "";
+    }
+  }, 150));
+  input.addEventListener("keydown", (e) => {
+    const box = document.getElementById("suggestions");
+    if (e.key === "Escape") {
+      const box = document.getElementById("suggestions");
+      box.hidden = true;
+      box.innerHTML = "";
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      // If a suggestion is active, choose it; else trigger search
+      const items = Array.from(box.querySelectorAll(".item"));
+      const idx = searchState.activeIndex;
+      if (!box.hidden && items.length && idx >= 0 && idx < items.length) {
+        items[idx].click();
+      } else {
+        document.getElementById("loadBtn").click();
+      }
+    } else if (e.key === "ArrowDown") {
+      const items = Array.from(box.querySelectorAll(".item"));
+      if (!items.length) return;
+      e.preventDefault();
+      searchState.activeIndex = (searchState.activeIndex + 1) % items.length;
+      items.forEach((i) => i.classList.remove("active"));
+      items[searchState.activeIndex].classList.add("active");
+      items[searchState.activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      const items = Array.from(box.querySelectorAll(".item"));
+      if (!items.length) return;
+      e.preventDefault();
+      searchState.activeIndex = (searchState.activeIndex - 1 + items.length) % items.length;
+      items.forEach((i) => i.classList.remove("active"));
+      items[searchState.activeIndex].classList.add("active");
+      items[searchState.activeIndex].scrollIntoView({ block: "nearest" });
+    }
+  });
+
+  loadBtn.addEventListener("click", async () => {
+    const raw = input.value.trim();
+    if (!raw) return;
+    let type = searchState.selectedType;
+    let value = searchState.selectedValue || raw;
+    if (!type) {
+      // heuristics: table names often contain dots
+      type = raw.includes(".") ? "table" : "job";
+    }
+    const data = await fetchNeighbors(type, value);
+    renderGraph(data);
+  });
+
+  // Initial empty graph
+  renderGraph({ nodes: [], edges: [] });
 });
