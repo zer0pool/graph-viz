@@ -172,10 +172,12 @@ def get_table(
 def get_job_neighbors(
     job_id: str,
     level: int = 1,
+    direction: str = Query("both", enum=["upstream", "downstream", "both"]),
+    limit: int | None = Query(None, ge=1, le=1000),
     graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     try:
-        return graph_service.get_job_neighbors(job_id=job_id, level=level)
+        return graph_service.get_job_neighbors(job_id=job_id, level=level, direction=direction, limit=limit)
     except Exception as e:
         logger.error(f"Neighbors query failed for job {job_id}: {e}")
         from fastapi import HTTPException
@@ -188,10 +190,12 @@ def get_job_neighbors(
 def get_table_neighbors(
     table_name: str,
     level: int = 1,
+    direction: str = Query("both", enum=["upstream", "downstream", "both"]),
+    limit: int | None = Query(None, ge=1, le=1000),
     graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     try:
-        return graph_service.get_table_neighbors(table_name=table_name, level=level)
+        return graph_service.get_table_neighbors(table_name=table_name, level=level, direction=direction, limit=limit)
     except Exception as e:
         logger.error(f"Neighbors query failed for table {table_name}: {e}")
         from fastapi import HTTPException

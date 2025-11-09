@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from graph_manager.api.v1.endpoints import graph, jobs
 from graph_manager.api.v1.endpoints import search as search_ep
+from graph_manager.api.v1.endpoints import expand as expand_ep
 from graph_manager.api.v1.endpoints import tables as tables_ep
 from graph_manager.core.config import get_settings
 from graph_manager.core.container import GraphContainer
@@ -61,7 +62,7 @@ def create_app() -> GraphApp:
 
     # Attach container to app and wire it
     app.container = app_container
-    app_container.wire(modules=[graph, jobs, tables_ep, search_ep])
+    app_container.wire(modules=[graph, jobs, tables_ep, search_ep, expand_ep])
 
     # Initialize database
     try:
@@ -97,6 +98,7 @@ def create_app() -> GraphApp:
     app.include_router(graph.router)
     app.include_router(jobs.router)
     app.include_router(search_ep.router)
+    app.include_router(expand_ep.router)
     app.include_router(tables_ep.router)
 
     # ----------------------------------------

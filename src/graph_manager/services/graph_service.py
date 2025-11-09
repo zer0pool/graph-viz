@@ -380,7 +380,7 @@ class GraphService:
                 nodes[key] = {"id": key, "type": "table", "label": obj.full_name}
             return key
 
-    def get_job_neighbors(self, job_id: str, level: int = 1):
+    def get_job_neighbors(self, job_id: str, level: int = 1, direction: str = "both", limit: int | None = None):
         """Get neighbors around a job up to N hops (bidirectional over table/job edges)."""
         uow = self.uow
         job = uow.jobs.get(job_id)
@@ -400,31 +400,40 @@ class GraphService:
         # always include the base job node
         self._ensure_node_entry(nodes, "job", job)
 
+        added = 0
         for _ in range(max(1, level)):
             next_frontier = []
             for ntype, nid in frontier:
                 if ntype == "job":
-                    # Job -> Tables (output)
-                    for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "output"):
-                        tkey = self._ensure_node_entry(nodes, "table", tbl)
-                        jkey = f"j{nid}"
-                        e = {"source": jkey, "target": tkey, "io": "output"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("table", tbl.id) not in visited:
-                            visited.add(("table", tbl.id))
-                            next_frontier.append(("table", tbl.id))
+                    # Job -> Tables (output) only for downstream/both
+                    if direction in ("downstream", "both"):
+                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "output"):
+                            tkey = self._ensure_node_entry(nodes, "table", tbl)
+                            jkey = f"j{nid}"
+                            e = {"source": jkey, "target": tkey, "io": "output"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
+                            if ("table", tbl.id) not in visited:
+                                visited.add(("table", tbl.id))
+                                next_frontier.append(("table", tbl.id))
 
-                    # Tables -> Job (inputs)
-                    for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "input"):
-                        tkey = self._ensure_node_entry(nodes, "table", tbl)
-                        jkey = f"j{nid}"
-                        e = {"source": tkey, "target": jkey, "io": "input"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("table", tbl.id) not in visited:
-                            visited.add(("table", tbl.id))
-                            next_frontier.append(("table", tbl.id))
+                    # Tables -> Job (inputs) only for upstream/both
+                    if direction in ("upstream", "both"):
+                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "input"):
+                            tkey = self._ensure_node_entry(nodes, "table", tbl)
+                            jkey = f"j{nid}"
+                            e = {"source": tkey, "target": jkey, "io": "input"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
+                            if ("table", tbl.id) not in visited:
+                                visited.add(("table", tbl.id))
+                                next_frontier.append(("table", tbl.id))
 
                     # Job ↔ Job via dependency edges (optional)
                     q = select(GraphEdge).where(
@@ -455,31 +464,39 @@ class GraphService:
                             next_frontier.append(("job", other.id))
 
                 else:  # table node
-                    # Producers (job -> table)
-                    for prod in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "output"):
-                        self._ensure_node_entry(nodes, "job", prod)
-                        e = {"source": f"j{prod.id}", "target": f"t{nid}", "io": "output"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("job", prod.id) not in visited:
-                            visited.add(("job", prod.id))
-                            next_frontier.append(("job", prod.id))
+                    # Producers (job -> table) are upstream
+                    if direction in ("upstream", "both"):
+                        for prod in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "output"):
+                            self._ensure_node_entry(nodes, "job", prod)
+                            e = {"source": f"j{prod.id}", "target": f"t{nid}", "io": "output"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
+                            if ("job", prod.id) not in visited:
+                                visited.add(("job", prod.id))
+                                next_frontier.append(("job", prod.id))
 
-                    # Consumers (table -> job)
-                    for cons in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "input"):
-                        self._ensure_node_entry(nodes, "job", cons)
-                        e = {"source": f"t{nid}", "target": f"j{cons.id}", "io": "input"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("job", cons.id) not in visited:
-                            visited.add(("job", cons.id))
-                            next_frontier.append(("job", cons.id))
+                    # Consumers (table -> job) are downstream
+                    if direction in ("downstream", "both"):
+                        for cons in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "input"):
+                            self._ensure_node_entry(nodes, "job", cons)
+                            e = {"source": f"t{nid}", "target": f"j{cons.id}", "io": "input"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
+                            if ("job", cons.id) not in visited:
+                                visited.add(("job", cons.id))
+                                next_frontier.append(("job", cons.id))
 
             frontier = next_frontier
 
         return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
 
-    def get_table_neighbors(self, table_name: str, level: int = 1):
+    def get_table_neighbors(self, table_name: str, level: int = 1, direction: str = "both", limit: int | None = None):
         """Get neighbors around a table up to N hops (bidirectional over table/job edges)."""
         uow = self.uow
         table = uow.tables.get_by_full_name(table_name)
@@ -493,47 +510,65 @@ class GraphService:
         frontier = [("table", table.id)]
         self._ensure_node_entry(nodes, "table", table)
 
+        added = 0
         for _ in range(max(1, level)):
             next_frontier = []
             for ntype, nid in frontier:
                 if ntype == "table":
-                    # Producers (job -> table)
-                    for prod in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "output"):
-                        self._ensure_node_entry(nodes, "job", prod)
-                        e = {"source": f"j{prod.id}", "target": f"t{nid}", "io": "output"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("job", prod.id) not in visited:
-                            visited.add(("job", prod.id))
-                            next_frontier.append(("job", prod.id))
+                    # Producers (job -> table) are upstream
+                    if direction in ("upstream", "both"):
+                        for prod in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "output"):
+                            self._ensure_node_entry(nodes, "job", prod)
+                            e = {"source": f"j{prod.id}", "target": f"t{nid}", "io": "output"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_table": table_name, "nodes": list(nodes.values()), "edges": edges}
+                            if ("job", prod.id) not in visited:
+                                visited.add(("job", prod.id))
+                                next_frontier.append(("job", prod.id))
 
-                    # Consumers (table -> job)
-                    for cons in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "input"):
-                        self._ensure_node_entry(nodes, "job", cons)
-                        e = {"source": f"t{nid}", "target": f"j{cons.id}", "io": "input"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("job", cons.id) not in visited:
-                            visited.add(("job", cons.id))
-                            next_frontier.append(("job", cons.id))
+                    # Consumers (table -> job) are downstream
+                    if direction in ("downstream", "both"):
+                        for cons in uow.job_table_links.get_jobs_by_table_and_io_type(nid, "input"):
+                            self._ensure_node_entry(nodes, "job", cons)
+                            e = {"source": f"t{nid}", "target": f"j{cons.id}", "io": "input"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_table": table_name, "nodes": list(nodes.values()), "edges": edges}
+                            if ("job", cons.id) not in visited:
+                                visited.add(("job", cons.id))
+                                next_frontier.append(("job", cons.id))
                 else:
-                    # From job, hop to its input/output tables
-                    for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "output"):
-                        self._ensure_node_entry(nodes, "table", tbl)
-                        e = {"source": f"j{nid}", "target": f"t{tbl.id}", "io": "output"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("table", tbl.id) not in visited:
-                            visited.add(("table", tbl.id))
-                            next_frontier.append(("table", tbl.id))
-                    for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "input"):
-                        self._ensure_node_entry(nodes, "table", tbl)
-                        e = {"source": f"t{tbl.id}", "target": f"j{nid}", "io": "input"}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("table", tbl.id) not in visited:
-                            visited.add(("table", tbl.id))
-                            next_frontier.append(("table", tbl.id))
+                    # From job, hop to its output tables (downstream)
+                    if direction in ("downstream", "both"):
+                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "output"):
+                            self._ensure_node_entry(nodes, "table", tbl)
+                            e = {"source": f"j{nid}", "target": f"t{tbl.id}", "io": "output"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_table": table_name, "nodes": list(nodes.values()), "edges": edges}
+                            if ("table", tbl.id) not in visited:
+                                visited.add(("table", tbl.id))
+                                next_frontier.append(("table", tbl.id))
+                    # From job, hop to its input tables (upstream)
+                    if direction in ("upstream", "both"):
+                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(nid, "input"):
+                            self._ensure_node_entry(nodes, "table", tbl)
+                            e = {"source": f"t{tbl.id}", "target": f"j{nid}", "io": "input"}
+                            if e not in edges:
+                                edges.append(e)
+                                added += 1
+                            if limit and added >= limit:
+                                return {"base_table": table_name, "nodes": list(nodes.values()), "edges": edges}
+                            if ("table", tbl.id) not in visited:
+                                visited.add(("table", tbl.id))
+                                next_frontier.append(("table", tbl.id))
 
             frontier = next_frontier
 
