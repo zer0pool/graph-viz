@@ -272,6 +272,9 @@ function renderSuggestionsBox(data) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Block all native context menus globally
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+
   const input = document.getElementById("jobId");
   const loadBtn = document.getElementById("loadBtn");
 
