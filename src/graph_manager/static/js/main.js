@@ -53,6 +53,14 @@ function renderGraph(data) {
   cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 100, rankSep: 120 }).run();
   cy.minimap({ zoomFactor: 3.0 });
 
+  // Initial view: fit, then scale down to ~1/4 area (half zoom), and center
+  if ((nodes.length + edges.length) > 0) {
+    cy.fit();
+    const target = Math.max(cy.minZoom(), Math.min(cy.maxZoom(), cy.zoom() * 0.5));
+    cy.zoom(target);
+    cy.center();
+  }
+
   const panel = document.getElementById("side-panel");
   const infoDiv = document.getElementById("node-info");
   const closeBtn = document.getElementById("close-panel");
@@ -76,7 +84,7 @@ function renderGraph(data) {
   });
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
 
-  cy.fit();
+  // Keep fit button behavior as-is; initial fit handled above
 
   const zoomInBtn = document.getElementById("zoom-in");
   const zoomOutBtn = document.getElementById("zoom-out");
