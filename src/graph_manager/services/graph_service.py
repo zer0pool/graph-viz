@@ -435,33 +435,7 @@ class GraphService:
                                 visited.add(("table", tbl.id))
                                 next_frontier.append(("table", tbl.id))
 
-                    # Job ↔ Job via dependency edges (optional)
-                    q = select(GraphEdge).where(
-                        or_(
-                            and_(
-                                GraphEdge.source_node_type == "job",
-                                GraphEdge.source_node_id == nid,
-                                GraphEdge.target_node_type == "job",
-                            ),
-                            and_(
-                                GraphEdge.target_node_type == "job",
-                                GraphEdge.target_node_id == nid,
-                                GraphEdge.source_node_type == "job",
-                            ),
-                        )
-                    )
-                    for ge in uow.db.execute(q).scalars().all():
-                        other_id = ge.target_node_id if ge.source_node_id == nid else ge.source_node_id
-                        other = uow.jobs.get_by_id(other_id)
-                        if not other:
-                            continue
-                        self._ensure_node_entry(nodes, "job", other)
-                        e = {"source": f"j{ge.source_node_id}", "target": f"j{ge.target_node_id}", "type": ge.edge_type}
-                        if e not in edges:
-                            edges.append(e)
-                        if ("job", other.id) not in visited:
-                            visited.add(("job", other.id))
-                            next_frontier.append(("job", other.id))
+                    # Note: skip job↔job dependency edges in neighbors output
 
                 else:  # table node
                     # Producers (job -> table) are upstream
