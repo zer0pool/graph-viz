@@ -1,0 +1,45 @@
+
+
+1) 목표 API
+GET /tables/{table_name}/impact
+
+특정 테이블이 변경되었을 때 영향을 받는 downstream 테이블과 그 테이블에 데이터를 쓰는 job을 depth 순서대로 반환합니다.
+
+✅ API 설계 예시
+요청 GET /tables/sales_daily/impact
+
+✅ 응답 예시
+{
+  "base_table": "sales_daily",
+  "downstream": [
+    {
+      "depth": 1,
+      "table": "sales_summary",
+      "writer_jobs": ["job_sales_summary_agg"],
+      "description": "sales_daily → sales_summary 영향 depth=1"
+    },
+    {
+      "depth": 2,
+      "table": "sales_report",
+      "writer_jobs": ["job_sales_report_publish"],
+      "description": "sales_daily → sales_report 영향 depth=2"
+    },
+    {
+      "depth": 3,
+      "table": "finance_monthly",
+      "writer_jobs": ["job_finance_update"],
+      "description": "sales_daily → finance_monthly 영향 depth=3"
+    }
+  ],
+  "summary": {
+    "total_depth": 3,
+    "total_downstream_tables": 3,
+    "total_writer_jobs": 3
+  }
+}
+
+
+💡 확장 아이디어
+기능	                    설명
+depth 제한	            /tables/{table_name}/impact?max_depth=2 형태로 depth 제한
+job 포함 여부 옵션	     /tables/{table_name}/impact?include_jobs=false

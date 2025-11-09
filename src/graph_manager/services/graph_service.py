@@ -366,3 +366,91 @@ class GraphService:
                 "message": f"Failed to get table DAG: {str(e)}",
                 "table_name": full_name,
             }
+
+    def get_table_impact(
+        self, base_table: str, max_depth: int = 3, include_jobs: bool = True
+    ):
+        """
+        Compute downstream impact for a table up to max_depth.
+
+        For each depth, return downstream tables and the writer jobs producing them.
+        """
+        uow = self.uow
+        try:
+            # Resolve base table
+            table = uow.tables.get_by_full_name(base_table)
+            if not table:
+                return {
+                    "status": "error",
+                    "message": f"Table '{base_table}' not found",
+                    "base_table": base_table,
+                    "downstream": [],
+                    "summary": {"total_depth": 0, "total_downstream_tables": 0, "total_writer_jobs": 0},
+                }
+
+            visited_tables = {table.id}
+            queue = [(table.id, table.full_name, 0)]
+            items = []
+            max_seen_depth = 0
+
+            while queue:
+                current_id, current_name, depth = queue.pop(0)
+                if depth >= max_depth:
+                    continue
+
+                # Find jobs that consume current table as input
+                consumer_jobs = uow.job_table_links.get_jobs_by_table_and_io_type(
+                    current_id, "input"
+                )
+
+                # For each consuming job, collect its output tables
+                for job in consumer_jobs:
+                    out_tables = uow.job_table_links.get_tables_by_job_and_io_type(
+                        job.id, "output"
+                    )
+                    for ot in out_tables:
+                        if ot.id in visited_tables:
+                            continue
+                        visited_tables.add(ot.id)
+                        next_depth = depth + 1
+                        max_seen_depth = max(max_seen_depth, next_depth)
+
+                        writer_jobs_list = []
+                        if include_jobs:
+                            writers = uow.job_table_links.get_jobs_by_table_and_io_type(
+                                ot.id, "output"
+                            )
+                            writer_jobs_list = [w.job_id for w in writers]
+
+                        items.append(
+                            {
+                                "depth": next_depth,
+                                "table": ot.full_name,
+                                "writer_jobs": writer_jobs_list,
+                                "description": f"{base_table} → {ot.full_name} 영향 depth={next_depth}",
+                            }
+                        )
+                        # Enqueue for further traversal
+                        queue.append((ot.id, ot.full_name, next_depth))
+
+            total_writer_jobs = sum(len(it.get("writer_jobs", [])) for it in items)
+            result = {
+                "base_table": base_table,
+                "downstream": items,
+                "summary": {
+                    "total_depth": max_seen_depth,
+                    "total_downstream_tables": len(items),
+                    "total_writer_jobs": total_writer_jobs,
+                },
+            }
+            return result
+        except Exception as e:
+            logger.error(f"Failed to compute impact for table {base_table}: {e}")
+            logger.exception("Full traceback:")
+            return {
+                "status": "error",
+                "message": f"Failed to compute table impact: {str(e)}",
+                "base_table": base_table,
+                "downstream": [],
+                "summary": {"total_depth": 0, "total_downstream_tables": 0, "total_writer_jobs": 0},
+            }

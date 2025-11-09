@@ -45,6 +45,12 @@ class TableRepository(BaseRepository):
             select(GraphTableNode).where(GraphTableNode.id == table_id)
         ).scalar_one_or_none()
 
+    def get_by_full_name(self, full_name: str):
+        """Get a table by its full name."""
+        return self.db.execute(
+            select(GraphTableNode).where(GraphTableNode.full_name == full_name)
+        ).scalar_one_or_none()
+
     def count_tables(self):
         """Count all table nodes"""
         from sqlalchemy import text
