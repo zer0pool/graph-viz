@@ -57,6 +57,13 @@ class Settings(BaseSettings):
     enable_swagger: bool = True
     enable_metrics: bool = False
 
+    # Redis cache settings (for query service)
+    redis_enabled: bool = False
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_default_ttl: int = 60
+
     class Config:
         env_file = ".env"
         case_sensitive = False

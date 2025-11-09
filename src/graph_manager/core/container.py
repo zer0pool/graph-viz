@@ -5,6 +5,8 @@ from graph_manager.adapters.job_manager_adapter import JobManagerAdapter
 from graph_manager.core.database import Database, db
 from graph_manager.core.uow import GraphUnitOfWork
 from graph_manager.services.graph_service import GraphService
+from graph_manager.services.graph_query_service import GraphQueryService
+from graph_manager.services.graph_build_service import GraphBuildService
 
 
 class GraphContainer(containers.DeclarativeContainer):
@@ -35,7 +37,7 @@ class GraphContainer(containers.DeclarativeContainer):
         JobManagerAdapter, base_url=config.job_manager_url
     )
 
-    # Services with container-managed UoW
-    graph_service = providers.Factory(
-        GraphService, uow=uow, job_manager=job_manager_adapter
-    )
+    # Core service (backward compat) and split services
+    graph_service = providers.Factory(GraphService, uow=uow, job_manager=job_manager_adapter)
+    graph_query_service = providers.Factory(GraphQueryService, uow=uow, core=graph_service)
+    graph_build_service = providers.Factory(GraphBuildService, core=graph_service)

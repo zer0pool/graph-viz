@@ -17,7 +17,7 @@ def get_table_impact(
     table_name: str,
     max_depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     """
     Return downstream tables impacted by a base table, with writer jobs per depth.
@@ -28,4 +28,3 @@ def get_table_impact(
     return graph_service.get_table_impact(
         base_table=table_name, max_depth=max_depth, include_jobs=include_jobs
     )
-

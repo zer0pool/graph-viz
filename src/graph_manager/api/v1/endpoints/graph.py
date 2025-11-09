@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/v1/graph", tags=["graph"])
 @inject
 def register_job(
     payload: JobRegister,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
 ):
     """
     Register a new job using container pattern with proper session management.
@@ -39,7 +39,7 @@ def register_job(
 @router.post("/reset")
 @inject
 def reset_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
 ):
     """
     Reset the entire graph by clearing all graph-related data.
@@ -68,7 +68,7 @@ def reset_graph(
 @router.post("/initialize")
 @inject
 async def initialize_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
 ):
     """
     Initialize the graph by fetching all jobs from Job Manager API
@@ -102,7 +102,7 @@ async def initialize_graph(
 @router.get("/health")
 @inject
 def health_check(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     """
     Get basic database statistics for health monitoring.
@@ -135,7 +135,7 @@ def get_table(
     depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
     include_tables: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     """
     Get DAG (Directed Acyclic Graph) information for a specific table.
@@ -172,7 +172,7 @@ def get_table(
 def get_job_neighbors(
     job_id: str,
     level: int = 1,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     try:
         return graph_service.get_job_neighbors(job_id=job_id, level=level)
@@ -188,7 +188,7 @@ def get_job_neighbors(
 def get_table_neighbors(
     table_name: str,
     level: int = 1,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     try:
         return graph_service.get_table_neighbors(table_name=table_name, level=level)
