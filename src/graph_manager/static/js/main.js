@@ -94,7 +94,7 @@ function renderGraph(data) {
     const ev = evt.originalEvent || {};
     const x = (ev.clientX || 20);
     const y = (ev.clientY || 20);
-    ctxMenu.hidden = false;
+    if (ctxMenu) ctxMenu.hidden = false;
     ctxMenu.style.left = "0"; // container covers full screen
     ctxMenu.style.top = "0";
     const panelEl = ctxMenu.querySelector('.ctx-panel');
@@ -108,11 +108,11 @@ function renderGraph(data) {
 
   // Cancel closes menu
   ctxCancel?.addEventListener('click', () => {
-    ctxMenu.hidden = true;
+    if (ctxMenu) ctxMenu.hidden = true;
   });
   // Clicking outside closes menu
   ctxMenu?.addEventListener('click', (e) => {
-    if (e.target === ctxMenu) ctxMenu.hidden = true;
+    if (e.target === ctxMenu && ctxMenu) ctxMenu.hidden = true;
   });
 
   // Expand action

@@ -308,6 +308,9 @@ body {
     background: transparent;
     z-index: 3000;
 }
+.ctx-menu[hidden] {
+    display: none !important;
+}
 .ctx-panel {
     background: #fff;
     border: 1px solid #d0d7de;
