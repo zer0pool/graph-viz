@@ -106,6 +106,19 @@ class GraphQueryService:
         self._cache_set(key, res)
         return res
 
+    # Helpers resolving by internal DB id (for frontend convenience)
+    def get_job_neighbors_by_dbid(self, db_id: int, level: int, direction: str = "both", limit: int | None = None):
+        job = self.uow.jobs.get_by_id(db_id)
+        if not job:
+            return {"status": "error", "message": f"Job with id={db_id} not found"}
+        return self.get_job_neighbors(job_id=job.job_id, level=level, direction=direction, limit=limit)
+
+    def get_table_neighbors_by_dbid(self, db_id: int, level: int, direction: str = "both", limit: int | None = None):
+        table = self.uow.tables.get_by_id(db_id)
+        if not table:
+            return {"status": "error", "message": f"Table with id={db_id} not found"}
+        return self.get_table_neighbors(table_name=table.full_name, level=level, direction=direction, limit=limit)
+
     # Simple search (03)
     def search_suggestions(self, q: str, limit: int = 10):
         # Search jobs by job_id or name, tables by full_name

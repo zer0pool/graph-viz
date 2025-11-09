@@ -123,7 +123,7 @@ function renderGraph(data) {
   ctxExpand?.addEventListener('click', async () => {
     if (!ctxTargetNode) return;
     const type = ctxTargetNode.data('type') || 'job';
-    const id = ctxTargetNode.id(); // j123 / t456
+    const id = ctxTargetNode.id(); // e.g., j123 / t456
     const isJob = type === 'job' || id.startsWith('j');
     const direction = ctxDir.value;
     const depth = parseInt(ctxDepth.value || '1', 10);
@@ -133,20 +133,22 @@ function renderGraph(data) {
       direction,
       depth: String(depth),
     });
+    // Prefer internal db id for reliability
+    const dbid = parseInt(id.slice(1), 10);
+    if (!Number.isNaN(dbid)) params.set('node_db_id', String(dbid));
     if (limitVal) params.set('limit', String(limitVal));
-    if (isJob) params.set('node_id', ctxTargetNode.data('label') || ctxTargetNode.data('id')); // prefer name/id
-    else params.set('table_name', ctxTargetNode.data('label') || ctxTargetNode.data('id'));
+    // Fallbacks if db id fails
+    if (isJob && !params.has('node_db_id')) params.set('node_id', ctxTargetNode.data('label') || ctxTargetNode.data('id'));
+    if (!isJob && !params.has('node_db_id')) params.set('table_name', ctxTargetNode.data('label') || ctxTargetNode.data('id'));
 
     try {
       const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
       if (!res.ok) throw new Error(`Expand failed: ${res.status}`);
       const payload = await res.json();
-      const added = mergeGraph(cy, payload);
+      const added = mergeGraph(cy, payload, id, direction);
       ctxHint.textContent = `+${added.nodes} nodes, +${added.edges} edges added`;
       ctxHint.hidden = false;
-      // Partial layout around the target + new nodes
-      const neighborhood = cy.collection([ctxTargetNode]).closedNeighborhood();
-      neighborhood.layout({ name: 'dagre', fit: false, animate: true, nodeSep: 80, rankSep: 100 }).run();
+      // We manually positioned new nodes to avoid overlap; do not run a layout that moves existing nodes
     } catch (e) {
       ctxHint.textContent = String(e);
       ctxHint.hidden = false;
@@ -191,27 +193,84 @@ function renderGraph(data) {
   updateZoomDisplay();
 }
 
-function mergeGraph(cy, data) {
+function mergeGraph(cy, data, anchorId, direction) {
   const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
   const existingEdgeIds = new Set(cy.edges().map(e => e.id()));
   let addedNodes = 0;
   let addedEdges = 0;
-  // Nodes
+  const addedNodeIds = [];
+
+  // Add nodes (dedup) and track additions
   (data.nodes || []).forEach(n => {
     const id = n.id;
     if (!existingNodeIds.has(id)) {
       cy.add({ data: { id: n.id, label: n.label, type: n.type || 'job' } });
       addedNodes++;
+      existingNodeIds.add(id);
+      addedNodeIds.push(id);
     }
   });
-  // Edges
+
+  // Add edges (dedup)
   (data.edges || []).forEach(e => {
     const id = e.id || `${e.source}_${e.target}_${e.io || ''}`;
     if (!existingEdgeIds.has(id)) {
       cy.add({ data: { id, source: e.source, target: e.target, io: e.io || '' } });
       addedEdges++;
+      existingEdgeIds.add(id);
     }
   });
+
+  // Heuristic non-overlap placement: upstream left, downstream right of anchor
+  try {
+    if (addedNodeIds.length && anchorId) {
+      const anchor = cy.$(`#${anchorId}`);
+      if (anchor && anchor.nonempty()) {
+        const pos = anchor.position();
+        const dx = 240; // horizontal spacing
+        const dy = 90;  // vertical spacing per node
+
+        // Determine per-node relation relative to anchor by inspecting edges in payload
+        const upstreamSet = new Set();
+        const downstreamSet = new Set();
+        (data.edges || []).forEach(e => {
+          if (e.target === anchorId) upstreamSet.add(e.source);
+          if (e.source === anchorId) downstreamSet.add(e.target);
+        });
+
+        let leftGroup = [];
+        let rightGroup = [];
+        if (direction === 'upstream') {
+          leftGroup = addedNodeIds.slice();
+        } else if (direction === 'downstream') {
+          rightGroup = addedNodeIds.slice();
+        } else {
+          // both: split by real relation when possible
+          addedNodeIds.forEach(nid => {
+            if (upstreamSet.has(nid)) leftGroup.push(nid);
+            else if (downstreamSet.has(nid)) rightGroup.push(nid);
+            else rightGroup.push(nid); // default to downstream
+          });
+        }
+
+        // Position left group
+        leftGroup.forEach((nid, i) => {
+          const y = pos.y + (i - (leftGroup.length - 1) / 2) * dy;
+          const node = cy.$(`#${nid}`);
+          if (node.nonempty()) node.position({ x: pos.x - dx, y });
+        });
+        // Position right group
+        rightGroup.forEach((nid, i) => {
+          const y = pos.y + (i - (rightGroup.length - 1) / 2) * dy;
+          const node = cy.$(`#${nid}`);
+          if (node.nonempty()) node.position({ x: pos.x + dx, y });
+        });
+      }
+    }
+  } catch (_) {
+    // best-effort only
+  }
+
   return { nodes: addedNodes, edges: addedEdges };
 }
 
