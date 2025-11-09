@@ -1,6 +1,8 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import List
+
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     # Application Settings
@@ -31,6 +33,26 @@ class Settings(BaseSettings):
     static_url: str = "/static/"
     static_root: str = "/app/static/"
 
+    # Database Settings (either provide DATABASE_URL or DB_* to construct it)
+    # Individual DB settings
+    db_driver: str = "mysql+pymysql"  # e.g., mysql+pymysql, postgresql+psycopg2, sqlite
+    db_host: str = "localhost"
+    db_port: int = 3306
+    db_user: str = "root"
+    db_password: str = "root123"
+    db_name: str = "graph_service"
+
+    # Direct URL (takes precedence if provided)
+    database_url: str | None = None
+    database_echo: bool = False
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+
+    # Job Manager API
+    job_manager_url: str = (
+        "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+    )
+
     # Feature Flags
     enable_swagger: bool = True
     enable_metrics: bool = False
@@ -39,6 +61,26 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = False
 
+
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+
+    # If DATABASE_URL is not provided, build it from DB_* fields
+    if not settings.database_url:
+        if settings.db_driver.startswith("sqlite"):
+            # For sqlite, db_name is the file path or :memory:
+            db_path = settings.db_name
+            settings.database_url = f"{settings.db_driver}:///{db_path}"
+        else:
+            # Build URL for server-based databases
+            url = (
+                f"{settings.db_driver}://{settings.db_user}:{settings.db_password}"
+                f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+            )
+            # Add charset for MySQL drivers
+            if settings.db_driver.startswith("mysql") and "charset=" not in url:
+                url = f"{url}?charset=utf8mb4"
+            settings.database_url = url
+
+    return settings

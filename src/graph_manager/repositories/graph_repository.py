@@ -1,6 +1,7 @@
 # src/graph_manager/repositories/graph_repository.py
 from graph_manager.models.graph import GraphNode
 
+
 class GraphRepository:
     def __init__(self):
         self.jobs = {
@@ -8,22 +9,25 @@ class GraphRepository:
                 id="job_1",
                 label="Daily Sales Loader",
                 type="job",
-                status="success",      # ✅ allowed: success | failure | pending
-                enabled=True
+                service_type="self-scheduling",
+                status="success",  # ✅ allowed: success | failure | pending
+                enabled=True,
             ),
             "job_2": GraphNode(
                 id="job_2",
                 label="Customer ETL",
                 type="job",
+                service_type="self-scheduling",
                 status="pending",
-                enabled=True
+                enabled=True,
             ),
             "job_3": GraphNode(
                 id="job_3",
                 label="Weekly Summary",
                 type="job",
+                service_type="self-scheduling",
                 status="failure",
-                enabled=False
+                enabled=False,
             ),
         }
 

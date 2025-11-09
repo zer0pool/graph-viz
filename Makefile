@@ -4,6 +4,7 @@ APP=graph_manager.main:app
 PORT=8000
 DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
+GAR_REGISTRY=asia-northeast3-docker.pkg.dev/gizmopool/test_server
  
 
 .PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop
@@ -78,6 +79,13 @@ docker-run:
 docker-stop:
 	docker stop $(DOCKER_IMAGE) || true
 	docker rm $(DOCKER_IMAGE) || true
+
+docker-push-gar:
+	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(GAR_REGISTRY)/$(GAR_IMAGE_NAME):$(DOCKER_TAG)
+	docker push $(GAR_REGISTRY)/$(GAR_IMAGE_NAME):$(DOCKER_TAG)
+
+docker-push:
+	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 # Docker Compose commands
 compose-up:
