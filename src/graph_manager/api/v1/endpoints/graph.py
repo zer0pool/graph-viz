@@ -164,3 +164,36 @@ def get_table(
         from fastapi import HTTPException
 
         raise HTTPException(status_code=500, detail=f"Table DAG failed: {str(e)}")
+
+
+# 01) Neighbors APIs
+@router.get("/job/{job_id}/neighbors")
+@inject
+def get_job_neighbors(
+    job_id: str,
+    level: int = 1,
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    try:
+        return graph_service.get_job_neighbors(job_id=job_id, level=level)
+    except Exception as e:
+        logger.error(f"Neighbors query failed for job {job_id}: {e}")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")
+
+
+@router.get("/table/{table_name}/neighbors")
+@inject
+def get_table_neighbors(
+    table_name: str,
+    level: int = 1,
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    try:
+        return graph_service.get_table_neighbors(table_name=table_name, level=level)
+    except Exception as e:
+        logger.error(f"Neighbors query failed for table {table_name}: {e}")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")
