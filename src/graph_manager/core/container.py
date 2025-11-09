@@ -22,8 +22,8 @@ class GraphContainer(containers.DeclarativeContainer):
     # Database
     database = providers.Singleton(Database)
 
-    # Session factory for creating request-scoped sessions
-    session_factory = providers.Singleton(lambda: db.session_factory)
+    # Session maker for creating request-scoped sessions
+    session_factory = providers.Singleton(lambda: db.session_maker)
 
     # Request-scoped session provider
     # This will be overridden per request using FastAPI's dependency injection

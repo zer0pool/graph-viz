@@ -3,7 +3,7 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import Dict
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from ..models.base import Base
 # Ensure models are imported so tables are registered on Base.metadata
@@ -41,28 +41,36 @@ class Database:
                 "timeout": 20,
             }
 
-        # Adjust engine settings for SQLite
+        # Engine settings
         engine_kwargs = {
             "echo": settings.database_echo,
             "future": True,
         }
+        # Improve connection resiliency for server DBs
+        if not settings.database_url.startswith("sqlite://"):
+            engine_kwargs.update(
+                {
+                    "pool_pre_ping": True,
+                    "pool_recycle": 1800,
+                    "pool_size": settings.database_pool_size,
+                    "max_overflow": settings.database_max_overflow,
+                }
+            )
 
- 
         self._engine = create_engine(
             settings.database_url, connect_args=connect_args, **engine_kwargs
         )
-        self._session_factory = scoped_session(
-            sessionmaker(
-                autocommit=False,
-                autoflush=False,
-                bind=self._engine,
-                future=True,
-            )
+        # Use plain sessionmaker; create a new Session per request in middleware
+        self._session_maker = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self._engine,
+            future=True,
         )
 
     @property
-    def session_factory(self) -> scoped_session:
-        return self._session_factory
+    def session_maker(self) -> sessionmaker:
+        return self._session_maker
 
     @contextmanager
     def session(self) -> AbstractContextManager[Session]:
@@ -70,14 +78,13 @@ class Database:
         Provides a transactional scope for a session.
         The session is committed or rolled back by the using code (e.g., repository).
         """
-        session: Session = self._session_factory()
+        session: Session = self._session_maker()
         try:
             yield session
         except Exception:
             session.rollback()
             raise
         finally:
-            self._session_factory.remove()
             session.close()
 
     def create_database(self) -> None:

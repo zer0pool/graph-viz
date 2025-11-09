@@ -24,8 +24,9 @@ async def session_middleware(
     This is infrastructure-level middleware that manages the dependency injection
     container and should be located in the core module.
     """
-    # Create database session for this request
-    session: Session = container.session_factory()()
+    # Create database session for this request (new Session per request)
+    session_maker = container.session_factory()
+    session: Session = session_maker()
 
     try:
         # Inject session into container for this request using override
