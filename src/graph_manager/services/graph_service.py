@@ -20,6 +20,50 @@ class GraphService:
         self.uow = uow
         self.job_manager = job_manager
 
+    # -----------------------------
+    # Jobs (detail, dependencies, toggle)
+    # -----------------------------
+    def get_job(self, job_id: str):
+        """Return a job row enriched with derived fields from job_metadata.
+
+        - status, enabled are stored under job.job_metadata for persistence
+        - For convenience, expose them as attributes on the instance
+        """
+        job = self.uow.jobs.get(job_id)
+        if not job:
+            return None
+        meta = job.job_metadata or {}
+        # derive defaults
+        status = meta.get("status", "pending")
+        enabled = bool(meta.get("enabled", True))
+        # attach for response usage
+        setattr(job, "status", status)
+        setattr(job, "enabled", enabled)
+        return job
+
+    def get_job_dependencies(self, job_id: str, max_depth: int = 1):
+        """Return neighbors-style dependencies around a job up to max_depth."""
+        try:
+            return self.get_job_neighbors(job_id=job_id, level=max_depth, direction="both")
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def toggle_job_enabled(self, job_id: str):
+        """Flip enabled flag stored in job.job_metadata and expose attribute."""
+        job = self.uow.jobs.get(job_id)
+        if not job:
+            return None
+        meta = dict(job.job_metadata or {})
+        current = bool(meta.get("enabled", True))
+        meta["enabled"] = not current
+        # keep status default if missing
+        meta.setdefault("status", "pending")
+        job.job_metadata = meta
+        # also attach for response convenience
+        setattr(job, "enabled", meta["enabled"])
+        setattr(job, "status", meta.get("status"))
+        return job
+
     def register_job(self, job_data: JobRegister) -> str:
         """
         Register a new job in the system using Unit of Work pattern.
