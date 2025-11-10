@@ -137,36 +137,36 @@ class TableRepository(BaseRepository):
             f"{len(downstream_jobs)} downstream jobs, {len(related_tables)} related tables"
         )
 
-        # Always add the base table node
-        nodes.append({"id": f"t{table.id}", "type": "table", "label": table.full_name})
+        # Always add the base table node (label = short table name, include full_name)
+        nodes.append({
+            "id": f"t{table.id}",
+            "type": "table",
+            "label": table.table_name or table.full_name,
+            "full_name": table.full_name,
+        })
 
         # Add upstream job nodes and edges (job -> table)
         for job in upstream_jobs:
-            nodes.append(
-                {"id": f"j{job.id}", "type": "job", "label": job.name or job.job_id}
-            )
+            nodes.append({"id": f"j{job.id}", "type": "job", "label": job.name or job.job_id})
             edges.append(
                 {"source": f"j{job.id}", "target": f"t{table.id}", "io": "output"}
             )
 
         # Add downstream job nodes and edges (table -> job)
         for job in downstream_jobs:
-            nodes.append(
-                {"id": f"j{job.id}", "type": "job", "label": job.name or job.job_id}
-            )
+            nodes.append({"id": f"j{job.id}", "type": "job", "label": job.name or job.job_id})
             edges.append(
                 {"source": f"t{table.id}", "target": f"j{job.id}", "io": "input"}
             )
 
         # Add related table nodes
         for rel_table in related_tables:
-            nodes.append(
-                {
-                    "id": f"t{rel_table.id}",
-                    "type": "table",
-                    "label": rel_table.full_name,
-                }
-            )
+            nodes.append({
+                "id": f"t{rel_table.id}",
+                "type": "table",
+                "label": rel_table.table_name or rel_table.full_name,
+                "full_name": rel_table.full_name,
+            })
 
         dag_result = {
             "base_table": table_name,

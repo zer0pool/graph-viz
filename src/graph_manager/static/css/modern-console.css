@@ -171,6 +171,12 @@ body {
     color: #57606a;
     margin: 0 0 8px 0;
 }
+.group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
 
 .kv-row {
     display: flex;
@@ -200,6 +206,20 @@ body {
     font-weight: 600;
     padding: 6px 4px;
 }
+.grid-actions { display:flex; gap:8px; justify-content:flex-end; margin:0; }
+.grid-actions.bottom { margin: 8px 0 0 0; }
+/* Pill button (danger only for All OFF) */
+.btn-pill {
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 4px 10px;   /* smaller */
+    font-size: 11px;     /* smaller */
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-pill.danger { color: #d1242f; border-color: #ffccd3; background: linear-gradient(#ffeef0,#ffe3e6); }
+.btn-pill.danger:hover { background: linear-gradient(#ffe5e8,#ffd7dc); }
+.btn-pill:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .grid-table td {
     padding: 6px 4px;
@@ -313,6 +333,16 @@ body {
     outline: none;
     transition: border-color 0.2s ease;
     line-height: 30px;
+}
+
+/* ON/OFF badges */
+.badge-on {
+    color: #1f883d;
+    font-weight: 600;
+}
+
+.badge-off {
+    color: #57606a;
 }
 
 #jobId:focus {
@@ -488,4 +518,89 @@ body {
     margin-top: 6px;
     font-size: 12px;
     color: #57606a;
+}
+
+/* Toggle switch (ON/OFF) */
+.switch {
+    /* configurable size */
+    --w: 66px;      /* pill width (ensure ON text not covered) */
+    --h: 26px;      /* pill height */
+    --knob: 20px;   /* knob diameter */
+    --pad: 3px;     /* internal padding */
+    --shift: calc(var(--w) - (2 * var(--pad)) - var(--knob));
+
+    position: relative;
+    display: inline-block;
+    width: var(--w);
+    height: var(--h);
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    display: block;
+    background: #d0d7de;
+    border: 1px solid #cdd9e5;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+    overflow: hidden;
+    z-index: 0; /* base layer */
+}
+
+.switch .slider::before {
+    content: "";
+    position: absolute;
+    height: var(--knob);
+    width: var(--knob);
+    left: var(--pad);
+    top: var(--pad);
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+    z-index: 2; /* ensure knob stays above text */
+    pointer-events: none;
+    will-change: transform;
+}
+
+.switch .slider::after {
+    content: "OFF";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* text on left */
+    padding-left: calc(var(--pad) + var(--knob) + 5px); /* avoid left knob */
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #57606a;
+    pointer-events: none;
+    z-index: 1; /* behind knob */
+    user-select: none;
+}
+
+.switch input:checked+.slider::after {
+    content: "ON";
+    color: #ffffff;
+    padding-left: calc(var(--pad) + 5px); /* no knob on left when ON */
+}
+
+.switch input:checked+.slider { background: #2ea44f; }
+
+.switch input:checked+.slider::before { transform: translateX(var(--shift)); }
+
+.switch input:focus+.slider {
+    outline: 2px solid rgba(9, 105, 218, 0.25);
+    outline-offset: 2px;
 }

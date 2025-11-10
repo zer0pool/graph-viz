@@ -241,6 +241,65 @@ class GraphService:
                 "database_stats": {},
             }
 
+    async def sync_job_from_manager(self, job_id: str) -> Dict[str, Any]:
+        try:
+            jd = await self.job_manager.get_job(job_id)
+            if not jd:
+                return {"status": "error", "message": f"Job '{job_id}' not found in manager"}
+
+            # Build destination_table from destinations response
+            destination_table = None
+            destinations = jd.get("destinations", [])
+            if destinations:
+                dest = destinations[0]
+                dest_type = dest.get("type", "")
+                path = dest.get("path", "")
+                table_name = dest.get("table_name", "")
+                if path and table_name:
+                    destination_table = f"{path}.{table_name}" if dest_type != "external" else f"{path}/{table_name}"
+
+            jr = JobRegister(
+                job_id=jd.get("job_id", job_id),
+                name=jd.get("name", job_id),
+                labels=jd.get("labels", {}),
+                owner=jd.get("owner"),
+                write_mode=jd.get("write_mode"),
+                destination_type=jd.get("destination_type"),
+                destination_table=destination_table,
+                trigger_tables=jd.get("trigger_tables", []),
+                reference_tables=jd.get("reference_tables", []),
+                run_status=jd.get("run_status", "RUN"),
+                schedule=jd.get("schedule"),
+                destinations=jd.get("destinations"),
+                metadata=jd.get("metadata", {}),
+            )
+            self.register_job(jr)
+            return {"status": "success", "job_id": job_id}
+        except Exception as e:
+            logger.error(f"sync_job_from_manager failed: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def sync_node(self, node_type: str, node_db_id: int) -> Dict[str, Any]:
+        uow = self.uow
+        if node_type == "job":
+            job = uow.jobs.get_by_id(node_db_id)
+            if not job:
+                return {"status": "error", "message": f"job id={node_db_id} not found"}
+            return await self.sync_job_from_manager(job.job_id)
+        else:
+            table = uow.tables.get_by_id(node_db_id)
+            if not table:
+                return {"status": "error", "message": f"table id={node_db_id} not found"}
+            producers = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "output")
+            ok, fail = 0, 0
+            for j in producers:
+                res = await self.sync_job_from_manager(j.job_id)
+                if res.get("status") == "success":
+                    ok += 1
+                else:
+                    fail += 1
+            return {"status": "success", "synced": ok, "failed": fail, "table": table.full_name}
+
     def reset_graph(self):
         """모든 그래프 관련 테이블 데이터를 삭제"""
         uow = self.uow
@@ -658,5 +717,91 @@ class GraphService:
             return {"status": "success", "table": table_name, "count": len(items), "jobs": items}
         except Exception as e:
             logger.error(f"Failed to get trigger settings for table {table_name}: {e}")
+            logger.exception("Full traceback:")
+            return {"status": "error", "message": str(e)}
+
+    def set_table_trigger(self, table_name: str, job_id: str, trigger: bool):
+        """Set trigger ON/OFF for a specific job consuming a given table.
+
+        - Updates job.trigger_tables JSON list
+        - Updates graph_edge.is_trigger_on for the table->job input edge
+        """
+        uow = self.uow
+        try:
+            table = uow.tables.get_by_full_name(table_name)
+            if not table:
+                return {"status": "error", "message": f"Table '{table_name}' not found"}
+            job = uow.jobs.get(job_id)
+            if not job:
+                return {"status": "error", "message": f"Job '{job_id}' not found"}
+
+            trig_list = list(job.trigger_tables or [])
+            prev = table_name in trig_list
+            if trigger and not prev:
+                trig_list.append(table_name)
+            elif not trigger and prev:
+                trig_list = [t for t in trig_list if t != table_name]
+            job.trigger_tables = trig_list
+
+            # Update edge flag for readability/status
+            try:
+                uow.edges.set_input_trigger(job.id, table.id, trigger)
+            except Exception:
+                pass
+
+            return {
+                "status": "success",
+                "job_id": job_id,
+                "table_name": table_name,
+                "previous_state": bool(prev),
+                "new_state": bool(trigger),
+            }
+        except Exception as e:
+            logger.error(f"Failed to set trigger for {job_id}/{table_name}: {e}")
+            logger.exception("Full traceback:")
+            return {"status": "error", "message": str(e)}
+
+    def bulk_set_table_triggers(self, table_name: str, trigger: bool):
+        """Set trigger ON/OFF for all jobs that consume the table.
+
+        Returns a summary with lists of affected job_ids.
+        """
+        uow = self.uow
+        try:
+            table = uow.tables.get_by_full_name(table_name)
+            if not table:
+                return {"status": "error", "message": f"Table '{table_name}' not found"}
+
+            jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
+            changed, unchanged = [], []
+            for j in jobs:
+                trig_list = list(j.trigger_tables or [])
+                has = table_name in trig_list
+                if trigger and not has:
+                    trig_list.append(table_name)
+                    j.trigger_tables = trig_list
+                    changed.append(j.job_id)
+                elif not trigger and has:
+                    j.trigger_tables = [t for t in trig_list if t != table_name]
+                    changed.append(j.job_id)
+                else:
+                    unchanged.append(j.job_id)
+                # Edge flag best-effort
+                try:
+                    uow.edges.set_input_trigger(j.id, table.id, trigger)
+                except Exception:
+                    pass
+
+            return {
+                "status": "success",
+                "table_name": table_name,
+                "trigger": bool(trigger),
+                "changed": changed,
+                "unchanged": unchanged,
+                "count": len(changed),
+                "total": len(jobs),
+            }
+        except Exception as e:
+            logger.error(f"bulk_set_table_triggers failed for {table_name}: {e}")
             logger.exception("Full traceback:")
             return {"status": "error", "message": str(e)}

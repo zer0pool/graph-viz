@@ -77,6 +77,7 @@ function renderGraph(data) {
   const ctxLimit = document.getElementById("ctx-limit");
   const ctxCancel = document.getElementById("ctx-cancel");
   const ctxExpand = document.getElementById("ctx-expand");
+  const ctxSync = document.getElementById("ctx-sync");
   const ctxHint = document.getElementById("ctx-hint");
   let ctxTargetNode = null;
 
@@ -92,15 +93,18 @@ function renderGraph(data) {
         <div class="group-title">Details</div>
         <div class="kv-row"><div class="kv-key">ID</div><div class="kv-val">${n.data("id")}</div></div>
         <div class="kv-row"><div class="kv-key">Type</div><div class="kv-val">${n.data("type")}</div></div>
-        <div class="kv-row"><div class="kv-key">Label</div><div class="kv-val">${n.data("label")}</div></div>
+        <div class="kv-row"><div class="kv-key">Name</div><div class="kv-val">${n.data("label")}</div></div>
+        ${ (n.data('type')||'') === 'table' && n.data('full_name') ? `
+          <div class="kv-row"><div class="kv-key">Full Name</div><div class="kv-val">${n.data('full_name')}</div></div>
+        ` : ''}
         <div class="kv-row"><div class="kv-key">Upstream</div><div class="kv-val">${incoming.join(", ") || "-"}</div></div>
         <div class="kv-row"><div class="kv-key">Downstream</div><div class="kv-val">${outgoing.join(", ") || "-"}</div></div>
       </div>
     `;
     if ((n.data('type') || '') === 'table') {
-      // Fetch trigger settings for this table and render
-      const tableName = n.data('label');
-      renderTableTriggers(tableName, infoDiv);
+      // Use full_name if present; otherwise fallback to label
+      const tableFullName = n.data('full_name') || n.data('label');
+      renderTableTriggers(tableFullName, infoDiv);
     }
     panel.classList.add("open");
   });
@@ -169,6 +173,39 @@ function renderGraph(data) {
     }
   });
 
+  // Sync action
+  ctxSync?.addEventListener('click', async () => {
+    if (!ctxTargetNode) return;
+    const id = ctxTargetNode.id();
+    const isJob = (ctxTargetNode.data('type') || 'job') === 'job' || id.startsWith('j');
+    const dbid = parseInt(id.slice(1), 10);
+    try {
+      await fetch('/api/v1/graph/sync/node', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_type: isJob ? 'job' : 'table', node_db_id: dbid })
+      });
+      // After sync, expand 1 depth to pick up changes
+      const params = new URLSearchParams({ node_type: isJob ? 'job' : 'table', node_db_id: String(dbid), direction: 'both', depth: '1' });
+      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      if (res.ok) {
+        const payload = await res.json();
+        mergeGraph(cy, payload, id, 'both');
+      }
+    } catch (_) {}
+  });
+
+  // Double-click expand 1 depth both directions
+  cy.on('dbltap', 'node', async (evt) => {
+    const n = evt.target; const id = n.id();
+    const dbid = parseInt(id.slice(1), 10);
+    const isJob = (n.data('type') || 'job') === 'job' || id.startsWith('j');
+    const params = new URLSearchParams({ node_type: isJob ? 'job' : 'table', node_db_id: String(dbid), direction: 'both', depth: '1' });
+    try {
+      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      if (res.ok) { const payload = await res.json(); mergeGraph(cy, payload, id, 'both'); }
+    } catch (_) {}
+  });
+
   cy.on("tap", (evt) => {
     if (evt.target === cy) panel.classList.remove("open");
   });
@@ -216,12 +253,22 @@ async function renderTableTriggers(tableName, infoDiv) {
     const rows = (data.jobs || []).map(j => `
       <tr>
         <td>${j.name}</td>
-        <td>${j.trigger ? '<span style="color:#1f883d">ON</span>' : '<span style="color:#57606a">OFF</span>'}</td>
+        <td>
+          <label class="switch" title="Toggle trigger">
+            <input type="checkbox" class="trigger-toggle" data-job="${j.job_id}" ${j.trigger ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </td>
       </tr>
     `).join('');
     const html = `
       <div class="group-box">
-        <div class="group-title">Trigger Tables</div>
+        <div class="group-header">
+          <div class="group-title">Trigger Tables</div>
+          <div class="grid-actions">
+            <button class="btn-pill danger" id="bulk-off">⛔ All OFF</button>
+          </div>
+        </div>
         <table class="grid-table">
           <thead>
             <tr><th>Job</th><th>Trigger</th></tr>
@@ -233,6 +280,51 @@ async function renderTableTriggers(tableName, infoDiv) {
       </div>
     `;
     infoDiv.insertAdjacentHTML('beforeend', html);
+    // Attach toggle handlers (ensure clickable)
+    infoDiv.querySelectorAll('.trigger-toggle').forEach(el => {
+      el.addEventListener('change', async () => {
+        const jobId = el.getAttribute('data-job');
+        const want = el.checked;
+        const ok = window.confirm(`Change trigger for ${jobId} on ${tableName} to ${want ? 'ON' : 'OFF'}?`);
+        if (!ok) { el.checked = !want; return; }
+        // Text is inside the switch now; nothing extra to update here
+        try {
+          const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers/${encodeURIComponent(jobId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: want }) });
+          if (!res.ok) throw new Error('update failed');
+          // Recalculate bulk-off disabled state
+          const bulkBtn = infoDiv.querySelector('#bulk-off');
+          if (bulkBtn) {
+            const anyOn = Array.from(infoDiv.querySelectorAll('.trigger-toggle')).some(chk => chk.checked);
+            bulkBtn.disabled = !anyOn; // disable if nothing to turn off
+          }
+        } catch (_) {
+          el.checked = !want;
+          alert('Failed to update trigger');
+        }
+      });
+    });
+
+    // Bulk action: All OFF
+    const bulkOff = infoDiv.querySelector('#bulk-off');
+    // Disable if all items already OFF
+    if (bulkOff) {
+      const anyOnInit = (data.jobs || []).some(j => !!j.trigger);
+      bulkOff.disabled = !anyOnInit;
+    }
+    bulkOff?.addEventListener('click', async () => {
+      const ok = window.confirm(`Turn OFF trigger for all jobs consuming ${tableName}?`);
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: false }) });
+        if (!res.ok) throw new Error('bulk off failed');
+        // Update all switches locally
+        infoDiv.querySelectorAll('.trigger-toggle').forEach(el => { el.checked = false; });
+        if (bulkOff) bulkOff.disabled = true;
+      } catch (e) {
+        alert('Bulk OFF failed');
+      }
+    });
+    // (removed legacy duplicate handler that overwrote slider class)
   } catch (_) {
     // ignore rendering errors
   }
@@ -476,6 +568,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial empty graph
   renderGraph({ nodes: [], edges: [] });
+  // Listen to SSE for trigger updates
+  try {
+    const es = new EventSource('/api/v1/events/trigger-status');
+    es.addEventListener('trigger_update', (e) => {
+      try {
+        const data = JSON.parse(e.data || '{}');
+        const toggles = document.querySelectorAll(`.trigger-toggle[data-job="${data.job_id}"]`);
+        toggles.forEach(el => {
+          // Only flip the checkbox; do not modify slider className or content
+          el.checked = !!data.new_state;
+          const slider = el.nextElementSibling;
+          if (slider && !slider.classList.contains('slider')) {
+            // Restore slider class if it was accidentally changed by older code
+            slider.className = 'slider';
+          }
+        });
+      } catch (_) {}
+    });
+  } catch (_) {}
 });
   // Prevent native context menu on the overlay/panel as well
   ctxMenu?.addEventListener('contextmenu', (e) => e.preventDefault());

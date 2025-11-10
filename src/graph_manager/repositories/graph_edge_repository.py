@@ -132,3 +132,18 @@ class GraphEdgeRepository(BaseRepository):
                 .prefix_with("IGNORE")
             )
         logger.debug("Job-table edge created successfully")
+
+    def set_input_trigger(self, job_id: int, table_id: int, is_on: bool) -> None:
+        """Update is_trigger_on for the table->job input edge."""
+        from sqlalchemy import update
+
+        self.db.execute(
+            update(GraphEdge)
+            .where(
+                GraphEdge.source_node_type == "table",
+                GraphEdge.source_node_id == table_id,
+                GraphEdge.target_node_type == "job",
+                GraphEdge.target_node_id == job_id,
+            )
+            .values(is_trigger_on=is_on)
+        )

@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, Query
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_service import GraphService
 from graph_manager.services.graph_query_service import GraphQueryService
+from graph_manager.core.sse import broker
+from fastapi import Body
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +41,48 @@ def get_table_triggers(
 ):
     """Get trigger ON/OFF status per job that consumes the table."""
     return svc.get_table_triggers(table_name)
+
+
+@router.patch("/{table_name}/triggers/{job_id}")
+@inject
+async def set_table_trigger(
+    table_name: str,
+    job_id: str,
+    body: dict = Body(..., example={"trigger": True}),
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """Set trigger ON/OFF for a job that consumes the table, and emit SSE."""
+    trigger = bool(body.get("trigger", True))
+    result = svc.set_table_trigger(table_name, job_id, trigger)
+    if result.get("status") == "success":
+        await broker.publish("trigger_update", result)
+    return result
+
+
+@router.patch("/{table_name}/triggers")
+@inject
+async def bulk_set_table_trigger(
+    table_name: str,
+    body: dict = Body(..., example={"trigger": False}),
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """Bulk set trigger ON/OFF for all jobs that consume the table.
+
+    Body: { "trigger": true|false }
+    """
+    want = bool(body.get("trigger", False))
+    result = svc.bulk_set_table_triggers(table_name, want)
+    # Emit SSE for each changed job for live UIs
+    if result.get("status") == "success":
+        for jid in result.get("changed", []):
+            await broker.publish(
+                "trigger_update",
+                {
+                    "status": "success",
+                    "job_id": jid,
+                    "table_name": table_name,
+                    "previous_state": None,
+                    "new_state": want,
+                },
+            )
+    return result

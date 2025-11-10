@@ -7,6 +7,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from graph_manager.api.v1.schemas import JobRegister
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_build_service import GraphBuildService
+from graph_manager.services.graph_service import GraphService
 
 logger = logging.getLogger(__name__)
 
@@ -51,3 +52,13 @@ def sync_status(
         return {"status": "idle", "message": "No sync has been performed yet"}
     return status
 
+
+@router.post("/sync/node")
+@inject
+async def sync_node(
+    node_type: str = Body(..., embed=True),
+    node_db_id: int = Body(..., embed=True),
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """Sync a single node (job or table-related producers) from Job Manager."""
+    return await svc.sync_node(node_type=node_type, node_db_id=node_db_id)

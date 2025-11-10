@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <pre id="meta"></pre>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Workflow Graph Viewer</title>
+    <title>Scheduling Lineage Manager</title>
 
     <!-- 스타일 -->
     <link rel="stylesheet" href="/static/css/modern-console.css">
@@ -23,7 +23,7 @@
     <div id="navbar">
         <div style="align-items:center; gap:10px;">
             <img src="/static/images/logo.png" alt="Logo" style="height:48px; width:auto;">
-            <h2>Workflow Graph Viewer</h2>
+            <h2>Scheduling Lineage Manager</h2>
         </div>
         <div id="search-bar">
             <!-- 회색 돋보기 SVG 아이콘 -->
@@ -66,6 +66,7 @@
             <div class="ctx-actions">
                 <button id="ctx-cancel" class="btn-secondary">Cancel</button>
                 <button id="ctx-expand" class="btn-primary">Expand</button>
+                <button id="ctx-sync" class="btn-primary" title="Sync from Job Manager">Sync</button>
             </div>
             <div id="ctx-hint" class="ctx-hint" hidden></div>
         </div>
