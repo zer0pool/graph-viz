@@ -39,8 +39,7 @@ function renderGraph(data) {
     maxZoom: 3.0,
     wheelSensitivity: 0.3,
     style: [
-      { selector: "node", style: { shape: "round-rectangle", width: 200, height: 60, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "500", "text-wrap": "wrap", "text-max-width": "180px" } },
-      { selector: "node[type='table']", style: { shape: "ellipse", "background-color": "#f0f7ff", "border-color": "#0969da" } },
+      { selector: "node", style: { shape: "round-rectangle", width: 220, height: 64, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "left", "text-margin-x": 40, "font-size": "13px", "font-weight": "600", "text-wrap": "wrap", "text-max-width": "170px", "background-image": "none", "background-fit": "none", "background-opacity": 1, "background-position-x": 12, "background-position-y": "50%", "background-width": 24, "background-height": 24 } }, { selector: "node[type='table']", style: { shape: "round-rectangle", "background-color": "#f0f7ff", "border-color": "#0969da", "background-image": "/static/images/icon-bq-table.svg" } }, { selector: "node[type='job']", style: { shape: "round-rectangle", "background-color": "#ffffff", "border-color": "#1f883d", "background-image": "/static/images/icon-job.svg" } },
       { selector: "edge", style: { "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
       // Smooth highlight transitions
       { selector: 'node', style: { 'transition-property': 'background-color, border-color, border-width, shadow-blur, shadow-opacity', 'transition-duration': '200ms', 'transition-timing-function': 'ease-in-out' } },
