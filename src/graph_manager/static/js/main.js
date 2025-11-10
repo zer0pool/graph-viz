@@ -39,7 +39,9 @@ function renderGraph(data) {
     maxZoom: 3.0,
     wheelSensitivity: 0.3,
     style: [
-      { selector: "node", style: { shape: "round-rectangle", width: 220, height: 64, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "left", "text-margin-x": 40, "font-size": "13px", "font-weight": "600", "text-wrap": "wrap", "text-max-width": "170px", "background-image": "none", "background-fit": "none", "background-opacity": 1, "background-position-x": 12, "background-position-y": "50%", "background-width": 24, "background-height": 24 } }, { selector: "node[type='table']", style: { shape: "round-rectangle", "background-color": "#f0f7ff", "border-color": "#0969da", "background-image": "/static/images/icon-bq-table.svg" } }, { selector: "node[type='job']", style: { shape: "round-rectangle", "background-color": "#ffffff", "border-color": "#1f883d", "background-image": "/static/images/icon-job.svg" } },
+      { selector: "node", style: { shape: "round-rectangle", width: 240, height: 64, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "600", "text-wrap": "wrap", "text-max-width": "200px" } },
+      { selector: "node[type='table']", style: { shape: "round-rectangle", "background-color": "#eaf2ff", "border-color": "#1e6bd6", "background-image": ["/static/images/rail-blue.svg", "/static/images/icon-bq-table.svg"], "background-fit": ["none", "none"], "background-position-x": [0, 10], "background-position-y": ["50%", "50%"], "background-width": [8, 18], "background-height": ["100%", 18] } },
+      { selector: "node[type='job']", style: { shape: "round-rectangle", "background-color": "#ffffff", "border-color": "#1f883d", "background-image": "/static/images/icon-job.svg", "background-fit": "none", "background-position-x": 10, "background-position-y": "50%", "background-width": 18, "background-height": 18 } },
       { selector: "edge", style: { "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
       // Smooth highlight transitions
       { selector: 'node', style: { 'transition-property': 'background-color, border-color, border-width, shadow-blur, shadow-opacity', 'transition-duration': '200ms', 'transition-timing-function': 'ease-in-out' } },
@@ -52,7 +54,20 @@ function renderGraph(data) {
   const cyContainer = document.getElementById('cy');
   cyContainer?.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  const nodes = (data.nodes || []).map((n) => ({ data: { id: n.id, label: n.label, type: n.type || "job" } }));
+  // Expand chevrons overlay root
+  const overlay = document.createElement('div');
+  overlay.id = 'expand-overlay';
+  cyContainer?.appendChild(overlay);
+
+  const nodes = (data.nodes || []).map((n) => {
+    const type = n.type || "job";
+    let label = n.label;
+    if (type === "table" && label && label.includes(".")) {
+      const parts = label.split(".");
+      label = parts[parts.length - 1];
+    }
+    return { data: { id: n.id, label, type, full_name: n.full_name || n.label || null } };
+  });
   const edges = (data.edges || []).map((e) => ({ data: { id: e.id || `${e.source}_${e.target}`, source: e.source, target: e.target, io: e.io || "" } }));
   cy.add([...nodes, ...edges]);
 
@@ -80,11 +95,39 @@ function renderGraph(data) {
   const ctxHint = document.getElementById("ctx-hint");
   let ctxTargetNode = null;
 
+  function clearExpandButtons() {
+    overlay.innerHTML = '';
+  }
+
+  function placeExpandButtons(n) {
+    const bb = n.renderedBoundingBox();
+    overlay.innerHTML = '';
+    const mk = (cls, x, y) => {
+      const d = document.createElement('div');
+      d.className = `expander ${cls}`;
+      d.style.position = 'absolute';
+      d.style.left = `${x}px`;
+      d.style.top = `${y}px`;
+      d.title = cls === 'left' ? 'Expand (upstream)' : 'Expand (downstream)';
+      overlay.appendChild(d);
+      return d;
+    };
+    const left = mk('left', bb.x1 - 18, (bb.y1 + bb.y2) / 2 - 12);
+    const right = mk('right', bb.x2 + 2, (bb.y1 + bb.y2) / 2 - 12);
+    left.onclick = async (e) => { e.stopPropagation(); left.classList.add('spinning'); await expandFrom(n, 'upstream'); left.classList.remove('spinning'); };
+    right.onclick = async (e) => { e.stopPropagation(); right.classList.add('spinning'); await expandFrom(n, 'downstream'); right.classList.remove('spinning'); };
+  }
+
+  cy.on("mouseover", "node", (evt) => {
+    placeExpandButtons(evt.target);
+  });
+
   cy.on("tap", "node", (evt) => {
     const n = evt.target;
     // Smooth select effect
     cy.nodes().removeClass('selected');
     n.addClass('selected');
+    placeExpandButtons(n);
     const incoming = n.incomers("node").map((x) => x.data("label"));
     const outgoing = n.outgoers("node").map((x) => x.data("label"));
     infoDiv.innerHTML = `
@@ -107,6 +150,7 @@ function renderGraph(data) {
     }
     panel.classList.add("open");
   });
+  cy.on('tap', (evt) => { if (evt.target === cy) clearExpandButtons(); });
 
   // Right-click (context) to open expand menu near cursor
   cy.on("cxttap", "node", (evt) => {
@@ -241,6 +285,14 @@ function renderGraph(data) {
   });
   cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
+
+  // Toolbar controls
+  const resetBtn = document.getElementById('reset-view');
+  const zoomResetBtn = document.getElementById('zoom-reset');
+  const miniBtn = document.getElementById('minimap-toggle');
+  resetBtn?.addEventListener('click', (e) => { e.preventDefault(); cy.fit(); cy.center(); updateZoomDisplay(); });
+  zoomResetBtn?.addEventListener('click', (e) => { e.preventDefault(); cy.zoom(1.0); cy.center(); updateZoomDisplay(); });
+  miniBtn?.addEventListener('click', (e) => { e.preventDefault(); const mm = document.querySelector('.cy-minimap'); if (mm) { const shown = mm.style.display !== 'none'; mm.style.display = shown ? 'none' : 'block'; } });
 }
 
 async function renderTableTriggers(tableName, infoDiv) {
@@ -421,6 +473,25 @@ function mergeGraph(cy, data, anchorId, direction) {
   }
 
   return { nodes: addedNodes, edges: addedEdges };
+}
+
+async function expandFrom(node, direction) {
+  try {
+    const type = node.data('type');
+    const level = 1;
+    if (type === 'job') {
+      const res = await fetch(`/api/v1/graph/job/${encodeURIComponent(node.data('label'))}/neighbors?level=${level}&direction=${direction}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      mergeGraph(window.cy, data, node.id(), direction);
+    } else {
+      const tableName = node.data('full_name') || node.data('label');
+      const res = await fetch(`/api/v1/graph/table/${encodeURIComponent(tableName)}/neighbors?level=${level}&direction=${direction}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      mergeGraph(window.cy, data, node.id(), direction);
+    }
+  } catch (e) { /* noop */ }
 }
 
 function renderSuggestionsBox(data) {
