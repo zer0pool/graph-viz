@@ -42,6 +42,9 @@ function renderGraph(data) {
       { selector: "node", style: { shape: "round-rectangle", width: 200, height: 60, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "500", "text-wrap": "wrap", "text-max-width": "180px" } },
       { selector: "node[type='table']", style: { shape: "ellipse", "background-color": "#f0f7ff", "border-color": "#0969da" } },
       { selector: "edge", style: { "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
+      // Smooth highlight transitions
+      { selector: 'node', style: { 'transition-property': 'background-color, border-color, border-width, shadow-blur, shadow-opacity', 'transition-duration': '200ms', 'transition-timing-function': 'ease-in-out' } },
+      { selector: 'node.selected', style: { 'border-color': '#0969da', 'border-width': 3, 'shadow-blur': 12, 'shadow-color': '#0969da', 'shadow-opacity': 0.35, 'shadow-offset-x': 0, 'shadow-offset-y': 0 } },
       { selector: "edge[io='input']", style: { "line-style": "dashed" } },
     ],
   }));
@@ -79,15 +82,26 @@ function renderGraph(data) {
 
   cy.on("tap", "node", (evt) => {
     const n = evt.target;
+    // Smooth select effect
+    cy.nodes().removeClass('selected');
+    n.addClass('selected');
     const incoming = n.incomers("node").map((x) => x.data("label"));
     const outgoing = n.outgoers("node").map((x) => x.data("label"));
     infoDiv.innerHTML = `
-      <p><b>ID:</b> ${n.data("id")}</p>
-      <p><b>Type:</b> ${n.data("type")}</p>
-      <p><b>Label:</b> ${n.data("label")}</p>
-      <p><b>Upstream:</b> ${incoming.join(", ") || "-"}</p>
-      <p><b>Downstream:</b> ${outgoing.join(", ") || "-"}</p>
+      <div class="group-box">
+        <div class="group-title">Details</div>
+        <div class="kv-row"><div class="kv-key">ID</div><div class="kv-val">${n.data("id")}</div></div>
+        <div class="kv-row"><div class="kv-key">Type</div><div class="kv-val">${n.data("type")}</div></div>
+        <div class="kv-row"><div class="kv-key">Label</div><div class="kv-val">${n.data("label")}</div></div>
+        <div class="kv-row"><div class="kv-key">Upstream</div><div class="kv-val">${incoming.join(", ") || "-"}</div></div>
+        <div class="kv-row"><div class="kv-key">Downstream</div><div class="kv-val">${outgoing.join(", ") || "-"}</div></div>
+      </div>
     `;
+    if ((n.data('type') || '') === 'table') {
+      // Fetch trigger settings for this table and render
+      const tableName = n.data('label');
+      renderTableTriggers(tableName, infoDiv);
+    }
     panel.classList.add("open");
   });
 
@@ -191,6 +205,37 @@ function renderGraph(data) {
   });
   cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
+}
+
+async function renderTableTriggers(tableName, infoDiv) {
+  try {
+    const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`);
+    if (!res.ok) throw new Error(`Failed to load triggers: ${res.status}`);
+    const data = await res.json();
+    if (data.status !== 'success') return;
+    const rows = (data.jobs || []).map(j => `
+      <tr>
+        <td>${j.name}</td>
+        <td>${j.trigger ? '<span style="color:#1f883d">ON</span>' : '<span style="color:#57606a">OFF</span>'}</td>
+      </tr>
+    `).join('');
+    const html = `
+      <div class="group-box">
+        <div class="group-title">Trigger Tables</div>
+        <table class="grid-table">
+          <thead>
+            <tr><th>Job</th><th>Trigger</th></tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="2" class="badge-off">No consumers</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+    infoDiv.insertAdjacentHTML('beforeend', html);
+  } catch (_) {
+    // ignore rendering errors
+  }
 }
 
 function mergeGraph(cy, data, anchorId, direction) {

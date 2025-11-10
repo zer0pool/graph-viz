@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_service import GraphService
+from graph_manager.services.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
 
@@ -28,3 +29,13 @@ def get_table_impact(
     return graph_service.get_table_impact(
         base_table=table_name, max_depth=max_depth, include_jobs=include_jobs
     )
+
+
+@router.get("/{table_name}/triggers")
+@inject
+def get_table_triggers(
+    table_name: str,
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    """Get trigger ON/OFF status per job that consumes the table."""
+    return svc.get_table_triggers(table_name)

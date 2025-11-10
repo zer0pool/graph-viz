@@ -1,5 +1,7 @@
 :root {
-    --navbar-height: 64px;
+    /* Keep navbar tall enough to center 32px controls and 32px logo */
+    /* --navbar-height: 52px; */
+    --navbar-height: 48px;
 }
 
 body {
@@ -7,10 +9,9 @@ body {
     font-family: "Segoe UI", Roboto, sans-serif;
     background: #f6f8fa;
     color: #24292f;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    /* Use block flow to avoid flex baseline quirks that can mis-center navbar */
+    display: block;
+    overflow-x: hidden;
 }
 
 /* Navbar */
@@ -22,12 +23,43 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 0 12px;
+    box-sizing: border-box;
+    /* include border in height for visual centering */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* lighter shadow to reduce bottom weight */
     flex-shrink: 0;
-    position: relative; /* ensure stacking context for suggestions */
-    z-index: 100;       /* above main graph surface */
+    position: relative;
+    /* ensure stacking context for suggestions */
+    z-index: 100;
+    /* above main graph surface */
     flex-wrap: nowrap;
+}
+
+/* Ensure navbar direct children sit vertically centered */
+#navbar>div {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+/* Reduce default heading margins/sizing in navbar */
+#navbar h1,
+#navbar h2,
+#navbar h3 {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+#navbar h2 {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+#navbar img {
+    height: 32px;
 }
 
 .logo-area {
@@ -94,10 +126,10 @@ body {
 /* Side panel */
 #side-panel {
     position: fixed;
-    top: var(--navbar-height);
+    top: var(100vh --navbar-height);
     right: -340px;
     width: 320px;
-    height: calc(100vh - var(--navbar-height));
+    height: calc(200vh - var(--navbar-height));
     padding: 20px;
     background-color: #f6f8fa;
     box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
@@ -105,6 +137,8 @@ body {
     flex-direction: column;
     transition: right 0.3s ease;
     z-index: 20;
+    padding-top: 8px;
+    /* add soft space before title */
 }
 
 #side-panel.open {
@@ -112,13 +146,73 @@ body {
 }
 
 #side-panel h3 {
-    margin-top: 0;
+    margin-top: 6px;
+    /* give a bit of air above the title */
     font-size: 18px;
     border-bottom: 1px solid #d0d7de;
     padding-bottom: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* Grouped info boxes inside the details panel */
+.group-box {
+    border: 1px dashed #d0d7de;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 12px 14px;
+    margin: 12px 0;
+}
+
+.group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #57606a;
+    margin: 0 0 8px 0;
+}
+
+.kv-row {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.kv-key {
+    width: 90px;
+    color: #57606a;
+}
+
+.kv-val {
+    color: #24292f;
+}
+
+.grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.grid-table th {
+    text-align: left;
+    color: #57606a;
+    font-weight: 600;
+    padding: 6px 4px;
+}
+
+.grid-table td {
+    padding: 6px 4px;
+    border-top: 1px solid #d8dee4;
+}
+
+.badge-on {
+    color: #1f883d;
+    font-weight: 600;
+}
+
+.badge-off {
+    color: #57606a;
 }
 
 #close-panel {
@@ -183,14 +277,18 @@ body {
 #search-bar {
     display: flex;
     align-items: center;
+    /* center vertically in navbar */
     gap: 10px;
     position: relative;
+    height: 32px;
 }
 
 /* 🔹 돋보기 아이콘 */
 #search-icon {
     position: absolute;
     left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 16px;
     height: 16px;
     fill: #6e7781;
@@ -201,18 +299,20 @@ body {
 
 /* 🔹 검색창 입력 필드 */
 #jobId {
-    padding: 6px 10px 6px 30px;
+    height: 32px;
+    padding: 0 10px 0 28px;
     /* 왼쪽 여백 확보 (아이콘 공간) */
     border: 1px solid #d0d7de;
     /* 회색 테두리 */
     border-radius: 6px;
     background-color: #f6f8fa;
     /* 연한 회색 배경 */
-    font-size: 14px;
+    font-size: 13px;
     color: #24292f;
-    width: 200px;
+    width: 220px;
     outline: none;
     transition: border-color 0.2s ease;
+    line-height: 30px;
 }
 
 #jobId:focus {
@@ -223,12 +323,15 @@ body {
 
 /* 🔹 Load 버튼 (GitHub-style 초록색) */
 #loadBtn {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
     background: #2ea44f;
     color: white;
     border: 1px solid #2c974b;
     border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 14px;
+    padding: 0 10px;
+    font-size: 13px;
     cursor: pointer;
     transition: background 0.15s ease;
 }
@@ -250,17 +353,20 @@ body {
 /* Autocomplete suggestions */
 .suggestions {
     position: absolute;
-    top: 38px;
+    top: 36px;
+    /* align under compact input */
     left: 0;
     width: 320px;
     background: #fff;
     border: 1px solid #d0d7de;
     border-radius: 6px;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
     max-height: 280px;
     overflow-y: auto;
-    z-index: 2000; /* above side panel and minimap */
+    z-index: 2000;
+    /* above side panel and minimap */
 }
+
 .suggestions .group {
     padding: 6px 8px;
     font-size: 12px;
@@ -268,6 +374,7 @@ body {
     background: #f6f8fa;
     border-bottom: 1px solid #d8dee4;
 }
+
 .suggestions .item {
     padding: 8px 10px;
     cursor: pointer;
@@ -275,17 +382,21 @@ body {
     align-items: center;
     gap: 8px;
 }
+
 .suggestions .item:hover {
     background: #f6f8fa;
 }
+
 .suggestions .item.active {
     background: #eaeef2;
 }
+
 .suggestions .loading {
     padding: 8px 10px;
     color: #57606a;
     font-size: 12px;
 }
+
 .suggestions .badge {
     font-size: 10px;
     padding: 2px 6px;
@@ -308,44 +419,53 @@ body {
     background: transparent;
     z-index: 3000;
 }
+
 .ctx-menu[hidden] {
     display: none !important;
 }
+
 .ctx-panel {
     background: #fff;
     border: 1px solid #d0d7de;
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+    box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
     min-width: 260px;
     padding: 10px 12px;
 }
+
 .ctx-header {
     font-weight: 600;
     margin-bottom: 8px;
 }
+
 .ctx-row {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 8px 0;
 }
+
 .ctx-row label {
     width: 80px;
     font-size: 12px;
     color: #57606a;
 }
-.ctx-row select, .ctx-row input {
+
+.ctx-row select,
+.ctx-row input {
     flex: 1;
     border: 1px solid #d0d7de;
     border-radius: 6px;
     padding: 6px 8px;
 }
+
 .ctx-actions {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
     margin-top: 10px;
 }
+
 .btn-primary {
     background: #2ea44f;
     color: #fff;
@@ -354,6 +474,7 @@ body {
     padding: 6px 12px;
     cursor: pointer;
 }
+
 .btn-secondary {
     background: #f6f8fa;
     color: #24292f;
@@ -362,6 +483,7 @@ body {
     padding: 6px 12px;
     cursor: pointer;
 }
+
 .ctx-hint {
     margin-top: 6px;
     font-size: 12px;

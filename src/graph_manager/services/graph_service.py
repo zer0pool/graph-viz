@@ -635,3 +635,28 @@ class GraphService:
                 "downstream": [],
                 "summary": {"total_depth": 0, "total_downstream_tables": 0, "total_writer_jobs": 0},
             }
+
+    def get_table_triggers(self, table_name: str):
+        """Return jobs that consume the table with trigger ON/OFF per job.
+
+        ON if table_name exists in the job's trigger_tables list.
+        """
+        uow = self.uow
+        try:
+            table = uow.tables.get_by_full_name(table_name)
+            if not table:
+                return {"status": "error", "message": f"Table '{table_name}' not found"}
+
+            jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
+
+            items = []
+            for j in jobs:
+                trig_list = j.trigger_tables or []
+                is_on = table_name in trig_list
+                items.append({"job_id": j.job_id, "name": j.name or j.job_id, "trigger": bool(is_on)})
+
+            return {"status": "success", "table": table_name, "count": len(items), "jobs": items}
+        except Exception as e:
+            logger.error(f"Failed to get trigger settings for table {table_name}: {e}")
+            logger.exception("Full traceback:")
+            return {"status": "error", "message": str(e)}

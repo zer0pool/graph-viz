@@ -8,55 +8,19 @@ from graph_manager.core.container import GraphContainer
 
 logger = logging.getLogger(__name__)
 
-
-async def session_middleware(
-    request: Request, call_next: Callable, container: GraphContainer
-) -> Response:
+# core/middleware.py
+async def session_middleware(request: Request, call_next: Callable, container: GraphContainer) -> Response:
     """
-    Core middleware to manage database sessions per request using container pattern.
-
-    This middleware:
-    1. Creates a new database session for each request
-    2. Injects the session into the container for the duration of the request
-    3. Ensures proper transaction commit/rollback
-    4. Cleans up the session after request completion
-
-    This is infrastructure-level middleware that manages the dependency injection
-    container and should be located in the core module.
+    Use scoped_session to provide thread-safe sessions per request.
     """
-    # Create database session for this request (new Session per request)
-    session_maker = container.session_factory()
-    session: Session = session_maker()
-
     try:
-        # Inject session into container for this request using override
-        container.session.override(session)
-        logger.debug("Session injected into container for request")
-
-        # Process the request
+        # Create or retrieve a session for this request
+        request.state.db = container.database().session_maker
         response = await call_next(request)
-
-        # Commit transaction if successful
-        session.commit()
-        logger.debug("Transaction committed successfully")
-
         return response
-
-    except Exception as e:
-        # Rollback on error
-        session.rollback()
-        logger.error(f"Transaction rolled back due to error: {e}")
-        raise
-
     finally:
-        # Always clean up: reset container override and close session
-        try:
-            container.session.reset_override()
-        except:
-            pass  # Ignore if already reset
-        session.close()
-        logger.debug("Session cleaned up and container reset")
-
+        # Remove the session (ends thread-local storage)
+        container.database().session_maker.remove()
 
 def get_container_session(request: Request) -> Session:
     """

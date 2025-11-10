@@ -4,6 +4,7 @@ from typing import Dict
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from ..models.base import Base
 # Ensure models are imported so tables are registered on Base.metadata
@@ -61,13 +62,14 @@ class Database:
             settings.database_url, connect_args=connect_args, **engine_kwargs
         )
         # Use plain sessionmaker; create a new Session per request in middleware
-        self._session_maker = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self._engine,
-            future=True,
+        self._session_maker =  scoped_session(
+            sessionmaker(
+                autocommit=False,
+                autoflush=False,
+                bind=self._engine,
+                future=True,
+            )
         )
-
     @property
     def session_maker(self) -> sessionmaker:
         return self._session_maker

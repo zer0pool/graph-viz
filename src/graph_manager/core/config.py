@@ -45,8 +45,8 @@ class Settings(BaseSettings):
     # Direct URL (takes precedence if provided)
     database_url: str | None = None
     database_echo: bool = False
-    database_pool_size: int = 5
-    database_max_overflow: int = 10
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
 
     # Job Manager API
     job_manager_url: str = (

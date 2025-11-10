@@ -130,3 +130,12 @@ class GraphQueryService:
             "jobs": [{"job_id": j.job_id, "name": j.name} for j in jobs],
             "tables": [{"full_name": t.full_name} for t in tables],
         }
+
+    def get_table_triggers(self, table_name: str):
+        key = f"triggers:{table_name}"
+        cached = self._cache_get(key)
+        if cached:
+            return cached
+        res = self.core.get_table_triggers(table_name)
+        self._cache_set(key, res)
+        return res
