@@ -3,7 +3,7 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import Dict
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from ..models.base import Base

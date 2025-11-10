@@ -116,6 +116,13 @@ def update_job(
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
+    # Persist the changes
+    try:
+        graph_service.uow.commit()
+    except Exception:
+        graph_service.uow.rollback()
+        raise
+
     return {
         "job_id": job_id,
         "updated": updates,
@@ -138,6 +145,13 @@ def toggle_job_status(
     job = graph_service.toggle_job_enabled(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+    # Persist the toggle
+    try:
+        graph_service.uow.commit()
+    except Exception:
+        graph_service.uow.rollback()
+        raise
 
     return {
         "job_id": job_id,

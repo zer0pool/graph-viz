@@ -107,6 +107,13 @@ class GraphService:
             logger.info(
                 f"Job registration completed successfully for job_id: {job.name}"
             )
+            # Ensure changes persist within the current request
+            try:
+                uow.commit()
+            except Exception:
+                # If commit fails, rollback and re-raise
+                uow.rollback()
+                raise
             return job.id
 
         except Exception as e:
@@ -749,6 +756,12 @@ class GraphService:
             except Exception:
                 pass
 
+            # Persist change
+            try:
+                uow.commit()
+            except Exception:
+                uow.rollback()
+                raise
             return {
                 "status": "success",
                 "job_id": job_id,
@@ -792,6 +805,12 @@ class GraphService:
                 except Exception:
                     pass
 
+            # Persist changes
+            try:
+                uow.commit()
+            except Exception:
+                uow.rollback()
+                raise
             return {
                 "status": "success",
                 "table_name": table_name,
