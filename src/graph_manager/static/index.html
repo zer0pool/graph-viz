@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <pre id="meta"></pre>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Workflow Graph Viewer</title>
+    <title>Scheduling Lineage Manager</title>
 
     <!-- 스타일 -->
     <link rel="stylesheet" href="/static/css/modern-console.css">
@@ -21,9 +21,9 @@
 
 <body>
     <div id="navbar">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img src="/static/images/logo.png" alt="Logo" style="height:32px; width:auto;">
-            <h2>Workflow Graph Viewer</h2>
+        <div style="align-items:center; gap:10px;">
+            <img src="/static/images/logo.png" alt="Logo" style="height:48px; width:auto;">
+            <h2>Scheduling Lineage Manager</h2>
         </div>
         <div id="search-bar">
             <!-- 회색 돋보기 SVG 아이콘 -->
@@ -33,22 +33,59 @@
       0-10 5 5 0 0 1 0 10z"></path>
             </svg>
 
-            <input type="text" id="jobId" placeholder="Search job ID..." />
-            <button id="loadBtn">Load</button>
+            <input type="text" id="jobId" placeholder="Search job or table..." autocomplete="off" />
+            <button id="loadBtn">Search</button>
+            <div id="suggestions" class="suggestions" hidden></div>
+        </div>
+    </div>
+
+    <!-- Context menu for graph expansion -->
+    <div id="ctx-menu" class="ctx-menu" hidden>
+        <div class="ctx-panel">
+            <div class="ctx-header">Expand Graph</div>
+            <div class="ctx-row">
+                <label>Direction</label>
+                <select id="ctx-direction">
+                    <option value="both" selected>Both</option>
+                    <option value="upstream">Upstream</option>
+                    <option value="downstream">Downstream</option>
+                </select>
+            </div>
+            <div class="ctx-row">
+                <label>Depth</label>
+                <select id="ctx-depth">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+            <div class="ctx-row">
+                <label>Limit</label>
+                <input id="ctx-limit" type="number" min="1" max="1000" placeholder="e.g. 100" />
+            </div>
+            <div class="ctx-actions">
+                <button id="ctx-cancel" class="btn-secondary">Cancel</button>
+                <button id="ctx-expand" class="btn-primary">Expand</button>
+                <button id="ctx-sync" class="btn-primary" title="Sync from Job Manager">Sync</button>
+            </div>
+            <div id="ctx-hint" class="ctx-hint" hidden></div>
         </div>
     </div>
 
     <div id="main">
         <div id="cy"></div>
-        <div id="zoom-controls">
-            <button id="zoom-in">+</button>
-            <span id="zoom-level">100%</span>
-            <button id="zoom-out">−</button>
+        <div id="zoom-controls" title="View controls">
+            <button id="reset-view" title="Reset view">⟲</button>
+            <span id="zoom-level" title="Zoom">100%</span>
+            <button id="zoom-in" title="Zoom in">+</button>
+            <button id="zoom-out" title="Zoom out">−</button>
+            <button id="zoom-reset" title="Zoom reset">100%</button>
+            <button id="minimap-toggle" title="Toggle minimap">▣</button>
         </div>
 
         <div id="side-panel">
             <h3>
-                Workflow Details
+                Node Details
                 <button id="close-panel" title="Close panel">&times;</button>
             </h3>
             <div id="controls">

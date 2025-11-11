@@ -1,104 +1,203 @@
-from fastapi import APIRouter, HTTPException
-from graph_manager.core.graph_builder import generate_sample_graph
+import logging
+
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, Query, Request
+
+from graph_manager.api.v1.schemas import JobRegister
+from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_service import GraphService
-from graph_manager.repositories.graph_repository import GraphRepository
-from graph_manager.core.subgraph_extractor import extract_subgraph
 
-router = APIRouter(prefix="/api", tags=["graph"])
+logger = logging.getLogger(__name__)
 
-repo = GraphRepository()
-service = GraphService(repo)
+router = APIRouter(prefix="/api/v1/graph", tags=["graph"])
 
 
-# 임시 저장 (DB 없이 메모리용)
-GRAPH_CACHE = generate_sample_graph("medium")
-
-
-@router.get("/graph")
-def get_graph(size: str = "small"):
-    """그래프 전체 조회"""
-    graph = service.get_graph(size)
-    if not graph:
-        raise HTTPException(status_code=404, detail="Graph not found")
-    return graph
-
-
-
-@router.get("/jobs/{job_id}")
-async def get_job_subgraph(job_id: str, depth: int = 1):
+@router.post("/jobs")
+@inject
+def register_job(
+    payload: JobRegister,
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+):
     """
-    특정 Job 중심 서브그래프 조회
+    Register a new job using container pattern with proper session management.
+
+    - Container provides session-managed Unit of Work
+    - GraphService uses container-provided UoW
+    - Transaction is automatically committed by middleware
     """
-    subgraph = extract_subgraph(GRAPH_CACHE, job_id, depth)
-    return {
-        "job_id": job_id,
-        "depth": depth,
-        "node_count": len(subgraph["nodes"]),
-        "edge_count": len(subgraph["edges"]),
-        "graph": subgraph
-    }
+    logger.info(f"Received job registration request: {payload}")
+    try:
+        job_id = graph_service.register_job(payload)
+        logger.info(f"Job registered successfully: {job_id}")
+        return {"job_id": job_id}
+    except Exception as e:
+        logger.error(f"Error registering job: {e}")
+        logger.exception("Full traceback:")
+        raise
 
 
-@router.post("/job/{job_id}/toggle")
-def toggle_job_enabled(job_id: str):
-    """활성화/비활성화 토글"""
-    job = service.toggle_job_enabled(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-    return {"job_id": job.id, "enabled": job.enabled, "status": job.status}
-
-
-@router.post("/job/{job_id}/trigger")
-def toggle_trigger(job_id: str):
-    """트리거 설정 변경 (시뮬레이션용)"""
-    job = service.toggle_trigger(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-    return {"job_id": job.id, "trigger_enabled": job.trigger_enabled}
-
-
-@router.post("/rebuild")
-async def rebuild_graph(size: str = "medium"):
+@router.post("/reset")
+@inject
+def reset_graph(
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+):
     """
-    그래프 전체 재구성 (샘플 job 데이터로 DAG 생성)
+    Reset the entire graph by clearing all graph-related data.
+
+    This endpoint will delete all data from:
+    - graph_closure (transitive relationships)
+    - graph_edge (direct dependencies)
+    - graph_edge (job-table links)
+    - graph_node (jobs and tables)
+
+    ⚠️ **Warning**: This action is irreversible and will delete all graph data!
     """
-    graph = generate_sample_graph(size=size)
-    return {
-        "status": "success",
-        "node_count": len(graph["nodes"]),
-        "edge_count": len(graph["edges"]),
-        "graph": graph
-    }
+    logger.info("Received graph reset request")
+    try:
+        result = graph_service.reset_graph()
+        logger.info("Graph reset completed successfully")
+        return result
+    except Exception as e:
+        logger.error(f"Graph reset failed: {e}")
+        logger.exception("Full traceback:")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Graph reset failed: {str(e)}")
 
 
-
-# ---------------------------------------------------------
-# 3️⃣ Job 상세 정보 조회 API
-# ---------------------------------------------------------
-@router.get("/jobs/{job_id}/detail")
-async def get_job_detail(job_id: str):
+@router.post("/initialize")
+@inject
+async def initialize_graph(
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+):
     """
-    Job 상세 정보 조회
-    - run_status, reference_tables, destination_table, trigger_tables 포함
+    Initialize the graph by fetching all jobs from Job Manager API
+    and creating graph nodes, edges, and closure entries based on job dependencies.
+
+    This endpoint will:
+    1. Clear all existing graph data
+    2. Fetch all jobs from the Job Manager API
+    3. Register each job using the existing register_job method
+    4. Create appropriate nodes, edges, and relationships
+    5. Return statistics about the initialization process
+
+    The process uses the existing register_job method to ensure consistency
+    with single job registration functionality.
     """
-    # Job 노드 찾기
-    job_node = next((n for n in GRAPH_CACHE["nodes"]
-                     if n["id"] == job_id and n["type"] == "job"), None)
+    logger.info("Received graph initialization request")
+    try:
+        result = await graph_service.initialize_graph()
+        logger.info(f"Graph initialization completed: {result.get('status')}")
+        return result
+    except Exception as e:
+        logger.error(f"Graph initialization failed: {e}")
+        logger.exception("Full traceback:")
+        from fastapi import HTTPException
 
-    if not job_node:
-        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+        raise HTTPException(
+            status_code=500, detail=f"Graph initialization failed: {str(e)}"
+        )
 
-    # 응답 구성
-    return {
-        "job_id": job_node["id"],
-        "label": job_node["label"],
-        "run_status": job_node.get("run_status", "UNKNOWN"),
-        "reference_tables": job_node.get("reference_tables", []),
-        "destination_table": job_node.get("destination_table"),
-        "trigger_tables": job_node.get("trigger_tables", []),
-        "metrics": {
-            "avg_duration": f"{round(60 + 60 * random.random(), 1)}s",
-            "last_run": "2025-10-31T23:45:00",
-            "fail_rate": f"{round(random.random() * 5, 2)}%"
-        }
-    }    
+
+@router.get("/health")
+@inject
+def health_check(
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    """
+    Get basic database statistics for health monitoring.
+
+    Returns counts of:
+    - Jobs (job nodes in graph_node table)
+    - Tables (table nodes in graph_node table)
+    - Edges (dependencies in graph_edge table)
+    - Closure entries (transitive relationships in graph_closure table)
+    - Database connection status
+    """
+    logger.info("Received health check request")
+    try:
+        result = graph_service.get_health_stats()
+        logger.info(f"Health check completed: {result['status']}")
+        return result
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        logger.exception("Full traceback:")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
+
+@router.get("/table/{full_name}/dag")
+@inject
+def get_table(
+    full_name: str,
+    direction: str = Query("both", enum=["upstream", "downstream", "both"]),
+    depth: int = Query(3, ge=1, le=10),
+    include_jobs: bool = Query(True),
+    include_tables: bool = Query(True),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    """
+    Get DAG (Directed Acyclic Graph) information for a specific table.
+
+    Returns detailed information about:
+    - The table itself
+    - Upstream jobs (jobs that produce this table as output)
+    - Downstream jobs (jobs that consume this table as input)
+    - Related tables (tables that are connected through the same jobs)
+    """
+
+    logger.info(f"Received table DAG request for: {full_name}")
+    try:
+        result = graph_service.get_table_dag(
+            full_name=full_name,
+            direction=direction,
+            depth=depth,
+            include_jobs=include_jobs,
+            include_tables=include_tables,
+        )
+        logger.info(f"Table DAG completed for {full_name}:  ")
+        return result
+    except Exception as e:
+        logger.error(f"Table DAG failed for {full_name}: {e}")
+        logger.exception("Full traceback:")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Table DAG failed: {str(e)}")
+
+
+# 01) Neighbors APIs
+@router.get("/job/{job_id}/neighbors")
+@inject
+def get_job_neighbors(
+    job_id: str,
+    level: int = 1,
+    direction: str = Query("both", enum=["upstream", "downstream", "both"]),
+    limit: int | None = Query(None, ge=1, le=1000),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    try:
+        return graph_service.get_job_neighbors(job_id=job_id, level=level, direction=direction, limit=limit)
+    except Exception as e:
+        logger.error(f"Neighbors query failed for job {job_id}: {e}")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")
+
+
+@router.get("/table/{table_name}/neighbors")
+@inject
+def get_table_neighbors(
+    table_name: str,
+    level: int = 1,
+    direction: str = Query("both", enum=["upstream", "downstream", "both"]),
+    limit: int | None = Query(None, ge=1, le=1000),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    try:
+        return graph_service.get_table_neighbors(table_name=table_name, level=level, direction=direction, limit=limit)
+    except Exception as e:
+        logger.error(f"Neighbors query failed for table {table_name}: {e}")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")

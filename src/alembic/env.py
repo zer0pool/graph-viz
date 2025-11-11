@@ -1,11 +1,28 @@
 from logging.config import fileConfig
+import os
+import sys
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from src.app.core.config import get_settings
-from src.app.models.database import Base
+
+# Ensure the 'src' directory is on sys.path so that 'graph_manager' can be imported
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+SRC_DIR = os.path.dirname(CURRENT_DIR)
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+from graph_manager.core.config import get_settings
+from graph_manager.models.base import Base
+# Import models to register them with Base.metadata
+from graph_manager.models import (
+    job_node, 
+    table_node, 
+    job_table_link, 
+    graph_edge, 
+    graph_closure,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
