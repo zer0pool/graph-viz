@@ -428,8 +428,8 @@ function mergeGraph(cy, data, anchorId, direction) {
       const anchor = cy.$(`#${anchorId}`);
       if (anchor && anchor.nonempty()) {
         const pos = anchor.position();
-        const dx = 240; // horizontal spacing
-        const dy = 90;  // vertical spacing per node
+        const dx = 320;
+        const dy = 120;
 
         // Determine per-node relation relative to anchor by inspecting edges in payload
         const upstreamSet = new Set();
