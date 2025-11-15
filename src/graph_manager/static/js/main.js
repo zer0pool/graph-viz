@@ -6,6 +6,7 @@ const searchState = {
   selectedValue: null,
   itemsCount: 0,
   activeIndex: -1,
+  lastQuery: null,
 };
 
 const filterState = {
@@ -49,9 +50,13 @@ const relationState = {
   downstream: [],
 };
 
+const EVENT_ID_STORAGE_KEY = "lm.lastEventId";
 const apiFetch = (...args) => window.authClient.fetchWithAuth(...args);
 let triggerStream = null;
 let selectedCyNode = null;
+let statePollHandle = null;
+let currentStateHash = sessionStorage.getItem(EVENT_ID_STORAGE_KEY) || null;
+let pollIntervalMs = 15000;
 
 function handleAuthError(err) {
   if (!err) return false;
@@ -215,9 +220,63 @@ function applyFilters() {
   });
 }
 
+function stopStatePolling() {
+  if (statePollHandle) {
+    clearTimeout(statePollHandle);
+    statePollHandle = null;
+  }
+}
+
+function scheduleNextPoll() {
+  stopStatePolling();
+  statePollHandle = window.setTimeout(runStatePoll, pollIntervalMs);
+}
+
+async function runStatePoll() {
+  if (!window.authClient || !window.authClient.isAuthenticated()) {
+    scheduleNextPoll();
+    return;
+  }
+  try {
+    const res = await apiFetch("/api/v1/events/state-hash");
+    if (!res.ok) throw new Error("poll failed");
+    const payload = await res.json();
+    if (payload.poll_interval_ms) {
+      pollIntervalMs = Number(payload.poll_interval_ms);
+    }
+    const serverHash = payload.hash || String(payload.last_event_id || "");
+    if (serverHash && currentStateHash && serverHash !== currentStateHash) {
+      if (searchState.lastQuery) {
+        const { type, value } = searchState.lastQuery;
+        const data = await fetchNeighbors(type, value, filterState.depth);
+        renderGraph(data);
+      }
+    }
+    if (payload.last_event_id) {
+      sessionStorage.setItem(EVENT_ID_STORAGE_KEY, String(payload.last_event_id));
+    }
+    if (serverHash) {
+      currentStateHash = serverHash;
+    }
+  } catch (err) {
+    handleAuthError(err);
+  } finally {
+    scheduleNextPoll();
+  }
+}
+
+function startStatePolling() {
+  stopStatePolling();
+  runStatePoll();
+}
+
 function handleTriggerUpdate(event) {
   try {
     const data = JSON.parse(event.data || "{}");
+    if (event.lastEventId) {
+      sessionStorage.setItem(EVENT_ID_STORAGE_KEY, event.lastEventId);
+      currentStateHash = event.lastEventId;
+    }
     if (!data.job_id) return;
     const toggles = document.querySelectorAll(`.trigger-toggle[data-job="${data.job_id}"]`);
     toggles.forEach((el) => {
@@ -230,6 +289,12 @@ function handleTriggerUpdate(event) {
   } catch (_) {
     // ignore malformed events
   }
+}
+
+function handleReplayUnavailable() {
+  stopStatePolling();
+  runStatePoll();
+  attachTriggerStream();
 }
 
 function closeTriggerStream() {
@@ -246,11 +311,15 @@ function attachTriggerStream() {
   if (!token) return;
   const url = new URL("/api/v1/events/trigger-status", window.location.origin);
   url.searchParams.set("access_token", token);
+  const lastId = sessionStorage.getItem(EVENT_ID_STORAGE_KEY);
+  if (lastId) url.searchParams.set("lastEventId", lastId);
   try {
     triggerStream = new EventSource(url.toString());
     triggerStream.addEventListener("trigger_update", handleTriggerUpdate);
+    triggerStream.addEventListener("replay_unavailable", handleReplayUnavailable);
     triggerStream.onerror = () => {
       closeTriggerStream();
+      setTimeout(() => attachTriggerStream(), 2000);
     };
   } catch (_) {
     closeTriggerStream();
@@ -816,6 +885,7 @@ function renderSuggestionsBox(data) {
 document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("contextmenu", (e) => e.preventDefault());
   await window.authReady;
+  pollIntervalMs = Number(document.body?.dataset?.pollInterval || "15000");
 
   const input = document.getElementById("jobId");
   const loadBtn = document.getElementById("loadBtn");
@@ -944,6 +1014,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!type) {
       type = raw.includes(".") ? "table" : "job";
     }
+    searchState.lastQuery = { type, value };
     try {
       showGraphStatus("Loading graph…", true);
       const data = await fetchNeighbors(type, value, filterState.depth);
@@ -959,12 +1030,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   renderGraph({ nodes: [], edges: [] });
-  attachTriggerStream();
+  if (window.authClient.isAuthenticated()) {
+    attachTriggerStream();
+    startStatePolling();
+  } else {
+    stopStatePolling();
+  }
   document.addEventListener("auth:state-changed", (evt) => {
     if (evt.detail?.authenticated) {
       attachTriggerStream();
+      startStatePolling();
     } else {
       closeTriggerStream();
+      stopStatePolling();
+      sessionStorage.removeItem(EVENT_ID_STORAGE_KEY);
+      currentStateHash = null;
+      searchState.lastQuery = null;
       renderGraph({ nodes: [], edges: [] });
     }
   });

@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_default_ttl: int = 60
 
+    # SSE / Polling
+    sse_buffer_size: int = 512
+    event_poll_interval_ms: int = 15000
+
     # OIDC / Authentication
     oidc_issuer_url: str = "https://accounts.google.com"
     oidc_client_id: str = ""
