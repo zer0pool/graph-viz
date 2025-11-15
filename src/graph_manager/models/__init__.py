@@ -4,6 +4,7 @@ from .graph_edge import GraphEdge
 from .job_node import GraphJobNode
 from .job_table_link import GraphJobTableLink
 from .table_node import GraphTableNode
+from .user_account import GraphUserAccount
 
 __all__ = [
     "Base",
@@ -12,4 +13,5 @@ __all__ = [
     "GraphJobTableLink",
     "GraphEdge",
     "GraphClosure",
+    "GraphUserAccount",
 ]

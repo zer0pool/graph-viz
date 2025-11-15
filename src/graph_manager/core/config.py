@@ -64,6 +64,15 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_default_ttl: int = 60
 
+    # OIDC / Authentication
+    oidc_issuer_url: str = "https://accounts.google.com"
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_uri: str = "http://localhost:8000"
+    oidc_audience: str | None = None
+    oidc_jwks_cache_seconds: int = 3600
+    oidc_scopes: List[str] = ["openid", "email", "profile"]
+
     class Config:
         env_file = ".env"
         case_sensitive = False

@@ -3,12 +3,17 @@ import logging
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
+from graph_manager.core.auth import require_authenticated_user
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/graph", tags=["graph"])
+router = APIRouter(
+    prefix="/api/v1/graph",
+    tags=["graph"],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
 @router.get("/expand")

@@ -8,6 +8,60 @@ const searchState = {
   activeIndex: -1,
 };
 
+const apiFetch = (...args) => window.authClient.fetchWithAuth(...args);
+let triggerStream = null;
+
+function handleAuthError(err) {
+  if (!err) return false;
+  if (err.message === "AUTH_REQUIRED" || err.message === "AUTH_EXPIRED") {
+    alert("Please sign in to continue.");
+    return true;
+  }
+  return false;
+}
+
+function handleTriggerUpdate(event) {
+  try {
+    const data = JSON.parse(event.data || "{}");
+    if (!data.job_id) return;
+    const toggles = document.querySelectorAll(`.trigger-toggle[data-job="${data.job_id}"]`);
+    toggles.forEach((el) => {
+      el.checked = !!data.new_state;
+      const slider = el.nextElementSibling;
+      if (slider && !slider.classList.contains("slider")) {
+        slider.className = "slider";
+      }
+    });
+  } catch (_) {
+    // ignore malformed events
+  }
+}
+
+function closeTriggerStream() {
+  if (triggerStream) {
+    triggerStream.close();
+    triggerStream = null;
+  }
+}
+
+function attachTriggerStream() {
+  closeTriggerStream();
+  if (!window.authClient || !window.authClient.isAuthenticated()) return;
+  const token = window.authClient.getIdToken();
+  if (!token) return;
+  const url = new URL("/api/v1/events/trigger-status", window.location.origin);
+  url.searchParams.set("access_token", token);
+  try {
+    triggerStream = new EventSource(url.toString());
+    triggerStream.addEventListener("trigger_update", handleTriggerUpdate);
+    triggerStream.onerror = () => {
+      closeTriggerStream();
+    };
+  } catch (_) {
+    closeTriggerStream();
+  }
+}
+
 function debounce(fn, delay = 200) {
   let t;
   return (...args) => {
@@ -17,14 +71,14 @@ function debounce(fn, delay = 200) {
 }
 
 async function fetchSuggestions(q) {
-  const res = await fetch(`/api/v1/search/suggest?q=${encodeURIComponent(q)}`);
+  const res = await apiFetch(`/api/v1/search/suggest?q=${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
   return res.json();
 }
 
 async function fetchNeighbors(kind, value) {
   const base = `/api/v1/graph/${kind}/${encodeURIComponent(value)}/neighbors?level=1`;
-  const res = await fetch(base);
+  const res = await apiFetch(base);
   if (!res.ok) throw new Error(`Neighbors failed: ${res.status}`);
   return res.json();
 }
@@ -203,7 +257,7 @@ function renderGraph(data) {
     if (!isJob && !params.has('node_db_id')) params.set('table_name', ctxTargetNode.data('label') || ctxTargetNode.data('id'));
 
     try {
-      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/graph/expand?${params.toString()}`);
       if (!res.ok) throw new Error(`Expand failed: ${res.status}`);
       const payload = await res.json();
       const added = mergeGraph(cy, payload, id, direction);
@@ -223,13 +277,13 @@ function renderGraph(data) {
     const isJob = (ctxTargetNode.data('type') || 'job') === 'job' || id.startsWith('j');
     const dbid = parseInt(id.slice(1), 10);
     try {
-      await fetch('/api/v1/graph/sync/node', {
+      await apiFetch('/api/v1/graph/sync/node', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ node_type: isJob ? 'job' : 'table', node_db_id: dbid })
       });
       // After sync, expand 1 depth to pick up changes
       const params = new URLSearchParams({ node_type: isJob ? 'job' : 'table', node_db_id: String(dbid), direction: 'both', depth: '1' });
-      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/graph/expand?${params.toString()}`);
       if (res.ok) {
         const payload = await res.json();
         mergeGraph(cy, payload, id, 'both');
@@ -244,7 +298,7 @@ function renderGraph(data) {
     const isJob = (n.data('type') || 'job') === 'job' || id.startsWith('j');
     const params = new URLSearchParams({ node_type: isJob ? 'job' : 'table', node_db_id: String(dbid), direction: 'both', depth: '1' });
     try {
-      const res = await fetch(`/api/v1/graph/expand?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/graph/expand?${params.toString()}`);
       if (res.ok) { const payload = await res.json(); mergeGraph(cy, payload, id, 'both'); }
     } catch (_) {}
   });
@@ -297,7 +351,7 @@ function renderGraph(data) {
 
 async function renderTableTriggers(tableName, infoDiv) {
   try {
-    const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`);
+    const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`);
     if (!res.ok) throw new Error(`Failed to load triggers: ${res.status}`);
     const data = await res.json();
     if (data.status !== 'success') return;
@@ -340,7 +394,7 @@ async function renderTableTriggers(tableName, infoDiv) {
         if (!ok) { el.checked = !want; return; }
         // Text is inside the switch now; nothing extra to update here
         try {
-          const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers/${encodeURIComponent(jobId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: want }) });
+          const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers/${encodeURIComponent(jobId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: want }) });
           if (!res.ok) throw new Error('update failed');
           // Recalculate bulk-off disabled state
           const bulkBtn = infoDiv.querySelector('#bulk-off');
@@ -366,7 +420,7 @@ async function renderTableTriggers(tableName, infoDiv) {
       const ok = window.confirm(`Turn OFF trigger for all jobs consuming ${tableName}?`);
       if (!ok) return;
       try {
-        const res = await fetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: false }) });
+        const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: false }) });
         if (!res.ok) throw new Error('bulk off failed');
         // Update all switches locally
         infoDiv.querySelectorAll('.trigger-toggle').forEach(el => { el.checked = false; });
@@ -480,13 +534,13 @@ async function expandFrom(node, direction) {
     const type = node.data('type');
     const level = 1;
     if (type === 'job') {
-      const res = await fetch(`/api/v1/graph/job/${encodeURIComponent(node.data('label'))}/neighbors?level=${level}&direction=${direction}`);
+      const res = await apiFetch(`/api/v1/graph/job/${encodeURIComponent(node.data('label'))}/neighbors?level=${level}&direction=${direction}`);
       if (!res.ok) return;
       const data = await res.json();
       mergeGraph(window.cy, data, node.id(), direction);
     } else {
       const tableName = node.data('full_name') || node.data('label');
-      const res = await fetch(`/api/v1/graph/table/${encodeURIComponent(tableName)}/neighbors?level=${level}&direction=${direction}`);
+      const res = await apiFetch(`/api/v1/graph/table/${encodeURIComponent(tableName)}/neighbors?level=${level}&direction=${direction}`);
       if (!res.ok) return;
       const data = await res.json();
       mergeGraph(window.cy, data, node.id(), direction);
@@ -550,9 +604,9 @@ function renderSuggestionsBox(data) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Block all native context menus globally
-  document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener("DOMContentLoaded", async () => {
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  await window.authReady;
 
   const input = document.getElementById("jobId");
   const loadBtn = document.getElementById("loadBtn");
@@ -566,37 +620,36 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("suggestions").innerHTML = "";
       return;
     }
-    // Show loading state
     const box = document.getElementById("suggestions");
     box.hidden = false;
     box.innerHTML = '<div class="loading">Loading…</div>';
     try {
       const data = await fetchSuggestions(q);
       renderSuggestionsBox(data);
-    } catch (_) {
-      // ignore suggest errors for UX
-      box.innerHTML = '<div class="group">No results</div>';
+    } catch (err) {
+      if (!handleAuthError(err)) {
+        box.innerHTML = '<div class="group">No results</div>';
+      }
     }
   }, 200);
 
   input.addEventListener("input", onInput);
-  // Hide suggestions when focus leaves the input (small delay to allow click)
-  input.addEventListener("blur", () => setTimeout(() => {
-    const box = document.getElementById("suggestions");
-    if (!box.matches(':hover')) {
-      box.hidden = true;
-      box.innerHTML = "";
-    }
-  }, 150));
+  input.addEventListener("blur", () =>
+    setTimeout(() => {
+      const box = document.getElementById("suggestions");
+      if (!box.matches(":hover")) {
+        box.hidden = true;
+        box.innerHTML = "";
+      }
+    }, 150)
+  );
   input.addEventListener("keydown", (e) => {
     const box = document.getElementById("suggestions");
     if (e.key === "Escape") {
-      const box = document.getElementById("suggestions");
       box.hidden = true;
       box.innerHTML = "";
     } else if (e.key === "Enter") {
       e.preventDefault();
-      // If a suggestion is active, choose it; else trigger search
       const items = Array.from(box.querySelectorAll(".item"));
       const idx = searchState.activeIndex;
       if (!box.hidden && items.length && idx >= 0 && idx < items.length) {
@@ -629,34 +682,26 @@ document.addEventListener("DOMContentLoaded", () => {
     let type = searchState.selectedType;
     let value = searchState.selectedValue || raw;
     if (!type) {
-      // heuristics: table names often contain dots
       type = raw.includes(".") ? "table" : "job";
     }
-    const data = await fetchNeighbors(type, value);
-    renderGraph(data);
+    try {
+      const data = await fetchNeighbors(type, value);
+      renderGraph(data);
+    } catch (err) {
+      handleAuthError(err);
+    }
   });
 
-  // Initial empty graph
   renderGraph({ nodes: [], edges: [] });
-  // Listen to SSE for trigger updates
-  try {
-    const es = new EventSource('/api/v1/events/trigger-status');
-    es.addEventListener('trigger_update', (e) => {
-      try {
-        const data = JSON.parse(e.data || '{}');
-        const toggles = document.querySelectorAll(`.trigger-toggle[data-job="${data.job_id}"]`);
-        toggles.forEach(el => {
-          // Only flip the checkbox; do not modify slider className or content
-          el.checked = !!data.new_state;
-          const slider = el.nextElementSibling;
-          if (slider && !slider.classList.contains('slider')) {
-            // Restore slider class if it was accidentally changed by older code
-            slider.className = 'slider';
-          }
-        });
-      } catch (_) {}
-    });
-  } catch (_) {}
+  attachTriggerStream();
+  document.addEventListener("auth:state-changed", (evt) => {
+    if (evt.detail?.authenticated) {
+      attachTriggerStream();
+    } else {
+      closeTriggerStream();
+      renderGraph({ nodes: [], edges: [] });
+    }
+  });
 });
-  // Prevent native context menu on the overlay/panel as well
-  ctxMenu?.addEventListener('contextmenu', (e) => e.preventDefault());
+
+document.getElementById("ctx-menu")?.addEventListener("contextmenu", (e) => e.preventDefault());

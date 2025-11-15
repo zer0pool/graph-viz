@@ -13,3 +13,5 @@ dependency-injector==4.41.0; python_version < "3.12"
 dependency-injector==4.44.0; python_version >= "3.12"
 redis==5.0.8
 cryptography==43.0.1
+PyJWT[crypto]==2.10.1
+PyJWT==2.10.1

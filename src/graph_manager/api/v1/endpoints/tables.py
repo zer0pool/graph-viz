@@ -3,6 +3,7 @@ import logging
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
+from graph_manager.core.auth import require_authenticated_user
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_service import GraphService
 from graph_manager.services.graph_query_service import GraphQueryService
@@ -11,7 +12,11 @@ from fastapi import Body
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/tables", tags=["Tables"])
+router = APIRouter(
+    prefix="/api/v1/tables",
+    tags=["Tables"],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
 @router.get("/{table_name}/impact")

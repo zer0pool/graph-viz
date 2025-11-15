@@ -5,6 +5,7 @@ from graph_manager.repositories.graph_edge_repository import GraphEdgeRepository
 from graph_manager.repositories.job_repository import JobRepository
 from graph_manager.repositories.job_table_link_repository import JobTableLinkRepository
 from graph_manager.repositories.table_repository import TableRepository
+from graph_manager.repositories.user_repository import UserRepository
 
 
 class GraphUnitOfWork:
@@ -22,6 +23,7 @@ class GraphUnitOfWork:
         self.job_table_links = JobTableLinkRepository(db)
         self.edges = GraphEdgeRepository(db)
         self.closures = ClosureRepository(db)
+        self.users = UserRepository(db)
 
     def commit(self):
         """Commit the current transaction."""

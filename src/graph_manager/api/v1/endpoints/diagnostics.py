@@ -1,6 +1,7 @@
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from graph_manager.core.auth import require_authenticated_user
 from graph_manager.core.config import get_settings
 from graph_manager.core.database import Database
 
@@ -10,7 +11,11 @@ except Exception:  # fallback if import path differs
     make_url = None
 
 
-router = APIRouter(prefix="/api/v1/diagnostics", tags=["diagnostics"])
+router = APIRouter(
+    prefix="/api/v1/diagnostics",
+    tags=["diagnostics"],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
 def _mask_url(url: str) -> str:
@@ -62,4 +67,3 @@ def diagnostics_db():
         },
         "connected": ok,
     }
-

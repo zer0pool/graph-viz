@@ -37,6 +37,14 @@
             <button id="loadBtn">Search</button>
             <div id="suggestions" class="suggestions" hidden></div>
         </div>
+        <div id="user-controls">
+            <button id="login-btn" class="btn-primary">Sign in with Google</button>
+            <div id="user-chip" class="user-chip" hidden>
+                <img id="user-avatar" alt="User profile">
+                <span id="user-chip-name"></span>
+                <span class="caret">▼</span>
+            </div>
+        </div>
     </div>
 
     <!-- Context menu for graph expansion -->
@@ -95,6 +103,18 @@
             <div id="node-info">Click a node to view details</div>
         </div>
     </div>
+    <div id="profile-panel" class="profile-panel" hidden>
+        <div class="profile-card">
+            <button id="profile-close" class="profile-close" title="Close">&times;</button>
+            <img id="profile-photo" alt="Profile photo">
+            <h2 id="profile-name">User</h2>
+            <p id="profile-email"></p>
+            <div id="profile-job-count" class="profile-meta"></div>
+            <ul id="profile-job-list" class="profile-jobs"></ul>
+            <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
+        </div>
+    </div>
+    <script src="/static/js/auth.js"></script>
     <script src="/static/js/main.js"></script>
 </body>
 

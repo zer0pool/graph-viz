@@ -14,6 +14,7 @@ from ..models import (
     job_table_link,
     graph_edge,
     graph_closure,
+    user_account,
 )
 from .config import get_settings
 
