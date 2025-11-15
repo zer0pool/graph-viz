@@ -36,8 +36,8 @@ export class PanelController {
   }
 
   setPlaceholder() {
-    this.elements.title.textContent = "그래프를 검색하세요";
-    this.elements.subtitle.textContent = "노드를 선택하면 상세 정보가 표시됩니다.";
+    this.elements.title.textContent = "Search the graph";
+    this.elements.subtitle.textContent = "Select a node to view its details.";
     this.elements.badge.textContent = "No node";
     this.elements.badge.classList.add("muted");
     this.renderList(this.elements.upstream, [], this.elements.upstreamMore);
@@ -51,7 +51,7 @@ export class PanelController {
   renderList(listEl, items, moreBtn) {
     listEl.innerHTML = "";
     if (!items.length) {
-      listEl.innerHTML = "<li>노드를 선택하세요.</li>";
+      listEl.innerHTML = "<li>Select a node to view data.</li>";
       listEl.classList.add("empty");
       if (moreBtn) moreBtn.hidden = true;
       return;
