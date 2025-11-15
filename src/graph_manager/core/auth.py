@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import httpx
 import jwt
@@ -8,7 +8,8 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient, PyJWKClientError
 
-from graph_manager.core.container import GraphContainer
+if TYPE_CHECKING:  # avoid circular import at runtime
+    from graph_manager.core.container import GraphContainer
 
 logger = logging.getLogger(__name__)
 

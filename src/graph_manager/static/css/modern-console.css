@@ -299,6 +299,33 @@ body {
     background: #fff;
 }
 
+.trigger-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.trigger-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.trigger-row:last-child {
+    border-bottom: none;
+}
+
+.trigger-job {
+    flex: 1;
+    margin-right: 12px;
+    color: #24292f;
+    font-weight: 600;
+}
+
 .panel-label {
     font-size: 12px;
     font-weight: 700;
