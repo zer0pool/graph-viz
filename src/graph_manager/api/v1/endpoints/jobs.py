@@ -6,15 +6,17 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from graph_manager.core.auth import require_authenticated_user
+from graph_manager.core.auth import is_auth_enabled, require_authenticated_user
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.graph_service import GraphService
 
 
+AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
+
 router = APIRouter(
     prefix="/api/v1/jobs",
     tags=["Jobs"],
-    dependencies=[Depends(require_authenticated_user)],
+    dependencies=AUTH_DEPS,
 )
 
 

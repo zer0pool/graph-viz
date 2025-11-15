@@ -35,12 +35,14 @@
       this.tokens = null;
       this.user = null;
       this.profileCache = null;
+      this.requireAuth = true;
       this.ready = this.initialize();
     }
 
     async initialize() {
       try {
         this.config = await this.fetchConfig();
+        this.requireAuth = !(this.config?.require_authentication === false);
         await this.handleRedirect();
         this.restoreSession();
         this.bindUI();
@@ -48,6 +50,11 @@
         console.error("Auth init failed", err);
       }
       this.updateUI();
+      document.dispatchEvent(
+        new CustomEvent("auth:state-changed", {
+          detail: { authenticated: this.isAuthenticated(), user: this.user },
+        })
+      );
     }
 
     async fetchConfig() {
@@ -123,12 +130,14 @@
     }
 
     isAuthenticated() {
+      if (!this.requireAuth) return true;
       if (!this.tokens) return false;
       if (!this.tokens.expires_at) return true;
       return this.tokens.expires_at > Date.now() - 5000;
     }
 
     ensureAuthenticated() {
+      if (!this.requireAuth) return;
       if (!this.isAuthenticated()) {
         throw new Error("AUTH_REQUIRED");
       }
@@ -139,15 +148,17 @@
     }
 
     async fetchWithAuth(input, init = {}) {
-      this.ensureAuthenticated();
       const headers = new Headers(init.headers || {});
-      headers.set("Authorization", `Bearer ${this.tokens.id_token}`);
-      if (this.user) {
-        try {
-          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(this.user))));
-          headers.set("X-User", encoded);
-        } catch (_) {
-          // ignore encoding errors
+      if (this.requireAuth) {
+        this.ensureAuthenticated();
+        headers.set("Authorization", `Bearer ${this.tokens.id_token}`);
+        if (this.user) {
+          try {
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(this.user))));
+            headers.set("X-User", encoded);
+          } catch (_) {
+            // ignore encoding errors
+          }
         }
       }
       const response = await fetch(input, { ...init, headers });
@@ -230,8 +241,8 @@
       const avatarEl = document.getElementById("user-avatar");
 
       const authed = this.isAuthenticated();
-      if (loginBtn) loginBtn.hidden = authed;
-      if (chip) chip.hidden = !authed;
+      if (loginBtn) loginBtn.hidden = authed || !this.requireAuth;
+      if (chip) chip.hidden = !authed || !this.requireAuth;
       if (authed && this.user) {
         nameEl && (nameEl.textContent = this.user.name || this.user.email || this.user.sub);
         if (avatarEl) {
@@ -241,7 +252,7 @@
     }
 
     async showProfile() {
-      this.ensureAuthenticated();
+      if (this.requireAuth) this.ensureAuthenticated();
       const panel = document.getElementById("profile-panel");
       const jobsList = document.getElementById("profile-job-list");
       const jobCount = document.getElementById("profile-job-count");

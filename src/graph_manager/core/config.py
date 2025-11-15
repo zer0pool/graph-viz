@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     redis_default_ttl: int = 60
+    require_authentication: bool = True
 
     # SSE / Polling
     sse_buffer_size: int = 512

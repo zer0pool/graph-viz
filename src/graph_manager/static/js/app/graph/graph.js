@@ -10,22 +10,33 @@ export class GraphController {
     this.api = api;
     this.searchState = searchState;
     this.cy = null;
+    this.currentCenterId = null;
+    this.nodePositions = new Map();
+    this.viewport = null;
+    this.lastLayoutDirection = "horizontal";
   }
 
   init(container) {
     if (this.cy) {
+      this.cacheViewport();
+      this.cachePositions();
       this.cy.destroy();
     }
     this.cy = cytoscape({
       container,
-      layout: { name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160 },
+      layout: { name: "concentric", minNodeSpacing: 120, levelWidth: () => 1 },
       minZoom: 0.6,
       maxZoom: 3.0,
-      wheelSensitivity: 0.3,
       style: getGraphStyles(),
+      userPanningEnabled: true,
+      userZoomingEnabled: true,
+      boxSelectionEnabled: false,
+      autounselectify: false,
     });
     this.bindGraphEvents();
     this.bindZoomControls();
+    this.registerPositionEvents();
+    this.registerViewportEvents();
     return this.cy;
   }
 
@@ -38,7 +49,10 @@ export class GraphController {
       if (!this.selectionState.node) this.resetHighlight();
     });
     cy.on("tap", "node", (evt) => {
-      this.selectNode(evt.target);
+      const target = evt.target;
+      this.selectNode(target);
+      this.highlightNeighborhood(target);
+      this.panel.renderTriggers(target);
     });
     cy.on("tap", (evt) => {
       if (evt.target === cy) this.clearSelection();
@@ -94,7 +108,8 @@ export class GraphController {
     updateZoomDisplay();
   }
 
-  renderGraph(payload) {
+  renderGraph(payload, options = {}) {
+    if (options.resetViewport) this.viewport = null;
     if (!this.cy) throw new Error("Graph not initialized");
     this.cy.destroy();
     this.init(document.getElementById("cy"));
@@ -108,13 +123,18 @@ export class GraphController {
       },
     }));
     this.cy.add([...nodes, ...edges]);
-    this.cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 100, rankSep: 120 }).run();
-    this.cy.minimap({ zoomFactor: 3.0 });
-    if (nodes.length + edges.length) {
-      this.cy.fit();
-      this.cy.zoom(this.cy.zoom() * 0.5);
-      this.cy.center();
+    const layoutDirection = options.forceLayoutDirection || this.lastLayoutDirection;
+    const shouldForceLayout = !this.nodePositions.size || options.forceLayoutDirection;
+    if (shouldForceLayout) {
+      this.forceLayout(layoutDirection, false);
+    } else {
+      this.applyCachedPositions();
+      this.positionNodes(options.centerLabel);
+      this.applyViewport();
+      this.cachePositions();
+      this.cacheViewport();
     }
+    this.cy.minimap({ zoomFactor: 3.0 });
     this.panel.setPlaceholder();
     this.applyFilters();
   }
@@ -213,6 +233,8 @@ export class GraphController {
     const existingEdges = new Set(cy.edges().map((e) => e.id()));
     const edgeKeys = new Set(cy.edges().map((e) => `${e.data("source")}__${e.data("target")}__${e.data("io") || ""}`));
     const addedNodeIds = [];
+    const upstreamAdded = [];
+    const downstreamAdded = [];
     (data.nodes || []).forEach((raw) => {
       if (!existingNodes.has(raw.id)) {
         const added = cy.add(this.serializeNode(raw));
@@ -228,32 +250,215 @@ export class GraphController {
       if (existingEdges.has(key)) return;
       cy.add({ data: { id: key, source: edge.source, target: edge.target, io: edge.io || "" } });
       edgeKeys.add(key);
+      if (edge.target === anchorId) upstreamAdded.push(edge.source);
+      if (edge.source === anchorId) downstreamAdded.push(edge.target);
     });
-    this.positionNewNodes(anchorId, addedNodeIds, direction);
+    if (direction === "upstream" && upstreamAdded.length === 0) upstreamAdded.push(...addedNodeIds);
+    if (direction === "downstream" && downstreamAdded.length === 0) downstreamAdded.push(...addedNodeIds);
+    this.positionNewRelative(anchorId, upstreamAdded, downstreamAdded);
+    this.forceLayout(this.lastLayoutDirection, true);
     this.applyFilters();
   }
 
-  positionNewNodes(anchorId, nodeIds, direction) {
-    if (!nodeIds.length || !this.cy) return;
+  positionNodes(centerLabel) {
+    if (!this.cy) return;
+    const center = this.findCenterNode(centerLabel);
+    if (!center || !center.nonempty()) return;
+    this.currentCenterId = center.id();
+    let centerPos = this.nodePositions.get(center.id());
+    if (!centerPos) {
+      centerPos = { x: this.cy.width() / 2, y: this.cy.height() / 2 };
+    }
+    center.position(centerPos);
+    const levels = this.computeLevels(center);
+    this.positionByLevels(levels, centerPos);
+    const unplaced = this.cy.nodes().filter((node) => !levels.has(node.id()));
+    if (unplaced.length) this.spreadDetachedNodes(unplaced, centerPos);
+    this.cy.resize();
+    if (!this.viewport) {
+      this.cy.fit(center, 100);
+      this.cacheViewport();
+    }
+    this.cachePositions();
+  }
+
+  findCenterNode(label) {
+    if (!this.cy) return null;
+    if (label) {
+      const match = this.cy.nodes().filter((node) => {
+        const lbl = node.data("label");
+        const full = node.data("full_name");
+        return lbl === label || full === label;
+      });
+      if (match && match.nonempty()) return match[0];
+    }
+    if (this.currentCenterId) {
+      const existing = this.cy.$(`#${this.currentCenterId}`);
+      if (existing && existing.nonempty()) return existing;
+    }
+    const tables = this.cy.nodes("[type='table']");
+    if (tables.nonempty()) return tables[0];
+    const all = this.cy.nodes();
+    return all.nonempty() ? all[0] : null;
+  }
+
+  spreadNodes(collection, centerPos, dx, spacing = 140) {
+    const count = collection.length;
+    if (!count) return;
+    collection.forEach((node, idx) => {
+      if (this.nodePositions.has(node.id())) return;
+      const offset = (idx - (count - 1) / 2) * spacing;
+      node.position({
+        x: centerPos.x + dx,
+        y: centerPos.y + offset,
+      });
+    });
+  }
+
+  spreadDetachedNodes(collection, origin, columns = 3, spacingX = 220, spacingY = 140) {
+    if (!collection || !collection.length) return;
+    collection.forEach((node, idx) => {
+      if (this.nodePositions.has(node.id())) return;
+      const col = idx % columns;
+      const row = Math.floor(idx / columns);
+      node.position({
+        x: origin.x + 300 + col * spacingX,
+        y: origin.y + row * spacingY,
+      });
+    });
+  }
+
+  registerPositionEvents() {
+    if (!this.cy) return;
+    this.cy.on("dragfree", "node", (evt) => {
+      const pos = evt.target.position();
+      this.nodePositions.set(evt.target.id(), { x: pos.x, y: pos.y });
+    });
+  }
+
+  cachePositions() {
+    if (!this.cy) return;
+    this.cy.nodes().forEach((node) => {
+      const pos = node.position();
+      this.nodePositions.set(node.id(), { x: pos.x, y: pos.y });
+    });
+  }
+
+  applyCachedPositions() {
+    if (!this.cy) return;
+    const existing = new Set(this.cy.nodes().map((n) => n.id()));
+    Array.from(this.nodePositions.keys()).forEach((id) => {
+      if (!existing.has(id)) this.nodePositions.delete(id);
+    });
+    this.cy.nodes().forEach((node) => {
+      const saved = this.nodePositions.get(node.id());
+      if (saved) node.position(saved);
+    });
+  }
+
+  positionNewRelative(anchorId, upstreamIds, downstreamIds) {
+    if (!this.cy || !anchorId) return;
     const anchor = this.cy.$(`#${anchorId}`);
     if (!anchor.nonempty()) return;
-    const pos = anchor.position();
-    const dx = 320;
-    const dy = 120;
-    const left = [];
-    const right = [];
-    nodeIds.forEach((id, index) => {
-      if (direction === "upstream") left.push({ id, index });
-      else if (direction === "downstream") right.push({ id, index });
-      else (index % 2 === 0 ? left : right).push({ id, index });
+    const base = anchor.position();
+    const place = (ids, dx) => {
+      const unique = Array.from(new Set(ids));
+      if (!unique.length) return;
+      unique.forEach((nid, idx) => {
+        const node = this.cy.$(`#${nid}`);
+        if (!node.nonempty()) return;
+        if (this.nodePositions.has(nid)) return;
+        const offset = (idx - (unique.length - 1) / 2) * 120;
+        node.position({ x: base.x + dx, y: base.y + offset });
+      });
+    };
+    place(upstreamIds, -260);
+    place(downstreamIds, 260);
+  }
+
+  registerViewportEvents() {
+    if (!this.cy) return;
+    this.cy.on("zoom", () => this.cacheViewport());
+    this.cy.on("pan", () => this.cacheViewport());
+  }
+
+  cacheViewport() {
+    if (!this.cy) return;
+    this.viewport = {
+      zoom: this.cy.zoom(),
+      pan: this.cy.pan(),
+    };
+  }
+
+  applyViewport() {
+    if (!this.cy || !this.viewport) return;
+    this.cy.zoom(this.viewport.zoom);
+    this.cy.pan(this.viewport.pan);
+  }
+
+  computeLevels(center) {
+    const levels = new Map();
+    if (!this.cy || !center) return levels;
+    levels.set(center.id(), 0);
+    const visit = (startNodes, delta, getNext) => {
+      const queue = [...startNodes];
+      queue.forEach((node) => {
+        const base = levels.get(node.id());
+        const neighbors = getNext(node);
+        neighbors.forEach((n) => {
+          if (levels.has(n.id())) return;
+          levels.set(n.id(), base + delta);
+          queue.push(n);
+        });
+      });
+    };
+    visit([center], -1, (node) => node.incomers("node"));
+    visit([center], 1, (node) => node.outgoers("node"));
+    return levels;
+  }
+
+  positionByLevels(levels, centerPos) {
+    if (!levels || !levels.size) return;
+    const groups = new Map();
+    levels.forEach((lvl, nodeId) => {
+      if (lvl === 0) return;
+      if (!groups.has(lvl)) groups.set(lvl, []);
+      groups.get(lvl).push(nodeId);
     });
-    left.forEach(({ id, index }) => {
-      const node = this.cy.$(`#${id}`);
-      if (node.nonempty()) node.position({ x: pos.x - dx, y: pos.y + (index - left.length / 2) * dy });
+    groups.forEach((ids, lvl) => {
+      const nodes = ids
+        .map((id) => this.cy.$(`#${id}`))
+        .filter((n) => n && n.nonempty());
+      if (!nodes.length) return;
+      nodes.sort((a, b) => a.id().localeCompare(b.id()));
+      nodes.forEach((node, idx) => {
+        if (this.nodePositions.has(node.id())) return;
+        const offset = (idx - (nodes.length - 1) / 2) * 120;
+        node.position({
+          x: centerPos.x + lvl * 260,
+          y: centerPos.y + offset,
+        });
+      });
     });
-    right.forEach(({ id, index }) => {
-      const node = this.cy.$(`#${id}`);
-      if (node.nonempty()) node.position({ x: pos.x + dx, y: pos.y + (index - right.length / 2) * dy });
-    });
+  }
+
+  forceLayout(direction = "horizontal", preserveViewport = true) {
+    if (!this.cy) return;
+    this.nodePositions.clear();
+    const previousViewport = preserveViewport ? { zoom: this.cy.zoom(), pan: this.cy.pan() } : null;
+    this.cy.layout({
+      name: "dagre",
+      rankDir: direction === "vertical" ? "TB" : "LR",
+      nodeSep: 260,
+      rankSep: 220,
+      animate: false,
+    }).run();
+    if (previousViewport) {
+      this.cy.zoom(previousViewport.zoom);
+      this.cy.pan(previousViewport.pan);
+    }
+    this.lastLayoutDirection = direction;
+    this.cachePositions();
+    this.cacheViewport();
   }
 }

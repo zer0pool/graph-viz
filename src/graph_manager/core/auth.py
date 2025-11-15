@@ -8,6 +8,8 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient, PyJWKClientError
 
+from graph_manager.core.config import get_settings
+
 if TYPE_CHECKING:  # avoid circular import at runtime
     from graph_manager.core.container import GraphContainer
 
@@ -169,3 +171,7 @@ async def require_authenticated_user(
     user_payload = serialize_user(claims, db_user)
     request.state.user = user_payload
     return user_payload
+
+
+def is_auth_enabled() -> bool:
+    return get_settings().require_authentication

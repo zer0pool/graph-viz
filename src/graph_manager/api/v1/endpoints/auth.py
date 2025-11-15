@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from graph_manager.core.auth import AuthenticationError, OIDCProviderClient, serialize_user
+from graph_manager.core.config import get_settings
 from graph_manager.core.container import GraphContainer
 from graph_manager.services.user_service import UserService
 
@@ -22,7 +23,9 @@ def get_auth_config(
     """
     Return minimal configuration so the frontend knows how to initiate OIDC login.
     """
-    return oidc_client.auth_config()
+    config = oidc_client.auth_config()
+    config["require_authentication"] = get_settings().require_authentication
+    return config
 
 
 @router.post("/exchange")

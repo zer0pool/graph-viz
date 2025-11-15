@@ -163,7 +163,7 @@ export class ControlBar {
       this.panel.showStatus("Loading graph…", true);
       const data = await this.api.fetchNeighbors(type, value, this.filterState.depth);
       this.panel.showStatus("", false);
-      this.graph.renderGraph(data);
+      this.graph.renderGraph(data, { centerLabel: value });
     } catch (err) {
       this.panel.showStatus("Failed to load graph", true);
       setTimeout(() => this.panel.showStatus("", false), 2000);
@@ -195,6 +195,12 @@ export class ControlBar {
         this.graph.cy.fit();
         this.graph.cy.center();
       }
+    });
+    document.getElementById("layout-horizontal")?.addEventListener("click", () => {
+      this.graph.forceLayout("horizontal");
+    });
+    document.getElementById("layout-vertical")?.addEventListener("click", () => {
+      this.graph.forceLayout("vertical");
     });
   }
 

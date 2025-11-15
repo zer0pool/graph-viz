@@ -97,7 +97,7 @@ export class EventService {
       }
       this.currentHash = newHash;
     } catch (err) {
-      // ignore transient errors
+      console.debug("state hash poll skipped:", err?.message || err);
     } finally {
       this.scheduleNextPoll();
     }
@@ -113,7 +113,7 @@ export class EventService {
     if (!last) return;
     try {
       const payload = await this.api.fetchNeighbors(last.type, last.value, this.filterState.depth);
-      this.graph.renderGraph(payload);
+      this.graph.renderGraph(payload, { centerLabel: last.value });
     } catch (err) {
       console.warn("Failed to replay last query", err);
     }

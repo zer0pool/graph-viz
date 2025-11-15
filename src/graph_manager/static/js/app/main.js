@@ -31,20 +31,21 @@ import { FilterState, SearchState, SelectionState, RelationState } from "./state
     const controls = new ControlBar({ api, graph, panel, filterState, searchState });
     controls.init();
 
-    const events = new EventService({ api, graph, panel, searchState, filterState });
-
-    if (window.authClient.isAuthenticated()) {
-      events.start();
-    }
-
-    document.addEventListener("auth:state-changed", (evt) => {
-      if (evt.detail?.authenticated) {
+    let events = null;
+    if (window.authClient.requireAuth) {
+      events = new EventService({ api, graph, panel, searchState, filterState });
+      if (window.authClient.isAuthenticated()) {
         events.start();
-      } else {
-        events.stop();
-        graph.clearSelection();
-        graph.renderGraph({ nodes: [], edges: [] });
       }
-    });
+      document.addEventListener("auth:state-changed", (evt) => {
+        if (evt.detail?.authenticated) {
+          events.start();
+        } else {
+          events.stop();
+          graph.clearSelection();
+          graph.renderGraph({ nodes: [], edges: [] }, { resetViewport: true });
+        }
+      });
+    }
   });
 })();
