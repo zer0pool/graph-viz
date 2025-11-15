@@ -8,8 +8,50 @@ const searchState = {
   activeIndex: -1,
 };
 
+const filterState = {
+  type: "all",
+  status: "all",
+  depth: 1,
+};
+
+const panelElements = {
+  title: document.getElementById("node-title"),
+  subtitle: document.getElementById("node-subtitle"),
+  type: document.getElementById("node-type-badge"),
+  upstream: document.getElementById("upstream-list"),
+  downstream: document.getElementById("downstream-list"),
+  upstreamMore: document.getElementById("upstream-more"),
+  downstreamMore: document.getElementById("downstream-more"),
+  owner: document.getElementById("meta-owner"),
+  description: document.getElementById("meta-description"),
+  updated: document.getElementById("meta-updated"),
+};
+
+const actionButtons = {
+  focus: document.getElementById("action-focus"),
+  expandUp: document.getElementById("action-expand-up"),
+  expandDown: document.getElementById("action-expand-down"),
+  expandBoth: document.getElementById("action-expand-both"),
+  layout: document.getElementById("layout-reset"),
+  clearSelection: document.getElementById("clear-selection"),
+  highlight: document.getElementById("highlight-path"),
+  resetGraph: document.getElementById("reset-graph"),
+};
+
+const filterControls = {
+  type: document.getElementById("type-filter"),
+  status: document.getElementById("status-filter"),
+  depth: document.getElementById("depth-filter"),
+};
+
+const relationState = {
+  upstream: [],
+  downstream: [],
+};
+
 const apiFetch = (...args) => window.authClient.fetchWithAuth(...args);
 let triggerStream = null;
+let selectedCyNode = null;
 
 function handleAuthError(err) {
   if (!err) return false;
@@ -18,6 +60,159 @@ function handleAuthError(err) {
     return true;
   }
   return false;
+}
+
+function setPanelPlaceholder() {
+  panelElements.title.textContent = "그래프를 검색하세요";
+  panelElements.subtitle.textContent = "노드를 선택하면 상세 정보가 표시됩니다.";
+  panelElements.type.textContent = "No node";
+  panelElements.type.classList.add("muted");
+  ["upstream", "downstream"].forEach((key) => {
+    const list = panelElements[key];
+    list.innerHTML = "<li>노드를 선택하세요.</li>";
+    list.classList.add("empty");
+  });
+  panelElements.upstreamMore.hidden = true;
+  panelElements.downstreamMore.hidden = true;
+  panelElements.owner.textContent = "-";
+  panelElements.description.textContent = "-";
+  panelElements.updated.textContent = "-";
+  relationState.upstream = [];
+  relationState.downstream = [];
+  const triggerSection = document.getElementById("trigger-section");
+  const triggerContainer = document.getElementById("node-triggers");
+  if (triggerSection) triggerSection.hidden = true;
+  if (triggerContainer) triggerContainer.innerHTML = "";
+}
+
+setPanelPlaceholder();
+
+function showRelation(kind) {
+  const items = relationState[kind] || [];
+  if (!items.length) return;
+  alert(items.join("\n"));
+}
+
+panelElements.upstreamMore?.addEventListener("click", () => showRelation("upstream"));
+panelElements.downstreamMore?.addEventListener("click", () => showRelation("downstream"));
+
+function buildList(listEl, items, moreButton) {
+  const limit = 5;
+  listEl.innerHTML = "";
+  if (!items.length) {
+    listEl.innerHTML = "<li>연결된 노드가 없습니다.</li>";
+    listEl.classList.add("empty");
+    moreButton.hidden = true;
+    return;
+  }
+  listEl.classList.remove("empty");
+  items.slice(0, limit).forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    listEl.appendChild(li);
+  });
+  const remaining = items.length - limit;
+  if (remaining > 0) {
+    moreButton.hidden = false;
+    moreButton.textContent = `+${remaining} more`;
+  } else {
+    moreButton.hidden = true;
+  }
+}
+
+function updateMetadataFields(data) {
+  panelElements.owner.textContent = data.owner || "Unassigned";
+  panelElements.description.textContent = data.description || "-";
+  panelElements.updated.textContent = data.updated_at || data.updated || "-";
+}
+
+function updateInfoPanel(node) {
+  if (!node) {
+    setPanelPlaceholder();
+    return;
+  }
+  const type = node.data("type") || "job";
+  panelElements.title.textContent = node.data("label") || node.id();
+  const secondary = type === "table" ? node.data("full_name") : node.data("job_id") || node.id();
+  panelElements.subtitle.textContent = secondary || "";
+  panelElements.type.textContent = type;
+  panelElements.type.classList.toggle("muted", false);
+
+  const incoming = node.incomers("node").map((x) => x.data("label"));
+  const outgoing = node.outgoers("node").map((x) => x.data("label"));
+  relationState.upstream = incoming;
+  relationState.downstream = outgoing;
+  buildList(panelElements.upstream, incoming, panelElements.upstreamMore);
+  buildList(panelElements.downstream, outgoing, panelElements.downstreamMore);
+  updateMetadataFields({
+    owner: node.data("owner"),
+    description: node.data("description"),
+    updated_at: node.data("updated_at") || node.data("updated"),
+  });
+}
+
+function dimGraphExcept(target) {
+  if (!window.cy) return;
+  const cy = window.cy;
+  cy.nodes().removeClass("selected connected dimmed pulse");
+  cy.edges().removeClass("highlighted dimmed");
+  if (!target) {
+    return;
+  }
+  cy.batch(() => {
+    cy.nodes().addClass("dimmed");
+    cy.edges().addClass("dimmed");
+    target.removeClass("dimmed").addClass("selected");
+    target.connectedEdges().removeClass("dimmed").addClass("highlighted");
+    target.connectedNodes().removeClass("dimmed").addClass("connected");
+  });
+}
+
+function selectNode(node) {
+  selectedCyNode = node || null;
+  dimGraphExcept(node);
+  updateInfoPanel(node);
+}
+
+function clearSelection() {
+  selectedCyNode = null;
+  if (window.cy) {
+    window.cy.nodes().removeClass("selected connected dimmed pulse");
+    window.cy.edges().removeClass("highlighted dimmed");
+  }
+  setPanelPlaceholder();
+}
+
+function pulseNode(node) {
+  if (!node) return;
+  node.addClass("pulse");
+  setTimeout(() => node.removeClass("pulse"), 600);
+}
+
+function showGraphStatus(message, visible = true) {
+  const el = document.getElementById("graph-status");
+  const textEl = document.getElementById("graph-status-text");
+  if (!el || !textEl) return;
+  textEl.textContent = message;
+  el.hidden = !visible;
+}
+
+function applyFilters() {
+  if (!window.cy) return;
+  const cy = window.cy;
+  cy.batch(() => {
+    cy.nodes().forEach((node) => {
+      const nodeType = (node.data("type") || "").toLowerCase();
+      const status = (node.data("status") || "unknown").toLowerCase();
+      const typePass = filterState.type === "all" || nodeType === filterState.type;
+      const statusPass = filterState.status === "all" || status === filterState.status;
+      if (typePass && statusPass) {
+        node.removeClass("filtered-out");
+      } else {
+        node.addClass("filtered-out");
+      }
+    });
+  });
 }
 
 function handleTriggerUpdate(event) {
@@ -76,8 +271,8 @@ async function fetchSuggestions(q) {
   return res.json();
 }
 
-async function fetchNeighbors(kind, value) {
-  const base = `/api/v1/graph/${kind}/${encodeURIComponent(value)}/neighbors?level=1`;
+async function fetchNeighbors(kind, value, level = filterState.depth || 1) {
+  const base = `/api/v1/graph/${kind}/${encodeURIComponent(value)}/neighbors?level=${level}`;
   const res = await apiFetch(base);
   if (!res.ok) throw new Error(`Neighbors failed: ${res.status}`);
   return res.json();
@@ -93,13 +288,18 @@ function renderGraph(data) {
     maxZoom: 3.0,
     wheelSensitivity: 0.3,
     style: [
-      { selector: "node", style: { shape: "round-rectangle", width: 240, height: 64, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "600", "text-wrap": "wrap", "text-max-width": "200px" } },
+      { selector: "node", style: { shape: "round-rectangle", width: 240, height: 64, "background-color": "#fff", "border-width": 2, "border-color": "#cdd9e5", label: "data(label)", color: "#24292f", "text-valign": "center", "text-halign": "center", "font-size": "13px", "font-weight": "600", "text-wrap": "wrap", "text-max-width": "200px", "shadow-blur": 0, "shadow-opacity": 0, "transition-property": "background-color, border-color, border-width, width, height, opacity, shadow-blur, shadow-opacity", "transition-duration": "200ms", "transition-timing-function": "ease-in-out" } },
       { selector: "node[type='table']", style: { shape: "round-rectangle", "background-color": "#eaf2ff", "border-color": "#1e6bd6", "background-image": ["/static/images/rail-blue.svg", "/static/images/icon-bq-table.svg"], "background-fit": ["none", "none"], "background-position-x": [0, 10], "background-position-y": ["50%", "50%"], "background-width": [8, 18], "background-height": ["100%", 18] } },
       { selector: "node[type='job']", style: { shape: "round-rectangle", "background-color": "#ffffff", "border-color": "#1f883d", "background-image": "/static/images/icon-job.svg", "background-fit": "none", "background-position-x": 10, "background-position-y": "50%", "background-width": 18, "background-height": 18 } },
       { selector: "edge", style: { "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": "#8b949e", "target-arrow-color": "#8b949e", width: 2 } },
-      // Smooth highlight transitions
-      { selector: 'node', style: { 'transition-property': 'background-color, border-color, border-width, shadow-blur, shadow-opacity', 'transition-duration': '200ms', 'transition-timing-function': 'ease-in-out' } },
-      { selector: 'node.selected', style: { 'border-color': '#0969da', 'border-width': 3, 'shadow-blur': 12, 'shadow-color': '#0969da', 'shadow-opacity': 0.35, 'shadow-offset-x': 0, 'shadow-offset-y': 0 } },
+      { selector: 'node.selected', style: { 'border-color': '#0969da', 'border-width': 4, 'width': 260, 'height': 72, 'shadow-blur': 18, 'shadow-color': '#0969da', 'shadow-opacity': 0.4, 'shadow-offset-x': 0, 'shadow-offset-y': 0 } },
+      { selector: 'node.connected', style: { 'opacity': 0.95 } },
+      { selector: 'node.dimmed', style: { 'opacity': 0.25 } },
+      { selector: 'node.filtered-out', style: { 'opacity': 0.05 } },
+      { selector: 'node.pulse', style: { 'border-color': '#f79009', 'shadow-color': '#f79009', 'shadow-blur': 22, 'shadow-opacity': 0.55 } },
+      { selector: 'node.just-added', style: { 'background-color': '#fef3c7', 'border-color': '#f59e0b' } },
+      { selector: 'edge.highlighted', style: { 'line-color': '#0969da', 'target-arrow-color': '#0969da', width: 4 } },
+      { selector: 'edge.dimmed', style: { 'opacity': 0.2 } },
       { selector: "edge[io='input']", style: { "line-style": "dashed" } },
     ],
   }));
@@ -120,11 +320,24 @@ function renderGraph(data) {
       const parts = label.split(".");
       label = parts[parts.length - 1];
     }
-    return { data: { id: n.id, label, type, full_name: n.full_name || n.label || null } };
+    return {
+      data: {
+        id: n.id,
+        label,
+        type,
+        full_name: n.full_name || n.label || null,
+        owner: n.owner || n.metadata?.owner,
+        description: n.description || n.metadata?.description,
+        status: n.status || n.metadata?.status,
+        job_id: n.job_id,
+        updated_at: n.updated_at,
+      },
+    };
   });
   const edges = (data.edges || []).map((e) => ({ data: { id: e.id || `${e.source}_${e.target}`, source: e.source, target: e.target, io: e.io || "" } }));
   cy.add([...nodes, ...edges]);
 
+  clearSelection();
   cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 100, rankSep: 120 }).run();
   cy.minimap({ zoomFactor: 3.0 });
 
@@ -136,9 +349,6 @@ function renderGraph(data) {
     cy.center();
   }
 
-  const panel = document.getElementById("side-panel");
-  const infoDiv = document.getElementById("node-info");
-  const closeBtn = document.getElementById("close-panel");
   const ctxMenu = document.getElementById("ctx-menu");
   const ctxDir = document.getElementById("ctx-direction");
   const ctxDepth = document.getElementById("ctx-depth");
@@ -174,37 +384,41 @@ function renderGraph(data) {
 
   cy.on("mouseover", "node", (evt) => {
     placeExpandButtons(evt.target);
+    if (!selectedCyNode) {
+      const target = evt.target;
+      cy.nodes().addClass("dimmed");
+      cy.edges().addClass("dimmed");
+      target.removeClass("dimmed").addClass("connected");
+      target.connectedEdges().removeClass("dimmed").addClass("highlighted");
+      target.connectedNodes().removeClass("dimmed").addClass("connected");
+    }
+  });
+
+  cy.on("mouseout", "node", () => {
+    if (!selectedCyNode) {
+      cy.nodes().removeClass("dimmed connected");
+      cy.edges().removeClass("dimmed highlighted");
+    }
   });
 
   cy.on("tap", "node", (evt) => {
     const n = evt.target;
-    // Smooth select effect
-    cy.nodes().removeClass('selected');
-    n.addClass('selected');
+    selectNode(n);
     placeExpandButtons(n);
-    const incoming = n.incomers("node").map((x) => x.data("label"));
-    const outgoing = n.outgoers("node").map((x) => x.data("label"));
-    infoDiv.innerHTML = `
-      <div class="group-box">
-        <div class="group-title">Details</div>
-        <div class="kv-row"><div class="kv-key">ID</div><div class="kv-val">${n.data("id")}</div></div>
-        <div class="kv-row"><div class="kv-key">Type</div><div class="kv-val">${n.data("type")}</div></div>
-        <div class="kv-row"><div class="kv-key">Name</div><div class="kv-val">${n.data("label")}</div></div>
-        ${ (n.data('type')||'') === 'table' && n.data('full_name') ? `
-          <div class="kv-row"><div class="kv-key">Full Name</div><div class="kv-val">${n.data('full_name')}</div></div>
-        ` : ''}
-        <div class="kv-row"><div class="kv-key">Upstream</div><div class="kv-val">${incoming.join(", ") || "-"}</div></div>
-        <div class="kv-row"><div class="kv-key">Downstream</div><div class="kv-val">${outgoing.join(", ") || "-"}</div></div>
-      </div>
-    `;
     if ((n.data('type') || '') === 'table') {
-      // Use full_name if present; otherwise fallback to label
       const tableFullName = n.data('full_name') || n.data('label');
-      renderTableTriggers(tableFullName, infoDiv);
+      renderTableTriggers(tableFullName);
+    } else {
+      const triggerSection = document.getElementById("trigger-section");
+      if (triggerSection) triggerSection.hidden = true;
     }
-    panel.classList.add("open");
   });
-  cy.on('tap', (evt) => { if (evt.target === cy) clearExpandButtons(); });
+  cy.on('tap', (evt) => {
+    if (evt.target === cy) {
+      clearExpandButtons();
+      clearSelection();
+    }
+  });
 
   // Right-click (context) to open expand menu near cursor
   cy.on("cxttap", "node", (evt) => {
@@ -303,16 +517,8 @@ function renderGraph(data) {
     } catch (_) {}
   });
 
-  cy.on("tap", (evt) => {
-    if (evt.target === cy) panel.classList.remove("open");
-  });
-  closeBtn.addEventListener("click", () => panel.classList.remove("open"));
-
-  // Keep fit button behavior as-is; initial fit handled above
-
   const zoomInBtn = document.getElementById("zoom-in");
   const zoomOutBtn = document.getElementById("zoom-out");
-  const fitBtn = document.getElementById("fitBtn");
   const zoomLevelText = document.getElementById("zoom-level");
 
   function updateZoomDisplay() {
@@ -332,11 +538,6 @@ function renderGraph(data) {
     cy.center();
     updateZoomDisplay();
   });
-  fitBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    cy.fit();
-    updateZoomDisplay();
-  });
   cy.on("zoom", updateZoomDisplay);
   updateZoomDisplay();
 
@@ -347,9 +548,17 @@ function renderGraph(data) {
   resetBtn?.addEventListener('click', (e) => { e.preventDefault(); cy.fit(); cy.center(); updateZoomDisplay(); });
   zoomResetBtn?.addEventListener('click', (e) => { e.preventDefault(); cy.zoom(1.0); cy.center(); updateZoomDisplay(); });
   miniBtn?.addEventListener('click', (e) => { e.preventDefault(); const mm = document.querySelector('.cy-minimap'); if (mm) { const shown = mm.style.display !== 'none'; mm.style.display = shown ? 'none' : 'block'; } });
+
+  applyFilters();
+  showGraphStatus("", false);
 }
 
-async function renderTableTriggers(tableName, infoDiv) {
+async function renderTableTriggers(tableName) {
+  const section = document.getElementById("trigger-section");
+  const container = document.getElementById("node-triggers");
+  if (!section || !container) return;
+  section.hidden = true;
+  container.innerHTML = "Loading…";
   try {
     const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`);
     if (!res.ok) throw new Error(`Failed to load triggers: ${res.status}`);
@@ -367,26 +576,23 @@ async function renderTableTriggers(tableName, infoDiv) {
       </tr>
     `).join('');
     const html = `
-      <div class="group-box">
-        <div class="group-header">
-          <div class="group-title">Trigger Tables</div>
-          <div class="grid-actions">
-            <button class="btn-pill danger" id="bulk-off">⛔ All OFF</button>
-          </div>
-        </div>
-        <table class="grid-table">
-          <thead>
-            <tr><th>Job</th><th>Trigger</th></tr>
-          </thead>
-          <tbody>
-            ${rows || '<tr><td colspan="2" class="badge-off">No consumers</td></tr>'}
-          </tbody>
-        </table>
+      <div class="group-header">
+        <div class="group-title">Trigger Jobs</div>
+        <button class="btn-pill danger" id="bulk-off">⛔ All OFF</button>
       </div>
+      <table class="grid-table">
+        <thead>
+          <tr><th>Job</th><th>Trigger</th></tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="2" class="badge-off">No consumers</td></tr>'}
+        </tbody>
+      </table>
     `;
-    infoDiv.insertAdjacentHTML('beforeend', html);
+    container.innerHTML = html;
+    section.hidden = false;
     // Attach toggle handlers (ensure clickable)
-    infoDiv.querySelectorAll('.trigger-toggle').forEach(el => {
+    container.querySelectorAll('.trigger-toggle').forEach(el => {
       el.addEventListener('change', async () => {
         const jobId = el.getAttribute('data-job');
         const want = el.checked;
@@ -397,9 +603,9 @@ async function renderTableTriggers(tableName, infoDiv) {
           const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers/${encodeURIComponent(jobId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: want }) });
           if (!res.ok) throw new Error('update failed');
           // Recalculate bulk-off disabled state
-          const bulkBtn = infoDiv.querySelector('#bulk-off');
+          const bulkBtn = container.querySelector('#bulk-off');
           if (bulkBtn) {
-            const anyOn = Array.from(infoDiv.querySelectorAll('.trigger-toggle')).some(chk => chk.checked);
+            const anyOn = Array.from(container.querySelectorAll('.trigger-toggle')).some(chk => chk.checked);
             bulkBtn.disabled = !anyOn; // disable if nothing to turn off
           }
         } catch (_) {
@@ -410,7 +616,7 @@ async function renderTableTriggers(tableName, infoDiv) {
     });
 
     // Bulk action: All OFF
-    const bulkOff = infoDiv.querySelector('#bulk-off');
+    const bulkOff = container.querySelector('#bulk-off');
     // Disable if all items already OFF
     if (bulkOff) {
       const anyOnInit = (data.jobs || []).some(j => !!j.trigger);
@@ -423,7 +629,7 @@ async function renderTableTriggers(tableName, infoDiv) {
         const res = await apiFetch(`/api/v1/tables/${encodeURIComponent(tableName)}/triggers`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: false }) });
         if (!res.ok) throw new Error('bulk off failed');
         // Update all switches locally
-        infoDiv.querySelectorAll('.trigger-toggle').forEach(el => { el.checked = false; });
+        container.querySelectorAll('.trigger-toggle').forEach(el => { el.checked = false; });
         if (bulkOff) bulkOff.disabled = true;
       } catch (e) {
         alert('Bulk OFF failed');
@@ -450,7 +656,9 @@ function mergeGraph(cy, data, anchorId, direction) {
   (data.nodes || []).forEach(n => {
     const id = n.id;
     if (!existingNodeIds.has(id)) {
-      cy.add({ data: { id: n.id, label: n.label, type: n.type || 'job' } });
+      const created = cy.add({ data: { id: n.id, label: n.label, type: n.type || 'job', owner: n.owner, description: n.description, status: n.status, full_name: n.full_name } });
+      created.addClass('just-added');
+      setTimeout(() => created.removeClass('just-added'), 600);
       addedNodes++;
       existingNodeIds.add(id);
       addedNodeIds.push(id);
@@ -526,6 +734,7 @@ function mergeGraph(cy, data, anchorId, direction) {
     // best-effort only
   }
 
+  applyFilters();
   return { nodes: addedNodes, edges: addedEdges };
 }
 
@@ -611,6 +820,57 @@ document.addEventListener("DOMContentLoaded", async () => {
   const input = document.getElementById("jobId");
   const loadBtn = document.getElementById("loadBtn");
 
+  if (filterControls.type) {
+    filterControls.type.addEventListener("change", () => {
+      filterState.type = filterControls.type.value;
+      applyFilters();
+    });
+  }
+  if (filterControls.status) {
+    filterControls.status.addEventListener("change", () => {
+      filterState.status = filterControls.status.value;
+      applyFilters();
+    });
+  }
+  if (filterControls.depth) {
+    filterState.depth = parseInt(filterControls.depth.value || "1", 10) || 1;
+    filterControls.depth.addEventListener("change", () => {
+      filterState.depth = parseInt(filterControls.depth.value || "1", 10) || 1;
+      const ctxDepth = document.getElementById("ctx-depth");
+      if (ctxDepth) ctxDepth.value = String(filterState.depth);
+    });
+  }
+
+  actionButtons.focus?.addEventListener("click", () => {
+    if (!selectedCyNode || !window.cy) return;
+    window.cy.animate({ center: { eles: selectedCyNode }, zoom: Math.min(window.cy.maxZoom(), Math.max(window.cy.zoom(), 1.2)) }, { duration: 350, easing: "ease-out" });
+  });
+  actionButtons.expandUp?.addEventListener("click", () => selectedCyNode && expandFrom(selectedCyNode, "upstream"));
+  actionButtons.expandDown?.addEventListener("click", () => selectedCyNode && expandFrom(selectedCyNode, "downstream"));
+  actionButtons.expandBoth?.addEventListener("click", () => selectedCyNode && expandFrom(selectedCyNode, "both"));
+  actionButtons.layout?.addEventListener("click", () => {
+    if (!window.cy) return;
+    window.cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160 }).run();
+  });
+  actionButtons.clearSelection?.addEventListener("click", () => {
+    clearSelection();
+    clearExpandButtons();
+  });
+  actionButtons.highlight?.addEventListener("click", () => {
+    if (!selectedCyNode || !window.cy) return;
+    const neighbors = selectedCyNode.closedNeighborhood();
+    window.cy.nodes().addClass("dimmed");
+    window.cy.edges().addClass("dimmed");
+    neighbors.removeClass("dimmed").addClass("connected");
+    neighbors.connectedEdges().removeClass("dimmed").addClass("highlighted");
+  });
+  actionButtons.resetGraph?.addEventListener("click", () => {
+    if (!window.cy) return;
+    clearSelection();
+    window.cy.fit();
+    applyFilters();
+  });
+
   const onInput = debounce(async () => {
     const q = input.value.trim();
     searchState.selectedType = null;
@@ -685,10 +945,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       type = raw.includes(".") ? "table" : "job";
     }
     try {
-      const data = await fetchNeighbors(type, value);
+      showGraphStatus("Loading graph…", true);
+      const data = await fetchNeighbors(type, value, filterState.depth);
       renderGraph(data);
+      showGraphStatus("", false);
     } catch (err) {
-      handleAuthError(err);
+      const handled = handleAuthError(err);
+      if (!handled) {
+        showGraphStatus("Failed to load graph", true);
+        setTimeout(() => showGraphStatus("", false), 2000);
+      }
     }
   });
 
