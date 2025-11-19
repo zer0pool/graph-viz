@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -81,6 +82,20 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+
+    @field_validator("require_authentication", mode="before")
+    @classmethod
+    def _normalize_require_auth(cls, value):
+        if isinstance(value, str):
+            cleaned = value.split("#", 1)[0].strip()
+            if cleaned == "":
+                return cls.require_authentication
+            lowered = cleaned.lower()
+            if lowered in {"true", "1", "yes", "on"}:
+                return True
+            if lowered in {"false", "0", "no", "off"}:
+                return False
+        return value
 
 
 @lru_cache()

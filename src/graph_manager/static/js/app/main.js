@@ -30,6 +30,7 @@ import { FilterState, SearchState, SelectionState, RelationState } from "./state
 
     const controls = new ControlBar({ api, graph, panel, filterState, searchState });
     controls.init();
+    setupExplorerShell();
 
     let events = null;
     if (window.authClient.requireAuth) {
@@ -49,3 +50,52 @@ import { FilterState, SearchState, SelectionState, RelationState } from "./state
     }
   });
 })();
+
+function setupExplorerShell() {
+  const controlPanel = document.getElementById("control-panel");
+  const detailPanel = document.getElementById("detail-panel");
+  const controlToggle = document.getElementById("control-toggle");
+  const detailToggle = document.getElementById("detail-toggle");
+  if (!controlPanel && !detailPanel) return;
+
+  const setPanelState = (panel, button, open) => {
+    if (!panel || !button) return;
+    panel.classList.toggle("collapsed", !open);
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+    const collapsedIcon = button.dataset?.collapsedIcon || "›";
+    const expandedIcon = button.dataset?.expandedIcon || "‹";
+    const chevron = button.querySelector(".chevron");
+    if (chevron) chevron.textContent = open ? expandedIcon : collapsedIcon;
+  };
+
+  const togglePanel = (panel, button) => {
+    if (!panel || !button) return false;
+    const nextOpen = panel.classList.contains("collapsed");
+    setPanelState(panel, button, nextOpen);
+    return nextOpen;
+  };
+
+  let detailManual = false;
+
+  controlToggle?.addEventListener("click", () => {
+    togglePanel(controlPanel, controlToggle);
+  });
+
+  detailToggle?.addEventListener("click", () => {
+    detailManual = true;
+    togglePanel(detailPanel, detailToggle);
+  });
+
+  if (controlPanel && controlToggle) {
+    setPanelState(controlPanel, controlToggle, !controlPanel.classList.contains("collapsed"));
+  }
+  if (detailPanel && detailToggle) {
+    setPanelState(detailPanel, detailToggle, !detailPanel.classList.contains("collapsed"));
+  }
+
+  document.addEventListener("detail-panel:selection", (evt) => {
+    if (!detailPanel || !detailToggle || detailManual) return;
+    const open = Boolean(evt.detail?.hasSelection);
+    setPanelState(detailPanel, detailToggle, open);
+  });
+}

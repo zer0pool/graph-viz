@@ -12,7 +12,7 @@
     <link rel="icon" href="/static/images/logo.png">
 
     <!-- Cytoscape.js 및 플러그인 -->
-    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
     <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
     <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
     <script src="/static/js/plugins/cytoscape-minimap.js"></script>
@@ -20,10 +20,12 @@
 </head>
 
 <body data-poll-interval="15000">
+    <!-- Cytoscape.js 및 플러그인 -->
+
     <div id="navbar">
         <div class="nav-brand">
             <img src="/static/images/logo.png" alt="Logo">
-            <h2>Scheduling Lineage Manager</h2>
+            <h2>Lineage Manager</h2>
         </div>
         <div id="nav-tabs">
             <button class="nav-tab active" type="button">Graph</button>
@@ -33,7 +35,9 @@
         </div>
         <div id="search-bar">
             <svg id="search-icon" viewBox="0 0 16 16">
-                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85zm-5.242.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"></path>
+                <path
+                    d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85zm-5.242.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z">
+                </path>
             </svg>
             <input type="text" id="jobId" placeholder="Search job or table..." autocomplete="off" />
             <button id="loadBtn">Search</button>
@@ -83,78 +87,63 @@
     </div>
 
     <div id="main-layout">
-        <aside id="info-panel">
-            <div class="panel-header">
-                <span id="node-type-badge" class="type-pill muted">No node</span>
-                <h2 id="node-title">Search the graph</h2>
-                <p id="node-subtitle">Select a node to view its details.</p>
-            </div>
-            <div class="panel-section">
-                <div class="panel-label">Metadata</div>
-                <div class="meta-grid">
-                    <div><span class="meta-key">Owner</span><span id="meta-owner" class="meta-val">-</span></div>
-                    <div><span class="meta-key">Description</span><span id="meta-description" class="meta-val">-</span></div>
-                    <div><span class="meta-key">Updated</span><span id="meta-updated" class="meta-val">-</span></div>
+        <aside id="control-panel" class="side-panel collapsed" aria-label="Explorer controls">
+            <button id="control-toggle" class="panel-handle" type="button" aria-expanded="false"
+                aria-controls="control-panel" title="Show controls" data-collapsed-icon="›" data-expanded-icon="‹">
+                <span class="chevron">›</span>
+            </button>
+            <div class="panel-body">
+                <div class="panel-heading">
+                    <h3>Explorer Controls</h3>
+                    <p>Tune the lineage view and run actions.</p>
                 </div>
-            </div>
-            <div class="panel-section" id="trigger-section" hidden>
-                <div class="panel-label">Trigger Jobs</div>
-                <div id="node-triggers" class="trigger-list"></div>
-            </div>
-            <div class="panel-section">
-                <div class="panel-label">Upstream</div>
-                <ul id="upstream-list" class="panel-list empty"><li>Select a node to view data.</li></ul>
-                <button id="upstream-more" class="link-button" hidden></button>
-            </div>
-            <div class="panel-section">
-                <div class="panel-label">Downstream</div>
-                <ul id="downstream-list" class="panel-list empty"><li>Select a node to view data.</li></ul>
-                <button id="downstream-more" class="link-button" hidden></button>
-            </div>
-            <div class="panel-section">
-                <div class="panel-label">Actions</div>
-                <div class="action-grid">
-                    <button id="action-focus" class="btn-secondary">Focus node</button>
-                    <button id="action-expand-up" class="btn-secondary">Expand ↑</button>
-                    <button id="action-expand-down" class="btn-secondary">Expand ↓</button>
-                    <button id="action-expand-both" class="btn-primary">Expand both</button>
+                <div class="panel-section tight">
+                    <div id="filter-bar" class="panel-stack">
+                        <div class="filter-group">
+                            <label for="type-filter">Type</label>
+                            <select id="type-filter">
+                                <option value="all" selected>All</option>
+                                <option value="job">Jobs</option>
+                                <option value="table">Tables</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="status-filter">Status</label>
+                            <select id="status-filter">
+                                <option value="all" selected>All</option>
+                                <option value="active">Active</option>
+                                <option value="disabled">Disabled</option>
+                                <option value="error">Error</option>
+                                <option value="unknown">Unknown</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="depth-filter">Depth</label>
+                            <select id="depth-filter">
+                                <option value="1" selected>1 hop</option>
+                                <option value="2">2 hop</option>
+                                <option value="3">3 hop</option>
+                            </select>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="reset-graph" class="btn-secondary">Reset graph</button>
+                            <button id="layout-horizontal" class="btn-secondary">Flow ←→</button>
+                            <button id="layout-vertical" class="btn-secondary">Flow ↑↓</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Node actions</div>
+                    <div class="action-grid">
+                        <button id="action-focus" class="btn-secondary">Focus node</button>
+                        <button id="action-expand-up" class="btn-secondary">Expand ↑</button>
+                        <button id="action-expand-down" class="btn-secondary">Expand ↓</button>
+                        <button id="action-expand-both" class="btn-primary">Expand both</button>
+                    </div>
                 </div>
             </div>
         </aside>
         <section id="graph-area">
-            <div id="filter-bar">
-                <div class="filter-group">
-                    <label for="type-filter">Type</label>
-                    <select id="type-filter">
-                        <option value="all" selected>All</option>
-                        <option value="job">Jobs</option>
-                        <option value="table">Tables</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="status-filter">Status</label>
-                    <select id="status-filter">
-                        <option value="all" selected>All</option>
-                        <option value="active">Active</option>
-                        <option value="disabled">Disabled</option>
-                        <option value="error">Error</option>
-                        <option value="unknown">Unknown</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="depth-filter">Depth</label>
-                    <select id="depth-filter">
-                        <option value="1" selected>1 hop</option>
-                        <option value="2">2 hop</option>
-                        <option value="3">3 hop</option>
-                    </select>
-                </div>
-                <div class="filter-actions">
-                    <button id="reset-graph" class="btn-secondary">Reset graph</button>
-                    <button id="layout-horizontal" class="btn-secondary">Flow ←→</button>
-                    <button id="layout-vertical" class="btn-secondary">Flow ↑↓</button>
-                </div>
-            </div>
             <div id="graph-shell">
                 <div id="graph-toolbar" class="floating-panel">
                     <button id="layout-reset" title="Re-run layout">Layout</button>
@@ -175,6 +164,47 @@
                 </div>
             </div>
         </section>
+        <aside id="detail-panel" class="side-panel detail collapsed" aria-label="Node details">
+            <button id="detail-toggle" class="panel-handle" type="button" aria-expanded="false"
+                aria-controls="detail-panel" title="Show details" data-collapsed-icon="‹" data-expanded-icon="›">
+                <span class="chevron">‹</span>
+            </button>
+            <div class="panel-body">
+                <div class="panel-header">
+                    <span id="node-type-badge" class="type-pill muted">No node</span>
+                    <h2 id="node-title">Search the graph</h2>
+                    <p id="node-subtitle">Select a node to view its details.</p>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Metadata</div>
+                    <div class="meta-grid">
+                        <div><span class="meta-key">Owner</span><span id="meta-owner" class="meta-val">-</span></div>
+                        <div><span class="meta-key">Description</span><span id="meta-description"
+                                class="meta-val">-</span></div>
+                        <div><span class="meta-key">Updated</span><span id="meta-updated" class="meta-val">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-section" id="trigger-section" hidden>
+                    <div class="panel-label">Trigger Jobs</div>
+                    <div id="node-triggers" class="trigger-list"></div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Upstream</div>
+                    <ul id="upstream-list" class="panel-list empty">
+                        <li>Select a node to view data.</li>
+                    </ul>
+                    <button id="upstream-more" class="link-button" hidden></button>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Downstream</div>
+                    <ul id="downstream-list" class="panel-list empty">
+                        <li>Select a node to view data.</li>
+                    </ul>
+                    <button id="downstream-more" class="link-button" hidden></button>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <div id="profile-panel" class="profile-panel" hidden>

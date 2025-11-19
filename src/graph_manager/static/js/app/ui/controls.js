@@ -7,10 +7,8 @@ export class ControlBar {
     this.panel = panel;
     this.filterState = filterState;
     this.searchState = searchState;
+    this.searchInputBound = false;
     this.elements = {
-      searchInput: document.querySelector(SELECTORS.searchInput),
-      searchButton: document.querySelector(SELECTORS.searchButton),
-      suggestions: document.querySelector(SELECTORS.suggestions),
       filterType: document.querySelector(SELECTORS.filterType),
       filterStatus: document.querySelector(SELECTORS.filterStatus),
       filterDepth: document.querySelector(SELECTORS.filterDepth),
@@ -35,13 +33,16 @@ export class ControlBar {
   }
 
   bindSearchInput() {
-    const input = this.elements.searchInput;
-    const button = this.elements.searchButton;
-    const suggestions = this.elements.suggestions;
-    if (!input || !button || !suggestions) return;
+    if (this.searchInputBound) return;
+    const selectorInput = SELECTORS.searchInput;
+    const selectorButton = SELECTORS.searchButton;
+    const getSuggestions = () => document.querySelector(SELECTORS.suggestions);
 
-    const onInput = this.debounce(async () => {
-      const q = input.value.trim();
+    const runSuggest = this.debounce(async (inputEl) => {
+      const suggestions = getSuggestions();
+      if (!inputEl || !suggestions) return;
+      if (!document.body.contains(inputEl)) return;
+      const q = inputEl.value?.trim?.() || "";
       this.searchState.resetActive();
       if (!q) {
         suggestions.hidden = true;
@@ -52,21 +53,46 @@ export class ControlBar {
       suggestions.innerHTML = '<div class="loading">Loading…</div>';
       try {
         const data = await this.api.fetchSuggestions(q);
-        this.renderSuggestions(data, suggestions, input);
+        this.renderSuggestions(data, suggestions, inputEl);
       } catch (err) {
         suggestions.innerHTML = '<div class="group">No results</div>';
       }
     }, 200);
 
-    input.addEventListener("input", onInput);
-    input.addEventListener("blur", () => setTimeout(() => {
-      if (!suggestions.matches(":hover")) {
-        suggestions.hidden = true;
-        suggestions.innerHTML = "";
-      }
-    }, 150));
-    input.addEventListener("keydown", (e) => this.handleSuggestionKeys(e, suggestions));
-    button.addEventListener("click", () => this.submitSearch());
+    this.searchHandlers = {
+      input: (event) => {
+        const target = event.target;
+        if (!target || !target.matches(selectorInput)) return;
+        runSuggest(target);
+      },
+      blur: (event) => {
+        const target = event.target;
+        if (!target || !target.matches(selectorInput)) return;
+        setTimeout(() => {
+          const box = getSuggestions();
+          if (!box || box.matches(":hover")) return;
+          box.hidden = true;
+          box.innerHTML = "";
+        }, 150);
+      },
+      keydown: (event) => {
+        const target = event.target;
+        if (!target || !target.matches(selectorInput)) return;
+        this.handleSuggestionKeys(event, getSuggestions());
+      },
+      click: (event) => {
+        if (event.target.closest(selectorButton)) {
+          event.preventDefault();
+          this.submitSearch();
+        }
+      },
+    };
+
+    document.addEventListener("input", this.searchHandlers.input);
+    document.addEventListener("blur", this.searchHandlers.blur, true);
+    document.addEventListener("keydown", this.searchHandlers.keydown);
+    document.addEventListener("click", this.searchHandlers.click);
+    this.searchInputBound = true;
   }
 
   renderSuggestions(data, box, input) {
@@ -114,6 +140,7 @@ export class ControlBar {
   }
 
   handleSuggestionKeys(e, box) {
+    if (!box) return;
     const items = Array.from(box.querySelectorAll(".item"));
     if (e.key === "Escape") {
       box.hidden = true;
@@ -150,8 +177,8 @@ export class ControlBar {
   }
 
   async submitSearch() {
-    const input = this.elements.searchInput;
-    const suggestions = this.elements.suggestions;
+    const input = document.querySelector(SELECTORS.searchInput);
+    const suggestions = document.querySelector(SELECTORS.suggestions);
     if (!input) return;
     const raw = input.value.trim();
     if (!raw) return;
@@ -168,8 +195,10 @@ export class ControlBar {
       this.panel.showStatus("Failed to load graph", true);
       setTimeout(() => this.panel.showStatus("", false), 2000);
     } finally {
-      suggestions.hidden = true;
-      suggestions.innerHTML = "";
+      if (suggestions) {
+        suggestions.hidden = true;
+        suggestions.innerHTML = "";
+      }
     }
   }
 

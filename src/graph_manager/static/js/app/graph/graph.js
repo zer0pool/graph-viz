@@ -43,13 +43,20 @@ export class GraphController {
   bindGraphEvents() {
     const cy = this.cy;
     cy.on("mouseover", "node", (evt) => {
+      evt.target.addClass("hovered");
       this.highlightNeighborhood(evt.target);
     });
-    cy.on("mouseout", "node", () => {
+    cy.on("mouseout", "node", (evt) => {
+      evt.target.removeClass("hovered");
       if (!this.selectionState.node) this.resetHighlight();
     });
     cy.on("tap", "node", (evt) => {
       const target = evt.target;
+      if (this.didTapExpandHandle(evt)) {
+        const depth = this.filterState?.depth ?? 1;
+        this.expand(target, "both", depth).catch((err) => console.warn("expand via handle failed", err));
+        return;
+      }
       this.selectNode(target);
       this.highlightNeighborhood(target);
       this.panel.renderTriggers(target);
@@ -141,14 +148,32 @@ export class GraphController {
 
   serializeNode(n) {
     const type = n.type || "job";
-    let label = n.label;
-    if (type === "table" && label?.includes(".")) {
-      label = label.split(".").pop();
+    const fallback = n.label || n.name || n.job_id || n.full_name || n.id;
+    let primary = fallback;
+    let secondary = "";
+    if (type === "table") {
+      const fullName = n.full_name || fallback || "";
+      if (fullName.includes(".")) {
+        const parts = fullName.split(".");
+        primary = parts.pop();
+        secondary = parts.join(".");
+      } else if (fallback?.includes(".")) {
+        const parts = fallback.split(".");
+        primary = parts.pop();
+        secondary = parts.join(".");
+      }
+    } else {
+      primary = fallback;
+      secondary = n.schedule || n.metadata?.schedule || n.metadata?.job_type || "";
     }
+    const labelText =
+      type === "table" ? primary : secondary ? `${primary}\n${secondary}` : primary;
     return {
       data: {
         id: n.id,
-        label,
+        label: primary,
+        label_text: labelText,
+        sub_label: secondary,
         type,
         full_name: n.full_name || n.label || null,
         owner: n.owner || n.metadata?.owner,
@@ -171,7 +196,7 @@ export class GraphController {
 
   resetHighlight() {
     if (!this.cy) return;
-    this.cy.nodes().removeClass("dimmed connected pulse");
+    this.cy.nodes().removeClass("dimmed connected pulse hovered");
     this.cy.edges().removeClass("dimmed highlighted");
   }
 
@@ -185,6 +210,9 @@ export class GraphController {
     this.panel.updateMetadata(node);
     this.panel.updateRelations(node);
     this.panel.renderTriggers(node);
+    if (typeof document !== "undefined") {
+      document.dispatchEvent(new CustomEvent("detail-panel:selection", { detail: { hasSelection: true } }));
+    }
   }
 
   clearSelection() {
@@ -194,6 +222,9 @@ export class GraphController {
       this.cy.edges().removeClass("highlighted dimmed");
     }
     this.panel.setPlaceholder();
+    if (typeof document !== "undefined") {
+      document.dispatchEvent(new CustomEvent("detail-panel:selection", { detail: { hasSelection: false } }));
+    }
   }
 
   applyFilters() {
@@ -302,7 +333,7 @@ export class GraphController {
     return all.nonempty() ? all[0] : null;
   }
 
-  spreadNodes(collection, centerPos, dx, spacing = 140) {
+  spreadNodes(collection, centerPos, dx, spacing = 60) {
     const count = collection.length;
     if (!count) return;
     collection.forEach((node, idx) => {
@@ -315,7 +346,7 @@ export class GraphController {
     });
   }
 
-  spreadDetachedNodes(collection, origin, columns = 3, spacingX = 220, spacingY = 140) {
+  spreadDetachedNodes(collection, origin, columns = 3, spacingX = 200, spacingY = 70) {
     if (!collection || !collection.length) return;
     collection.forEach((node, idx) => {
       if (this.nodePositions.has(node.id())) return;
@@ -368,12 +399,12 @@ export class GraphController {
         const node = this.cy.$(`#${nid}`);
         if (!node.nonempty()) return;
         if (this.nodePositions.has(nid)) return;
-        const offset = (idx - (unique.length - 1) / 2) * 120;
+        const offset = (idx - (unique.length - 1) / 2) * 45;
         node.position({ x: base.x + dx, y: base.y + offset });
       });
     };
-    place(upstreamIds, -260);
-    place(downstreamIds, 260);
+    place(upstreamIds, -210);
+    place(downstreamIds, 210);
   }
 
   registerViewportEvents() {
@@ -433,9 +464,9 @@ export class GraphController {
       nodes.sort((a, b) => a.id().localeCompare(b.id()));
       nodes.forEach((node, idx) => {
         if (this.nodePositions.has(node.id())) return;
-        const offset = (idx - (nodes.length - 1) / 2) * 120;
+        const offset = (idx - (nodes.length - 1) / 2) * 45;
         node.position({
-          x: centerPos.x + lvl * 260,
+          x: centerPos.x + lvl * 170,
           y: centerPos.y + offset,
         });
       });
@@ -446,13 +477,16 @@ export class GraphController {
     if (!this.cy) return;
     this.nodePositions.clear();
     const previousViewport = preserveViewport ? { zoom: this.cy.zoom(), pan: this.cy.pan() } : null;
-    this.cy.layout({
-      name: "dagre",
-      rankDir: direction === "vertical" ? "TB" : "LR",
-      nodeSep: 260,
-      rankSep: 220,
-      animate: false,
-    }).run();
+    this.cy
+      .layout({
+        name: "dagre",
+        rankDir: direction === "vertical" ? "TB" : "LR",
+        nodeSep: 90,
+        rankSep: 140,
+        edgeSep: 8,
+        animate: false,
+      })
+      .run();
     if (previousViewport) {
       this.cy.zoom(previousViewport.zoom);
       this.cy.pan(previousViewport.pan);
@@ -460,5 +494,16 @@ export class GraphController {
     this.lastLayoutDirection = direction;
     this.cachePositions();
     this.cacheViewport();
+  }
+
+  didTapExpandHandle(evt) {
+    const node = evt.target;
+    if (!node || node.data("type") !== "table") return false;
+    const pos = evt.renderedPosition;
+    if (!pos) return false;
+    const box = node.renderedBoundingBox({ includeLabels: true, includeOverlays: false });
+    if (!box) return false;
+    const handleWidth = 60;
+    return pos.x >= box.x1 && pos.x <= box.x1 + handleWidth && pos.y >= box.y1 && pos.y <= box.y2;
   }
 }
