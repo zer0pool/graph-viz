@@ -113,7 +113,7 @@ export class EventService {
     if (!last) return;
     try {
       const payload = await this.api.fetchNeighbors(last.type, last.value, this.filterState.depth);
-      this.graph.renderGraph(payload, { centerLabel: last.value });
+      this.graph.renderGraph(payload, { centerLabel: last.value, rememberInitial: true, resetViewport: true });
     } catch (err) {
       console.warn("Failed to replay last query", err);
     }

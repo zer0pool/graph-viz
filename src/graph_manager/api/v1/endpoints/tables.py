@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from dependency_injector.wiring import Provide, inject
@@ -93,3 +94,52 @@ async def bulk_set_table_trigger(
                 },
             )
     return result
+
+
+@router.get("/{table_name}/load-history")
+async def get_table_load_history(table_name: str):
+    """Return dummy load timeline data with a guaranteed 1s response time."""
+    await asyncio.sleep(1)
+    timeline = [
+        {
+            "run_id": "2024-07-03T08:15:00Z",
+            "status": "SUCCESS",
+            "duration_sec": 142,
+            "updated_at": "2024-07-03T08:17:22Z",
+            "rows_loaded": 1520,
+            "source_job": "JOB_DAILY_LOAD",
+            "notes": "Scheduled daily ingestion",
+            "data_interval_start": "2024-07-03T06:00:00Z",
+            "data_interval_end": "2024-07-03T08:00:00Z",
+            "interval": "06:00–08:00 UTC",
+        },
+        {
+            "run_id": "2024-07-02T08:15:00Z",
+            "status": "SUCCESS",
+            "duration_sec": 125,
+            "updated_at": "2024-07-02T08:17:05Z",
+            "rows_loaded": 1439,
+            "source_job": "JOB_DAILY_LOAD",
+            "notes": "Scheduled daily ingestion",
+            "data_interval_start": "2024-07-02T06:00:00Z",
+            "data_interval_end": "2024-07-02T08:00:00Z",
+            "interval": "06:00–08:00 UTC",
+        },
+        {
+            "run_id": "2024-07-01T08:15:00Z",
+            "status": "FAILED",
+            "duration_sec": 30,
+            "updated_at": "2024-07-01T08:15:45Z",
+            "rows_loaded": 0,
+            "source_job": "JOB_DAILY_LOAD",
+            "notes": "Timeout contacting source API",
+            "data_interval_start": "2024-07-01T06:00:00Z",
+            "data_interval_end": "2024-07-01T08:00:00Z",
+            "interval": "06:00–08:00 UTC",
+        },
+    ]
+    return {
+        "status": "success",
+        "input": {"table": table_name},
+        "result": {"timeline": timeline},
+    }

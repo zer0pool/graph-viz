@@ -31,6 +31,9 @@ import { FilterState, SearchState, SelectionState, RelationState } from "./state
     const controls = new ControlBar({ api, graph, panel, filterState, searchState });
     controls.init();
     setupExplorerShell();
+    setupViewToggle(graph);
+    setupDetailTabs();
+    setupDetailResizer();
 
     let events = null;
     if (window.authClient.requireAuth) {
@@ -94,8 +97,140 @@ function setupExplorerShell() {
   }
 
   document.addEventListener("detail-panel:selection", (evt) => {
-    if (!detailPanel || !detailToggle || detailManual) return;
+    if (!detailPanel || !detailToggle) return;
     const open = Boolean(evt.detail?.hasSelection);
+    detailManual = false;
     setPanelState(detailPanel, detailToggle, open);
   });
+
+  document.addEventListener("detail-panel:toggle", () => {
+    detailManual = true;
+    togglePanel(detailPanel, detailToggle);
+  });
+}
+
+function setupViewToggle(graph) {
+  const tabs = document.querySelectorAll(".view-tab");
+  if (!tabs.length) return;
+  const setActive = (mode) => {
+    tabs.forEach((btn) => {
+      const isList = btn.textContent.trim().toLowerCase() === "list";
+      const active = mode === "list" ? isList : !isList;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    graph.setViewMode(mode);
+  };
+  tabs.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.textContent.trim().toLowerCase() === "list" ? "list" : "graph";
+      setActive(mode);
+    });
+  });
+  setActive("graph");
+}
+
+function setupDetailTabs() {
+  const groups = document.querySelectorAll(".detail-tabs");
+  if (!groups.length) return;
+  groups.forEach((group) => {
+    const tabs = group.querySelectorAll(".detail-tab");
+    if (!tabs.length) return;
+    const groupName = group.dataset.tabGroup || "default";
+    const panelsContainer = document.querySelector(`.detail-tab-panels[data-tab-group="${groupName}"]`);
+    const panes = panelsContainer ? panelsContainer.querySelectorAll(".detail-pane") : document.querySelectorAll(
+      `.detail-pane[data-tab-panel][data-group="${groupName}"]`
+    );
+    const defaultTab = group.dataset.defaultTab || tabs[0]?.dataset.tab || "schema";
+    const activate = (target, suppressEvent = false) => {
+      tabs.forEach((tab) => {
+        const isActive = tab.dataset.tab === target;
+        tab.classList.toggle("active", isActive);
+        tab.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+      panes.forEach((pane) => {
+        pane.classList.toggle("active", pane.dataset.tabPanel === target);
+      });
+      if (!suppressEvent) {
+        document.dispatchEvent(
+          new CustomEvent("detail-tabs:changed", {
+            detail: { group: groupName, tab: target },
+          })
+        );
+      }
+    };
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab || defaultTab;
+        activate(target);
+      });
+    });
+    activate(defaultTab, true);
+  });
+}
+
+function setupDetailResizer() {
+  const detailPanel = document.getElementById("detail-panel");
+  const resizer = document.getElementById("detail-resizer");
+  if (!detailPanel || !resizer) return;
+  const clampWidth = (width) => {
+    const min = Math.max(window.innerWidth * 0.2, 240);
+    const max = Math.max(window.innerWidth * 0.5, min + 40);
+    return Math.min(Math.max(width, min), max);
+  };
+
+  const applyWidth = (width) => {
+    const clamped = clampWidth(width);
+    currentWidth = clamped;
+    document.documentElement.style.setProperty("--detail-panel-width", `${clamped}px`);
+    detailPanel.style.width = `${clamped}px`;
+  };
+
+  let startX = 0;
+  let startWidth = 0;
+  let dragging = false;
+  let currentWidth = detailPanel.getBoundingClientRect().width;
+
+  const stopDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = "";
+    document.removeEventListener("mousemove", handleDrag);
+    document.removeEventListener("mouseup", stopDrag);
+  };
+
+  const handleDrag = (event) => {
+    if (!dragging) return;
+    const delta = startX - event.clientX;
+    applyWidth(startWidth + delta);
+  };
+
+  resizer.addEventListener("mousedown", (event) => {
+    if (detailPanel.classList.contains("collapsed")) return;
+    dragging = true;
+    startX = event.clientX;
+    startWidth = detailPanel.getBoundingClientRect().width;
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleDrag);
+    document.addEventListener("mouseup", stopDrag);
+  });
+
+  window.addEventListener("resize", () => {
+    const current = detailPanel.getBoundingClientRect().width;
+    if (!detailPanel.classList.contains("collapsed")) {
+      applyWidth(current);
+    }
+  });
+
+  const observer = new MutationObserver(() => {
+    const collapsed = detailPanel.classList.contains("collapsed");
+    resizer.hidden = collapsed;
+    if (collapsed) {
+      detailPanel.style.removeProperty("width");
+    } else {
+      applyWidth(currentWidth);
+    }
+  });
+  observer.observe(detailPanel, { attributes: true, attributeFilter: ["class"] });
+  resizer.hidden = detailPanel.classList.contains("collapsed");
 }

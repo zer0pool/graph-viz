@@ -14,6 +14,18 @@ export class GraphController {
     this.nodePositions = new Map();
     this.viewport = null;
     this.lastLayoutDirection = "horizontal";
+    this.minimapVisible = false;
+    this.minimapEl = null;
+    this.graphCanvas = document.getElementById("cy");
+    this.listView = document.getElementById("list-view");
+    this.listTableBody = document.querySelector("#node-list-table tbody");
+    this.listDownloadBtn = document.getElementById("list-download");
+    this.viewMode = "graph";
+    this.listRows = [];
+    this.listDownloadBound = false;
+    this.baseGraph = null;
+    this.baseCenterLabel = null;
+    this.tooltip = null;
   }
 
   init(container) {
@@ -25,13 +37,14 @@ export class GraphController {
     this.cy = cytoscape({
       container,
       layout: { name: "concentric", minNodeSpacing: 120, levelWidth: () => 1 },
-      minZoom: 0.6,
-      maxZoom: 3.0,
+      minZoom: 0.5,
+      maxZoom: 2.0,
       style: getGraphStyles(),
       userPanningEnabled: true,
       userZoomingEnabled: true,
       boxSelectionEnabled: false,
       autounselectify: false,
+      autoungrabify: true,
     });
     this.bindGraphEvents();
     this.bindZoomControls();
@@ -45,24 +58,27 @@ export class GraphController {
     cy.on("mouseover", "node", (evt) => {
       evt.target.addClass("hovered");
       this.highlightNeighborhood(evt.target);
+      this.maybeShowJobTooltip(evt);
+    });
+    cy.on("mousemove", "node", (evt) => {
+      this.maybeShowJobTooltip(evt, true);
     });
     cy.on("mouseout", "node", (evt) => {
       evt.target.removeClass("hovered");
       if (!this.selectionState.node) this.resetHighlight();
+      this.hideTooltip();
     });
     cy.on("tap", "node", (evt) => {
       const target = evt.target;
-      if (this.didTapExpandHandle(evt)) {
-        const depth = this.filterState?.depth ?? 1;
-        this.expand(target, "both", depth).catch((err) => console.warn("expand via handle failed", err));
-        return;
-      }
       this.selectNode(target);
       this.highlightNeighborhood(target);
       this.panel.renderTriggers(target);
     });
     cy.on("tap", (evt) => {
       if (evt.target === cy) this.clearSelection();
+    });
+    cy.on("dbltap", "node", () => {
+      document.dispatchEvent(new CustomEvent("detail-panel:toggle"));
     });
   }
 
@@ -108,8 +124,7 @@ export class GraphController {
     });
     minimap?.addEventListener("click", (e) => {
       e.preventDefault();
-      const mm = document.querySelector(".cy-minimap");
-      if (mm) mm.style.display = mm.style.display === "none" ? "block" : "none";
+      this.setMinimapVisible(!this.minimapVisible);
     });
     this.cy?.on("zoom", updateZoomDisplay);
     updateZoomDisplay();
@@ -118,6 +133,10 @@ export class GraphController {
   renderGraph(payload, options = {}) {
     if (options.resetViewport) this.viewport = null;
     if (!this.cy) throw new Error("Graph not initialized");
+    if (options.rememberInitial) {
+      this.baseGraph = JSON.parse(JSON.stringify(payload));
+      this.baseCenterLabel = options.centerLabel || null;
+    }
     this.cy.destroy();
     this.init(document.getElementById("cy"));
     const nodes = (payload.nodes || []).map((n) => this.serializeNode(n));
@@ -142,8 +161,22 @@ export class GraphController {
       this.cacheViewport();
     }
     this.cy.minimap({ zoomFactor: 3.0 });
+    this.minimapVisible = false;
+    const scheduleHide =
+      typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame
+        : (cb) => setTimeout(cb, 0);
+    scheduleHide(() => {
+      this.setMinimapVisible(false);
+      if (this.cy) this.cy.zoom(1.0);
+    });
     this.panel.setPlaceholder();
     this.applyFilters();
+    this.updateListView();
+    this.bindListDownload();
+    this.updateToolbarVisibility();
+    this.resetTableTabs();
+    this.setViewMode(this.viewMode);
   }
 
   serializeNode(n) {
@@ -289,6 +322,8 @@ export class GraphController {
     this.positionNewRelative(anchorId, upstreamAdded, downstreamAdded);
     this.forceLayout(this.lastLayoutDirection, true);
     this.applyFilters();
+    this.updateListView();
+    this.updateToolbarVisibility();
   }
 
   positionNodes(centerLabel) {
@@ -336,9 +371,12 @@ export class GraphController {
   spreadNodes(collection, centerPos, dx, spacing = 60) {
     const count = collection.length;
     if (!count) return;
+    const sample = collection[0];
+    const baseHeight = sample?.height?.() || 30;
+    const spacingY = Math.min(spacing, baseHeight);
     collection.forEach((node, idx) => {
       if (this.nodePositions.has(node.id())) return;
-      const offset = (idx - (count - 1) / 2) * spacing;
+      const offset = (idx - (count - 1) / 2) * spacingY;
       node.position({
         x: centerPos.x + dx,
         y: centerPos.y + offset,
@@ -348,13 +386,19 @@ export class GraphController {
 
   spreadDetachedNodes(collection, origin, columns = 3, spacingX = 200, spacingY = 70) {
     if (!collection || !collection.length) return;
+    const sample = collection[0];
+    const baseHeight = sample?.height?.() || 30;
+    const baseWidth = sample?.width?.() || 120;
+    const verticalSpacing = Math.min(spacingY, baseHeight);
+    const horizontalSpacing =
+      this.lastLayoutDirection === "vertical" ? Math.min(spacingX, baseWidth * 0.5) : spacingX;
     collection.forEach((node, idx) => {
       if (this.nodePositions.has(node.id())) return;
       const col = idx % columns;
       const row = Math.floor(idx / columns);
       node.position({
-        x: origin.x + 300 + col * spacingX,
-        y: origin.y + row * spacingY,
+        x: origin.x + 300 + col * horizontalSpacing,
+        y: origin.y + row * verticalSpacing,
       });
     });
   }
@@ -392,19 +436,26 @@ export class GraphController {
     const anchor = this.cy.$(`#${anchorId}`);
     if (!anchor.nonempty()) return;
     const base = anchor.position();
-    const place = (ids, dx) => {
+    const anchorWidth = anchor.width() || 120;
+    const horizontalSpacing =
+      this.lastLayoutDirection === "vertical" ? Math.min(anchorWidth * 0.5, 210) : 210;
+    const place = (ids, dir) => {
       const unique = Array.from(new Set(ids));
       if (!unique.length) return;
-      unique.forEach((nid, idx) => {
-        const node = this.cy.$(`#${nid}`);
-        if (!node.nonempty()) return;
-        if (this.nodePositions.has(nid)) return;
-        const offset = (idx - (unique.length - 1) / 2) * 45;
-        node.position({ x: base.x + dx, y: base.y + offset });
+      const nodes = unique
+        .map((nid) => this.cy.$(`#${nid}`))
+        .filter((node) => node && node.nonempty() && !this.nodePositions.has(node.id()));
+      if (!nodes.length) return;
+      const sample = nodes[0];
+      const baseHeight = sample.height() || 30;
+      const spacingY = Math.min(45, baseHeight);
+      nodes.forEach((node, idx) => {
+        const offset = (idx - (nodes.length - 1) / 2) * spacingY;
+        node.position({ x: base.x + dir * horizontalSpacing, y: base.y + offset });
       });
     };
-    place(upstreamIds, -210);
-    place(downstreamIds, 210);
+    place(upstreamIds, -1);
+    place(downstreamIds, 1);
   }
 
   registerViewportEvents() {
@@ -462,11 +513,16 @@ export class GraphController {
         .filter((n) => n && n.nonempty());
       if (!nodes.length) return;
       nodes.sort((a, b) => a.id().localeCompare(b.id()));
+      const sample = nodes[0];
+      const baseHeight = sample.height() || 30;
+      const spacingY = Math.min(45, baseHeight);
+      const baseWidth = sample.width() || 120;
+      const spacingX = this.lastLayoutDirection === "vertical" ? Math.min(baseWidth * 0.5, 170) : 170;
       nodes.forEach((node, idx) => {
         if (this.nodePositions.has(node.id())) return;
-        const offset = (idx - (nodes.length - 1) / 2) * 45;
+        const offset = (idx - (nodes.length - 1) / 2) * spacingY;
         node.position({
-          x: centerPos.x + lvl * 170,
+          x: centerPos.x + lvl * spacingX,
           y: centerPos.y + offset,
         });
       });
@@ -477,16 +533,24 @@ export class GraphController {
     if (!this.cy) return;
     this.nodePositions.clear();
     const previousViewport = preserveViewport ? { zoom: this.cy.zoom(), pan: this.cy.pan() } : null;
-    this.cy
-      .layout({
-        name: "dagre",
-        rankDir: direction === "vertical" ? "TB" : "LR",
-        nodeSep: 90,
-        rankSep: 140,
-        edgeSep: 8,
-        animate: false,
-      })
-      .run();
+    const sample = this.cy.nodes()[0];
+    const sampleHeight = sample?.height?.() || 40;
+    const sampleWidth = sample?.width?.() || 120;
+    const layout = {
+      name: "dagre",
+      rankDir: direction === "vertical" ? "TB" : "LR",
+      nodeSep:
+        direction === "vertical"
+          ? Math.min(sampleWidth * 0.5, 80)
+          : Math.min(sampleHeight, 90),
+      rankSep:
+        direction === "vertical"
+          ? Math.max(sampleHeight, 90)
+          : Math.max(sampleWidth + 30, 150),
+      edgeSep: 8,
+      animate: false,
+    };
+    this.cy.layout(layout).run();
     if (previousViewport) {
       this.cy.zoom(previousViewport.zoom);
       this.cy.pan(previousViewport.pan);
@@ -496,14 +560,166 @@ export class GraphController {
     this.cacheViewport();
   }
 
-  didTapExpandHandle(evt) {
+  setViewMode(mode = "graph") {
+    this.viewMode = mode === "list" ? "list" : "graph";
+    if (this.graphCanvas) this.graphCanvas.hidden = this.viewMode === "list";
+    if (this.listView) this.listView.hidden = this.viewMode !== "list";
+    if (this.viewMode === "graph" && this.cy) {
+      this.cy.resize();
+    }
+  }
+
+  updateListView() {
+    if (!this.listTableBody) return;
+    if (!this.cy) {
+      this.listTableBody.innerHTML = "";
+      this.listRows = [];
+      return;
+    }
+    const rows = this.cy
+      .nodes()
+      .map((node) => {
+        const data = node.data();
+        return {
+          name: data.label || node.id(),
+          type: (data.type || "job").toUpperCase(),
+          owner: data.owner || "-",
+          updated: data.updated_at || data.updated || "-",
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    this.listRows = rows;
+    if (!rows.length) {
+      this.listTableBody.innerHTML = '<tr><td colspan="4">No nodes in view.</td></tr>';
+      return;
+    }
+    this.listTableBody.innerHTML = rows
+      .map(
+        (row) => `<tr>
+          <td>${row.name}</td>
+          <td>${row.type}</td>
+          <td>${row.owner}</td>
+          <td>${row.updated}</td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  bindListDownload() {
+    if (this.listDownloadBound || !this.listDownloadBtn) return;
+    this.listDownloadBtn.addEventListener("click", () => this.downloadList());
+    this.listDownloadBound = true;
+  }
+
+  downloadList() {
+    if (!this.listRows.length) {
+      alert("No nodes to download.");
+      return;
+    }
+    const header = ["Name", "Type", "Owner", "Updated"];
+    const csvRows = [header.join(",")].concat(
+      this.listRows.map((row) => [row.name, row.type, row.owner, row.updated].map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+    );
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "lineage-nodes.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  getMinimapElement() {
+    if (typeof document === "undefined") return null;
+    if (this.minimapEl && document.body.contains(this.minimapEl)) {
+      return this.minimapEl;
+    }
+    this.minimapEl = document.querySelector(".cy-minimap");
+    return this.minimapEl;
+  }
+
+  setMinimapVisible(visible) {
+    this.minimapVisible = Boolean(visible);
+    const mm = this.getMinimapElement();
+    if (mm) {
+      mm.style.display = this.minimapVisible ? "block" : "none";
+    }
+  }
+
+  updateToolbarVisibility() {
+    const toolbar = document.getElementById("graph-toolbar");
+    if (!toolbar) return;
+    const hasGraph = this.cy && this.cy.nodes().length > 0;
+    toolbar.hidden = !hasGraph;
+    if (!hasGraph) this.setMinimapVisible(false);
+  }
+
+  resetTableTabs() {
+    const tabs = document.querySelectorAll("#table_tabs .detail-tab");
+    const panels = document.querySelectorAll('.detail-tab-panels[data-tab-group="table"] .detail-pane');
+    if (!tabs.length) return;
+    tabs.forEach((tab) => {
+      const isSchema = (tab.dataset.tab || "schema") === "schema";
+      tab.classList.toggle("active", isSchema);
+      tab.setAttribute("aria-selected", isSchema ? "true" : "false");
+    });
+    panels.forEach((pane) => {
+      const isSchema = (pane.dataset.tabPanel || "schema") === "schema";
+      pane.classList.toggle("active", isSchema);
+    });
+  }
+
+  showTooltip(evt, text, repositionOnly = false) {
+    const pos = this.getRenderedPosition(evt);
+    if (!pos) return;
+    if (!this.tooltip) {
+      this.tooltip = document.createElement("div");
+      this.tooltip.className = "graph-tooltip";
+      document.body.appendChild(this.tooltip);
+    }
+    if (!repositionOnly) this.tooltip.textContent = text;
+    Object.assign(this.tooltip.style, {
+      display: "block",
+      left: `${pos.x + 12}px`,
+      top: `${pos.y + 12}px`,
+    });
+  }
+
+  hideTooltip() {
+    if (this.tooltip) this.tooltip.style.display = "none";
+  }
+
+  getRenderedPosition(evt) {
+    if (!evt) return null;
+    if (evt.renderedPosition) {
+      const rect = this.graphCanvas?.getBoundingClientRect();
+      return {
+        x: (rect?.left || 0) + evt.renderedPosition.x,
+        y: (rect?.top || 0) + evt.renderedPosition.y,
+      };
+    }
+    if (this.cy && evt.position) {
+      const renderer = this.cy.renderer();
+      if (renderer?.projectIntoViewport) {
+        const [x, y] = renderer.projectIntoViewport(evt.position.x, evt.position.y);
+        return { x, y };
+      }
+    }
+    return null;
+  }
+
+
+  maybeShowJobTooltip(evt, repositionOnly = false) {
     const node = evt.target;
-    if (!node || node.data("type") !== "table") return false;
-    const pos = evt.renderedPosition;
-    if (!pos) return false;
-    const box = node.renderedBoundingBox({ includeLabels: true, includeOverlays: false });
-    if (!box) return false;
-    const handleWidth = 60;
-    return pos.x >= box.x1 && pos.x <= box.x1 + handleWidth && pos.y >= box.y1 && pos.y <= box.y2;
+    if (!node) return;
+    const type = (node.data("type") || "").toLowerCase();
+    if (type !== "job") {
+      if (!repositionOnly) this.hideTooltip();
+      return;
+    }
+    const jobId = node.data("job_id") || node.id();
+    this.showTooltip(evt, `Job: ${jobId}`, repositionOnly);
   }
 }

@@ -1,47 +1,19 @@
-const svgDataUri = (svg) => `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s{2,}/g, " ").trim())}`;
-const icon = (svg) => `url("${svgDataUri(svg)}")`;
-
-const ICONS = {
-  plus: icon(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
-      <rect x="0.8" y="0.8" width="20.4" height="20.4" rx="6.4" fill="#ffffff" stroke="#cbd5f5" stroke-width="1.4"/>
-      <path d="M11 5.5v11M5.5 11h11" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  `),
-  dataset: icon(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26">
-      <circle cx="13" cy="13" r="9.5" fill="#e3efff" stroke="#2563eb" stroke-width="2"/>
-      <path d="M16.8 16.8L21 21" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M9.5 13a3.5 3.5 0 1 0 7 0 3.5 3.5 0 0 0-7 0z" fill="#ffffff" stroke="#2563eb" stroke-width="1.6"/>
-    </svg>
-  `),
-  anchor: icon(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-      <circle cx="8" cy="8" r="5" fill="#2563eb" stroke="#e0edff" stroke-width="2" />
-    </svg>
-  `),
-};
-
 export function getGraphStyles() {
   return [
     {
       selector: "node",
       style: {
-        shape: "round-rectangle",
-        width: 252,
-        height: 66,
+        shape: "rectangle",
+        width: "label",
         "border-width": 1.5,
         "border-color": "#cbd5f5",
         "background-color": "#ffffff",
-        "background-fit": "none",
-        "font-size": "13px",
+        "font-size": "14px",
         "font-weight": 600,
         "text-wrap": "wrap",
-        "text-max-width": 170,
-        "line-height": 1.25,
-        "text-halign": "left",
+        "text-halign": "center",
         "text-valign": "center",
-        "text-margin-x": 142,
+        "line-height": 1.2,
         color: "#0f172a",
         label: "data(label_text)",
         "min-zoomed-font-size": 6,
@@ -50,48 +22,37 @@ export function getGraphStyles() {
         "transition-timing-function": "ease-out",
         "overlay-padding": 8,
         "overlay-opacity": 0,
-        "padding": "12px",
+        padding: "6px 24px",
       },
     },
     {
       selector: "node[type='table']",
       style: {
-        "border-color": "#16a34a",
+        width: "label",
+        padding: "6px 28px",
+        "border-color": "#94a3b8",
         "background-color": "#ffffff",
-        "text-max-width": 190,
-        "text-margin-x": 150,
-        "background-image": [ICONS.plus, ICONS.dataset, ICONS.anchor, ICONS.anchor],
-        "background-width": ["22px", "26px", "10px", "10px"],
-        "background-height": ["22px", "26px", "10px", "10px"],
-        "background-position-x": ["22px", "60px", "0%", "100%"],
-        "background-position-y": ["50%", "50%", "50%", "50%"],
-        "background-repeat": ["no-repeat", "no-repeat", "no-repeat", "no-repeat"],
+        "text-wrap": "wrap",
+        "text-halign": "center",
+        "text-valign": "center",
       },
     },
     {
       selector: "node[type='job']",
       style: {
-        width: 140,
-        height: 52,
-        shape: "round-rectangle",
+        shape: "rectangle",
+        width: 60,
+        height: 24,
         label: "JOB",
-        "font-size": "13px",
+        "font-size": 13,
         "font-weight": 700,
-        "text-valign": "top",
+        "text-valign": "center",
         "text-halign": "center",
         "text-wrap": "none",
-        "text-margin-x": 0,
-        "text-margin-y": 8,
         "border-width": 1.6,
         "border-color": "#f97316",
-        "background-color": "#fff7ee",
+        "background-color": "#ffffff",
         color: "#b45309",
-        "background-image": [ICONS.anchor, ICONS.anchor],
-        "background-width": ["10px", "10px"],
-        "background-height": ["10px", "10px"],
-        "background-position-x": ["0%", "100%"],
-        "background-position-y": ["50%", "50%"],
-        "background-repeat": ["no-repeat", "no-repeat"],
       },
     },
     {
@@ -105,12 +66,7 @@ export function getGraphStyles() {
     {
       selector: "edge",
       style: {
-        "curve-style": "unbundled-bezier",
-        "edge-distances": "endpoints",
-        "source-endpoint": "90deg",
-        "target-endpoint": "270deg",
-        "control-point-distances": [50],
-        "control-point-weights": [0.45],
+        "curve-style": "straight",
         "target-arrow-shape": "triangle",
         "line-color": "#9ca3af",
         "target-arrow-color": "#9ca3af",
