@@ -102,3 +102,13 @@ class JobRepository(BaseRepository):
             .limit(limit)
         )
         return self.db.execute(stmt).scalars().all()
+
+    def list_by_owner(self, owner: str, limit: int = 10):
+        """Return recent jobs for the given owner identifier."""
+        stmt = (
+            select(GraphJobNode)
+            .where(GraphJobNode.owner == owner)
+            .order_by(GraphJobNode.updated_at.desc())
+            .limit(limit)
+        )
+        return self.db.execute(stmt).scalars().all()

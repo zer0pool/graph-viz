@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -63,10 +64,38 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     redis_default_ttl: int = 60
+    require_authentication: bool = True
+
+    # SSE / Polling
+    sse_buffer_size: int = 512
+    event_poll_interval_ms: int = 15000
+
+    # OIDC / Authentication
+    oidc_issuer_url: str = "https://accounts.google.com"
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_uri: str = "http://localhost:8000"
+    oidc_audience: str | None = None
+    oidc_jwks_cache_seconds: int = 3600
+    oidc_scopes: List[str] = ["openid", "email", "profile"]
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+
+    @field_validator("require_authentication", mode="before")
+    @classmethod
+    def _normalize_require_auth(cls, value):
+        if isinstance(value, str):
+            cleaned = value.split("#", 1)[0].strip()
+            if cleaned == "":
+                return cls.require_authentication
+            lowered = cleaned.lower()
+            if lowered in {"true", "1", "yes", "on"}:
+                return True
+            if lowered in {"false", "0", "no", "off"}:
+                return False
+        return value
 
 
 @lru_cache()

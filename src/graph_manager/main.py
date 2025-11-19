@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from graph_manager.api.v1.endpoints import auth as auth_ep
 from graph_manager.api.v1.endpoints import graph, jobs
 from graph_manager.api.v1.endpoints import search as search_ep
 from graph_manager.api.v1.endpoints import expand as expand_ep
@@ -13,6 +14,7 @@ from graph_manager.api.v1.endpoints import sync as sync_ep
 from graph_manager.api.v1.endpoints import events as events_ep
 from graph_manager.api.v1.endpoints import diagnostics as diag_ep
 from graph_manager.api.v1.endpoints import tables as tables_ep
+from graph_manager.api.v1.endpoints import users as users_ep
 from graph_manager.core.config import get_settings
 from graph_manager.core.container import GraphContainer
 from graph_manager.core.database import Database
@@ -65,7 +67,7 @@ def create_app() -> GraphApp:
 
     # Attach container to app and wire it
     app.container = app_container
-    app_container.wire(modules=[graph, jobs, tables_ep, search_ep, expand_ep, sync_ep, events_ep, diag_ep])
+    app_container.wire(modules=[graph, jobs, tables_ep, search_ep, expand_ep, sync_ep, events_ep, diag_ep, auth_ep, users_ep])
 
     # Initialize database
     try:
@@ -98,6 +100,7 @@ def create_app() -> GraphApp:
     # ----------------------------------------
     # 2️⃣ API 라우터 등록
     # ----------------------------------------
+    app.include_router(auth_ep.router)
     app.include_router(graph.router)
     app.include_router(jobs.router)
     app.include_router(search_ep.router)
@@ -106,6 +109,7 @@ def create_app() -> GraphApp:
     app.include_router(events_ep.router)
     app.include_router(diag_ep.router)
     app.include_router(tables_ep.router)
+    app.include_router(users_ep.router)
 
     # ----------------------------------------
     # 3️⃣ 기본 페이지(index.html) 반환

@@ -14,7 +14,8 @@ export PYTHONPATH=$(shell pwd)/src
 all: venv install-dev format lint test
 
 venv:
-	$(PY) -m venv .venv && . .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+	$(PY) -m venv .venv && . .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
 
 install-dev:
 	. .venv/bin/activate && pip install black pytest pytest-cov flake8
