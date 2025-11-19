@@ -1,5 +1,6 @@
 """Jobs endpoints."""
 
+import asyncio
 from typing import List, Optional
 
 from dependency_injector.wiring import Provide, inject
@@ -128,4 +129,44 @@ def toggle_job_status(
         "enabled": getattr(job, "enabled", None),
         "status": getattr(job, "status", None),
         "message": f"Job '{job_id}' is now {'enabled' if getattr(job, 'enabled', False) else 'disabled'}.",
+    }
+
+
+@router.get("/{job_id}/run-history")
+async def get_job_run_history(job_id: str):
+    """Return dummy run history data with a guaranteed 1s delay."""
+    await asyncio.sleep(1)
+    runs = [
+        {
+            "run_id": "manual__2024-07-03T09:00:00Z",
+            "status": "success",
+            "start_time": "2024-07-03T09:00:00Z",
+            "end_time": "2024-07-03T09:05:32Z",
+            "duration_sec": 332,
+            "triggered_by": "manual",
+            "notes": "Investigated upstream anomaly",
+        },
+        {
+            "run_id": "scheduled__2024-07-03T06:00:00Z",
+            "status": "success",
+            "start_time": "2024-07-03T06:00:00Z",
+            "end_time": "2024-07-03T06:04:12Z",
+            "duration_sec": 252,
+            "triggered_by": "scheduler",
+            "notes": "Daily batch",
+        },
+        {
+            "run_id": "scheduled__2024-07-02T06:00:00Z",
+            "status": "failed",
+            "start_time": "2024-07-02T06:00:00Z",
+            "end_time": "2024-07-02T06:01:01Z",
+            "duration_sec": 61,
+            "triggered_by": "scheduler",
+            "notes": "Airflow task timeout",
+        },
+    ]
+    return {
+        "status": "success",
+        "input": {"job_id": job_id},
+        "result": {"timeline": runs},
     }

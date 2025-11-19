@@ -27,12 +27,6 @@
             <img src="/static/images/logo.png" alt="Logo">
             <h2>Lineage Manager</h2>
         </div>
-        <div id="nav-tabs">
-            <button class="nav-tab active" type="button">Graph</button>
-            <button class="nav-tab" type="button">Jobs</button>
-            <button class="nav-tab" type="button">Tables</button>
-            <button class="nav-tab" type="button">Lineage Search</button>
-        </div>
         <div id="search-bar">
             <svg id="search-icon" viewBox="0 0 16 16">
                 <path
@@ -97,111 +91,197 @@
                     <h3>Explorer Controls</h3>
                     <p>Tune the lineage view and run actions.</p>
                 </div>
-                <div class="panel-section tight">
-                    <div id="filter-bar" class="panel-stack">
-                        <div class="filter-group">
-                            <label for="type-filter">Type</label>
-                            <select id="type-filter">
-                                <option value="all" selected>All</option>
-                                <option value="job">Jobs</option>
-                                <option value="table">Tables</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="status-filter">Status</label>
-                            <select id="status-filter">
-                                <option value="all" selected>All</option>
-                                <option value="active">Active</option>
-                                <option value="disabled">Disabled</option>
-                                <option value="error">Error</option>
-                                <option value="unknown">Unknown</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="depth-filter">Depth</label>
-                            <select id="depth-filter">
-                                <option value="1" selected>1 hop</option>
-                                <option value="2">2 hop</option>
-                                <option value="3">3 hop</option>
-                            </select>
-                        </div>
-                        <div class="filter-actions">
-                            <button id="reset-graph" class="btn-secondary">Reset graph</button>
-                            <button id="layout-horizontal" class="btn-secondary">Flow ←→</button>
-                            <button id="layout-vertical" class="btn-secondary">Flow ↑↓</button>
+                <div class="panel-section">
+                    <div class="panel-label">Graph layout</div>
+                    <div class="graph-layout-card">
+                        <button id="reset-graph" class="btn-secondary btn-full" type="button">Reset graph</button>
+                        <div class="layout-row">
+                            <button id="layout-horizontal" class="btn-secondary" type="button">Flow ←→</button>
+                            <button id="layout-vertical" class="btn-secondary" type="button">Flow ↑↓</button>
                         </div>
                     </div>
                 </div>
                 <div class="panel-section">
                     <div class="panel-label">Node actions</div>
-                    <div class="action-grid">
-                        <button id="action-focus" class="btn-secondary">Focus node</button>
-                        <button id="action-expand-up" class="btn-secondary">Expand ↑</button>
-                        <button id="action-expand-down" class="btn-secondary">Expand ↓</button>
-                        <button id="action-expand-both" class="btn-primary">Expand both</button>
+                    <div id="direction-card" class="direction-card">
+                        <button id="direction-toggle" class="direction-header" type="button" aria-expanded="true">
+                            <span>Direction</span>
+                            <span class="direction-caret">▾</span>
+                        </button>
+                        <div id="direction-body" class="direction-body">
+                            <label class="direction-option checked" data-direction="upstream" data-direction-option>
+                                <input type="checkbox" id="direction-upstream" checked />
+                                <span class="check-icon"></span>
+                                <span class="label-text">Upstream</span>
+                            </label>
+                            <label class="direction-option checked" data-direction="downstream" data-direction-option>
+                                <input type="checkbox" id="direction-downstream" checked />
+                                <span class="check-icon"></span>
+                                <span class="label-text">Downstream</span>
+                            </label>
+                            <button id="direction-apply" class="btn-primary btn-full" type="button">Apply</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </aside>
         <section id="graph-area">
             <div id="graph-shell">
-                <div id="graph-toolbar" class="floating-panel">
-                    <button id="layout-reset" title="Re-run layout">Layout</button>
-                    <button id="highlight-path" title="Highlight neighbors">Highlight path</button>
-                    <button id="clear-selection" title="Clear selection">Clear</button>
+                <div id="graph-toolbar" class="floating-panel toolbar-shell">
+                    <div class="toolbar-left">
+                        <div class="view-toggle" role="tablist" aria-label="View mode">
+                            <button class="view-tab active" type="button" role="tab" aria-selected="true">Graph</button>
+                            <button class="view-tab" type="button" role="tab" aria-selected="false">List</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button id="reset-view" class="simple-btn"
+                            title="Reset Lineage component to initial view state">
+                            <span class="icon">⟲</span>
+                            <span class="label">Reset</span>
+                        </button>
+                        <span class="toolbar-divider"></span>
+                        <span id="zoom-level" class="zoom-label" title="Current zoom">100%</span>
+                        <span class="toolbar-divider"></span>
+                        <div class="zoom-buttons">
+                        <button id="zoom-in" class="circle-btn" title="Zoom In" aria-label="Zoom in">
+                            <span class="icon icon-zoom-in" aria-hidden="true"></span>
+                        </button>
+                        <button id="zoom-out" class="circle-btn" title="Zoom Out" aria-label="Zoom out">
+                            <span class="icon icon-zoom-out" aria-hidden="true"></span>
+                        </button>
+                        <button id="zoom-reset" class="circle-btn" title="Zoom Reset" aria-label="Reset zoom">
+                            <span class="icon icon-zoom-reset" aria-hidden="true"></span>
+                        </button>
+                        <button id="minimap-toggle" class="circle-btn" title="Show / Hide Minimap" aria-label="Toggle minimap">
+                            <span class="icon icon-minimap" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    </div>
                 </div>
                 <div id="cy"></div>
+                <div id="list-view" hidden>
+                    <div class="list-toolbar">
+                        <div class="list-title">Current nodes</div>
+                    </div>
+                    <table id="node-list-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Owner</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="list-download-row">
+                        <button id="list-download" class="list-download-btn" type="button">Download</button>
+                    </div>
+                </div>
                 <div id="graph-status" class="floating-panel" hidden>
                     <span id="graph-status-text">Loading…</span>
                 </div>
-                <div id="zoom-controls" title="View controls">
-                    <button id="reset-view" title="Reset view">⟲</button>
-                    <span id="zoom-level" title="Zoom">100%</span>
-                    <button id="zoom-in" title="Zoom in">+</button>
-                    <button id="zoom-out" title="Zoom out">−</button>
-                    <button id="zoom-reset" title="Zoom reset">100%</button>
-                    <button id="minimap-toggle" title="Toggle minimap">▣</button>
-                </div>
             </div>
         </section>
+        <div id="detail-resizer" class="panel-resizer" role="separator" aria-orientation="vertical"
+            aria-label="Resize detail panel"></div>
         <aside id="detail-panel" class="side-panel detail collapsed" aria-label="Node details">
             <button id="detail-toggle" class="panel-handle" type="button" aria-expanded="false"
                 aria-controls="detail-panel" title="Show details" data-collapsed-icon="‹" data-expanded-icon="›">
                 <span class="chevron">‹</span>
             </button>
-            <div class="panel-body">
-                <div class="panel-header">
-                    <span id="node-type-badge" class="type-pill muted">No node</span>
-                    <h2 id="node-title">Search the graph</h2>
-                    <p id="node-subtitle">Select a node to view its details.</p>
+            <div class="panel-body detail-body">
+                <div class="detail-header">
+                    <div>
+                        <div class="detail-heading">Details</div>
+                        <div id="node-title" class="detail-title">Search the graph</div>
+                    </div>
+                    <span id="node-type-badge" class="detail-pill muted">-</span>
                 </div>
-                <div class="panel-section">
-                    <div class="panel-label">Metadata</div>
-                    <div class="meta-grid">
-                        <div><span class="meta-key">Owner</span><span id="meta-owner" class="meta-val">-</span></div>
-                        <div><span class="meta-key">Description</span><span id="meta-description"
-                                class="meta-val">-</span></div>
-                        <div><span class="meta-key">Updated</span><span id="meta-updated" class="meta-val">-</span>
+                <div id="job-details" class="detail-card" hidden>
+                    <p id="job-label" class="detail-primary">Select a node to view its details.</p>
+                    <div class="detail-tabs" id="job_tabs" data-tab-group="job" role="tablist" aria-label="Job details">
+                        <button class="detail-tab active" type="button" role="tab" data-tab="runs"
+                            aria-selected="true">Run history</button>
+                    </div>
+                    <div class="detail-tab-panels" data-tab-group="job">
+                        <div id="job-run-pane" class="detail-pane active" data-tab-panel="runs">
+                            <table id="job-runs" class="detail-table">
+                                <thead>
+                                    <tr>
+                                        <th>Run ID</th>
+                                        <th>Status</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Duration</th>
+                                        <th>Triggered by</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="job-runs-body">
+                                    <tr>
+                                        <td colspan="6">Select "Run history" to load data.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                <div class="panel-section" id="trigger-section" hidden>
-                    <div class="panel-label">Trigger Jobs</div>
-                    <div id="node-triggers" class="trigger-list"></div>
-                </div>
-                <div class="panel-section">
-                    <div class="panel-label">Upstream</div>
-                    <ul id="upstream-list" class="panel-list empty">
-                        <li>Select a node to view data.</li>
-                    </ul>
-                    <button id="upstream-more" class="link-button" hidden></button>
-                </div>
-                <div class="panel-section">
-                    <div class="panel-label">Downstream</div>
-                    <ul id="downstream-list" class="panel-list empty">
-                        <li>Select a node to view data.</li>
-                    </ul>
-                    <button id="downstream-more" class="link-button" hidden></button>
+                <div id="table-details" class="detail-card" hidden>
+                    <div class="detail-block">
+                        <div class="detail-subheading">Fully qualified name</div>
+                        <div id="table-full-name" class="detail-value">-</div>
+                    </div>
+
+                    <div id="trigger-section" class="detail-trigger" hidden>
+                        <div class="detail-subheading">Trigger Jobs</div>
+                        <div id="node-triggers" class="trigger-list"></div>
+                    </div>
+
+                    <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist" aria-label="Table details">
+                        <button class="detail-tab active" type="button" role="tab" data-tab="schema"
+                            aria-selected="true">Schema</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="loads" aria-selected="false">Load
+                            timeline</button>
+                    </div>
+                    <div class="detail-tab-panels" data-tab-group="table">
+                        <div id="schema-pane" class="detail-pane active" data-tab-panel="schema">
+                            <dl class="detail-meta">
+                                <div>
+                                    <dt>schema</dt>
+                                    <dd id="table-schema">-</dd>
+                                </div>
+                                <div>
+                                    <dt>rows</dt>
+                                    <dd id="table-rows">-</dd>
+                                </div>
+                                <div>
+                                    <dt>created</dt>
+                                    <dd id="table-created">-</dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <div id="load-pane" class="detail-pane" data-tab-panel="loads">
+                            <table id="table-loads" class="detail-table">
+                                <thead>
+                                    <tr>
+                                        <th>Run</th>
+                                        <th>Status</th>
+                                        <th>Duration</th>
+                                        <th>Updated</th>
+                                        <th>Interval start</th>
+                                        <th>Interval end</th>
+                                        <th>Interval</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-loads-body">
+                                    <tr>
+                                        <td colspan="7">No load history.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </aside>

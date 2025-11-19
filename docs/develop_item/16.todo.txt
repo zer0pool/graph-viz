@@ -1,0 +1,84 @@
+
+16. TODO
+1. Easter Egg Game Integration (Low Priority)
+
+Add a hidden mini‑game that appears when a specific keyword is typed.
+
+Game candidates: Snake, Tetris, Dino Runner, or similar lightweight browser games.
+
+Priority: Low.
+
+2. Minimap Improvements
+
+Adjust minimap position, size, and shape.
+Improve the minimap toggle interaction.
+Ensure compatibility with the redesigned static graph.
+
+3. Authentication Support
+Add support for Google OAuth.
+Additional authentication options may be added as required.
+remove API authentication from Backend swagger. 
+Additional authentication is required for user identification only. 
+
+4. Graph Expansion Enhancements
+Introduce deeper graph exploration capabilities based on new backend data.
+
+4.1 Expansion Until DAG End Depth
+Add an “Expand to Depth End” option.
+Allows users to expand the graph automatically until the terminal downstream nodes are reached.
+
+4.2 Leverage Rich Graph Metadata
+This feature depends on enhancements in "Graph Information Enrichment":
+Use added backend graph metadata to calculate depth boundaries.
+Dynamically determine reachable downstream nodes.
+
+Implement rules such as:
+“Expand until the deepest reachable level (max downstream depth).”
+
+5. Graph Information Enrichment
+Enhance graph API responses with additional metadata.
+Required API Enhancements
+Provide Maximum Depth from the selected root table to the deepest downstream node.
+Provide aggregate DAG information, such as:
+Total number of downstream tables.
+Total number of downstream jobs.
+Number of hops required to reach terminal nodes.
+Optional: graph statistics (fan-out, branching factor, etc.).
+These enhancements directly support the "Expand to Depth End" feature.
+
+[DONE] 6. Resizable Right-Side Detail Panel 
+Allow horizontal resizing of the Detail Panel.
+The user drags the boundary line left/right to adjust width.
+Constraints:
+Minimum width: 20% of screen
+Maximum width: 50% of screen
+
+[DONE] 7. Job Detail Panel – “Runs” Tab
+Add a new Runs tab under the Job Detail Panel.
+The tab fetches job execution history via API.
+Displays:
+Run timestamp
+
+Execution duration
+Status (Success, Failed, Running)
+Optional logs or link to external job viewer
+
+8. Bugfix - Job Node Tabs
+- Job detail panel shows schema|load timeline tabs for Table node. 
+- remove schema|load timeline tabs for job Node. 
+
+[DONE] 9. Enhancement – Fit Data Table Width to Detail Tab Panel
+Problem
+The width of the Detail Tab panel is currently too narrow to properly display all columns of the data table. 
+As a result, table content overflows or is truncated, making it difficult to view all relevant information.
+
+Requirement
+Ensure that data tables within the Detail Tab panel adapt to the panel width, and only show partial content or summarized columns if necessary.
+Prevent table content from overflowing beyond the visible boundary of the tab panel.
+
+10. Graph Job Node Tooltip
+Behavior
+- When the mouse cursor hovers over a Job Node in the graph, a tooltip should appear.
+Tooltip Content
+- Job ID
+- The tooltip provides immediate contextual information about the job without requiring a click.

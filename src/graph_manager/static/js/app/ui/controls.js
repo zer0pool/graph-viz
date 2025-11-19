@@ -14,22 +14,27 @@ export class ControlBar {
       filterDepth: document.querySelector(SELECTORS.filterDepth),
       resetGraph: document.querySelector(SELECTORS.resetGraph),
     };
-    this.actionButtons = {
-      focus: document.getElementById("action-focus"),
-      expandUp: document.getElementById("action-expand-up"),
-      expandDown: document.getElementById("action-expand-down"),
-      expandBoth: document.getElementById("action-expand-both"),
+    this.toolbarButtons = {
       layout: document.getElementById("layout-reset"),
       highlight: document.getElementById("highlight-path"),
       clear: document.getElementById("clear-selection"),
     };
+    this.directionControls = {
+      card: document.getElementById("direction-card"),
+      toggle: document.getElementById("direction-toggle"),
+      body: document.getElementById("direction-body"),
+      apply: document.getElementById("direction-apply"),
+      labels: Array.from(document.querySelectorAll("[data-direction-option]")),
+    };
+    this.directionControls.inputs = this.directionControls.labels.map((label) => label.querySelector("input"));
   }
 
   init() {
     this.bindSearchInput();
     this.bindFilters();
     this.bindReset();
-    this.bindActions();
+    this.bindToolbarActions();
+    this.initDirectionControls();
   }
 
   bindSearchInput() {
@@ -190,7 +195,7 @@ export class ControlBar {
       this.panel.showStatus("Loading graph…", true);
       const data = await this.api.fetchNeighbors(type, value, this.filterState.depth);
       this.panel.showStatus("", false);
-      this.graph.renderGraph(data, { centerLabel: value });
+      this.graph.renderGraph(data, { centerLabel: value, rememberInitial: true, resetViewport: true });
     } catch (err) {
       this.panel.showStatus("Failed to load graph", true);
       setTimeout(() => this.panel.showStatus("", false), 2000);
@@ -233,39 +238,100 @@ export class ControlBar {
     });
   }
 
-  bindActions() {
+  bindToolbarActions() {
     const activeNode = () => this.graph.selectionState?.node;
-    this.actionButtons.focus?.addEventListener("click", () => {
-      const node = activeNode();
-      if (!node || !this.graph.cy) return;
-      this.graph.cy.animate(
-        { center: { eles: node }, zoom: Math.min(this.graph.cy.maxZoom(), Math.max(this.graph.cy.zoom(), 1.2)) },
-        { duration: 350, easing: "ease-out" }
-      );
-    });
-    this.actionButtons.expandUp?.addEventListener("click", () => {
-      const node = activeNode();
-      if (node) this.graph.expand(node, "upstream", this.filterState.depth);
-    });
-    this.actionButtons.expandDown?.addEventListener("click", () => {
-      const node = activeNode();
-      if (node) this.graph.expand(node, "downstream", this.filterState.depth);
-    });
-    this.actionButtons.expandBoth?.addEventListener("click", () => {
-      const node = activeNode();
-      if (node) this.graph.expand(node, "both", this.filterState.depth);
-    });
-    this.actionButtons.layout?.addEventListener("click", () => {
+    this.toolbarButtons.layout?.addEventListener("click", () => {
       if (this.graph.cy) {
         this.graph.cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 120, rankSep: 160 }).run();
       }
     });
-    this.actionButtons.highlight?.addEventListener("click", () => {
+    this.toolbarButtons.highlight?.addEventListener("click", () => {
       const node = activeNode();
       if (!node) return;
       this.graph.highlightNeighborhood(node);
     });
-    this.actionButtons.clear?.addEventListener("click", () => this.graph.clearSelection());
+    this.toolbarButtons.clear?.addEventListener("click", () => this.graph.clearSelection());
+  }
+
+  initDirectionControls() {
+    const dir = this.directionControls;
+    if (!dir.card) return;
+    const sync = () => this.syncDirectionOptions();
+    dir.inputs.forEach((input) => {
+      if (!input) return;
+      input.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!target.checked && this.countCheckedDirections() === 0) {
+          target.checked = true;
+          return;
+        }
+        sync();
+      });
+    });
+    dir.apply?.addEventListener("click", () => this.applyDirectionExpansion());
+    dir.toggle?.addEventListener("click", () => {
+      const collapsed = dir.card.classList.toggle("collapsed");
+      dir.toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    sync();
+  }
+
+  countCheckedDirections() {
+    return this.directionControls.inputs.filter((input) => input?.checked).length;
+  }
+
+  syncDirectionOptions() {
+    const dir = this.directionControls;
+    if (!dir.labels.length) return;
+    const checkedInputs = dir.inputs.filter((input) => input?.checked);
+    dir.labels.forEach((label, idx) => {
+      if (!label) return;
+      const input = dir.inputs[idx];
+      const isChecked = Boolean(input?.checked);
+      label.classList.toggle("checked", isChecked);
+      label.classList.remove("locked");
+      label.removeAttribute("data-tooltip");
+    });
+    if (checkedInputs.length === 1) {
+      const single = checkedInputs[0];
+      const idx = dir.inputs.indexOf(single);
+      const label = dir.labels[idx];
+      if (label) {
+        label.classList.add("locked");
+        label.setAttribute("data-tooltip", "at least one direction must be selected.");
+      }
+    }
+  }
+
+  getSelectedDirections() {
+    const dir = this.directionControls;
+    const selected = [];
+    dir.labels.forEach((label, idx) => {
+      const input = dir.inputs[idx];
+      if (input?.checked) {
+        const dirName = label.getAttribute("data-direction");
+        if (dirName) selected.push(dirName);
+      }
+    });
+    return selected;
+  }
+
+  async applyDirectionExpansion() {
+    const node = this.graph.selectionState?.node;
+    if (!node) {
+      this.panel.showStatus("Select a node first", true);
+      setTimeout(() => this.panel.showStatus("", false), 1800);
+      return;
+    }
+    const selected = this.getSelectedDirections();
+    if (!selected.length) return;
+    const direction = selected.length === 2 ? "both" : selected[0];
+    try {
+      await this.graph.expand(node, direction, this.filterState.depth);
+    } catch (err) {
+      this.panel.showStatus("Failed to expand", true);
+      setTimeout(() => this.panel.showStatus("", false), 2000);
+    }
   }
 
   debounce(fn, delay = 200) {
