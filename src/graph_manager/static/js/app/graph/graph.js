@@ -371,9 +371,12 @@ export class GraphController {
   spreadNodes(collection, centerPos, dx, spacing = 60) {
     const count = collection.length;
     if (!count) return;
+    const sample = collection[0];
+    const baseHeight = sample?.height?.() || 30;
+    const spacingY = Math.min(spacing, baseHeight);
     collection.forEach((node, idx) => {
       if (this.nodePositions.has(node.id())) return;
-      const offset = (idx - (count - 1) / 2) * spacing;
+      const offset = (idx - (count - 1) / 2) * spacingY;
       node.position({
         x: centerPos.x + dx,
         y: centerPos.y + offset,
@@ -383,13 +386,19 @@ export class GraphController {
 
   spreadDetachedNodes(collection, origin, columns = 3, spacingX = 200, spacingY = 70) {
     if (!collection || !collection.length) return;
+    const sample = collection[0];
+    const baseHeight = sample?.height?.() || 30;
+    const baseWidth = sample?.width?.() || 120;
+    const verticalSpacing = Math.min(spacingY, baseHeight);
+    const horizontalSpacing =
+      this.lastLayoutDirection === "vertical" ? Math.min(spacingX, baseWidth * 0.5) : spacingX;
     collection.forEach((node, idx) => {
       if (this.nodePositions.has(node.id())) return;
       const col = idx % columns;
       const row = Math.floor(idx / columns);
       node.position({
-        x: origin.x + 300 + col * spacingX,
-        y: origin.y + row * spacingY,
+        x: origin.x + 300 + col * horizontalSpacing,
+        y: origin.y + row * verticalSpacing,
       });
     });
   }
@@ -427,7 +436,10 @@ export class GraphController {
     const anchor = this.cy.$(`#${anchorId}`);
     if (!anchor.nonempty()) return;
     const base = anchor.position();
-    const place = (ids, dx) => {
+    const anchorWidth = anchor.width() || 120;
+    const horizontalSpacing =
+      this.lastLayoutDirection === "vertical" ? Math.min(anchorWidth * 0.5, 210) : 210;
+    const place = (ids, dir) => {
       const unique = Array.from(new Set(ids));
       if (!unique.length) return;
       const nodes = unique
@@ -439,11 +451,11 @@ export class GraphController {
       const spacingY = Math.min(45, baseHeight);
       nodes.forEach((node, idx) => {
         const offset = (idx - (nodes.length - 1) / 2) * spacingY;
-        node.position({ x: base.x + dx, y: base.y + offset });
+        node.position({ x: base.x + dir * horizontalSpacing, y: base.y + offset });
       });
     };
-    place(upstreamIds, -210);
-    place(downstreamIds, 210);
+    place(upstreamIds, -1);
+    place(downstreamIds, 1);
   }
 
   registerViewportEvents() {
@@ -505,7 +517,7 @@ export class GraphController {
       const baseHeight = sample.height() || 30;
       const spacingY = Math.min(45, baseHeight);
       const baseWidth = sample.width() || 120;
-      const spacingX = this.lastLayoutDirection === "vertical" ? baseWidth * 0.5 : 170;
+      const spacingX = this.lastLayoutDirection === "vertical" ? Math.min(baseWidth * 0.5, 170) : 170;
       nodes.forEach((node, idx) => {
         if (this.nodePositions.has(node.id())) return;
         const offset = (idx - (nodes.length - 1) / 2) * spacingY;
@@ -521,11 +533,20 @@ export class GraphController {
     if (!this.cy) return;
     this.nodePositions.clear();
     const previousViewport = preserveViewport ? { zoom: this.cy.zoom(), pan: this.cy.pan() } : null;
+    const sample = this.cy.nodes()[0];
+    const sampleHeight = sample?.height?.() || 40;
+    const sampleWidth = sample?.width?.() || 120;
     const layout = {
       name: "dagre",
       rankDir: direction === "vertical" ? "TB" : "LR",
-      nodeSep: direction === "vertical" ? 60 : 90,
-      rankSep: direction === "vertical" ? 90 : 150,
+      nodeSep:
+        direction === "vertical"
+          ? Math.min(sampleWidth * 0.5, 80)
+          : Math.min(sampleHeight, 90),
+      rankSep:
+        direction === "vertical"
+          ? Math.max(sampleHeight, 90)
+          : Math.max(sampleWidth + 30, 150),
       edgeSep: 8,
       animate: false,
     };
