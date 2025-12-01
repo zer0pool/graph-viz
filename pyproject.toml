@@ -1,7 +1,7 @@
 [project]
-name = "graph-manager"
+name = "lineage-manager"
 version = "0.1.0"
-description = "Graph-based dependency and lineage management service"
+description = "Graph-based lineage management service"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi",

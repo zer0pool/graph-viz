@@ -1,21 +1,26 @@
-PY=python3
-APP_NAME= graph_manager
-APP=graph_manager.main:app
-PORT=8000
+PY=python3.12
+APP_NAME=Lineage-Manager
+APP_NAME_LOWER= $(shell echo $(APP_NAME) | tr A-Z a-z)
+APP=lineage_manager.main:app
+PORT=5003
 DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
 GAR_REGISTRY=asia-northeast3-docker.pkg.dev/gizmopool/test_server
- 
 
-.PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop
+.PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop build-sec push-sec restart-sec
 
 export PYTHONPATH=$(shell pwd)/src
 
 all: venv install-dev format lint test
 
 venv:
-	$(PY) -m venv .venv && . .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+	$(PY) -m venv .venv --without-pip || { echo "Failed to create venv"; exit 1; }
+	. .venv/bin/activate || { echo "Failed to activate venv"; exit 1; }
+	pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
+	pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
 
+activate:
+	@bash -c 'source .venv/bin/activate'
 
 install-dev:
 	. .venv/bin/activate && pip install black pytest pytest-cov flake8
@@ -35,15 +40,14 @@ lint:
 format:
 	. .venv/bin/activate && black app/ tests/
 
+ 
 clean:
 	rm -rf .venv __pycache__ .pytest_cache
 	find . -type d -name __pycache__ -exec rm -r {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	find . -type f -name "*.pyd" -delete
+	find . \( -name "*.pyc" -o -name "*.pyo" -o -name "*.pyd" \) -delete
 	find . -type f -name ".coverage" -delete
-	find . -type d -name "*.egg-info" -exec rm -r {} +
-	find . -type d -name "*.egg" -exec rm -r {} +
+	find . \( -name "*.egg-info" -o -name "*.egg" \) -exec rm -r {} +
+
 
 requirements:
 	. .venv/bin/activate && pip freeze > requirements.txt
@@ -63,13 +67,7 @@ db-history:
 
 db-current:
 	. .venv/bin/activate && alembic current
-
-# Database management
-db-init:
-	. .venv/bin/activate && python -m scripts.db.init_db
-
-db-reset: db-downgrade db-upgrade
-
+ 
 # Docker commands
 docker-build:
 	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f deploy/docker/Dockerfile .
@@ -98,9 +96,5 @@ compose-down:
 compose-logs:
 	docker-compose logs -f
 
-# Production Docker Compose
-compose-prod-up:
-	docker-compose -f docker-compose.prod.yml up -d
-
-compose-prod-down:
-	docker-compose -f docker-compose.prod.yml down
+# Include sec environment commands
+include deploy/sec.mk

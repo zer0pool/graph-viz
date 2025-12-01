@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lineage-manager
+  namespace: self-scheduling-dev1
+  labels:
+    app: lineage-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lineage-manager
+  template:
+    metadata:
+      labels:
+        app: lineage-manager
+    spec:
+      serviceAccount: self-scheduling
+      serviceAccountName: self-scheduling
+      containers:
+      - name: lineage-manager
+        image: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/lineage-manager:latest
+        imagePullPolicy: Always
+        command:
+        - ./deploy/docker/entrypoint.sh
+        args:
+        - backend
+        ports:
+        - containerPort: 5003
+          name: http
+        env:
+        # Database settings
+        - name: DB_HOST
+          value: "127.0.0.1"
+        - name: DB_PORT
+          value: "3306"
+        # Environment
+        - name: ENV_STATE
+          value: "dev"
+        - name: LOG_LEVEL
+          value: "INFO"
+        # GCP settings
+        - name: GCP_PROJECT
+          value: "sec-bdp-dev"
+        - name: GCP_LOCATION
+          value: "asia-northeast3"
+        # Job Manager API
+        - name: APP_JOB_MANAGER_URL
+          value: "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+        # Database credentials (from secret)
+        - name: DB_NAME
+          value: "lineage_manager"
+        - name: DB_USER
+          value: "ss_admin"
+        - name: DB_PASSWORD
+          value: "Samsungpw1!"
+        - name: APP_REQUIRE_AUTHENTICATION
+          value: "false"
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /api/v1/graph/health
+            port: 5003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        # Readiness probe
+        readinessProbe:
+          httpGet:
+            path: /api/v1/graph/health
+            port: 5003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      - name: cloud-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:latest
+        imagePullPolicy: Always
+        command:
+        - /cloud_sql_proxy
+        - -ip_address_types=PRIVATE
+        - -instances=sec-bdp-dev:asia-northeast3:bdp-d-sql-selfschedule-an3=tcp:3306
+        securityContext:
+          runAsNonRoot: true
