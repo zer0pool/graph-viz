@@ -615,6 +615,49 @@ body {
     letter-spacing: 0.08em;
 }
 
+.timeliness-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.timeliness-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeliness-subtext {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.timeliness-chart {
+    width: 100%;
+    height: 220px;
+}
+
+.timeliness-chart--compact {
+    height: 170px;
+}
+
+.timeliness-placeholder {
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #6b7280;
+    background: #fff;
+}
+
+.timeliness-placeholder .spinner {
+    margin-bottom: 6px;
+}
+
 .detail-trigger {
     margin-top: 16px;
 }
