@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lineage-manager-config
+  namespace: self-scheduling-dev1
+data:
+  # Application settings
+  APP_ENVIRONMENT: "dev"
+  APP_DEBUG: "true"
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "5003"
+  APP_LOG_LEVEL: "INFO"
+  
+  # Feature flags
+  APP_ENABLE_SWAGGER: "true"
+  APP_ENABLE_METRICS: "false"
+  APP_REQUIRE_AUTHENTICATION: "false"
+  
+  # Job Manager API
+  # APP_JOB_MANAGER_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+  APP_JOB_MANAGER_URL: "http://self-scheduling-backend:5001"
+
+  # GCP settings
+  GCP_PROJECT: "sec-bdp-dev"
+  GCP_LOCATION: "asia-northeast3"
+  
+  # OIDC settings
+  APP_OIDC_ISSUER_URL: "https://accounts.google.com"
+  APP_OIDC_REDIRECT_URI: "https://your-domain.com/callback"
+  APP_OIDC_JWKS_CACHE_SECONDS: "3600"
+
+  DB_USER: "ss_admin"
+  DB_PASSWORD: "Samsungpw1!"
+  DB_HOST: "127.0.0.1"
+  DB_PORT: "3306"  
+  DB_NAME: "lineage_manager"

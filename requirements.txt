@@ -6,12 +6,11 @@ alembic==1.13.1
 psycopg2-binary==2.9.9
 PyMySQL==1.1.1
 httpx==0.25.2
+pydantic==2.8.2
 pydantic-settings==2.1.0
 # dependency-injector 4.41.0 fails to build on CPython 3.12.
 # Use a newer release for 3.12+, keep 4.41.0 for older Pythons.
 dependency-injector==4.41.0; python_version < "3.12"
 dependency-injector==4.44.0; python_version >= "3.12"
 redis==5.0.8
-cryptography==43.0.1
-PyJWT[crypto]==2.10.1
-PyJWT==2.10.1
+PyJWT==2.3.0
