@@ -52,9 +52,7 @@ export class PanelController {
 
   updateMetadata(node) {
     if (!node) return;
-    const rawType = (node.data("type") || "").toLowerCase();
-    const looksLikeTable = rawType === "table" || Boolean(node.data("full_name"));
-    const type = looksLikeTable ? "table" : "job";
+    const type = (node.data("type") || "job").toLowerCase();
     if (this.elements.title) this.elements.title.textContent = node.data("label") || node.id();
     if (this.elements.badge) {
       this.elements.badge.textContent = type === "table" ? "TABLE" : "JOB";
@@ -192,7 +190,10 @@ export class PanelController {
   }
 
   showJobSection(visible) {
-    if (this.elements.jobSection) this.elements.jobSection.hidden = !visible;
+    if (this.elements.jobSection) {
+      this.elements.jobSection.hidden = !visible;
+      this.elements.jobSection.style.display = visible ? "" : "none";
+    }
     const tabs = document.getElementById("job_tabs");
     const panels = document.querySelector('.detail-tab-panels[data-tab-group="job"]');
     if (tabs) tabs.hidden = !visible;
@@ -200,7 +201,10 @@ export class PanelController {
   }
 
   showTableSection(visible) {
-    if (this.elements.tableSection) this.elements.tableSection.hidden = !visible;
+    if (this.elements.tableSection) {
+      this.elements.tableSection.hidden = !visible;
+      this.elements.tableSection.style.display = visible ? "" : "none";
+    }
     const tabs = document.getElementById("table_tabs");
     const panels = document.querySelector('.detail-tab-panels[data-tab-group="table"]');
     if (tabs) tabs.hidden = !visible;
