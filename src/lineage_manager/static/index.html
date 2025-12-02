@@ -197,6 +197,7 @@
                 <span class="chevron">‹</span>
             </button>
             <div class="panel-body detail-body">
+                <!-- Detail drawer header: shared title + type pill -->
                 <div class="detail-header">
                     <div>
                         <div class="detail-heading">Details</div>
@@ -204,6 +205,7 @@
                     </div>
                     <span id="node-type-badge" class="detail-pill muted">-</span>
                 </div>
+                <!-- Job detail card: only visible when a job node is selected -->
                 <div id="job-details" class="detail-card" hidden>
                     <p id="job-label" class="detail-primary">Select a node to view its details.</p>
                     <div class="detail-tabs" id="job_tabs" data-tab-group="job" role="tablist" aria-label="Job details">
@@ -232,6 +234,7 @@
                         </div>
                     </div>
                 </div>
+                <!-- Table detail card: only visible when a table node is selected -->
                 <div id="table-details" class="detail-card" hidden>
                     <div class="detail-block">
                         <div class="detail-subheading">Fully qualified name</div>

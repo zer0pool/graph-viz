@@ -1,4 +1,5 @@
 import { RelationState } from "../state.js";
+import { JobDetailView, TableDetailView } from "./detailView.js";
 
 export class PanelController {
   constructor(apiClient) {
@@ -7,20 +8,28 @@ export class PanelController {
     this.elements = {
       title: document.getElementById("node-title"),
       badge: document.getElementById("node-type-badge"),
-      jobSection: document.getElementById("job-details"),
-      jobLabel: document.getElementById("job-label"),
-      tableSection: document.getElementById("table-details"),
-      tableFullName: document.getElementById("table-full-name"),
-      tableSchema: document.getElementById("table-schema"),
-      tableRows: document.getElementById("table-rows"),
-      tableCreated: document.getElementById("table-created"),
-      loadTableBody: document.getElementById("table-loads-body"),
-      jobRunBody: document.getElementById("job-runs-body"),
       triggerSection: document.getElementById("trigger-section"),
       triggerContainer: document.getElementById("node-triggers"),
       status: document.getElementById("graph-status"),
       statusText: document.getElementById("graph-status-text"),
     };
+    this.jobView = new JobDetailView({
+      section: document.getElementById("job-details"),
+      label: document.getElementById("job-label"),
+      tabs: document.getElementById("job_tabs"),
+      panels: document.querySelector('.detail-tab-panels[data-tab-group="job"]'),
+      runsBody: document.getElementById("job-runs-body"),
+    });
+    this.tableView = new TableDetailView({
+      section: document.getElementById("table-details"),
+      tabs: document.getElementById("table_tabs"),
+      panels: document.querySelector('.detail-tab-panels[data-tab-group="table"]'),
+      fullName: document.getElementById("table-full-name"),
+      schema: document.getElementById("table-schema"),
+      rows: document.getElementById("table-rows"),
+      created: document.getElementById("table-created"),
+      loadsBody: document.getElementById("table-loads-body"),
+    });
     this.activeTabs = { table: "schema", job: "runs" };
     this.currentTable = null;
     this.currentJob = null;
@@ -36,12 +45,12 @@ export class PanelController {
       this.elements.badge.textContent = "-";
       this.elements.badge.classList.add("muted");
     }
-    this.showJobSection(false);
-    this.showTableSection(false);
+    this.jobView.hide();
+    this.tableView.hide();
     if (this.elements.triggerSection) this.elements.triggerSection.hidden = true;
-    this.setLoadHistoryPlaceholder("No load history available.");
-    this.setJobRunPlaceholder("Select a job to view run history.");
-    if (this.elements.jobLabel) this.elements.jobLabel.textContent = "Select a node to view its details.";
+    this.tableView.setLoadPlaceholder("No load history available.");
+    this.jobView.setRunsPlaceholder("Select a job to view run history.");
+    this.jobView.setLabel("Select a node to view its details.");
     this.currentTable = null;
     this.currentJob = null;
     this.activeTabs.table = "schema";
@@ -58,6 +67,7 @@ export class PanelController {
       this.elements.badge.textContent = type === "table" ? "TABLE" : "JOB";
       this.elements.badge.classList.remove("muted");
     }
+    console.info("DetailPanel:update", { id: node.id(), type });
     if (type === "table") this.renderTableDetails(node);
     else this.renderJobDetails(node);
   }
@@ -156,60 +166,39 @@ export class PanelController {
   }
 
   renderJobDetails(node) {
-    this.showTableSection(false);
-    if (this.elements.jobLabel) this.elements.jobLabel.textContent = node.data("label") || node.id();
-    this.showJobSection(true);
+    this.tableView.hide();
+    this.jobView.show();
     if (this.elements.triggerSection) this.elements.triggerSection.hidden = true;
     this.currentTable = null;
     this.currentJob = node.data("job_id") || node.id();
     this.isJobRunLoading = false;
-    this.setJobRunPlaceholder('Select "Run history" tab to load data.');
+    this.jobView.setLabel(node.data("label") || node.id());
+    this.jobView.setRunsPlaceholder('Select "Run history" tab to load data.');
     if (this.activeTabs.job === "runs" && this.currentJob) {
       this.fetchJobRunHistory(true);
     }
   }
 
   renderTableDetails(node) {
-    this.showJobSection(false);
-    this.showTableSection(true);
+    this.jobView.hide();
+    this.tableView.show();
     this.currentJob = null;
     this.currentTable = node.data("full_name") || node.data("label") || null;
     this.isLoadHistoryLoading = false;
     const schema = node.data("schema") || node.data("dataset") || node.data("namespace") || "-";
     const rows = node.data("rows") || node.data("row_count") || node.data("records") || "-";
     const created = node.data("created_at") || node.data("created") || node.data("updated_at") || "-";
-    if (this.elements.tableFullName) this.elements.tableFullName.textContent = node.data("full_name") || node.data("label") || "-";
-    if (this.elements.tableSchema) this.elements.tableSchema.textContent = schema;
-    if (this.elements.tableRows) this.elements.tableRows.textContent = rows;
-    if (this.elements.tableCreated) this.elements.tableCreated.textContent = created;
+    this.tableView.setMetadata({
+      fullName: node.data("full_name") || node.data("label") || "-",
+      schema,
+      rows,
+      created,
+    });
     if (this.activeTabs.table === "loads" && this.currentTable) {
       this.fetchLoadTimeline(true);
     } else {
-      this.setLoadHistoryPlaceholder('Select "Load timeline" tab to load history.');
+      this.tableView.setLoadPlaceholder('Select "Load timeline" tab to load history.');
     }
-  }
-
-  showJobSection(visible) {
-    if (this.elements.jobSection) {
-      this.elements.jobSection.hidden = !visible;
-      this.elements.jobSection.style.display = visible ? "" : "none";
-    }
-    const tabs = document.getElementById("job_tabs");
-    const panels = document.querySelector('.detail-tab-panels[data-tab-group="job"]');
-    if (tabs) tabs.hidden = !visible;
-    if (panels) panels.hidden = !visible;
-  }
-
-  showTableSection(visible) {
-    if (this.elements.tableSection) {
-      this.elements.tableSection.hidden = !visible;
-      this.elements.tableSection.style.display = visible ? "" : "none";
-    }
-    const tabs = document.getElementById("table_tabs");
-    const panels = document.querySelector('.detail-tab-panels[data-tab-group="table"]');
-    if (tabs) tabs.hidden = !visible;
-    if (panels) panels.hidden = !visible;
-    if (this.elements.triggerSection) this.elements.triggerSection.hidden = !visible;
   }
 
   bindDetailTabEvents() {
@@ -225,23 +214,11 @@ export class PanelController {
     });
   }
 
-  setLoadHistoryPlaceholder(message, loading = false) {
-    if (!this.elements.loadTableBody) return;
-    const spinner = loading ? '<span class="spinner"></span>' : "";
-    this.elements.loadTableBody.innerHTML = `<tr><td class="loading-cell" colspan="7">${spinner}${message}</td></tr>`;
-  }
-
-  setJobRunPlaceholder(message, loading = false) {
-    if (!this.elements.jobRunBody) return;
-    const spinner = loading ? '<span class="spinner"></span>' : "";
-    this.elements.jobRunBody.innerHTML = `<tr><td class="loading-cell" colspan="6">${spinner}${message}</td></tr>`;
-  }
-
   async fetchLoadTimeline(force = false) {
-    if (!this.currentTable || !this.elements.loadTableBody) return;
+    if (!this.currentTable) return;
     if (this.isLoadHistoryLoading && !force) return;
     this.isLoadHistoryLoading = true;
-    this.setLoadHistoryPlaceholder("Loading load timeline…", true);
+    this.tableView.setLoadPlaceholder("Loading load timeline…", true);
     const started = Date.now();
     try {
       const payload = await this.api.fetchTableLoadHistory(this.currentTable);
@@ -253,46 +230,25 @@ export class PanelController {
       const rows = Array.isArray(payload.result?.timeline) ? payload.result.timeline : [];
       this.renderLoadTimeline(rows);
     } catch (err) {
-      this.setLoadHistoryPlaceholder("Failed to load timeline.");
+      this.tableView.setLoadPlaceholder("Failed to load timeline.");
     } finally {
       this.isLoadHistoryLoading = false;
     }
   }
 
   renderLoadTimeline(rows) {
-    if (!this.elements.loadTableBody) return;
     if (!rows.length) {
-      this.setLoadHistoryPlaceholder("No load history available.");
+      this.tableView.setLoadPlaceholder("No load history available.");
       return;
     }
-    this.elements.loadTableBody.innerHTML = rows
-      .map((entry, index) => {
-        const run = entry.run_id || entry.run || `#${index + 1}`;
-        const status = entry.status || "-";
-        const duration =
-          typeof entry.duration_sec === "number" ? `${entry.duration_sec}s` : entry.duration || entry.elapsed || "-";
-        const updated = entry.updated_at || entry.completed_at || "-";
-        const intervalStart = entry.data_interval_start || "-";
-        const intervalEnd = entry.data_interval_end || "-";
-        const interval = entry.interval || "-";
-        return `<tr>
-          <td>${run}</td>
-          <td>${status}</td>
-          <td>${duration}</td>
-          <td>${updated}</td>
-          <td>${intervalStart}</td>
-          <td>${intervalEnd}</td>
-          <td>${interval}</td>
-        </tr>`;
-      })
-      .join("");
+    this.tableView.renderLoadHistory(rows);
   }
 
   async fetchJobRunHistory(force = false) {
-    if (!this.currentJob || !this.elements.jobRunBody) return;
+    if (!this.currentJob) return;
     if (this.isJobRunLoading && !force) return;
     this.isJobRunLoading = true;
-    this.setJobRunPlaceholder("Loading run history…", true);
+    this.jobView.setRunsPlaceholder("Loading run history…", true);
     const started = Date.now();
     try {
       const payload = await this.api.fetchJobRunHistory(this.currentJob);
@@ -304,37 +260,19 @@ export class PanelController {
       const rows = Array.isArray(payload.result?.timeline) ? payload.result.timeline : [];
       this.renderJobRunHistory(rows);
     } catch (err) {
-      this.setJobRunPlaceholder("Failed to load run history.");
+      this.jobView.setRunsPlaceholder("Failed to load run history.");
     } finally {
       this.isJobRunLoading = false;
     }
   }
 
   renderJobRunHistory(rows) {
-    if (!this.elements.jobRunBody) return;
+    if (!this.jobView) return;
     if (!rows.length) {
-      this.setJobRunPlaceholder("No run history available.");
+      this.jobView.setRunsPlaceholder("No run history available.");
       return;
     }
-    this.elements.jobRunBody.innerHTML = rows
-      .map((entry, index) => {
-        const run = entry.run_id || entry.run || `#${index + 1}`;
-        const status = entry.status || "-";
-        const start = entry.start_time || "-";
-        const end = entry.end_time || "-";
-        const duration =
-          typeof entry.duration_sec === "number" ? `${entry.duration_sec}s` : entry.duration || entry.elapsed || "-";
-        const triggeredBy = entry.triggered_by || entry.source_job || "-";
-        return `<tr>
-          <td>${run}</td>
-          <td>${status}</td>
-          <td>${start}</td>
-          <td>${end}</td>
-          <td>${duration}</td>
-          <td>${triggeredBy}</td>
-        </tr>`;
-      })
-      .join("");
+    this.jobView.renderRuns(rows);
   }
 
   showStatus(message, visible = true) {
