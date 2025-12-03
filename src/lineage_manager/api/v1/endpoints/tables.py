@@ -142,3 +142,39 @@ async def get_table_load_history(table_name: str):
         "input": {"table": table_name},
         "result": {"timeline": timeline},
     }
+
+
+@router.get("/{table_name}/timeliness")
+async def get_table_timeliness(table_name: str, days: int = 7):
+    """Dummy timeliness data for ECharts timeline."""
+    await asyncio.sleep(1)
+    daily_summary = []
+    for idx in range(days):
+        success = max(0, 24 - idx)
+        fail = idx % 3
+        status = "good" if fail == 0 else ("warning" if fail == 1 else "bad")
+        daily_summary.append(
+            {
+                "date": f"2025-04-{idx + 1:02d}",
+                "success_count": success,
+                "fail_count": fail,
+                "status": status,
+                "rate": round(success / 24, 3),
+            }
+        )
+    hourly_detail = {
+        daily_summary[-1]["date"]: [
+            {
+                "hour": f"{hour:02d}",
+                "state": "loaded" if hour % 3 else "missing",
+                "interval_start": f"2025-04-{days:02d}T{hour:02d}:00:00Z",
+                "interval_end": f"2025-04-{days:02d}T{hour:02d}:59:59Z",
+            }
+            for hour in range(24)
+        ]
+    }
+    return {
+        "status": "success",
+        "input": {"table": table_name, "days": days},
+        "result": {"daily_summary": daily_summary, "hourly_detail": hourly_detail},
+    }

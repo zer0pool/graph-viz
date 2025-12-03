@@ -1,5 +1,6 @@
 import { RelationState } from "../state.js";
 import { JobDetailView, TableDetailView } from "./detailView.js";
+import { TableTimelinessView } from "./timelinessView.js";
 
 export class PanelController {
   constructor(apiClient) {
@@ -30,13 +31,26 @@ export class PanelController {
       created: document.getElementById("table-created"),
       loadsBody: document.getElementById("table-loads-body"),
     });
+    this.timelinessView = new TableTimelinessView({
+      pane: document.getElementById("timeliness-pane"),
+      dailyChart: document.getElementById("timeliness-daily-chart"),
+      hourlyChart: document.getElementById("timeliness-hourly-chart"),
+      dailyPlaceholder: document.getElementById("timeliness-daily-placeholder"),
+      hourlyPlaceholder: document.getElementById("timeliness-hourly-placeholder"),
+      hourlyLabel: document.getElementById("timeliness-hourly-label"),
+    });
     this.activeTabs = { table: "schema", job: "runs" };
     this.currentTable = null;
     this.currentJob = null;
     this.isLoadHistoryLoading = false;
     this.isJobRunLoading = false;
+    this.timelinessData = null;
+    this.selectedTimelinessDay = null;
+    this.isTimelinessLoading = false;
     this.setPlaceholder();
     this.bindDetailTabEvents();
+    this.timelinessView.onDaySelected((date) => this.handleTimelinessDaySelection(date));
+    document.addEventListener("detail-panel:resized", () => this.timelinessView.resize());
   }
 
   setPlaceholder() {
@@ -57,6 +71,7 @@ export class PanelController {
     this.activeTabs.job = "runs";
     this.isLoadHistoryLoading = false;
     this.isJobRunLoading = false;
+    this.resetTimelinessState();
   }
 
   updateMetadata(node) {
@@ -170,6 +185,7 @@ export class PanelController {
     this.jobView.show();
     if (this.elements.triggerSection) this.elements.triggerSection.hidden = true;
     this.currentTable = null;
+    this.resetTimelinessState();
     this.currentJob = node.data("job_id") || node.id();
     this.isJobRunLoading = false;
     this.jobView.setLabel(node.data("label") || node.id());
@@ -185,6 +201,7 @@ export class PanelController {
     this.currentJob = null;
     this.currentTable = node.data("full_name") || node.data("label") || null;
     this.isLoadHistoryLoading = false;
+    this.resetTimelinessState('Select "Load timeline v2" tab to load timeliness data.');
     const schema = node.data("schema") || node.data("dataset") || node.data("namespace") || "-";
     const rows = node.data("rows") || node.data("row_count") || node.data("records") || "-";
     const created = node.data("created_at") || node.data("created") || node.data("updated_at") || "-";
@@ -199,6 +216,9 @@ export class PanelController {
     } else {
       this.tableView.setLoadPlaceholder('Select "Load timeline" tab to load history.');
     }
+    if (this.activeTabs.table === "timeliness" && this.currentTable) {
+      this.fetchTimeliness(true);
+    }
   }
 
   bindDetailTabEvents() {
@@ -208,6 +228,10 @@ export class PanelController {
       this.activeTabs[group] = tab;
       if (group === "table" && tab === "loads" && this.currentTable) {
         this.fetchLoadTimeline();
+      } else if (group === "table" && tab === "timeliness") {
+        this.timelinessView.resize();
+        if (this.currentTable) this.fetchTimeliness();
+        else this.timelinessView.setIdle('Select a table to view timeliness data.');
       } else if (group === "job" && tab === "runs" && this.currentJob) {
         this.fetchJobRunHistory();
       }
@@ -234,6 +258,79 @@ export class PanelController {
     } finally {
       this.isLoadHistoryLoading = false;
     }
+  }
+
+  resetTimelinessState(message) {
+    this.timelinessData = null;
+    this.selectedTimelinessDay = null;
+    this.isTimelinessLoading = false;
+    if (this.timelinessView) {
+      this.timelinessView.reset(message || 'Select "Load timeline v2" tab to load timeliness data.');
+    }
+  }
+
+  async fetchTimeliness(force = false) {
+    if (!this.currentTable || !this.timelinessView) return;
+    if (this.isTimelinessLoading && !force) return;
+    this.isTimelinessLoading = true;
+    this.timelinessView.setLoading("Loading timeliness…");
+    const started = Date.now();
+    try {
+      const payload = await this.api.fetchTableTimeliness(this.currentTable);
+      const elapsed = Date.now() - started;
+      if (elapsed < 1000) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
+      }
+      if (payload.status !== "success") throw new Error("timeliness failed");
+      const result = payload.result || {};
+      const daily = Array.isArray(result.daily_summary) ? result.daily_summary : [];
+      this.timelinessData = {
+        daily_summary: daily,
+        hourly_detail: result.hourly_detail || {},
+      };
+      if (!daily.length) {
+        this.selectedTimelinessDay = null;
+      }
+      this.timelinessView.renderDaily(daily, this.selectedTimelinessDay);
+      const hasSelection =
+        this.selectedTimelinessDay &&
+        Array.isArray(this.timelinessData.hourly_detail?.[this.selectedTimelinessDay]);
+      if (hasSelection) {
+        this.timelinessView.renderHourly(
+          this.selectedTimelinessDay,
+          this.timelinessData.hourly_detail[this.selectedTimelinessDay]
+        );
+      } else {
+        this.timelinessView.clearHourly();
+      }
+    } catch (err) {
+      console.error("Timeliness fetch failed", err);
+      this.timelinessView.setError("Failed to load timeliness.");
+    } finally {
+      this.isTimelinessLoading = false;
+    }
+  }
+
+  handleTimelinessDaySelection(date) {
+    if (!date) return;
+    this.selectedTimelinessDay = date;
+    this.renderTimelinessHourly(date);
+  }
+
+  renderTimelinessHourly(date) {
+    if (!this.timelinessView || !this.timelinessData) return;
+    if (!date) {
+      this.timelinessView.clearHourly();
+      return;
+    }
+    const daily = this.timelinessData?.daily_summary || [];
+    if (!daily.length) {
+      this.timelinessView.setIdle("No timeliness information for this table.");
+      return;
+    }
+    this.timelinessView.setSelectedDate(date);
+    const hourly = this.timelinessData?.hourly_detail?.[date];
+    this.timelinessView.renderHourly(date, Array.isArray(hourly) ? hourly : []);
   }
 
   renderLoadTimeline(rows) {

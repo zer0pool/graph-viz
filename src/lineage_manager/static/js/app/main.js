@@ -184,6 +184,11 @@ function setupDetailResizer() {
     currentWidth = clamped;
     document.documentElement.style.setProperty("--detail-panel-width", `${clamped}px`);
     detailPanel.style.width = `${clamped}px`;
+    document.dispatchEvent(
+      new CustomEvent("detail-panel:resized", {
+        detail: { width: clamped },
+      })
+    );
   };
 
   let startX = 0;
@@ -227,6 +232,11 @@ function setupDetailResizer() {
     resizer.hidden = collapsed;
     if (collapsed) {
       detailPanel.style.removeProperty("width");
+      document.dispatchEvent(
+        new CustomEvent("detail-panel:resized", {
+          detail: { width: 0 },
+        })
+      );
     } else {
       applyWidth(currentWidth);
     }

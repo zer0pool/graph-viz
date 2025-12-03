@@ -72,6 +72,14 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchTableTimeliness(tableName, days = 7) {
+    const res = await this.request(
+      `/api/v1/tables/${encodeURIComponent(tableName)}/timeliness?days=${encodeURIComponent(days)}`
+    );
+    if (!res.ok) throw new Error(`Timeliness failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobRunHistory(jobId) {
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`);
     if (!res.ok) throw new Error(`Run history failed: ${res.status}`);
