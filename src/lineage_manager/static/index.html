@@ -296,16 +296,24 @@
                         </div>
                         <!-- Timeliness graphs (Load timeline v2 tab) -->
                         <div id="timeliness-pane" class="detail-pane" data-tab-panel="timeliness">
-                            <div class="timeliness-section">
-                                <div class="timeliness-header">
-                                    <div class="detail-subheading">Daily summary</div>
-                                    <span class="timeliness-subtext">Status per day</span>
-                                </div>
-                                <div id="timeliness-daily-placeholder" class="timeliness-placeholder">
-                                    Select "Load timeline v2" to load timeliness data.
-                                </div>
-                                <div id="timeliness-daily-chart" class="timeliness-chart" hidden></div>
+                        <div class="timeliness-section">
+                            <div class="timeliness-header">
+                                <div class="detail-subheading">Daily summary</div>
+                                <span class="timeliness-subtext">Status per day</span>
                             </div>
+                            <div class="timeliness-legend">
+                                <span class="legend-item">
+                                    <span class="legend-swatch legend-swatch--success"></span>Loaded
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-swatch legend-swatch--danger"></span>Missing
+                                </span>
+                            </div>
+                            <div id="timeliness-daily-placeholder" class="timeliness-placeholder">
+                                Select "Load timeline v2" to load timeliness data.
+                            </div>
+                            <div id="timeliness-daily-chart" class="timeliness-chart" hidden></div>
+                        </div>
                             <div class="timeliness-section">
                                 <div class="timeliness-header">
                                     <div class="detail-subheading">Hourly breakdown</div>

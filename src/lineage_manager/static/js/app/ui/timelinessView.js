@@ -3,6 +3,7 @@ const STATUS_COLORS = {
   warning: "#FFC107",
   bad: "#E53935",
   default: "#9CA3AF",
+  unknown: "#d1d5db",
 };
 
 const STATE_COLORS = {
@@ -10,14 +11,37 @@ const STATE_COLORS = {
   success: "#4CAF50",
   missing: "#E53935",
   failed: "#E53935",
+  unknown: "#d1d5db",
   default: "#9CA3AF",
 };
 
 const HOUR_LABEL = "Select a day to view hourly detail.";
+const DAILY_LOAD_HINT = 'Select "Load timeline v2" tab to load timeliness data.';
+
 const formatState = (value) => {
-  if (!value) return "-";
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  if (!value) return "Unknown";
+  const lower = value.toLowerCase();
+  if (lower === "unknown") return "No data";
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
 };
+
+const formatDayTick = (dateStr) => {
+  if (typeof dateStr !== "string") return "-";
+  // Expecting YYYY-MM-DD
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return parts[2];
+};
+
+const buildDayInterval = (dateStr) => ({
+  start: `${dateStr} 00:00`,
+  end: `${dateStr} 23:59`,
+});
+
+const buildHourInterval = (dateStr, hourLabel) => ({
+  start: `${dateStr} ${hourLabel}:00`,
+  end: `${dateStr} ${hourLabel}:59`,
+});
 
 export class TableTimelinessView {
   constructor({
@@ -39,7 +63,7 @@ export class TableTimelinessView {
     this.dailyData = [];
     this.selectedDay = null;
     this.daySelectHandler = null;
-    this.prevSelectedIndex = null;
+    this.customDailyRenderer = (params, api) => this.renderDailySegment(params, api);
     this.customHourlyRenderer = (params, api) => this.renderHourlySegment(params, api);
     this.handleWindowResize = () => this.resize();
     window.addEventListener("resize", this.handleWindowResize);
@@ -49,10 +73,9 @@ export class TableTimelinessView {
     this.daySelectHandler = handler;
   }
 
-  reset(message = 'Select "Load timeline v2" tab to load timeliness data.') {
+  reset(message = DAILY_LOAD_HINT) {
     this.dailyData = [];
     this.selectedDay = null;
-    this.prevSelectedIndex = null;
     this.showDailyPlaceholder(message);
     this.clearHourly();
   }
@@ -73,25 +96,16 @@ export class TableTimelinessView {
 
   setSelectedDate(date) {
     this.selectedDay = date || null;
-    if (!this.dailyChart || typeof this.dailyChart.dispatchAction !== "function") return;
-    this.dailyChart.dispatchAction({ type: "downplay", seriesIndex: 0 });
-    this.dailyChart.dispatchAction({ type: "unselect", seriesIndex: 0 });
-    if (!this.dailyData?.length || !date) {
-      this.prevSelectedIndex = null;
-      return;
-    }
-    const index = this.dailyData.findIndex((item) => item.date === date);
-    if (index >= 0) {
-      this.dailyChart.dispatchAction({ type: "select", seriesIndex: 0, dataIndex: index });
-      this.dailyChart.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex: index });
-      this.prevSelectedIndex = index;
+    if (this.dailyData?.length) {
+      this.renderDaily(null, this.selectedDay);
     }
   }
 
-  renderDaily(data, selectedDay = null) {
-    this.dailyData = Array.isArray(data) ? data : [];
-    this.selectedDay = selectedDay;
-    if (!this.dailyData.length) {
+  renderDaily(data = null, selectedDay = this.selectedDay) {
+    if (Array.isArray(data)) {
+      this.dailyData = data;
+    }
+    if (!Array.isArray(this.dailyData) || !this.dailyData.length) {
       this.showDailyPlaceholder("No timeliness information for this table.");
       return;
     }
@@ -101,143 +115,201 @@ export class TableTimelinessView {
       return;
     }
     this.hideDailyPlaceholder();
+    this.selectedDay = selectedDay || null;
     const categories = this.dailyData.map((item) => item.date);
-    const seriesData = this.dailyData.map((item) => {
-      const success = item.success_count ?? 0;
-      const fail = item.fail_count ?? 0;
-      const ratePct = Math.round(((item.rate ?? success / 24) || 0) * 1000) / 10;
-      const color = STATUS_COLORS[item.status] || STATUS_COLORS.default;
-      return {
-        value: Math.min(ratePct, 100),
-        date: item.date,
-        success,
-        fail,
-        status: item.status || "unknown",
-        total: success + fail || 24,
-        itemStyle: { color },
-      };
-    });
-    chart.setOption({
-      grid: { left: 12, right: 12, top: 10, bottom: 10, containLabel: true },
-      xAxis: {
-        type: "value",
-        min: 0,
-        max: 100,
-        axisLabel: { formatter: "{value}%" },
-        splitLine: { show: false },
-      },
-      yAxis: {
-        type: "category",
-        data: categories,
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { color: "#4B5563" },
-      },
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          const point = params.data || {};
-          const total = point.total || 24;
-          const success = point.success ?? 0;
-          const percentage = params.value != null ? `${params.value.toFixed(1)}%` : "-";
-          return [
-            `Date: ${point.date}`,
-            `Success: ${success} / ${total}`,
-            `Rate: ${percentage}`,
-            `Status: ${point.status}`,
-          ].join("<br/>");
-        },
-      },
-      series: [
-        {
-          type: "bar",
-          data: seriesData,
-          barWidth: 18,
-          itemStyle: { borderRadius: 4 },
-          emphasis: { focus: "series" },
-          selectedMode: "single",
-          select: {
-            itemStyle: {
-              borderColor: "#1A73E8",
-              borderWidth: 2,
-              color: (params) => params.data?.itemStyle?.color || STATUS_COLORS.default,
-            },
+    const seriesData = this.dailyData.map((item, index) => this.buildDailyPoint(item, index));
+    chart.setOption(
+      {
+        grid: { left: 8, right: 8, top: 8, bottom: 32 },
+        xAxis: {
+          type: "category",
+          data: categories,
+          boundaryGap: true,
+          axisLine: { lineStyle: { color: "#d1d5db" } },
+          axisTick: { alignWithLabel: true, length: 6 },
+          axisLabel: {
+            color: "#4B5563",
+            formatter: (value) => formatDayTick(value),
           },
         },
-      ],
-    });
-    this.setSelectedDate(this.selectedDay);
+        yAxis: {
+          type: "value",
+          min: 0,
+          max: 1,
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { show: false },
+          splitLine: { show: false },
+        },
+        tooltip: {
+          trigger: "item",
+          formatter: (params) => {
+            const point = params.data || {};
+            const total = (point.success ?? 0) + (point.fail ?? 0);
+            return [
+              `Date: ${point.rawDate || "-"}`,
+              `Success: ${point.success ?? 0} / ${total || 24}`,
+              `Status: ${formatState(point.status)}`,
+              `Data interval: ${point.intervalStart || "-"} ~ ${point.intervalEnd || "-"}`,
+            ].join("<br/>");
+          },
+        },
+        series: [
+          {
+            type: "custom",
+            renderItem: this.customDailyRenderer,
+            data: seriesData,
+          },
+        ],
+      },
+      true
+    );
+  }
+
+  buildDailyPoint(item, index) {
+    const interval = buildDayInterval(item.date);
+    return {
+      value: [item.date, 0],
+      rawDate: item.date,
+      index,
+      dayLabel: formatDayTick(item.date),
+      success: item.success_count ?? 0,
+      fail: item.fail_count ?? 0,
+      status: item.status || "unknown",
+      intervalStart: item.interval_start || interval.start,
+      intervalEnd: item.interval_end || interval.end,
+      color: STATUS_COLORS[item.status] || STATUS_COLORS.default,
+      textColor: item.status === "warning" ? "#111827" : "#ffffff",
+      selected: this.selectedDay === item.date,
+    };
+  }
+
+  renderDailySegment(params, api) {
+    const data = params.data;
+    const coord = api.coord([api.value(0), api.value(1)]);
+    const bandWidth = api.size([1, 0])[0] * 0.9;
+    const barHeight = Math.min(api.size([0, 1])[1] * 0.6, 34);
+    const x = coord[0] - bandWidth / 2;
+    const y = coord[1] - barHeight / 2;
+    const radius = 6;
+    const children = [
+      {
+        type: "rect",
+        shape: {
+          x,
+          y,
+          width: bandWidth,
+          height: barHeight,
+          r: radius,
+        },
+        style: {
+          fill: data.color,
+          stroke: data.selected ? "#1A73E8" : "#d1d5db",
+          lineWidth: data.selected ? 2 : 1,
+        },
+      },
+      {
+        type: "text",
+        style: {
+          text: data.dayLabel,
+          x: x + bandWidth / 2,
+          y: y + barHeight / 2,
+          fill: data.textColor,
+          fontWeight: 600,
+          fontSize: 12,
+          textAlign: "center",
+          textVerticalAlign: "middle",
+        },
+      },
+    ];
+    return {
+      type: "group",
+      children,
+    };
   }
 
   renderHourly(date, rows) {
-    if (this.hourlyLabel) {
-      this.hourlyLabel.textContent = date ? `Hourly breakdown • ${date}` : HOUR_LABEL;
-    }
-    if (!Array.isArray(rows) || !rows.length) {
-      this.showHourlyPlaceholder(date ? "No hourly data available for this date." : HOUR_LABEL);
+    if (!date) {
+      this.clearHourly();
       return;
+    }
+    if (this.hourlyLabel) {
+      this.hourlyLabel.textContent = `Hourly breakdown • ${date}`;
     }
     const chart = this.ensureHourlyChart();
     if (!chart) {
       this.showHourlyPlaceholder("Charts unavailable.");
       return;
     }
+    const normalized = this.normalizeHourlyRows(date, rows);
     this.hideHourlyPlaceholder();
-    const normalized = rows
-      .map((entry) => {
-        const hourIndex = Number(entry.hour ?? entry.hour_index ?? 0);
-        const state = String(entry.state || "missing").toLowerCase();
-        return {
-          hourIndex: Number.isNaN(hourIndex) ? 0 : hourIndex,
-          hourLabel: entry.hour ?? hourIndex.toString().padStart(2, "0"),
-          state,
-          intervalStart: entry.interval_start || "-",
-          intervalEnd: entry.interval_end || "-",
-          color: STATE_COLORS[state] || STATE_COLORS.default,
-        };
-      })
-      .sort((a, b) => a.hourIndex - b.hourIndex);
-    chart.setOption({
-      grid: { left: 20, right: 12, top: 30, bottom: 20 },
-      xAxis: {
-        type: "value",
-        min: 0,
-        max: 24,
-        interval: 2,
-        axisLabel: { formatter: (value) => `${value}:00` },
-        splitLine: { show: false },
-      },
-      yAxis: {
-        type: "category",
-        data: [""],
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { show: false },
-      },
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          const point = params.data || {};
-          const interval =
-            point.intervalStart && point.intervalEnd
-              ? `${point.intervalStart} → ${point.intervalEnd}`
-              : "Not available";
-          return [
-            `Hour: ${point.hourLabel}:00`,
-            `State: ${formatState(point.state)}`,
-            `Interval: ${interval}`,
-          ].join("<br/>");
+    chart.setOption(
+      {
+        grid: { left: 18, right: 12, top: 32, bottom: 24 },
+        xAxis: {
+          type: "value",
+          min: 0,
+          max: 24,
+          interval: 1,
+          axisLabel: {
+            formatter: (value) => (Number.isInteger(value) ? value.toString().padStart(2, "0") : ""),
+          },
+          splitLine: { show: false },
+          axisTick: { show: false },
         },
-      },
-      series: [
-        {
-          type: "custom",
-          renderItem: this.customHourlyRenderer,
-          encode: { x: 0 },
-          data: normalized,
+        yAxis: {
+          type: "category",
+          data: [""],
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { show: false },
         },
-      ],
+        tooltip: {
+          trigger: "item",
+          formatter: (params) => {
+            const point = params.data || {};
+            return [
+              `Hour: ${point.hourLabel}:00`,
+              `State: ${formatState(point.state)}`,
+              `Data interval: ${point.intervalStart} ~ ${point.intervalEnd}`,
+            ].join("<br/>");
+          },
+        },
+        series: [
+          {
+            type: "custom",
+            renderItem: this.customHourlyRenderer,
+            data: normalized,
+          },
+        ],
+      },
+      true
+    );
+  }
+
+  normalizeHourlyRows(date, rows) {
+    const byHour = new Map();
+    (rows || []).forEach((entry) => {
+      const hourIndex = Number(entry.hour ?? entry.hour_index ?? 0);
+      if (Number.isNaN(hourIndex) || hourIndex < 0 || hourIndex > 23) return;
+      byHour.set(hourIndex, entry);
     });
+    const normalized = [];
+    for (let hour = 0; hour < 24; hour += 1) {
+      const hourLabel = hour.toString().padStart(2, "0");
+      const payload = byHour.get(hour) || {};
+      const state = String(payload.state || "unknown").toLowerCase();
+      const interval = buildHourInterval(date, hourLabel);
+      normalized.push({
+        hourIndex: hour,
+        hourLabel,
+        state,
+        intervalStart: payload.interval_start || interval.start,
+        intervalEnd: payload.interval_end || interval.end,
+        color: STATE_COLORS[state] || STATE_COLORS.default,
+      });
+    }
+    return normalized;
   }
 
   clearHourly(message = HOUR_LABEL) {
@@ -275,7 +347,7 @@ export class TableTimelinessView {
     if (!this.dailyChart) {
       this.dailyChart = window.echarts.init(this.dailyChartEl);
       this.dailyChart.on("click", (params) => {
-        const date = params.data?.date;
+        const date = params.data?.rawDate;
         if (date && typeof this.daySelectHandler === "function") {
           this.daySelectHandler(date);
         }

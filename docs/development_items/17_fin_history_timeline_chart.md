@@ -28,6 +28,12 @@
 4. Clicking a block highlights it and renders the hourly segmented bar.  
 5. Resizing or collapsing the detail drawer keeps charts responsive via the new resize events.
 
+### 2024-11-20 Enhancements
+- Re-skinned the daily summary into a single-row timeline so each day renders as one contiguous pill with inline labels (mirrors the GCP explorer mock).  
+- Added a legend for “Loaded / Missing” states plus a refined tooltip that always shows the day’s data interval even when backend data omits it.  
+- Hourly breakdown now always paints 24 segments; gaps are shown as gray “No data” cells whose tooltips still reveal the expected hour interval so users understand what would load there.  
+- When hourly data is absent the chart still appears, giving visual continuity instead of falling back to text placeholders.
+
 ## Follow-ups
 - Replace dummy API values with real timeliness metrics when backend data is available.  
 - Extend the hourly detail map to include all returned days for richer exploration.  
