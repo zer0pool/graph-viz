@@ -31,6 +31,21 @@ export class PanelController {
             tabs: document.getElementById("job_tabs"),
             panels: document.querySelector('.detail-tab-panels[data-tab-group="job"]'),
             runsBody: document.getElementById("job-runs-body"),
+            overviewPlaceholder: document.getElementById("job-overview-placeholder"),
+            overviewContent: document.getElementById("job-overview-content"),
+            overviewFields: {
+                status: document.getElementById("job-status"),
+                schedule: document.getElementById("job-schedule"),
+                owner: document.getElementById("job-owner"),
+                destination: document.getElementById("job-destination"),
+                mode: document.getElementById("job-write-mode"),
+            },
+            inputList: document.getElementById("job-input-list"),
+            outputList: document.getElementById("job-output-list"),
+            lineagePlaceholder: document.getElementById("job-lineage-placeholder"),
+            lineageContent: document.getElementById("job-lineage-content"),
+            lineageInputs: document.getElementById("job-lineage-inputs"),
+            lineageOutputs: document.getElementById("job-lineage-outputs"),
         });
 
         this.tableView = new TableDetailView({
@@ -79,14 +94,47 @@ export class PanelController {
         this.currentTable = null;
         this.currentTableNode = null;
         this.currentJob = null;
-        this.activeTabs = { table: "overview", job: "runs" };
+        this.currentJobNodeId = null;
+        this.jobOverviewRequestId = 0;
+        this.jobRelations = { inputs: [], outputs: [] };
+        this.activeTabs = { table: "overview", job: "overview" };
         this.isJobRunLoading = false;
         this.isTimelinessLoading = false;
         this.selectedTimelinessDay = null;
 
+        this.viewGraphButton = document.getElementById("detail-view-graph");
+        this.currentDetailType = null;
+        this.bindViewGraphButton();
+
         this.setPlaceholder();
         this.bindTabEvents();
         this.bindTimelinessEvents();
+    }
+
+    bindViewGraphButton() {
+        if (!this.viewGraphButton) return;
+        this.viewGraphButton.addEventListener("click", () => {
+            if (this.viewGraphButton.disabled) return;
+            if (this.currentDetailType === "job" && this.currentJobNodeId) {
+                document.dispatchEvent(
+                    new CustomEvent("job-detail:view-in-graph", {
+                        detail: { nodeId: this.currentJobNodeId },
+                    })
+                );
+            } else if (this.currentDetailType === "table" && this.currentTableNode) {
+                document.dispatchEvent(
+                    new CustomEvent("table-detail:view-in-graph", {
+                        detail: { nodeId: this.currentTableNode.id() },
+                    })
+                );
+            }
+        });
+    }
+
+    setViewGraphAvailability(enabled, type = null) {
+        if (!this.viewGraphButton) return;
+        this.viewGraphButton.disabled = !enabled;
+        this.currentDetailType = enabled ? type : null;
     }
 
     /**
@@ -100,22 +148,26 @@ export class PanelController {
         }
 
         this.jobView.hide();
+        this.jobView.reset();
         this.tableView.hide();
         this.tableView.setDetails(null);
         this.triggerManager.hide();
 
-        this.jobView.setRunsPlaceholder("Select a job to view run history.");
-        this.jobView.setLabel("Select a node to view its details.");
+        this.jobView.setLabel("Select a node to view its details.", true);
 
         this.currentTable = null;
         this.currentTableNode = null;
         this.currentJob = null;
+        this.currentJobNodeId = null;
+        this.jobRelations = { inputs: [], outputs: [] };
+        this.jobOverviewRequestId += 1;
         this.activeTabs.table = "overview";
-        this.activeTabs.job = "runs";
+        this.activeTabs.job = "overview";
         this.isJobRunLoading = false;
 
         this.resetTimelinessState();
         this.lineageProvider.setState(this.lineageProvider.createEmptyState());
+        this.setViewGraphAvailability(false);
     }
 
     /**
@@ -130,8 +182,10 @@ export class PanelController {
             this.elements.title.textContent = node.data("label") || node.id();
         }
         if (this.elements.badge) {
-            this.elements.badge.textContent = type === "table" ? "TABLE" : "JOB";
-            this.elements.badge.classList.remove("muted");
+            const isTable = type === "table";
+            this.elements.badge.textContent = isTable ? "TABLE" : "JOB";
+            this.elements.badge.classList.remove("muted", "table-type", "job-type");
+            this.elements.badge.classList.add(isTable ? "table-type" : "job-type");
         }
 
         console.info("DetailPanel:update", { id: node.id(), type });
@@ -141,15 +195,34 @@ export class PanelController {
         } else {
             this.renderJobDetails(node);
         }
+
+        this.setViewGraphAvailability(true, type);
     }
 
     /**
      * Update relations (upstream/downstream)
      */
     updateRelations(node) {
-        const upstream = node.incomers("node").map((x) => x.data("label"));
-        const downstream = node.outgoers("node").map((x) => x.data("label"));
+        if (!node) return;
+        const formatNode = (cyNode) => ({
+            id: cyNode.id(),
+            label: cyNode.data("label") || cyNode.id(),
+            type: (cyNode.data("type") || "").toLowerCase(),
+            full_name: cyNode.data("full_name") || cyNode.data("label") || null,
+            job_id: cyNode.data("job_id") || null,
+        });
+
+        const upstream = node.incomers("node").map((n) => formatNode(n));
+        const downstream = node.outgoers("node").map((n) => formatNode(n));
         this.relations.set(upstream, downstream);
+
+        if (this.currentJobNodeId === node.id()) {
+            const inputs = upstream.filter((item) => item.type === "table");
+            const outputs = downstream.filter((item) => item.type === "table");
+            this.jobRelations = { inputs, outputs };
+            this.jobView.renderIOLinks(inputs, outputs);
+            this.jobView.renderLineageSummary(inputs, outputs);
+        }
     }
 
     /**
@@ -171,12 +244,20 @@ export class PanelController {
         this.currentTable = null;
         this.currentTableNode = null;
         this.currentJob = node.data("job_id") || node.id();
+        this.currentJobNodeId = node.id();
         this.isJobRunLoading = false;
 
-        this.jobView.setLabel(node.data("label") || node.id());
+        this.jobView.setLabel(node.data("label") || node.id(), false);
         this.jobView.setRunsPlaceholder('Select "Run history" tab to load data.');
+        this.jobView.setOverviewLoading("Loading job details…");
+        this.jobView.renderIOLinks([], []);
+        this.jobView.setLineagePlaceholder('Select "Lineage" to view related tables.');
+        this.jobRelations = { inputs: [], outputs: [] };
 
         this.resetTimelinessState();
+
+        this.jobOverviewRequestId += 1;
+        this.fetchJobOverview(this.currentJob, this.jobOverviewRequestId);
 
         if (this.activeTabs.job === "runs" && this.currentJob) {
             this.fetchJobRunHistory(true);
@@ -207,6 +288,61 @@ export class PanelController {
         if (this.activeTabs.table === "activity" && this.currentTable) {
             this.ensureActivityData(true);
         }
+    }
+
+    /**
+     * Fetch job overview details
+     */
+    async fetchJobOverview(jobId, requestId) {
+        if (!jobId) return;
+        try {
+            const detail = await this.api.fetchJobDetail(jobId);
+            if (requestId !== this.jobOverviewRequestId) return;
+            const overview = this.buildJobOverview(detail);
+            this.jobView.renderOverview(overview);
+        } catch (err) {
+            if (requestId !== this.jobOverviewRequestId) return;
+            console.error("Job detail fetch failed", err);
+            this.jobView.setOverviewError("Failed to load job details.");
+        }
+    }
+
+    buildJobOverview(detail = {}) {
+        const metadata = detail.metadata || {};
+        return {
+            status: detail.status || metadata.status || metadata.run_status || "-",
+            owner: detail.owner || metadata.owner || "-",
+            schedule: this.formatSchedule(metadata.schedule || metadata.cron),
+            destination:
+                detail.destination_table ||
+                metadata.destination ||
+                this.extractDestination(metadata) ||
+                "-",
+            write_mode: detail.write_mode || metadata.write_mode || "-",
+        };
+    }
+
+    formatSchedule(schedule) {
+        if (!schedule) return "-";
+        if (typeof schedule === "string") return schedule;
+        if (typeof schedule === "object") {
+            if (schedule.cron) return `Cron ${schedule.cron}`;
+            if (schedule.expression) return schedule.expression;
+            if (schedule.rate) return schedule.rate;
+        }
+        return "-";
+    }
+
+    extractDestination(metadata = {}) {
+        if (Array.isArray(metadata.destinations) && metadata.destinations.length) {
+            const first = metadata.destinations[0];
+            if (typeof first === "string") return first;
+            if (first?.name) return first.name;
+        }
+        if (Array.isArray(metadata.destination_tables) && metadata.destination_tables.length) {
+            return metadata.destination_tables[0];
+        }
+        return metadata.destination_type || metadata.destination;
     }
 
     /**
@@ -277,6 +413,17 @@ export class PanelController {
                 else this.lineageProvider.setState(this.lineageProvider.createEmptyState());
             } else if (group === "job" && tab === "runs" && this.currentJob) {
                 this.fetchJobRunHistory();
+            } else if (group === "job" && tab === "lineage") {
+                if (this.jobRelations.inputs.length || this.jobRelations.outputs.length) {
+                    this.jobView.renderLineageSummary(
+                        this.jobRelations.inputs,
+                        this.jobRelations.outputs
+                    );
+                } else if (this.currentJob) {
+                    this.jobView.setLineagePlaceholder("No lineage information available.");
+                } else {
+                    this.jobView.setLineagePlaceholder('Select a job to view lineage.');
+                }
             }
         });
     }

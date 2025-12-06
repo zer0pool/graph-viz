@@ -37,6 +37,16 @@ export class GraphController {
 
         // Configuration
         this.graphCanvas = document.getElementById("cy");
+
+        document.addEventListener("job-detail:view-in-graph", (event) => {
+            const nodeId = event.detail?.nodeId;
+            if (nodeId) this.centerOnNode(nodeId);
+        });
+
+        document.addEventListener("table-detail:view-in-graph", (event) => {
+            const nodeId = event.detail?.nodeId;
+            if (nodeId) this.centerOnNode(nodeId);
+        });
     }
 
     /**
@@ -373,6 +383,29 @@ export class GraphController {
             const isOverview = (pane.dataset.tabPanel || "overview") === "overview";
             pane.classList.toggle("active", isOverview);
         });
+    }
+
+    /**
+     * Center viewport on node id when requested from detail panel
+     */
+    centerOnNode(nodeId) {
+        if (!nodeId || !this.view) return;
+        const cy = this.view.getCy();
+        if (!cy) return;
+
+        const target = cy.$(`#${nodeId}`);
+        if (!target || target.length === 0) return;
+
+        cy.animate(
+            {
+                center: { eles: target },
+                duration: 350,
+            },
+            { easing: "ease-out" }
+        );
+
+        target.addClass("pulse");
+        setTimeout(() => target.removeClass("pulse"), 700);
     }
 }
 

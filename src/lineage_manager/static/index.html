@@ -164,21 +164,68 @@
             </button>
             <div class="panel-body detail-body">
                 <div class="detail-header">
-                    <div>
+                    <div class="detail-header-top">
                         <div class="detail-heading">Details</div>
-                        <div id="node-title" class="detail-title">Search the graph</div>
+                        <button id="detail-view-graph" class="view-graph-btn btn-icon-right" type="button" disabled
+                            title="Center the graph on this table/job">
+                            <span class="label">View in graph</span>
+                            <span class="icon-diagonal" aria-hidden="true">↗</span>
+                        </button>
                     </div>
-                    <span id="node-type-badge" class="detail-pill muted">-</span>
+                    <div class="detail-header-bottom">
+                        <div id="node-title" class="detail-title">Search the graph</div>
+                        <span id="node-type-badge" class="detail-pill muted">-</span>
+                    </div>
                 </div>
 
                 <!-- Job Details -->
                 <div id="job-details" class="detail-card" hidden>
                     <p id="job-label" class="detail-primary">Select a node to view its details.</p>
                     <div class="detail-tabs" id="job_tabs" data-tab-group="job" role="tablist">
-                        <button class="detail-tab active" type="button" role="tab" data-tab="runs">Run history</button>
+                        <button class="detail-tab active" type="button" role="tab" data-tab="overview">Overview</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="lineage">Lineage</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="runs">Run history</button>
                     </div>
                     <div class="detail-tab-panels" data-tab-group="job">
-                        <div id="job-run-pane" class="detail-pane active" data-tab-panel="runs">
+                        <div id="job-overview-pane" class="detail-pane active" data-tab-panel="overview">
+                            <div id="job-overview-placeholder" class="detail-placeholder">Select a job to load overview.
+                            </div>
+                            <div id="job-overview-content" class="job-overview" hidden>
+                                <div class="job-meta-grid">
+                                    <div class="overview-field">
+                                        <div class="detail-subheading">Status</div>
+                                        <div id="job-status" class="detail-value">-</div>
+                                    </div>
+                                    <div class="overview-field">
+                                        <div class="detail-subheading">Schedule</div>
+                                        <div id="job-schedule" class="detail-value">-</div>
+                                    </div>
+                                    <div class="overview-field">
+                                        <div class="detail-subheading">Owner</div>
+                                        <div id="job-owner" class="detail-value">-</div>
+                                    </div>
+                                    <div class="overview-field">
+                                        <div class="detail-subheading">Destination</div>
+                                        <div id="job-destination" class="detail-value">-</div>
+                                    </div>
+                                    <div class="overview-field">
+                                        <div class="detail-subheading">Write mode</div>
+                                        <div id="job-write-mode" class="detail-value">-</div>
+                                    </div>
+                                </div>
+                                <div class="job-io-grid">
+                                    <div class="job-io-card">
+                                        <div class="detail-subheading">Input tables</div>
+                                        <ul id="job-input-list" class="io-list"></ul>
+                                    </div>
+                                    <div class="job-io-card">
+                                        <div class="detail-subheading">Output tables</div>
+                                        <ul id="job-output-list" class="io-list"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="job-run-pane" class="detail-pane" data-tab-panel="runs">
                             <table id="job-runs" class="detail-table">
                                 <thead>
                                     <tr>
@@ -196,6 +243,22 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div id="job-lineage-pane" class="detail-pane" data-tab-panel="lineage">
+                            <div id="job-lineage-placeholder" class="detail-placeholder">Select "Lineage" to view
+                                related tables.</div>
+                            <div id="job-lineage-content" class="job-lineage" hidden>
+                                <div class="job-io-grid">
+                                <div class="job-io-card">
+                                    <div class="detail-subheading">Input tables</div>
+                                    <ul id="job-lineage-inputs" class="io-list"></ul>
+                                </div>
+                                <div class="job-io-card">
+                                        <div class="detail-subheading">Output tables</div>
+                                        <ul id="job-lineage-outputs" class="io-list"></ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

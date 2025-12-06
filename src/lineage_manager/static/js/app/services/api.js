@@ -79,6 +79,13 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchJobDetail(jobId) {
+    console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
+    const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
+    if (!res.ok) throw new Error(`Job detail failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobRunHistory(jobId) {
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`);
     if (!res.ok) throw new Error(`Run history failed: ${res.status}`);
