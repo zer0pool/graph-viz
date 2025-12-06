@@ -2138,6 +2138,12 @@ body {
     cursor: pointer;
 }
 
+.btn-secondary.active {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
 .ctx-hint {
     margin-top: 6px;
     font-size: 12px;

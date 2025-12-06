@@ -245,6 +245,17 @@ export class GraphController {
     }
 
     /**
+     * Force layout direction (horizontal/vertical)
+     */
+    forceLayout(direction = "horizontal", preserveViewport = true) {
+        if (!this.positioning) return;
+        this.positioning.forceLayout(direction, preserveViewport);
+        this.applyFilters();
+        this.listView.updateListView();
+        this.updateToolbarVisibility();
+    }
+
+    /**
      * Hide node
      */
     hideNodeById(nodeId) {
