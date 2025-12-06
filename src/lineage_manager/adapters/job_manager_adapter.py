@@ -6,7 +6,7 @@ import httpx
 
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.constants import SchedulingType
-from lineage_manager.models.job_data_transformer import JobDataTransformer
+from lineage_manager.models.scheduling_lineage import SchedulingLineage, SchedulingLineageResponse
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class JobManagerPort(ABC):
         owner: Optional[str] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[SchedulingLineage]:
         """Fetch all jobs from Job Manager API."""
         pass
 
@@ -42,7 +42,7 @@ class JobManagerAdapter(JobManagerPort):
 
     async def get_all_jobs_paginated(
         self, scheduling_type: str, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> List[SchedulingLineage]:
         """Fetch all jobs of a specific scheduling type using pagination."""
 
         all_jobs = []
@@ -77,15 +77,10 @@ class JobManagerAdapter(JobManagerPort):
 
                         response.raise_for_status()
                         data = response.json()
-                        logger.info(f"Successfully parsed response JSON")
+                        logger.info("Successfully parsed response JSON")
 
-                        # Log response structure for debugging
-                        logger.info(
-                            f"Response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}"
-                        )
-
-                        # Extract jobs from the result key
-                        jobs = data.get("result", [])
+                        payload = SchedulingLineageResponse.model_validate(data)
+                        jobs = payload.result
                         all_jobs.extend(jobs)
 
                         logger.info(
@@ -99,8 +94,8 @@ class JobManagerAdapter(JobManagerPort):
                             )
 
                         # Check if there are more jobs to fetch
-                        pagination = data.get("pagination", {})
-                        next_offset = pagination.get("next_offset")
+                        pagination = payload.pagination if payload.pagination else None
+                        next_offset = pagination.next_offset if pagination else None
 
                         # Log pagination info for debugging
                         logger.info(
@@ -108,7 +103,8 @@ class JobManagerAdapter(JobManagerPort):
                         )
 
                         # Log pagination structure for debugging
-                        logger.info(f"Pagination structure: {pagination}")
+                        if pagination:
+                            logger.info(f"Pagination structure: {pagination.model_dump()}")
 
                         # ##
                         if not next_offset:
@@ -197,14 +193,14 @@ class JobManagerAdapter(JobManagerPort):
         logger.info(f"Method returning {len(all_jobs)} jobs")
         if len(all_jobs) > 0:
             logger.info(
-                f"First job ID: {all_jobs[0].get('job_id', 'N/A') if all_jobs else 'N/A'}"
+                f"First job ID: {getattr(all_jobs[0], 'job_id', 'N/A') if all_jobs else 'N/A'}"
             )
             logger.info(
-                f"Last job ID: {all_jobs[-1].get('job_id', 'N/A') if all_jobs else 'N/A'}"
+                f"Last job ID: {getattr(all_jobs[-1], 'job_id', 'N/A') if all_jobs else 'N/A'}"
             )
         return all_jobs
 
-    async def get_all_jobs(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def get_all_jobs(self, limit: Optional[int] = None) -> List[SchedulingLineage]:
         """Fetch all jobs from Job Manager API (both SELF-TYPE and REQ-TYPE)."""
         try:
             logger.info("Fetching all jobs from Job Manager API")

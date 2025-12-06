@@ -16,7 +16,7 @@ const STATE_COLORS = {
 };
 
 const HOUR_LABEL = "Select a day to view hourly detail.";
-const DAILY_LOAD_HINT = 'Select "Load timeline v2" tab to load timeliness data.';
+const DAILY_LOAD_HINT = 'Select "Activity" tab to load timeliness data.';
 
 const formatState = (value) => {
   if (!value) return "Unknown";

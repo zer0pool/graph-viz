@@ -15,13 +15,7 @@ if SRC_DIR not in sys.path:
 from lineage_manager.core.config import get_settings
 
 # Import models to register them with Base.metadata
-from lineage_manager.models import (
-    graph_closure,
-    graph_edge,
-    job_node,
-    job_table_link,
-    table_node,
-)
+from lineage_manager.models import graph_closure, graph_edge, graph_node
 from lineage_manager.models.base import Base
 
 # this is the Alembic Config object, which provides

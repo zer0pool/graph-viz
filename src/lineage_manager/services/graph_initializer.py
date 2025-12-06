@@ -2,8 +2,7 @@ import logging
 from typing import Any, Dict, List
 
 from lineage_manager.adapters.job_manager_adapter import JobManagerPort
-from lineage_manager.api.v1.schemas import JobRegister
-from lineage_manager.models.job_data_transformer import JobDataTransformer
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 from lineage_manager.services.graph_service import GraphService
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ class GraphInitializerService:
             self.logger.exception("Full traceback:")
             return self._build_error_result(str(e))
 
-    async def _fetch_jobs(self) -> List[Dict[str, Any]]:
+    async def _fetch_jobs(self) -> List[SchedulingLineage]:
         """Fetch all jobs from Job Manager API."""
         self.logger.info("Fetching all jobs from Job Manager API")
         self.logger.debug(
@@ -57,24 +56,20 @@ class GraphInitializerService:
             self.logger.exception("API call exception details:")
             raise
 
-    async def _process_jobs(self, jobs_data: List[Dict[str, Any]]) -> Dict[str, int]:
+    async def _process_jobs(self, jobs_data: List[SchedulingLineage]) -> Dict[str, int]:
         """Process jobs and register them in the graph."""
         successful_registrations = 0
         failed_registrations = 0
 
         for job_data in jobs_data:
             try:
-                # Transform job data to JobRegister schema
-                job_register = self._transform_job_data(job_data)
-
-                # Register the job using the existing method
-                job_id = self.graph_service.register_job(job_register)
+                job_id = self.graph_service.register_lineage_job(job_data)
                 self.logger.debug(f"Successfully registered job: {job_id}")
                 successful_registrations += 1
 
             except Exception as e:
                 self.logger.error(
-                    f"Failed to register job {job_data.get('job_id', 'unknown')}: {e}"
+                    f"Failed to register job {getattr(job_data, 'job_id', 'unknown')}: {e}"
                 )
                 failed_registrations += 1
                 continue
@@ -84,26 +79,6 @@ class GraphInitializerService:
             "failed_registrations": failed_registrations,
             "jobs_fetched": len(jobs_data),
         }
-
-    def _transform_job_data(self, job_data: Dict[str, Any]) -> JobRegister:
-        """Transform job data from Job Manager API to JobRegister schema."""
-        # Use the existing JobDataTransformer to get the transformed data
-        transformed_data = JobDataTransformer.transform_job_to_graph_node(job_data)
-
-        # Extract destination tables (handling the difference between the schemas)
-        destination_tables = []
-        if transformed_data.get("destination_table"):
-            destination_tables = [transformed_data["destination_table"]]
-
-        # Create JobRegister object with the available fields
-        return JobRegister(
-            job_id=transformed_data.get("job_id", ""),
-            name=transformed_data.get("name", transformed_data.get("job_id", "")),
-            trigger_tables=transformed_data.get("trigger_tables", []),
-            reference_tables=transformed_data.get("reference_tables", []),
-            destination_tables=destination_tables,
-            metadata=transformed_data.get("job_metadata", {}),
-        )
 
     def _build_result(
         self, process_result: Dict[str, int], stats: Dict[str, Any]

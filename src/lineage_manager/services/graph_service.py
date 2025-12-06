@@ -11,6 +11,7 @@ from lineage_manager.adapters.job_manager_adapter import (
 from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.models.job_data_transformer import JobDataTransformer
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,13 @@ class GraphService:
             )
             logger.exception("Full traceback:")
             raise
+
+    def register_lineage_job(self, lineage: SchedulingLineage) -> str:
+        """
+        Register a job described via SchedulingLineage payload.
+        """
+        job_payload = JobDataTransformer.lineage_to_job_register(lineage)
+        return self.register_job(job_payload)
 
     async def initialize_graph(self) -> Dict[str, Any]:
         """
@@ -394,12 +402,12 @@ class GraphService:
         if node_type == "job":
             key = f"j{obj.id}"
             if key not in nodes:
-                nodes[key] = {"id": key, "type": "job", "label": obj.name or obj.job_id}
+                nodes[key] = {"id": key, "type": "job", "label": getattr(obj, "display_name", obj.job_id)}
             return key
         else:
             key = f"t{obj.id}"
             if key not in nodes:
-                nodes[key] = {"id": key, "type": "table", "label": obj.full_name}
+                nodes[key] = {"id": key, "type": "table", "label": obj.table_name or obj.full_name}
             return key
 
     def get_job_neighbors(
@@ -416,8 +424,6 @@ class GraphService:
             return {"status": "error", "message": f"Job '{job_id}' not found"}
 
         from sqlalchemy import and_, or_, select
-
-        from lineage_manager.models import GraphEdge, GraphJobNode, GraphTableNode
 
         nodes: dict[str, dict] = {}
         edges: list[dict] = []

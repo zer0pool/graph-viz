@@ -26,6 +26,7 @@ export class GraphController {
     this.baseGraph = null;
     this.baseCenterLabel = null;
     this.tooltip = null;
+    this.hiddenNodes = new Set();
   }
 
   init(container) {
@@ -131,23 +132,31 @@ export class GraphController {
   }
 
   renderGraph(payload, options = {}) {
+    if (this.selectionState?.node) {
+      this.clearSelection();
+    }
     if (options.resetViewport) this.viewport = null;
     if (!this.cy) throw new Error("Graph not initialized");
     if (options.rememberInitial) {
+      this.hiddenNodes.clear();
       this.baseGraph = JSON.parse(JSON.stringify(payload));
       this.baseCenterLabel = options.centerLabel || null;
     }
     this.cy.destroy();
     this.init(document.getElementById("cy"));
-    const nodes = (payload.nodes || []).map((n) => this.serializeNode(n));
-    const edges = (payload.edges || []).map((e) => ({
-      data: {
-        id: e.id || `${e.source}_${e.target}`,
-        source: e.source,
-        target: e.target,
-        io: e.io || "",
-      },
-    }));
+    const visibleNodes = (payload.nodes || []).filter((n) => !this.hiddenNodes.has(n.id));
+    const nodes = visibleNodes.map((n) => this.serializeNode(n));
+    const allowedNodeIds = new Set(visibleNodes.map((n) => n.id));
+    const edges = (payload.edges || [])
+      .filter((e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target))
+      .map((e) => ({
+        data: {
+          id: e.id || `${e.source}_${e.target}`,
+          source: e.source,
+          target: e.target,
+          io: e.io || "",
+        },
+      }));
     this.cy.add([...nodes, ...edges]);
     const layoutDirection = options.forceLayoutDirection || this.lastLayoutDirection;
     const shouldForceLayout = !this.nodePositions.size || options.forceLayoutDirection;
@@ -201,6 +210,21 @@ export class GraphController {
     }
     const labelText =
       type === "table" ? primary : secondary ? `${primary}\n${secondary}` : primary;
+    const properties = n.properties || {};
+    const metadata = n.metadata || {};
+    const labels = n.labels || properties.labels || metadata.labels || null;
+    const owner = n.owner || properties.owner || metadata.owner || null;
+    const storageType =
+      properties.storage_type || metadata.storage_type || properties.storage || metadata.storage || null;
+    const partition =
+      n.partition || properties.partition || properties.partition_field || metadata.partition || null;
+    const createdAt = n.created_at || properties.created_at || metadata.created_at || n.updated_at || null;
+    const tableOverview =
+      properties["table.overview"] || properties.table_overview || metadata["table.overview"] || null;
+    const tableSchema =
+      properties["table.schema"] || properties.table_schema || metadata["table.schema"] || null;
+    const tableActivity =
+      properties["table.activity"] || properties.table_activity || metadata["table.activity"] || null;
     return {
       data: {
         id: n.id,
@@ -209,11 +233,20 @@ export class GraphController {
         sub_label: secondary,
         type,
         full_name: n.full_name || n.label || null,
-        owner: n.owner || n.metadata?.owner,
-        description: n.description || n.metadata?.description,
-        status: n.status || n.metadata?.status,
+        owner,
+        description: n.description || metadata.description,
+        status: n.status || metadata.status,
         job_id: n.job_id,
         updated_at: n.updated_at,
+        storage: storageType,
+        partition,
+        created_at: createdAt,
+        labels,
+        properties,
+        metadata,
+        table_overview: tableOverview,
+        table_schema: tableSchema,
+        table_activity: tableActivity,
       },
     };
   }
@@ -260,6 +293,44 @@ export class GraphController {
     }
   }
 
+  hideSelectedNode() {
+    const node = this.selectionState?.node;
+    if (!node) return false;
+    return this.hideNodeById(node.id());
+  }
+
+  hideNodeById(nodeId) {
+    if (!this.cy) return false;
+    const target = typeof nodeId === "string" ? this.cy.$(`#${nodeId}`) : nodeId;
+    if (!target || !target.nonempty()) return false;
+    const id = target.id();
+    this.hiddenNodes.add(id);
+    this.nodePositions.delete(id);
+    this.cy.remove(target);
+    this.clearSelection();
+    this.updateListView();
+    this.updateToolbarVisibility();
+    return true;
+  }
+
+  resetHiddenNodes() {
+    this.hiddenNodes.clear();
+  }
+
+  resetGraphView() {
+    if (this.selectionState?.node) {
+      this.clearSelection();
+    }
+    this.hiddenNodes.clear();
+    if (this.baseGraph) {
+      const snapshot = JSON.parse(JSON.stringify(this.baseGraph));
+      this.renderGraph(snapshot, { centerLabel: this.baseCenterLabel, resetViewport: true });
+    } else if (this.cy) {
+      this.cy.fit();
+      this.cy.center();
+    }
+  }
+
   applyFilters() {
     if (!this.cy) return;
     this.cy.batch(() => {
@@ -300,6 +371,7 @@ export class GraphController {
     const upstreamAdded = [];
     const downstreamAdded = [];
     (data.nodes || []).forEach((raw) => {
+      if (this.hiddenNodes.has(raw.id)) return;
       if (!existingNodes.has(raw.id)) {
         const added = cy.add(this.serializeNode(raw));
         added.addClass("just-added");
@@ -309,6 +381,7 @@ export class GraphController {
       }
     });
     (data.edges || []).forEach((edge) => {
+      if (this.hiddenNodes.has(edge.source) || this.hiddenNodes.has(edge.target)) return;
       const key = `${edge.source}__${edge.target}__${edge.io || ""}`;
       if (edgeKeys.has(key)) return;
       if (existingEdges.has(key)) return;
@@ -661,13 +734,13 @@ export class GraphController {
     const panels = document.querySelectorAll('.detail-tab-panels[data-tab-group="table"] .detail-pane');
     if (!tabs.length) return;
     tabs.forEach((tab) => {
-      const isSchema = (tab.dataset.tab || "schema") === "schema";
-      tab.classList.toggle("active", isSchema);
-      tab.setAttribute("aria-selected", isSchema ? "true" : "false");
+      const isOverview = (tab.dataset.tab || "overview") === "overview";
+      tab.classList.toggle("active", isOverview);
+      tab.setAttribute("aria-selected", isOverview ? "true" : "false");
     });
     panels.forEach((pane) => {
-      const isSchema = (pane.dataset.tabPanel || "schema") === "schema";
-      pane.classList.toggle("active", isSchema);
+      const isOverview = (pane.dataset.tabPanel || "overview") === "overview";
+      pane.classList.toggle("active", isOverview);
     });
   }
 

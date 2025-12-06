@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 from lineage_manager.services.graph_service import GraphService
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,24 @@ def register_job(
         return {"job_id": job_id}
     except Exception as e:
         logger.error(f"Error registering job: {e}")
+        logger.exception("Full traceback:")
+        raise
+
+
+@router.post("/jobs/lineage")
+@inject
+def register_lineage_job(
+    payload: SchedulingLineage,
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+):
+    """Register a job using the SchedulingLineage payload."""
+    logger.info(f"Received scheduling lineage registration request: {payload.job_id}")
+    try:
+        job_id = graph_service.register_lineage_job(payload)
+        logger.info(f"Lineage job registered successfully: {job_id}")
+        return {"job_id": job_id}
+    except Exception as e:
+        logger.error(f"Error registering lineage job: {e}")
         logger.exception("Full traceback:")
         raise
 

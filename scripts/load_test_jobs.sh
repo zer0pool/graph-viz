@@ -7,11 +7,11 @@ set -euo pipefail
 # - Each job reads from the previous job's output table to form a linear chain
 #
 # Usage:
-#   BASE_URL=http://localhost:8000 bash scripts/load_test_jobs.sh
+#   BASE_URL=http://localhost:5003 bash scripts/load_test_jobs.sh
 #
-# BASE_URL defaults to http://localhost:8000 if not provided.
+# BASE_URL defaults to http://localhost:5003 if not provided.
 
-BASE_URL=${BASE_URL:-http://localhost:8000}
+BASE_URL=${BASE_URL:-http://localhost:5003}
 # BigQuery-style identifiers (project.dataset.table)
 PROJECT_ID=${PROJECT_ID:-demo}
 DATASET_ID=${DATASET_ID:-analytics}
@@ -66,42 +66,47 @@ register_job() {
     ref_tables+=("$(full_table "$(printf "SOURCE_TABLE_%02d" $((idx+10)))")")
   fi
 
-  # Convert bash array -> JSON array string
-  local refs_json
-  if ((${#ref_tables[@]} > 0)); then
-    refs_json=$(printf '"%s",' "${ref_tables[@]}")
-    refs_json="[${refs_json%,}]"
-  else
-    refs_json="[]"
+  # Convert bash array -> JSON array string with trigger information
+  local upstream_entries=()
+  for tbl in "${ref_tables[@]}"; do
+    upstream_entries+=("{\"type\":\"table\",\"name\":\"${tbl}\",\"trigger\":true}")
+  done
+  local upstreams_json="[]"
+  if ((${#upstream_entries[@]} > 0)); then
+    local joined_upstreams
+    joined_upstreams=$(printf "%s," "${upstream_entries[@]}")
+    upstreams_json="[${joined_upstreams%,}]"
   fi
 
   # Optionally include an s3 destination reference on a couple of jobs
   local destinations_json="[]"
   if [[ "${idx}" -eq 5 || "${idx}" -eq 10 ]]; then
-    destinations_json="[\"s3://test-bucket/${name}/output\"]"
+    destinations_json="[{\"type\":\"s3\",\"path\":\"s3://test-bucket/${name}\",\"table_name\":\"output\"}]"
   fi
 
-  # Build JSON payload (labels, schedule, metadata included for realism)
+  # Build JSON payload (metadata captures ownership/run config)
   payload=$(cat <<JSON
 {
+  "type": "SELF-TYPE",
   "job_id": "${job_id}",
   "name": "${name}",
-  "labels": {"env": "test", "batch": ${idx}},
-  "owner": "tester",
-  "write_mode": "append",
+  "upstreams": ${upstreams_json},
+  "downstreams": [{"type":"table","name":"${dest_table}"}],
   "destination_type": "table",
-  "destination_table": "${dest_table}",
-  "trigger_tables": ${refs_json},
-  "reference_tables": ${refs_json},
-  "run_status": "RUN",
-  "schedule": {"cron": "@daily"},
-  "destinations": ${destinations_json},
-  "metadata": {"note": "seeded by load_test_jobs.sh"}
+  "metadata": {
+    "labels": {"env": "test", "batch": ${idx}},
+    "owner": "tester",
+    "write_mode": "append",
+    "run_status": "RUN",
+    "schedule": {"cron": "@daily"},
+    "destinations": ${destinations_json},
+    "note": "seeded by load_test_jobs.sh"
+  }
 }
 JSON
   )
-  echo "[INFO] Registering ${job_id} (refs: ${refs_json} -> dest: ${dest_table})"
-  curl -sS -X POST "${BASE_URL}/api/v1/graph/jobs" \
+  echo "[INFO] Registering ${job_id} (upstreams: ${upstreams_json} -> dest: ${dest_table})"
+  curl -sS -X POST "${BASE_URL}/api/v1/graph/jobs/lineage" \
     -H 'Content-Type: application/json' \
     -d "${payload}" \
     --fail > /dev/null || {
@@ -133,28 +138,28 @@ main() {
     local name="EX_JOB_${jnum}"
     local dest_table="EXTRA_TABLE_${jnum}"
 
-    local refs_json
-    refs_json="[\"${base_table}\"]"
-
+    local upstreams_json="[{\"type\":\"table\",\"name\":\"${base_table}\",\"trigger\":true}]"
     payload=$(cat <<JSON
 {
+  "type": "SELF-TYPE",
   "job_id": "${job_id}",
   "name": "${name}",
-  "labels": {"env": "test", "kind": "extra_consumer", "base": "${base_table}"},
-  "owner": "tester",
-  "write_mode": "append",
+  "upstreams": ${upstreams_json},
+  "downstreams": [{"type":"table","name":"${dest_table}"}],
   "destination_type": "table",
-  "destination_table": "${dest_table}",
-  "trigger_tables": ${refs_json},
-  "reference_tables": ${refs_json},
-  "run_status": "RUN",
-  "schedule": {"cron": "@hourly"},
-  "metadata": {"note": "seeded extra consumer"}
+  "metadata": {
+    "labels": {"env": "test", "kind": "extra_consumer", "base": "${base_table}"},
+    "owner": "tester",
+    "write_mode": "append",
+    "run_status": "RUN",
+    "schedule": {"cron": "@hourly"},
+    "note": "seeded extra consumer"
+  }
 }
 JSON
     )
     echo "[INFO] Registering extra ${job_id} (reads: ${base_table} -> dest: ${dest_table})"
-    curl -sS -X POST "${BASE_URL}/api/v1/graph/jobs" \
+    curl -sS -X POST "${BASE_URL}/api/v1/graph/jobs/lineage" \
       -H 'Content-Type: application/json' \
       -d "${payload}" \
       --fail > /dev/null || {

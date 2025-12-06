@@ -97,4 +97,6 @@ compose-logs:
 	docker-compose logs -f
 
 # Include sec environment commands
-include deploy/sec.mk
+# include deploy/sec.mk
+
+

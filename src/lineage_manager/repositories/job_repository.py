@@ -1,33 +1,35 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 
-from lineage_manager.models import GraphJobNode
+from lineage_manager.models import GraphEdge, GraphNode
 from lineage_manager.repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 
 
 class JobRepository(BaseRepository):
+    """Repository that manages job-type nodes stored in graph_node."""
+
     def __init__(self, db):
-        super().__init__(db, "graph_job_node")
+        super().__init__(db, "graph_node")
+
+    def _base_query(self) -> Select:
+        return select(GraphNode).where(GraphNode.node_type == "job")
 
     def get_or_create(self, job_id: str, **kwargs):
         """Get or create a job with the given ID and attributes"""
         logger.debug(f"Looking for job with ID: {job_id}")
         row = self.db.execute(
-            select(GraphJobNode).where(GraphJobNode.job_id == job_id)
+            self._base_query().where(GraphNode.name == job_id)
         ).scalar_one_or_none()
         if row:
             logger.debug(f"Found existing job: {job_id}")
             return row
 
-        # Create new job with provided attributes
-        logger.debug(f"Creating new job with ID: {job_id}, attributes: {kwargs}")
-        # Set default values for required fields
-        job_data = {
-            "job_id": job_id,
-            "name": kwargs.get("name", kwargs.get("label", job_id)),
+        logger.debug(f"Creating new job node for ID: {job_id}")
+        properties = {
+            "display_name": kwargs.get("name", kwargs.get("label", job_id)),
             "labels": kwargs.get("labels", {}),
             "owner": kwargs.get("owner"),
             "write_mode": kwargs.get("write_mode"),
@@ -37,22 +39,22 @@ class JobRepository(BaseRepository):
             "reference_tables": kwargs.get("reference_tables", []),
             "job_metadata": kwargs.get("job_metadata", kwargs.get("node_metadata", {})),
         }
-        row = GraphJobNode(**job_data)
+        row = GraphNode(node_type="job", name=job_id, properties=properties)
         self.db.add(row)
         self.db.flush()
-        logger.debug(f"Successfully created job: {job_id}")
+        logger.debug(f"Successfully created job node: {job_id}")
         return row
 
     def get(self, job_id: str):
-        """Get a job by ID"""
+        """Get a job by external job_id"""
         return self.db.execute(
-            select(GraphJobNode).where(GraphJobNode.job_id == job_id)
+            self._base_query().where(GraphNode.name == job_id)
         ).scalar_one_or_none()
 
     def get_by_id(self, job_id: int):
         """Get a job by database ID"""
         return self.db.execute(
-            select(GraphJobNode).where(GraphJobNode.id == job_id)
+            self._base_query().where(GraphNode.id == job_id)
         ).scalar_one_or_none()
 
     def update(self, job_id: str, **kwargs):
@@ -62,43 +64,45 @@ class JobRepository(BaseRepository):
             for key, value in kwargs.items():
                 if hasattr(job, key):
                     setattr(job, key, value)
+                else:
+                    job._set_prop(key, value)
         return job
 
     def list_all(self):
         """List all jobs"""
-        return self.db.execute(select(GraphJobNode)).scalars().all()
+        return self.db.execute(self._base_query()).scalars().all()
 
     def find_upstream_jobs_by_output_tables(
         self, table_ids: list[int], exclude_job_id: int
     ):
-        """Find jobs that output to the given tables (excluding the specified job)"""
-        from sqlalchemy import text
-
+        """Find jobs that write to the specified table node IDs."""
         if not table_ids:
             return []
 
-        query = text(
-            """
-            SELECT DISTINCT jl.job_id 
-            FROM graph_job_table_link jl
-            WHERE jl.table_id IN :table_ids 
-            AND jl.io_type = 'output'
-            AND jl.job_id != :exclude_job_id
-        """
+        stmt = (
+            select(GraphEdge.source_node_id)
+            .where(
+                GraphEdge.edge_type == "write",
+                GraphEdge.target_node_id.in_(tuple(table_ids)),
+                GraphEdge.source_node_id != exclude_job_id,
+            )
+            .distinct()
         )
-
-        result = self.db.execute(
-            query, {"table_ids": tuple(table_ids), "exclude_job_id": exclude_job_id}
-        )
-        return result.scalars().all()
+        return [row[0] for row in self.db.execute(stmt).all()]
 
     def search(self, q: str, limit: int = 10):
-        """Search jobs by job_id or name (ILIKE if supported)."""
+        """Search jobs by job_id or display name."""
         from sqlalchemy import or_
 
+        pattern = f"%{q}%"
         stmt = (
-            select(GraphJobNode)
-            .where(or_(GraphJobNode.job_id.like(q), GraphJobNode.name.like(q)))
+            self._base_query()
+            .where(
+                or_(
+                    GraphNode.name.like(pattern),
+                    GraphNode.properties["display_name"].as_string().like(pattern),
+                )
+            )
             .limit(limit)
         )
         return self.db.execute(stmt).scalars().all()

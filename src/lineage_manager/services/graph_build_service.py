@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from lineage_manager.api.v1.schemas import JobRegister
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 from lineage_manager.services.graph_service import GraphService
 
 
@@ -17,6 +18,9 @@ class GraphBuildService:
 
     def register_job(self, payload: JobRegister) -> str:
         return self.core.register_job(payload)
+
+    def register_lineage_job(self, payload: SchedulingLineage) -> str:
+        return self.core.register_lineage_job(payload)
 
     def reset_graph(self):
         return self.core.reset_graph()

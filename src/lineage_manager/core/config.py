@@ -88,7 +88,8 @@ class Settings(BaseSettings):
 
     # Job Manager API
     job_manager_url: str = (
-        "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+        # "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+        "http://0.0.0.0:9000"
     )
 
     # Feature Flags

@@ -66,12 +66,6 @@ export class ApiClient {
     });
   }
 
-  async fetchTableLoadHistory(tableName) {
-    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/load-history`);
-    if (!res.ok) throw new Error(`Load history failed: ${res.status}`);
-    return res.json();
-  }
-
   async fetchTableTimeliness(tableName, days = 7) {
     const res = await this.request(
       `/api/v1/tables/${encodeURIComponent(tableName)}/timeliness?days=${encodeURIComponent(days)}`
