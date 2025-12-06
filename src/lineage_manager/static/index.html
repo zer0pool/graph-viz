@@ -128,6 +128,9 @@
                             <button id="direction-apply" class="btn-primary btn-full" type="button">Apply</button>
                         </div>
                     </div>
+                    <div class="panel-action">
+                        <button id="hide-node" class="btn-secondary btn-full" type="button" disabled>Hide selected node</button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -238,27 +241,90 @@
                 </div>
                 <!-- Table detail card: only visible when a table node is selected -->
                 <div id="table-details" class="detail-card" hidden>
-                    <div class="detail-block">
-                        <div class="detail-subheading">Fully qualified name</div>
-                        <div id="table-full-name" class="detail-value">-</div>
-                    </div>
-
-                    <div id="trigger-section" class="detail-trigger" hidden>
-                        <div class="detail-subheading">Trigger Jobs</div>
-                        <div id="node-triggers" class="trigger-list"></div>
-                    </div>
-
                     <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist"
                         aria-label="Table details">
-                        <button class="detail-tab active" type="button" role="tab" data-tab="schema"
-                            aria-selected="true">Schema</button>
-                        <button class="detail-tab" type="button" role="tab" data-tab="loads" aria-selected="false">Load
-                            timeline</button>
-                        <button class="detail-tab" type="button" role="tab" data-tab="timeliness"
-                            aria-selected="false">Load timeline v2</button>
+                        <button class="detail-tab active" type="button" role="tab" data-tab="overview"
+                            aria-selected="true">Overview</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="lineage"
+                            aria-selected="false">Lineage</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="schema"
+                            aria-selected="false">Schema</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="activity"
+                            aria-selected="false">Activity</button>
                     </div>
                     <div class="detail-tab-panels" data-tab-group="table">
-                        <div id="schema-pane" class="detail-pane active" data-tab-panel="schema">
+                        <div id="table-overview-pane" class="detail-pane active" data-tab-panel="overview">
+                            <div class="detail-block">
+                                <div class="detail-subheading">Fully qualified name</div>
+                                <div id="table-full-name" class="detail-value">-</div>
+                            </div>
+                            <dl class="detail-meta">
+                                <div>
+                                    <dt>Owner</dt>
+                                    <dd id="table-owner">-</dd>
+                                </div>
+                                <div>
+                                    <dt>Storage</dt>
+                                    <dd id="table-storage">-</dd>
+                                </div>
+                                <div>
+                                    <dt>Partition</dt>
+                                    <dd id="table-partition">-</dd>
+                                </div>
+                                <div>
+                                    <dt>Created</dt>
+                                    <dd id="table-created-overview">-</dd>
+                                </div>
+                            </dl>
+                            <div id="table-labels" class="detail-labels" hidden>
+                                <div class="detail-subheading">Labels</div>
+                                <div id="table-labels-list" class="pill-row"></div>
+                            </div>
+                            <div id="table-overview-meta" class="detail-overview-meta" hidden>
+                                <div class="detail-subheading">Additional metadata</div>
+                                <dl id="table-overview-list"></dl>
+                            </div>
+                            <div id="trigger-section" class="detail-trigger" hidden>
+                                <div class="detail-subheading">Trigger Jobs</div>
+                                <div id="node-triggers" class="trigger-list"></div>
+                            </div>
+                        </div>
+                        <div id="table-lineage-pane" class="detail-pane" data-tab-panel="lineage">
+                            <div class="insight-card">
+                                <div class="insight-header">
+                                    <div>
+                                        <div class="detail-subheading">Path to root</div>
+                                        <div id="lineage-path-preview" class="path-preview">Select a table to compute path.</div>
+                                    </div>
+                                    <button id="lineage-path-expand" class="btn-tertiary" type="button">Show full path</button>
+                                </div>
+                            </div>
+                            <div class="insight-grid">
+                                <div class="insight-card">
+                                    <div class="insight-title">Root tables</div>
+                                    <div id="lineage-root-summary" class="insight-value">0</div>
+                                    <button id="lineage-root-expand" class="link-btn" type="button">View all</button>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Leaf tables</div>
+                                    <div id="lineage-leaf-summary" class="insight-value">0</div>
+                                    <button id="lineage-leaf-expand" class="link-btn" type="button">View all</button>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Upstream</div>
+                                    <div id="lineage-upstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0</div>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Downstream</div>
+                                    <div id="lineage-downstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0</div>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Depth</div>
+                                    <div id="lineage-depth-summary" class="insight-metric">Upstream: 0<br>Downstream: 0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="schema-pane" class="detail-pane" data-tab-panel="schema">
                             <dl class="detail-meta">
                                 <div>
                                     <dt>schema</dt>
@@ -270,61 +336,38 @@
                                 </div>
                                 <div>
                                     <dt>created</dt>
-                                    <dd id="table-created">-</dd>
+                                    <dd id="table-created-schema">-</dd>
                                 </div>
                             </dl>
                         </div>
-                        <div id="load-pane" class="detail-pane" data-tab-panel="loads">
-                            <table id="table-loads" class="detail-table">
-                                <thead>
-                                    <tr>
-                                        <th>Run</th>
-                                        <th>Status</th>
-                                        <th>Duration</th>
-                                        <th>Updated</th>
-                                        <th>Interval start</th>
-                                        <th>Interval end</th>
-                                        <th>Interval</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-loads-body">
-                                    <tr>
-                                        <td colspan="7">No load history.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Timeliness graphs (Load timeline v2 tab) -->
-                        <div id="timeliness-pane" class="detail-pane" data-tab-panel="timeliness">
-                        <div class="timeliness-section">
-                            <div class="timeliness-header">
-                                <div class="detail-subheading">Daily summary</div>
-                                <span class="timeliness-subtext">Status per day</span>
+                        <div id="activity-pane" class="detail-pane" data-tab-panel="activity">
+                            <div class="timeliness-section">
+                                <div class="timeliness-header">
+                                    <div class="detail-subheading">Daily summary</div>
+                                    <span class="timeliness-subtext">Status per day</span>
+                                </div>
+                                <div class="timeliness-legend">
+                                    <span class="legend-item">
+                                        <span class="legend-swatch legend-swatch--success"></span>Loaded
+                                    </span>
+                                    <span class="legend-item">
+                                        <span class="legend-swatch legend-swatch--danger"></span>Missing
+                                    </span>
+                                </div>
+                                <div id="timeliness-daily-placeholder" class="timeliness-placeholder">
+                                    Select "Activity" to load timeliness data.
+                                </div>
+                                <div id="timeliness-daily-chart" class="timeliness-chart" hidden></div>
                             </div>
-                            <div class="timeliness-legend">
-                                <span class="legend-item">
-                                    <span class="legend-swatch legend-swatch--success"></span>Loaded
-                                </span>
-                                <span class="legend-item">
-                                    <span class="legend-swatch legend-swatch--danger"></span>Missing
-                                </span>
-                            </div>
-                            <div id="timeliness-daily-placeholder" class="timeliness-placeholder">
-                                Select "Load timeline v2" to load timeliness data.
-                            </div>
-                            <div id="timeliness-daily-chart" class="timeliness-chart" hidden></div>
-                        </div>
                             <div class="timeliness-section">
                                 <div class="timeliness-header">
                                     <div class="detail-subheading">Hourly breakdown</div>
-                                    <span id="timeliness-hourly-label" class="timeliness-subtext">Select a day to view
-                                        hourly detail.</span>
+                                    <span id="timeliness-hourly-label" class="timeliness-subtext">Select a day to view hourly detail.</span>
                                 </div>
                                 <div id="timeliness-hourly-placeholder" class="timeliness-placeholder">
                                     Select a day to view hourly detail.
                                 </div>
-                                <div id="timeliness-hourly-chart" class="timeliness-chart timeliness-chart--compact"
-                                    hidden></div>
+                                <div id="timeliness-hourly-chart" class="timeliness-chart timeliness-chart--compact" hidden></div>
                             </div>
                         </div>
                     </div>
@@ -342,6 +385,18 @@
             <div id="profile-job-count" class="profile-meta"></div>
             <ul id="profile-job-list" class="profile-jobs"></ul>
             <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
+        </div>
+    </div>
+    <div id="lineage-drawer" class="lineage-drawer" hidden>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div>
+                    <div id="lineage-drawer-title" class="drawer-title">Lineage details</div>
+                    <div id="lineage-drawer-subtitle" class="drawer-subtitle"></div>
+                </div>
+                <button id="lineage-drawer-close" class="drawer-close" type="button" aria-label="Close drawer">&times;</button>
+            </div>
+            <div id="lineage-drawer-body" class="drawer-body"></div>
         </div>
     </div>
     <script type="module" src="static/js/auth.js"></script>

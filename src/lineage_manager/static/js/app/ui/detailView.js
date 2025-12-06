@@ -72,19 +72,33 @@ export class TableDetailView {
     tabs,
     panels,
     fullName,
-    schema,
+    owner,
+    storage,
+    partition,
+    createdOverview,
+    labelsSection,
+    labelsList,
+    overviewMetaSection,
+    overviewMetaList,
+    schemaValue,
     rows,
-    created,
-    loadsBody,
+    createdSchema,
   }) {
     this.section = section;
     this.tabs = tabs;
     this.panels = panels;
     this.fullName = fullName;
-    this.schema = schema;
+    this.owner = owner;
+    this.storage = storage;
+    this.partition = partition;
+    this.createdOverview = createdOverview;
+    this.labelsSection = labelsSection;
+    this.labelsList = labelsList;
+    this.overviewMetaSection = overviewMetaSection;
+    this.overviewMetaList = overviewMetaList;
+    this.schemaValue = schemaValue;
     this.rows = rows;
-    this.created = created;
-    this.loadsBody = loadsBody;
+    this.createdSchema = createdSchema;
   }
 
   show() {
@@ -104,44 +118,90 @@ export class TableDetailView {
     if (this.panels) this.panels.hidden = !visible;
   }
 
-  setMetadata({ fullName, schema, rows, created }) {
+  setMetadata({
+    fullName,
+    owner,
+    storage,
+    partition,
+    createdOverview,
+    labels,
+    overviewMeta,
+    schema,
+    rows,
+    createdSchema,
+  }) {
     if (this.fullName) this.fullName.textContent = fullName || '-';
-    if (this.schema) this.schema.textContent = schema || '-';
+    if (this.owner) this.owner.textContent = owner || '-';
+    if (this.storage) this.storage.textContent = storage || '-';
+    if (this.partition) this.partition.textContent = partition || '-';
+    if (this.createdOverview) this.createdOverview.textContent = createdOverview || '-';
+    if (this.schemaValue) this.schemaValue.textContent = schema || '-';
     if (this.rows) this.rows.textContent = rows || '-';
-    if (this.created) this.created.textContent = created || '-';
+    if (this.createdSchema) this.createdSchema.textContent = createdSchema || '-';
+    this.renderLabels(labels);
+    this.renderOverviewMeta(overviewMeta);
   }
 
-  setLoadPlaceholder(message, loading = false) {
-    if (!this.loadsBody) return;
-    const spinner = loading ? '<span class="spinner"></span>' : '';
-    this.loadsBody.innerHTML = `<tr><td class="loading-cell" colspan="7">${spinner}${message}</td></tr>`;
-  }
-
-  renderLoadHistory(rows) {
-    if (!this.loadsBody) return;
-    if (!rows.length) {
-      this.setLoadPlaceholder('No load history available.');
+  renderLabels(source) {
+    if (!this.labelsSection || !this.labelsList) return;
+    const entries = this.normalizeEntries(source);
+    if (!entries.length) {
+      this.labelsSection.hidden = true;
+      this.labelsList.innerHTML = '';
       return;
     }
-    this.loadsBody.innerHTML = rows
-      .map((entry, index) => {
-        const run = entry.run_id || entry.run || `#${index + 1}`;
-        const status = entry.status || '-';
-        const duration = entry.duration_sec != null ? `${entry.duration_sec}s` : entry.duration || entry.elapsed || '-';
-        const updated = entry.updated_at || entry.completed_at || '-';
-        const start = entry.data_interval_start || '-';
-        const end = entry.data_interval_end || '-';
-        const interval = entry.interval || '-';
-        return `<tr>
-          <td>${run}</td>
-          <td>${status}</td>
-          <td>${duration}</td>
-          <td>${updated}</td>
-          <td>${start}</td>
-          <td>${end}</td>
-          <td>${interval}</td>
-        </tr>`;
-      })
-      .join('');
+    this.labelsList.innerHTML = '';
+    entries.forEach(([key, value]) => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = `${key}: ${value}`;
+      this.labelsList.appendChild(pill);
+    });
+    this.labelsSection.hidden = false;
   }
+
+  renderOverviewMeta(source) {
+    if (!this.overviewMetaSection || !this.overviewMetaList) return;
+    const entries = this.normalizeEntries(source);
+    if (!entries.length) {
+      this.overviewMetaSection.hidden = true;
+      this.overviewMetaList.innerHTML = '';
+      return;
+    }
+    this.overviewMetaList.innerHTML = '';
+    entries.forEach(([key, value]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = this.formatKey(key);
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      this.overviewMetaList.append(dt, dd);
+    });
+    this.overviewMetaSection.hidden = false;
+  }
+
+  normalizeEntries(source) {
+    if (!source) return [];
+    if (Array.isArray(source)) {
+      return source
+        .map((entry) => {
+          if (Array.isArray(entry) && entry.length >= 2) return [entry[0], entry[1]];
+          if (entry && typeof entry === 'object') {
+            return [entry.key ?? entry.name, entry.value ?? entry.label ?? entry.text];
+          }
+          return null;
+        })
+        .filter((pair) => pair && pair[0] != null && pair[1] != null);
+    }
+    if (typeof source === 'object') {
+      return Object.entries(source).filter(([, value]) => value !== undefined && value !== null && value !== '');
+    }
+    return [];
+  }
+
+  formatKey(key) {
+    if (!key) return '';
+    const text = key.replace(/[_-]/g, ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
 }

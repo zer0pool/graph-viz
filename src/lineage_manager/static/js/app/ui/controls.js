@@ -19,6 +19,7 @@ export class ControlBar {
       highlight: document.getElementById("highlight-path"),
       clear: document.getElementById("clear-selection"),
     };
+    this.hideNodeButton = document.getElementById("hide-node");
     this.directionControls = {
       card: document.getElementById("direction-card"),
       toggle: document.getElementById("direction-toggle"),
@@ -35,6 +36,7 @@ export class ControlBar {
     this.bindReset();
     this.bindToolbarActions();
     this.initDirectionControls();
+    this.initHideButton();
   }
 
   bindSearchInput() {
@@ -224,8 +226,10 @@ export class ControlBar {
 
   bindReset() {
     this.elements.resetGraph?.addEventListener("click", () => {
-      this.graph.clearSelection();
-      if (this.graph.cy) {
+      if (typeof this.graph.resetGraphView === "function") {
+        this.graph.resetGraphView();
+      } else if (this.graph.cy) {
+        this.graph.clearSelection();
         this.graph.cy.fit();
         this.graph.cy.center();
       }
@@ -274,6 +278,21 @@ export class ControlBar {
       dir.toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     });
     sync();
+  }
+
+  initHideButton() {
+    if (!this.hideNodeButton) return;
+    const sync = (hasSelection) => {
+      this.hideNodeButton.disabled = !hasSelection;
+    };
+    sync(false);
+    this.hideNodeButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.graph.hideSelectedNode();
+    });
+    document.addEventListener("detail-panel:selection", (evt) => {
+      sync(Boolean(evt.detail?.hasSelection));
+    });
   }
 
   countCheckedDirections() {
