@@ -117,3 +117,15 @@ class JobTableLinkRepository(BaseRepository):
             .distinct()
         )
         return self.db.execute(stmt).scalars().all()
+
+    def get_job_inputs_with_trigger_flag(self, table_id: int):
+        """Return (job_node, is_trigger_on) tuples for table -> job read edges."""
+        stmt = (
+            select(GraphNode, GraphEdge.is_trigger_on)
+            .join(GraphEdge, GraphNode.id == GraphEdge.target_node_id)
+            .where(
+                GraphEdge.edge_type == "read",
+                GraphEdge.source_node_id == table_id,
+            )
+        )
+        return self.db.execute(stmt).all()

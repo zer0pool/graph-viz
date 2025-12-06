@@ -244,6 +244,8 @@ import { ApiClient } from "./app/services/api.js";
         if (avatarEl) {
           avatarEl.src = this.user.picture || DEFAULT_AVATAR;
         }
+      } else if (avatarEl) {
+        avatarEl.src = DEFAULT_AVATAR;
       }
     }
 

@@ -7,6 +7,12 @@ export class SearchState {
     this.lastQuery = null;
   }
 
+  setCurrent(value, type) {
+    this.selectedValue = value;
+    this.selectedType = type;
+    this.rememberQuery(type, value);
+  }
+
   resetActive() {
     this.selectedType = null;
     this.selectedValue = null;
@@ -21,6 +27,24 @@ export class SearchState {
 
 export class FilterState {
   constructor() {
+    this.type = "all";
+    this.status = "all";
+    this.depth = 1;
+  }
+
+  setType(value) {
+    this.type = value || "all";
+  }
+
+  setStatus(value) {
+    this.status = value || "all";
+  }
+
+  setDepth(value) {
+    this.depth = value ? parseInt(value, 10) : 1;
+  }
+
+  clear() {
     this.type = "all";
     this.status = "all";
     this.depth = 1;
@@ -50,6 +74,10 @@ export class SelectionState {
 
   set(node) {
     this.node = node;
+  }
+
+  get() {
+    return this.node;
   }
 
   clear() {

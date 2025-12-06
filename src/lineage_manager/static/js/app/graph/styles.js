@@ -4,7 +4,8 @@ export function getGraphStyles() {
       selector: "node",
       style: {
         shape: "rectangle",
-        width: "label",
+        width: "mapData(label_length, 0, 30, 80, 300)",
+        height: 40,
         "border-width": 1.5,
         "border-color": "#cbd5f5",
         "background-color": "#ffffff",
@@ -28,7 +29,8 @@ export function getGraphStyles() {
     {
       selector: "node[type='table']",
       style: {
-        width: "label",
+        width: "mapData(label_length, 0, 30, 80, 300)",
+        height: 40,
         padding: "6px 28px",
         "border-color": "#94a3b8",
         "background-color": "#ffffff",

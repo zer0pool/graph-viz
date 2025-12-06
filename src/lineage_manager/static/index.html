@@ -3,34 +3,24 @@
 
 <head>
     <meta charset="UTF-8" />
-    <pre id="meta"></pre>
-
-    <base href="/lineage-manager/" /> <!-- base path for static resources -->
-
+    <base href="/lineage-manager/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scheduling Lineage Manager</title>
-
-    <!-- 스타일 -->
     <link rel="stylesheet" href="static/css/modern-console.css">
     <link rel="icon" href="static/images/logo.png">
     <link rel="shortcut icon" href="static/images/favicon.ico">
-
-    <!-- Cytoscape.js 및 플러그인 -->
     <script src="https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
     <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
     <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
     <script src="static/js/plugins/cytoscape-minimap.js"></script>
-    <!-- Charting -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-
 </head>
 
 <body data-poll-interval="15000">
-    <!-- Cytoscape.js 및 플러그인 -->
-
+    <!-- Navbar -->
     <div id="navbar">
         <div class="nav-brand">
-            <img src="static/images/logo.png" alt="Logo">
+            <img src="static/images/logo.png" alt="Logo" class="nav-logo">
             <h2>Lineage Manager</h2>
         </div>
         <div id="search-bar">
@@ -53,43 +43,12 @@
         </div>
     </div>
 
-    <!-- Context menu for graph expansion -->
-    <div id="ctx-menu" class="ctx-menu" hidden>
-        <div class="ctx-panel">
-            <div class="ctx-header">Expand Graph</div>
-            <div class="ctx-row">
-                <label>Direction</label>
-                <select id="ctx-direction">
-                    <option value="both" selected>Both</option>
-                    <option value="upstream">Upstream</option>
-                    <option value="downstream">Downstream</option>
-                </select>
-            </div>
-            <div class="ctx-row">
-                <label>Depth</label>
-                <select id="ctx-depth">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                </select>
-            </div>
-            <div class="ctx-row">
-                <label>Limit</label>
-                <input id="ctx-limit" type="number" min="1" max="1000" placeholder="e.g. 100" />
-            </div>
-            <div class="ctx-actions">
-                <button id="ctx-cancel" class="btn-secondary">Cancel</button>
-                <button id="ctx-expand" class="btn-primary">Expand</button>
-                <button id="ctx-sync" class="btn-primary" title="Sync from Job Manager">Sync</button>
-            </div>
-            <div id="ctx-hint" class="ctx-hint" hidden></div>
-        </div>
-    </div>
-
+    <!-- Main Layout -->
     <div id="main-layout">
+        <!-- Left Control Panel -->
         <aside id="control-panel" class="side-panel collapsed" aria-label="Explorer controls">
             <button id="control-toggle" class="panel-handle" type="button" aria-expanded="false"
-                aria-controls="control-panel" title="Show controls" data-collapsed-icon="›" data-expanded-icon="‹">
+                aria-controls="control-panel" title="Show controls">
                 <span class="chevron">›</span>
             </button>
             <div class="panel-body">
@@ -115,13 +74,13 @@
                             <span class="direction-caret">▾</span>
                         </button>
                         <div id="direction-body" class="direction-body">
-                            <label class="direction-option checked" data-direction="upstream" data-direction-option>
-                                <input type="checkbox" id="direction-upstream" checked />
+                            <label class="direction-option checked" data-direction-option>
+                                <input type="checkbox" id="direction-upstream" value="upstream" checked />
                                 <span class="check-icon"></span>
                                 <span class="label-text">Upstream</span>
                             </label>
-                            <label class="direction-option checked" data-direction="downstream" data-direction-option>
-                                <input type="checkbox" id="direction-downstream" checked />
+                            <label class="direction-option checked" data-direction-option>
+                                <input type="checkbox" id="direction-downstream" value="downstream" checked />
                                 <span class="check-icon"></span>
                                 <span class="label-text">Downstream</span>
                             </label>
@@ -129,11 +88,14 @@
                         </div>
                     </div>
                     <div class="panel-action">
-                        <button id="hide-node" class="btn-secondary btn-full" type="button" disabled>Hide selected node</button>
+                        <button id="hide-node" class="btn-secondary btn-full" type="button" disabled>Hide selected
+                            node</button>
                     </div>
                 </div>
             </div>
         </aside>
+
+        <!-- Graph Area -->
         <section id="graph-area">
             <div id="graph-shell">
                 <div id="graph-toolbar" class="floating-panel toolbar-shell">
@@ -144,8 +106,7 @@
                         </div>
                     </div>
                     <div class="toolbar-right">
-                        <button id="reset-view" class="simple-btn"
-                            title="Reset Lineage component to initial view state">
+                        <button id="reset-view" class="simple-btn" title="Reset view">
                             <span class="icon">⟲</span>
                             <span class="label">Reset</span>
                         </button>
@@ -153,18 +114,17 @@
                         <span id="zoom-level" class="zoom-label" title="Current zoom">100%</span>
                         <span class="toolbar-divider"></span>
                         <div class="zoom-buttons">
-                            <button id="zoom-in" class="circle-btn" title="Zoom In" aria-label="Zoom in">
-                                <span class="icon icon-zoom-in" aria-hidden="true"></span>
+                            <button id="zoom-in" class="circle-btn" title="Zoom In">
+                                <span class="icon icon-zoom-in"></span>
                             </button>
-                            <button id="zoom-out" class="circle-btn" title="Zoom Out" aria-label="Zoom out">
-                                <span class="icon icon-zoom-out" aria-hidden="true"></span>
+                            <button id="zoom-out" class="circle-btn" title="Zoom Out">
+                                <span class="icon icon-zoom-out"></span>
                             </button>
-                            <button id="zoom-reset" class="circle-btn" title="Zoom Reset" aria-label="Reset zoom">
-                                <span class="icon icon-zoom-reset" aria-hidden="true"></span>
+                            <button id="zoom-reset" class="circle-btn" title="Zoom Reset">
+                                <span class="icon icon-zoom-reset"></span>
                             </button>
-                            <button id="minimap-toggle" class="circle-btn" title="Show / Hide Minimap"
-                                aria-label="Toggle minimap">
-                                <span class="icon icon-minimap" aria-hidden="true"></span>
+                            <button id="minimap-toggle" class="circle-btn" title="Toggle minimap">
+                                <span class="icon icon-minimap"></span>
                             </button>
                         </div>
                     </div>
@@ -194,15 +154,15 @@
                 </div>
             </div>
         </section>
-        <div id="detail-resizer" class="panel-resizer" role="separator" aria-orientation="vertical"
-            aria-label="Resize detail panel"></div>
+
+        <!-- Right Detail Panel -->
+        <div id="detail-resizer" class="panel-resizer" role="separator" aria-orientation="vertical"></div>
         <aside id="detail-panel" class="side-panel detail collapsed" aria-label="Node details">
             <button id="detail-toggle" class="panel-handle" type="button" aria-expanded="false"
-                aria-controls="detail-panel" title="Show details" data-collapsed-icon="‹" data-expanded-icon="›">
+                aria-controls="detail-panel" title="Show details">
                 <span class="chevron">‹</span>
             </button>
             <div class="panel-body detail-body">
-                <!-- Detail drawer header: shared title + type pill -->
                 <div class="detail-header">
                     <div>
                         <div class="detail-heading">Details</div>
@@ -210,12 +170,12 @@
                     </div>
                     <span id="node-type-badge" class="detail-pill muted">-</span>
                 </div>
-                <!-- Job detail card: only visible when a job node is selected -->
+
+                <!-- Job Details -->
                 <div id="job-details" class="detail-card" hidden>
                     <p id="job-label" class="detail-primary">Select a node to view its details.</p>
-                    <div class="detail-tabs" id="job_tabs" data-tab-group="job" role="tablist" aria-label="Job details">
-                        <button class="detail-tab active" type="button" role="tab" data-tab="runs"
-                            aria-selected="true">Run history</button>
+                    <div class="detail-tabs" id="job_tabs" data-tab-group="job" role="tablist">
+                        <button class="detail-tab active" type="button" role="tab" data-tab="runs">Run history</button>
                     </div>
                     <div class="detail-tab-panels" data-tab-group="job">
                         <div id="job-run-pane" class="detail-pane active" data-tab-panel="runs">
@@ -239,64 +199,103 @@
                         </div>
                     </div>
                 </div>
-                <!-- Table detail card: only visible when a table node is selected -->
+
+                <!-- Table Details -->
                 <div id="table-details" class="detail-card" hidden>
-                    <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist"
-                        aria-label="Table details">
-                        <button class="detail-tab active" type="button" role="tab" data-tab="overview"
-                            aria-selected="true">Overview</button>
-                        <button class="detail-tab" type="button" role="tab" data-tab="lineage"
-                            aria-selected="false">Lineage</button>
-                        <button class="detail-tab" type="button" role="tab" data-tab="schema"
-                            aria-selected="false">Schema</button>
-                        <button class="detail-tab" type="button" role="tab" data-tab="activity"
-                            aria-selected="false">Activity</button>
+                    <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist">
+                        <button class="detail-tab active" type="button" role="tab" data-tab="overview">Overview</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="lineage">Lineage</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="schema">Schema</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="activity">Activity</button>
                     </div>
                     <div class="detail-tab-panels" data-tab-group="table">
+                        <!-- Overview Tab -->
                         <div id="table-overview-pane" class="detail-pane active" data-tab-panel="overview">
-                            <div class="detail-block">
+                            <div class="table-head">
                                 <div class="detail-subheading">Fully qualified name</div>
                                 <div id="table-full-name" class="detail-value">-</div>
+                                <p id="table-description" class="detail-description" hidden></p>
                             </div>
-                            <dl class="detail-meta">
-                                <div>
-                                    <dt>Owner</dt>
-                                    <dd id="table-owner">-</dd>
+                            <div class="overview-grid">
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Owner</div>
+                                    <div id="table-owner" class="detail-value">-</div>
                                 </div>
-                                <div>
-                                    <dt>Storage</dt>
-                                    <dd id="table-storage">-</dd>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Storage</div>
+                                    <div id="table-storage" class="detail-value">-</div>
                                 </div>
-                                <div>
-                                    <dt>Partition</dt>
-                                    <dd id="table-partition">-</dd>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Partition</div>
+                                    <div id="table-partition" class="detail-value">-</div>
                                 </div>
-                                <div>
-                                    <dt>Created</dt>
-                                    <dd id="table-created-overview">-</dd>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Last updated</div>
+                                    <div id="table-updated" class="detail-value">-</div>
                                 </div>
-                            </dl>
-                            <div id="table-labels" class="detail-labels" hidden>
-                                <div class="detail-subheading">Labels</div>
-                                <div id="table-labels-list" class="pill-row"></div>
                             </div>
-                            <div id="table-overview-meta" class="detail-overview-meta" hidden>
-                                <div class="detail-subheading">Additional metadata</div>
-                                <dl id="table-overview-list"></dl>
+                            <div class="storage-card">
+                                <div class="card-header">
+                                    <div class="detail-subheading">Storage details</div>
+                                </div>
+                                <dl class="storage-meta">
+                                    <div>
+                                        <dt>Type</dt>
+                                        <dd id="table-storage-type">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Partition column</dt>
+                                        <dd id="table-partition-field">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Partition type</dt>
+                                        <dd id="table-partition-type">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Cluster columns</dt>
+                                        <dd id="table-cluster-columns">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Location</dt>
+                                        <dd id="table-storage-location">-</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stat-item">
+                                    <div class="stat-label">Row count</div>
+                                    <div id="table-stat-rows" class="stat-value">-</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Size</div>
+                                    <div id="table-stat-size" class="stat-value">-</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Storage cost</div>
+                                    <div id="table-stat-cost" class="stat-value">-</div>
+                                </div>
+                            </div>
+                            <div id="table-tags" class="tags-card" hidden>
+                                <div class="detail-subheading">Tags</div>
+                                <div id="table-tags-list" class="pill-row"></div>
                             </div>
                             <div id="trigger-section" class="detail-trigger" hidden>
                                 <div class="detail-subheading">Trigger Jobs</div>
                                 <div id="node-triggers" class="trigger-list"></div>
                             </div>
                         </div>
+
+                        <!-- Lineage Tab -->
                         <div id="table-lineage-pane" class="detail-pane" data-tab-panel="lineage">
                             <div class="insight-card">
                                 <div class="insight-header">
                                     <div>
                                         <div class="detail-subheading">Path to root</div>
-                                        <div id="lineage-path-preview" class="path-preview">Select a table to compute path.</div>
+                                        <div id="lineage-path-preview" class="path-preview">Select a table to compute
+                                            path.</div>
                                     </div>
-                                    <button id="lineage-path-expand" class="btn-tertiary" type="button">Show full path</button>
+                                    <button id="lineage-path-expand" class="btn-tertiary" type="button">Show full
+                                        path</button>
                                 </div>
                             </div>
                             <div class="insight-grid">
@@ -316,30 +315,40 @@
                                 </div>
                                 <div class="insight-card">
                                     <div class="insight-title">Downstream</div>
-                                    <div id="lineage-downstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0</div>
+                                    <div id="lineage-downstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0
+                                    </div>
                                 </div>
                                 <div class="insight-card">
                                     <div class="insight-title">Depth</div>
-                                    <div id="lineage-depth-summary" class="insight-metric">Upstream: 0<br>Downstream: 0</div>
+                                    <div id="lineage-depth-summary" class="insight-metric">Upstream: 0<br>Downstream: 0
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Schema Tab -->
                         <div id="schema-pane" class="detail-pane" data-tab-panel="schema">
-                            <dl class="detail-meta">
-                                <div>
-                                    <dt>schema</dt>
-                                    <dd id="table-schema">-</dd>
-                                </div>
-                                <div>
-                                    <dt>rows</dt>
-                                    <dd id="table-rows">-</dd>
-                                </div>
-                                <div>
-                                    <dt>created</dt>
-                                    <dd id="table-created-schema">-</dd>
-                                </div>
-                            </dl>
+                            <div class="schema-toolbar">
+                                <div class="detail-subheading">Columns</div>
+                                <span id="schema-column-count" class="schema-count">0</span>
+                            </div>
+                            <div class="schema-table-shell">
+                                <table class="schema-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Mode</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-schema-body"></tbody>
+                                </table>
+                                <div id="table-schema-empty" class="detail-placeholder">No schema information.</div>
+                            </div>
                         </div>
+
+                        <!-- Activity Tab -->
                         <div id="activity-pane" class="detail-pane" data-tab-panel="activity">
                             <div class="timeliness-section">
                                 <div class="timeliness-header">
@@ -347,12 +356,10 @@
                                     <span class="timeliness-subtext">Status per day</span>
                                 </div>
                                 <div class="timeliness-legend">
-                                    <span class="legend-item">
-                                        <span class="legend-swatch legend-swatch--success"></span>Loaded
-                                    </span>
-                                    <span class="legend-item">
-                                        <span class="legend-swatch legend-swatch--danger"></span>Missing
-                                    </span>
+                                    <span class="legend-item"><span
+                                            class="legend-swatch legend-swatch--success"></span>Loaded</span>
+                                    <span class="legend-item"><span
+                                            class="legend-swatch legend-swatch--danger"></span>Missing</span>
                                 </div>
                                 <div id="timeliness-daily-placeholder" class="timeliness-placeholder">
                                     Select "Activity" to load timeliness data.
@@ -362,12 +369,14 @@
                             <div class="timeliness-section">
                                 <div class="timeliness-header">
                                     <div class="detail-subheading">Hourly breakdown</div>
-                                    <span id="timeliness-hourly-label" class="timeliness-subtext">Select a day to view hourly detail.</span>
+                                    <span id="timeliness-hourly-label" class="timeliness-subtext">Select a day to view
+                                        hourly detail.</span>
                                 </div>
                                 <div id="timeliness-hourly-placeholder" class="timeliness-placeholder">
                                     Select a day to view hourly detail.
                                 </div>
-                                <div id="timeliness-hourly-chart" class="timeliness-chart timeliness-chart--compact" hidden></div>
+                                <div id="timeliness-hourly-chart" class="timeliness-chart timeliness-chart--compact"
+                                    hidden></div>
                             </div>
                         </div>
                     </div>
@@ -376,6 +385,7 @@
         </aside>
     </div>
 
+    <!-- Drawers -->
     <div id="profile-panel" class="profile-panel" hidden>
         <div class="profile-card">
             <button id="profile-close" class="profile-close" title="Close">&times;</button>
@@ -387,6 +397,7 @@
             <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
         </div>
     </div>
+
     <div id="lineage-drawer" class="lineage-drawer" hidden>
         <div class="drawer-content">
             <div class="drawer-header">
@@ -394,11 +405,13 @@
                     <div id="lineage-drawer-title" class="drawer-title">Lineage details</div>
                     <div id="lineage-drawer-subtitle" class="drawer-subtitle"></div>
                 </div>
-                <button id="lineage-drawer-close" class="drawer-close" type="button" aria-label="Close drawer">&times;</button>
+                <button id="lineage-drawer-close" class="drawer-close" type="button">&times;</button>
             </div>
             <div id="lineage-drawer-body" class="drawer-body"></div>
         </div>
     </div>
+
+    <!-- Scripts -->
     <script type="module" src="static/js/auth.js"></script>
     <script type="module" src="static/js/app/main.js"></script>
 </body>
