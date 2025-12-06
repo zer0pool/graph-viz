@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, or_, select
 
 from lineage_manager.models import GraphEdge, GraphNode
 from lineage_manager.repositories.base_repository import BaseRepository
@@ -90,19 +90,48 @@ class JobRepository(BaseRepository):
         )
         return [row[0] for row in self.db.execute(stmt).all()]
 
-    def search(self, q: str, limit: int = 10):
-        """Search jobs by job_id or display name."""
-        from sqlalchemy import or_
-
-        pattern = f"%{q}%"
+    def search_by_prefix(self, prefix: str, limit: int = 10):
+        """Search jobs by job_id or display name prefix."""
+        pattern = f"%{prefix.lower()}%"
         stmt = (
             self._base_query()
             .where(
                 or_(
-                    GraphNode.name.like(pattern),
-                    GraphNode.properties["display_name"].as_string().like(pattern),
+                    func.lower(GraphNode.name).like(pattern),
+                    func.lower(
+                        GraphNode.properties["display_name"].as_string()
+                    ).like(pattern),
                 )
             )
+            .order_by(GraphNode.name)
             .limit(limit)
         )
         return self.db.execute(stmt).scalars().all()
+
+    def search_owners_by_prefix(self, prefix: str, limit: int = 10):
+        """Find distinct owners matching the prefix, with a sample job id."""
+        owner_field = GraphNode.properties["owner"].as_string()
+        pattern = f"%{prefix.lower()}%"
+        stmt = (
+            select(GraphNode.name.label("job_id"), owner_field.label("owner"))
+            .where(
+                GraphNode.node_type == "job",
+                owner_field.isnot(None),
+                owner_field != "",
+                func.lower(owner_field).like(pattern),
+            )
+            .order_by(owner_field, GraphNode.name)
+            .limit(limit * 5)
+        )
+
+        owners = []
+        seen = set()
+        for row in self.db.execute(stmt):
+            owner_name = row.owner
+            if not owner_name or owner_name in seen:
+                continue
+            owners.append({"name": owner_name, "sample_job_id": row.job_id})
+            seen.add(owner_name)
+            if len(owners) >= limit:
+                break
+        return owners

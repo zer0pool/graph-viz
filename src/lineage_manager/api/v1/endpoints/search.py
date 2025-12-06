@@ -14,6 +14,7 @@ router = APIRouter(
 )
 
 
+@router.get("")
 @router.get("/suggest")
 @inject
 def suggest(

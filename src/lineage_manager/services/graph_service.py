@@ -402,12 +402,22 @@ class GraphService:
         if node_type == "job":
             key = f"j{obj.id}"
             if key not in nodes:
-                nodes[key] = {"id": key, "type": "job", "label": getattr(obj, "display_name", obj.job_id)}
+                nodes[key] = {
+                    "id": key,
+                    "type": "job",
+                    "label": getattr(obj, "display_name", obj.job_id),
+                    "job_id": obj.job_id,
+                }
             return key
         else:
             key = f"t{obj.id}"
             if key not in nodes:
-                nodes[key] = {"id": key, "type": "table", "label": obj.table_name or obj.full_name}
+                nodes[key] = {
+                    "id": key,
+                    "type": "table",
+                    "label": obj.table_name or obj.full_name,
+                    "full_name": obj.full_name,
+                }
             return key
 
     def get_job_neighbors(
@@ -760,7 +770,7 @@ class GraphService:
     def get_table_triggers(self, table_name: str):
         """Return jobs that consume the table with trigger ON/OFF per job.
 
-        ON if table_name exists in the job's trigger_tables list.
+        Trigger state is sourced from graph_edge.is_trigger_on on the table->job edge.
         """
         uow = self.uow
         try:
@@ -768,16 +778,16 @@ class GraphService:
             if not table:
                 return {"status": "error", "message": f"Table '{table_name}' not found"}
 
-            jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
+            rows = uow.job_table_links.get_job_inputs_with_trigger_flag(table.id)
 
             items = []
-            for j in jobs:
-                trig_list = j.trigger_tables or []
-                is_on = table_name in trig_list
+            for job, is_on in rows:
+                job_id = getattr(job, "job_id", None) or job.name
+                job_name = getattr(job, "display_name", None) or job.name or job_id
                 items.append(
                     {
-                        "job_id": j.job_id,
-                        "name": j.name or j.job_id,
+                        "job_id": job_id,
+                        "name": job_name,
                         "trigger": bool(is_on),
                     }
                 )

@@ -53,14 +53,23 @@ class OIDCProviderClient:
         if self._metadata and time.time() < self._metadata_expiry:
             return self._metadata
         well_known = f"{self.issuer}/.well-known/openid-configuration"
+        logger.debug("Fetching OIDC metadata from %s", well_known)
         try:
             with httpx.Client(timeout=self.http_timeout) as client:
                 resp = client.get(well_known)
                 resp.raise_for_status()
-                self._metadata = resp.json()
+                try:
+                    self._metadata = resp.json()
+                except ValueError as exc:
+                    logger.error("Failed to decode OIDC metadata JSON: %s", exc)
+                    raise AuthenticationError("Invalid OIDC metadata JSON") from exc
                 self._metadata_expiry = time.time() + self.cache_seconds
         except httpx.HTTPError as exc:
+            logger.error("Failed to load OIDC metadata: %s", exc)
             raise AuthenticationError(f"Failed to load OIDC metadata: {exc}") from exc
+        if not self._metadata:
+            logger.error("OIDC metadata response was empty")
+            raise AuthenticationError("OIDC metadata response was empty")
         return self._metadata
 
     def _get_jwk_client(self) -> PyJWKClient:
@@ -74,8 +83,12 @@ class OIDCProviderClient:
         return self._jwk_client
 
     def auth_config(self) -> Dict[str, Any]:
-        metadata = self._get_metadata()
-        return {
+        try:
+            metadata = self._get_metadata()
+        except AuthenticationError as exc:
+            logger.error("Unable to build auth config: %s", exc)
+            raise
+        config = {
             "issuer": self.issuer,
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
@@ -84,8 +97,14 @@ class OIDCProviderClient:
             "token_endpoint": metadata.get("token_endpoint"),
             "userinfo_endpoint": metadata.get("userinfo_endpoint"),
         }
+        logger.debug(
+            "Generated auth config (authorization_endpoint=%s)",
+            config.get("authorization_endpoint"),
+        )
+        return config
 
     def exchange_code(self, code: str, code_verifier: Optional[str]) -> Dict[str, Any]:
+        logger.info("Exchanging authorization code via OIDC provider")
         metadata = self._get_metadata()
         token_endpoint = metadata.get("token_endpoint")
         if not token_endpoint:
@@ -106,8 +125,15 @@ class OIDCProviderClient:
             with httpx.Client(timeout=self.http_timeout) as client:
                 resp = client.post(token_endpoint, data=data)
                 resp.raise_for_status()
-                return resp.json()
+                try:
+                    payload = resp.json()
+                except ValueError as exc:
+                    logger.error("Token response JSON parse error: %s", exc)
+                    raise AuthenticationError("Invalid token response JSON") from exc
+                logger.debug("OIDC token exchange succeeded (keys=%s)", list(payload.keys()))
+                return payload
         except httpx.HTTPError as exc:
+            logger.error("Failed to exchange authorization code: %s", exc)
             raise AuthenticationError(
                 f"Failed to exchange authorization code: {exc}"
             ) from exc
@@ -115,6 +141,7 @@ class OIDCProviderClient:
     def verify_id_token(self, token: str) -> Dict[str, Any]:
         if not token:
             raise AuthenticationError("Missing token")
+        logger.debug("Verifying ID token (length=%d)", len(token))
         jwk_client = self._get_jwk_client()
         try:
             signing_key = jwk_client.get_signing_key_from_jwt(token)
@@ -126,7 +153,13 @@ class OIDCProviderClient:
                 issuer=self.issuer,
             )
         except (PyJWKClientError, jwt.PyJWTError) as exc:
+            logger.warning("ID token verification failed: %s", exc)
             raise AuthenticationError(f"Invalid token: {exc}") from exc
+        logger.debug(
+            "ID token verified for subject '%s' (aud=%s)",
+            claims.get("sub"),
+            claims.get("aud"),
+        )
         return claims
 
 

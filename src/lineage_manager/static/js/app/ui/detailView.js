@@ -72,33 +72,38 @@ export class TableDetailView {
     tabs,
     panels,
     fullName,
+    description,
+    docLink,
     owner,
-    storage,
-    partition,
-    createdOverview,
-    labelsSection,
-    labelsList,
-    overviewMetaSection,
-    overviewMetaList,
-    schemaValue,
-    rows,
-    createdSchema,
+    storageSummary,
+    partitionSummary,
+    updated,
+    storageFields,
+    statsFields,
+    tagsSection,
+    tagsList,
+    schemaCount,
+    schemaBody,
+    schemaEmpty,
   }) {
     this.section = section;
     this.tabs = tabs;
     this.panels = panels;
     this.fullName = fullName;
+    this.description = description;
+    this.docLink = docLink;
     this.owner = owner;
-    this.storage = storage;
-    this.partition = partition;
-    this.createdOverview = createdOverview;
-    this.labelsSection = labelsSection;
-    this.labelsList = labelsList;
-    this.overviewMetaSection = overviewMetaSection;
-    this.overviewMetaList = overviewMetaList;
-    this.schemaValue = schemaValue;
-    this.rows = rows;
-    this.createdSchema = createdSchema;
+    this.storageSummary = storageSummary;
+    this.partitionSummary = partitionSummary;
+    this.updated = updated;
+    this.storageFields = storageFields || {};
+    this.statsFields = statsFields || {};
+    this.tagsSection = tagsSection;
+    this.tagsList = tagsList;
+    this.schemaCount = schemaCount;
+    this.schemaBody = schemaBody;
+    this.schemaEmpty = schemaEmpty;
+
   }
 
   show() {
@@ -118,65 +123,131 @@ export class TableDetailView {
     if (this.panels) this.panels.hidden = !visible;
   }
 
-  setMetadata({
-    fullName,
-    owner,
-    storage,
-    partition,
-    createdOverview,
-    labels,
-    overviewMeta,
-    schema,
-    rows,
-    createdSchema,
-  }) {
-    if (this.fullName) this.fullName.textContent = fullName || '-';
-    if (this.owner) this.owner.textContent = owner || '-';
-    if (this.storage) this.storage.textContent = storage || '-';
-    if (this.partition) this.partition.textContent = partition || '-';
-    if (this.createdOverview) this.createdOverview.textContent = createdOverview || '-';
-    if (this.schemaValue) this.schemaValue.textContent = schema || '-';
-    if (this.rows) this.rows.textContent = rows || '-';
-    if (this.createdSchema) this.createdSchema.textContent = createdSchema || '-';
-    this.renderLabels(labels);
-    this.renderOverviewMeta(overviewMeta);
+  setDetails(payload) {
+    this.reset();
+    if (!payload) return;
+    const { fullName, overview = {}, storage = {}, stats = {}, schema = {} } = payload;
+    if (this.fullName) this.fullName.textContent = fullName || "-";
+    if (this.owner) this.owner.textContent = overview.owner || "-";
+    if (this.updated) this.updated.textContent = this.formatDate(overview.updated_at) || "-";
+    this.renderDescription(overview);
+    this.renderDocLink(overview.documentation_url);
+    this.renderStorage(storage);
+    this.renderStats(stats);
+    this.renderTags(overview.tags || overview.labels);
+    this.renderSchema(schema);
   }
 
-  renderLabels(source) {
-    if (!this.labelsSection || !this.labelsList) return;
-    const entries = this.normalizeEntries(source);
-    if (!entries.length) {
-      this.labelsSection.hidden = true;
-      this.labelsList.innerHTML = '';
-      return;
+  reset() {
+    if (this.description) {
+      this.description.textContent = "";
+      this.description.hidden = true;
     }
-    this.labelsList.innerHTML = '';
-    entries.forEach(([key, value]) => {
-      const pill = document.createElement('span');
-      pill.className = 'pill';
-      pill.textContent = `${key}: ${value}`;
-      this.labelsList.appendChild(pill);
+    if (this.docLink) {
+      this.docLink.hidden = true;
+      this.docLink.removeAttribute("href");
+    }
+    if (this.owner) this.owner.textContent = "-";
+    if (this.storageSummary) this.storageSummary.textContent = "-";
+    if (this.partitionSummary) this.partitionSummary.textContent = "-";
+    if (this.updated) this.updated.textContent = "-";
+    Object.values(this.storageFields || {}).forEach((node) => {
+      if (node) node.textContent = "-";
     });
-    this.labelsSection.hidden = false;
+    Object.values(this.statsFields || {}).forEach((node) => {
+      if (node) node.textContent = "-";
+    });
+    if (this.tagsSection) this.tagsSection.hidden = true;
+    if (this.tagsList) this.tagsList.innerHTML = "";
+    if (this.schemaBody) this.schemaBody.innerHTML = "";
+    if (this.schemaEmpty) this.schemaEmpty.hidden = false;
+    if (this.schemaCount) this.schemaCount.textContent = "0";
   }
 
-  renderOverviewMeta(source) {
-    if (!this.overviewMetaSection || !this.overviewMetaList) return;
+  renderDescription(overview) {
+    if (!this.description) return;
+    const text = overview.description || "";
+    this.description.textContent = text;
+    this.description.hidden = !text;
+  }
+
+  renderDocLink(url) {
+    if (!this.docLink) return;
+    if (url) {
+      this.docLink.hidden = false;
+      this.docLink.href = url;
+    } else {
+      this.docLink.hidden = true;
+      this.docLink.removeAttribute("href");
+    }
+  }
+
+  renderStorage(storage = {}) {
+    const type = storage.type || "-";
+    if (this.storageSummary) this.storageSummary.textContent = type;
+    if (this.partitionSummary) this.partitionSummary.textContent = storage.partition || "-";
+    if (this.storageFields.type) this.storageFields.type.textContent = type;
+    if (this.storageFields.partitionField)
+      this.storageFields.partitionField.textContent = storage.partition_field || storage.partition || "-";
+    if (this.storageFields.partitionType)
+      this.storageFields.partitionType.textContent = storage.partition_type || "-";
+    if (this.storageFields.clusterColumns)
+      this.storageFields.clusterColumns.textContent = this.formatClusterColumns(storage.cluster_columns);
+    if (this.storageFields.location)
+      this.storageFields.location.textContent = storage.location || "-";
+  }
+
+  renderStats(stats = {}) {
+    if (this.statsFields.rows)
+      this.statsFields.rows.textContent = this.formatNumber(stats.row_count) || "-";
+    if (this.statsFields.size)
+      this.statsFields.size.textContent = this.formatBytes(stats.size_bytes) || "-";
+    if (this.statsFields.cost)
+      this.statsFields.cost.textContent = this.formatCurrency(stats.storage_cost) || "-";
+  }
+
+  renderTags(source) {
+    if (!this.tagsSection || !this.tagsList) return;
     const entries = this.normalizeEntries(source);
     if (!entries.length) {
-      this.overviewMetaSection.hidden = true;
-      this.overviewMetaList.innerHTML = '';
+      this.tagsSection.hidden = true;
+      this.tagsList.innerHTML = "";
       return;
     }
-    this.overviewMetaList.innerHTML = '';
+    this.tagsList.innerHTML = "";
     entries.forEach(([key, value]) => {
-      const dt = document.createElement('dt');
-      dt.textContent = this.formatKey(key);
-      const dd = document.createElement('dd');
-      dd.textContent = value;
-      this.overviewMetaList.append(dt, dd);
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.textContent = value != null ? `${key}: ${value}` : key;
+      this.tagsList.appendChild(pill);
     });
-    this.overviewMetaSection.hidden = false;
+    this.tagsSection.hidden = false;
+  }
+
+  renderSchema(schema = {}) {
+    const columns = Array.isArray(schema.columns) ? schema.columns : [];
+    if (this.schemaCount) this.schemaCount.textContent = String(columns.length);
+    if (!this.schemaBody || !this.schemaEmpty) return;
+    if (!columns.length) {
+      this.schemaBody.innerHTML = "";
+      this.schemaEmpty.hidden = false;
+      return;
+    }
+    this.schemaEmpty.hidden = true;
+    this.schemaBody.innerHTML = columns
+      .map((col) => {
+        const name = col.name || "-";
+        const type = col.type || col.data_type || "-";
+        const mode = col.mode || col.nullable || "-";
+        const desc = col.description || col.comment || "";
+        return `<tr>
+          <td>${name}</td>
+          <td>${type}</td>
+          <td>${mode}</td>
+          <td>${desc || ""}</td>
+        </tr>`;
+      })
+      .join("");
   }
 
   normalizeEntries(source) {
@@ -185,23 +256,58 @@ export class TableDetailView {
       return source
         .map((entry) => {
           if (Array.isArray(entry) && entry.length >= 2) return [entry[0], entry[1]];
-          if (entry && typeof entry === 'object') {
-            return [entry.key ?? entry.name, entry.value ?? entry.label ?? entry.text];
+          if (entry && typeof entry === "object") {
+            return [entry.key ?? entry.name ?? entry.label, entry.value ?? entry.text];
           }
           return null;
         })
-        .filter((pair) => pair && pair[0] != null && pair[1] != null);
+        .filter((pair) => pair && pair[0]);
     }
-    if (typeof source === 'object') {
-      return Object.entries(source).filter(([, value]) => value !== undefined && value !== null && value !== '');
+    if (typeof source === "object") {
+      return Object.entries(source).filter(([, value]) => value !== undefined && value !== null && value !== "");
     }
     return [];
   }
 
-  formatKey(key) {
-    if (!key) return '';
-    const text = key.replace(/[_-]/g, ' ');
-    return text.charAt(0).toUpperCase() + text.slice(1);
+  formatClusterColumns(columns) {
+    if (!columns) return "-";
+    if (Array.isArray(columns)) return columns.length ? columns.join(", ") : "-";
+    if (typeof columns === "string") return columns;
+    return "-";
   }
 
+  formatNumber(value) {
+    if (value === undefined || value === null || value === "") return "";
+    const num = Number(value);
+    if (Number.isNaN(num)) return String(value);
+    return num.toLocaleString();
+  }
+
+  formatBytes(value) {
+    if (value === undefined || value === null) return "";
+    const num = Number(value);
+    if (Number.isNaN(num) || num <= 0) return "";
+    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+    const idx = Math.min(units.length - 1, Math.floor(Math.log(num) / Math.log(1024)));
+    const scaled = num / 1024 ** idx;
+    return `${scaled.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+  }
+
+  formatCurrency(value) {
+    if (value === undefined || value === null || value === "") return "";
+    const num = Number(value);
+    if (Number.isNaN(num)) return String(value);
+    return `$${num.toFixed(2)}`;
+  }
+
+  formatDate(value) {
+    if (!value) return "";
+    try {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toISOString().split("T")[0];
+    } catch (err) {
+      return value;
+    }
+  }
 }

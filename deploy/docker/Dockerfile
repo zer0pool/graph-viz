@@ -22,11 +22,14 @@ COPY --from=builder /app/requirements.txt .
 RUN pip install --no-cache /wheels/*
 
 # 소스 코드 복사
-COPY src/app ./app
+COPY src/lineage_manager ./src/lineage_manager
+COPY deploy/docker/entrypoint.sh /entrypoint.sh
 
 # 환경 변수 설정
-ENV PYTHONPATH=/app
-ENV PORT=8000
+ENV PYTHONPATH=/app/src
+ENV PORT=5003
 
-# 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["backend"]

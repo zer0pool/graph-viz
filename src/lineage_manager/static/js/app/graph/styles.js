@@ -4,7 +4,8 @@ export function getGraphStyles() {
       selector: "node",
       style: {
         shape: "rectangle",
-        width: "label",
+        width: "mapData(label_length, 0, 30, 80, 300)",
+        height: 40,
         "border-width": 1.5,
         "border-color": "#cbd5f5",
         "background-color": "#ffffff",
@@ -28,7 +29,8 @@ export function getGraphStyles() {
     {
       selector: "node[type='table']",
       style: {
-        width: "label",
+        width: "mapData(label_length, 0, 30, 80, 300)",
+        height: 40,
         padding: "6px 28px",
         "border-color": "#94a3b8",
         "background-color": "#ffffff",
@@ -78,10 +80,21 @@ export function getGraphStyles() {
     {
       selector: "node.selected",
       style: {
-        "border-color": "#0f172a",
         "border-width": 3,
         "overlay-color": "#0f172a",
         "overlay-opacity": 0.12,
+      },
+    },
+    {
+      selector: "node.selected[type='table']",
+      style: {
+        "border-color": "#1a73e8",
+      },
+    },
+    {
+      selector: "node.selected[type='job']",
+      style: {
+        "border-color": "#fb8c00",
       },
     },
     {
@@ -110,6 +123,20 @@ export function getGraphStyles() {
         "border-width": 4,
         "overlay-color": "#f79009",
         "overlay-opacity": 0.12,
+      },
+    },
+    {
+      selector: "node.pulse[type='table']",
+      style: {
+        "border-color": "#1a73e8",
+        "overlay-color": "#1a73e8",
+      },
+    },
+    {
+      selector: "node.pulse[type='job']",
+      style: {
+        "border-color": "#fb8c00",
+        "overlay-color": "#fb8c00",
       },
     },
     {

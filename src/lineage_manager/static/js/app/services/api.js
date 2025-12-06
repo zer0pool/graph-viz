@@ -10,11 +10,16 @@ export class ApiClient {
 
   async request(url, options = {}) {
     const fullUrl = `${this.baseUrl}${url}`;
+    console.debug(`[Api] ${options.method || "GET"} ${fullUrl}`);
     return this.authClient.fetchWithAuth(fullUrl, options);
   }
 
-  async fetchSuggestions(query) {
-    const res = await this.request(`/api/v1/search/suggest?q=${encodeURIComponent(query)}`);
+  async fetchSuggestions(query, limit = 10) {
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(limit),
+    });
+    const res = await this.request(`/api/v1/search?${params.toString()}`);
     if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
     return res.json();
   }
@@ -74,6 +79,13 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchJobDetail(jobId) {
+    console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
+    const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
+    if (!res.ok) throw new Error(`Job detail failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobRunHistory(jobId) {
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`);
     if (!res.ok) throw new Error(`Run history failed: ${res.status}`);
@@ -87,8 +99,33 @@ export class ApiClient {
   }
 
   async fetchConfig() {
+    console.debug("[Api] GET /api/v1/auth/config");
     const res = await this.request(`/api/v1/auth/config`);
     if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
+    return res.json();
+  }
+
+  async exchangeAuthorizationCode(code, verifier) {
+    const fullUrl = `${this.baseUrl}/api/v1/auth/exchange`;
+    console.info("[Api] POST /api/v1/auth/exchange");
+    const res = await fetch(fullUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, code_verifier: verifier }),
+    });
+    if (!res.ok) {
+      console.error("[Api] Authorization code exchange failed", res.status);
+      throw new Error(`Exchange failed: ${res.status}`);
+    }
+    const payload = await res.json();
+    console.info("[Api] Authorization code exchange succeeded");
+    return payload;
+  }
+
+  async fetchProfile() {
+    console.debug("[Api] GET /api/v1/users/me");
+    const res = await this.request(`/api/v1/users/me`);
+    if (!res.ok) throw new Error(`Profile fetch failed: ${res.status}`);
     return res.json();
   }
 }

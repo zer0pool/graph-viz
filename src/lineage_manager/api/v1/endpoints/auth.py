@@ -1,3 +1,5 @@
+import logging
+
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -10,6 +12,8 @@ from lineage_manager.core.auth import (
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.user_service import UserService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -27,8 +31,19 @@ def get_auth_config(
     """
     Return minimal configuration so the frontend knows how to initiate OIDC login.
     """
-    config = oidc_client.auth_config()
-    config["require_authentication"] = get_settings().require_authentication
+    try:
+        config = oidc_client.auth_config()
+    except AuthenticationError as exc:
+        logger.error("Failed to load auth config: %s", exc)
+        raise HTTPException(status_code=503, detail="OIDC metadata unavailable") from exc
+
+    require_auth = get_settings().require_authentication
+    config["require_authentication"] = require_auth
+    logger.debug(
+        "Auth config requested (issuer=%s, require_auth=%s)",
+        config.get("issuer"),
+        require_auth,
+    )
     return config
 
 
@@ -43,18 +58,23 @@ def exchange_authorization_code(
     Exchange an authorization code for tokens via the configured OIDC provider.
     """
     try:
+        logger.info("Received authorization code exchange request")
         token_response = oidc_client.exchange_code(payload.code, payload.code_verifier)
     except AuthenticationError as exc:
+        logger.warning("Authorization code exchange failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc))
 
     id_token = token_response.get("id_token")
     try:
         claims = oidc_client.verify_id_token(id_token)
     except AuthenticationError as exc:
+        logger.warning("ID token verification failed: %s", exc)
         raise HTTPException(status_code=400, detail=f"Failed to verify ID token: {exc}")
 
     db_user = user_service.record_login(claims)
     user_payload = serialize_user(claims, db_user)
+
+    logger.info("User '%s' exchanged authorization code successfully", user_payload.get("sub"))
 
     return {
         "access_token": token_response.get("access_token"),
