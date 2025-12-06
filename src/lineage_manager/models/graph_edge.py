@@ -1,64 +1,31 @@
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Column,
-    DateTime,
-    Integer,
-    String,
-    UniqueConstraint,
-    func,
-)
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, UniqueConstraint, func
+from sqlalchemy.ext.mutable import MutableDict
 
 from .base import Base
 
 
 class GraphEdge(Base):
-    """
-    Direct relationship (Edge) between nodes in a graph
-    Represents various relationships such as Job-to-Job, Table-to-Table, etc.
-    """
+    """Simplified edge between two graph nodes."""
 
     __tablename__ = "graph_edge"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-
-    # Start and end node IDs of the Edge (Integer-based for performance)
     source_node_id = Column(Integer, nullable=False)
     target_node_id = Column(Integer, nullable=False)
-
-    # Source node type ('job' or 'table')
-    source_node_type = Column(String(10), nullable=False)
-
-    # Target node type ('job' or 'table')
-    target_node_type = Column(String(10), nullable=False)
-
-    # Relationship type ('dependency', 'data_flow', 'triggers', etc.)
-    edge_type = Column(String(50), nullable=False)
-
-    # Label information for the relationship
-    labels = Column(JSON, nullable=True)
-
-    # Activation status
-    is_trigger_on = Column(Boolean, default=True)
-
-    # Readability fields for human-readable identification
-    source_job_id = Column(String(255), nullable=True)  # Human-readable job ID
-    source_table_name = Column(String(255), nullable=True)  # Human-readable table name
-    target_job_id = Column(String(255), nullable=True)  # Human-readable job ID
-    target_table_name = Column(String(255), nullable=True)  # Human-readable table name
-
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    edge_type = Column(String(20), nullable=False)
+    is_trigger_on = Column(Boolean, server_default=func.true(), nullable=False)
+    properties = Column(MutableDict.as_mutable(JSON), nullable=True, default=dict)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
-            "source_node_id", "target_node_id", "edge_type", name="uq_edge_relation"
+            "source_node_id",
+            "target_node_id",
+            "edge_type",
+            name="uq_graph_edge_source_target_type",
         ),
     )
 
     def __repr__(self):
-        return (
-            f"<GraphEdge(source={self.source_node_type}:{self.source_node_id}, "
-            f"target={self.target_node_type}:{self.target_node_id}, type={self.edge_type})>"
-        )
+        return f"<GraphEdge(src={self.source_node_id}, dst={self.target_node_id}, type={self.edge_type})>"

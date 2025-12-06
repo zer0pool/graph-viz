@@ -1,5 +1,8 @@
 from typing import Any, Dict, List
 
+from lineage_manager.api.v1.schemas import JobRegister
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
+
 
 class JobDataTransformer:
     """Transforms Job Manager data to internal graph format."""
@@ -73,3 +76,44 @@ class JobDataTransformer:
             "target_id": dep_data.get("target_job_id", dep_data.get("target")),
             "label": dep_data.get("dependency_type", "depends_on"),
         }
+
+    @staticmethod
+    def lineage_to_job_register(lineage: SchedulingLineage) -> JobRegister:
+        """Convert a SchedulingLineage payload into the JobRegister schema."""
+        upstream_tables = [
+            dep.name
+            for dep in lineage.upstreams
+            if getattr(dep, "name", None)
+        ]
+        trigger_tables = [
+            dep.name
+            for dep in lineage.upstreams
+            if getattr(dep, "name", None) and getattr(dep, "trigger", False)
+        ]
+        destination_table = next(
+            (dep.name for dep in lineage.downstreams if getattr(dep, "name", None)),
+            None,
+        )
+
+        metadata = dict(lineage.metadata or {})
+        schedule_payload = (
+            lineage.schedule.model_dump()
+            if getattr(lineage, "schedule", None)
+            else metadata.get("schedule")
+        )
+
+        return JobRegister(
+            job_id=lineage.job_id,
+            name=lineage.name or lineage.job_id,
+            labels=metadata.get("labels", {}),
+            owner=metadata.get("owner"),
+            write_mode=metadata.get("write_mode"),
+            destination_type=lineage.destination_type or metadata.get("destination_type"),
+            destination_table=destination_table,
+            trigger_tables=trigger_tables,
+            reference_tables=upstream_tables,
+            run_status=metadata.get("run_status", "RUN"),
+            schedule=schedule_payload,
+            destinations=metadata.get("destinations"),
+            metadata=metadata,
+        )

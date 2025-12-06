@@ -2,44 +2,26 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-# class JobRegister(BaseModel):
-#     """Schema for job registration requests."""
-
-
-#     job_id: str = Field(..., description="Unique job identifier")
-#     name: str = Field(..., description="Human-readable job name")
-#     labels: dict = Field(..., description="Job labels as JSON object")
-#     owner: Optional[str] = Field(None, description="Job owner")
-#     write_mode: Optional[str] = Field(None, description="Write mode for the job")
-#     destination_type: Optional[str] = Field(None, description="Type of destination")
-#     destination_table: Optional[str] = Field(None, description="Destination table name")
-#     trigger_tables: List[str] = Field(
-#         default_factory=list, description="List of trigger tables"
-#     )
-#     reference_tables: List[str] = Field(
-#         default_factory=list, description="List of reference tables"
-#     )
-#     run_status: Optional[str] = Field("RUN", description="Job run status (RUN/STOP)")
-#     schedule: Optional[dict] = Field(None, description="Job schedule configuration")
-#     destinations: Optional[list] = Field(
-#         None, description="Job destinations configuration"
-#     )
-#     metadata: Optional[dict] = Field(
-#         default_factory=dict, description="Additional job metadata"
-#     )
 class JobRegister(BaseModel):
     """Schema for job registration requests."""
 
     job_id: str = Field(..., description="Unique job identifier")
     name: str = Field(..., description="Human-readable job name")
-    trigger_tables: list[str] = Field(
+    labels: dict = Field(default_factory=dict, description="Job labels as JSON object")
+    owner: Optional[str] = Field(None, description="Job owner")
+    write_mode: Optional[str] = Field(None, description="Write mode for the job")
+    destination_type: Optional[str] = Field(None, description="Type of destination")
+    destination_table: Optional[str] = Field(None, description="Destination table name")
+    trigger_tables: List[str] = Field(
         default_factory=list, description="List of trigger tables"
     )
-    reference_tables: list[str] = Field(
+    reference_tables: List[str] = Field(
         default_factory=list, description="List of reference tables"
     )
-    destination_tables: list[str] = Field(
-        default_factory=list, description="List of destination tables"
+    run_status: Optional[str] = Field("RUN", description="Job run status (RUN/STOP)")
+    schedule: Optional[dict] = Field(None, description="Job schedule configuration")
+    destinations: Optional[list] = Field(
+        None, description="Job destinations configuration"
     )
     metadata: dict = Field(default_factory=dict, description="Additional job metadata")
 
