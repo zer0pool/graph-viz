@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 
 from lineage_manager.models import GraphNode
 from lineage_manager.repositories.base_repository import BaseRepository
@@ -52,10 +52,15 @@ class TableRepository(BaseRepository):
             self._base_query().where(GraphNode.name == full_name)
         ).scalar_one_or_none()
 
-    def search(self, q: str, limit: int = 10):
-        """Search tables by full_name (ILIKE if supported)."""
-        pattern = f"%{q}%"
-        stmt = self._base_query().where(GraphNode.name.like(pattern)).limit(limit)
+    def search_by_prefix(self, prefix: str, limit: int = 10):
+        """Search tables by prefix."""
+        pattern = f"%{prefix.lower()}%"
+        stmt = (
+            self._base_query()
+            .where(func.lower(GraphNode.name).like(pattern))
+            .order_by(GraphNode.name)
+            .limit(limit)
+        )
         return self.db.execute(stmt).scalars().all()
 
     def count_tables(self):

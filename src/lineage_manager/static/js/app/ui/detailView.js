@@ -103,6 +103,7 @@ export class TableDetailView {
     this.schemaCount = schemaCount;
     this.schemaBody = schemaBody;
     this.schemaEmpty = schemaEmpty;
+
   }
 
   show() {

@@ -301,6 +301,12 @@ export class GraphController {
         } else if (this.view.getCy()) {
             this.view.fitAndCenter();
         }
+
+        const cy = this.view?.getCy?.();
+        if (cy) {
+            cy.zoom(1);
+            cy.center();
+        }
     }
 
     /**

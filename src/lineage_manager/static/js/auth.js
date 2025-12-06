@@ -63,7 +63,11 @@ import { ApiClient } from "./app/services/api.js";
     }
 
     async fetchConfig() {
+      console.debug("[Auth] Fetching OIDC config from backend");
       const data = await this.apiClient.fetchConfig();
+      console.debug(
+        `[Auth] Config loaded (requireAuth=${String(data?.require_authentication)})`
+      );
       return data;
     }
 
@@ -82,6 +86,7 @@ import { ApiClient } from "./app/services/api.js";
     async handleRedirect() {
       const params = new URLSearchParams(window.location.search);
       if (!params.has("code")) return;
+      console.info("[Auth] Handling OIDC redirect callback");
       const code = params.get("code");
       const returnedState = params.get("state");
       const storedState = sessionStorage.getItem(STATE_KEY);
@@ -100,11 +105,17 @@ import { ApiClient } from "./app/services/api.js";
     }
 
     async exchangeAuthorizationCode(code, verifier) {
+      console.info(
+        `[Auth] Exchanging authorization code (state=${sessionStorage.getItem(STATE_KEY)})`
+      );
       const data = await this.apiClient.exchangeAuthorizationCode(code, verifier);
       this.storeSession(data);
     }
 
     storeSession(data) {
+      console.debug(
+        `[Auth] Storing session (expires_in=${data?.expires_in}, has_user=${Boolean(data?.user)})`
+      );
       this.tokens = {
         access_token: data.access_token,
         id_token: data.id_token,
@@ -157,7 +168,9 @@ import { ApiClient } from "./app/services/api.js";
           }
         }
       }
+      console.debug(`[Auth] fetchWithAuth ${init.method || "GET"} ${input}`);
       const response = await fetch(input, { ...init, headers });
+      console.debug(`[Auth] Response ${response.status} ${response.statusText}`);
       if (response.status === 401) {
         this.logout();
         throw new Error("AUTH_EXPIRED");
@@ -292,7 +305,9 @@ import { ApiClient } from "./app/services/api.js";
       if (this.profileCache && Date.now() - this.profileCache.fetchedAt < 60_000) {
         return this.profileCache.data;
       }
+      console.debug("[Auth] Fetching profile");
       const data = await this.apiClient.fetchProfile();
+      console.debug(`[Auth] Profile fetched for ${data?.user?.sub}`);
       this.profileCache = { data, fetchedAt: Date.now() };
       return data;
     }
@@ -304,13 +319,13 @@ import { ApiClient } from "./app/services/api.js";
       return fetch(input, init);
     }
   };
-  
+
   const apiClient = new ApiClient(tempAuthClient);
   const authClient = new AuthClient(apiClient);
-  
+
   // Update the API client with the real auth client
   apiClient.authClient = authClient;
-  
+
   window.authClient = authClient;
   window.authReady = authClient.ready;
 })();

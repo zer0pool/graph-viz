@@ -47,18 +47,32 @@ export class ControlBar {
     /**
      * Handle search result selection
      */
-    async handleSearch(label, type) {
+    async handleSearch(label, type, context = {}) {
         if (!this.graph || !label) return;
+
+        let targetType = type;
+        let targetLabel = label;
+
+        if (type === "owner") {
+            const fallbackJob =
+                context?.sampleJobId || context?.jobId || context?.label;
+            if (!fallbackJob) {
+                console.warn("No job found for owner selection");
+                return;
+            }
+            targetType = "job";
+            targetLabel = fallbackJob;
+        }
 
         try {
             // Call neighbors API to get the graph
-            const kind = type === "job" ? "job" : "table";
+            const kind = targetType === "job" ? "job" : "table";
             const depth = this.filterState.depth || 1;
-            const payload = await this.api.fetchNeighbors(kind, label, depth);
+            const payload = await this.api.fetchNeighbors(kind, targetLabel, depth);
 
             // Render the graph
             this.graph.renderGraph(payload, {
-                centerLabel: label,
+                centerLabel: targetLabel,
                 rememberInitial: true,
                 resetViewport: true,
             });
@@ -66,12 +80,12 @@ export class ControlBar {
             console.error("Search error:", error);
             // Fallback to simple node rendering
             const payload = {
-                base_node: label,
-                nodes: [{ id: `${type[0]}${label}`, label, type }],
+                base_node: targetLabel,
+                nodes: [{ id: `${targetType[0]}${targetLabel}`, label: targetLabel, type: targetType }],
                 edges: [],
             };
             this.graph.renderGraph(payload, {
-                centerLabel: label,
+                centerLabel: targetLabel,
                 rememberInitial: true,
                 resetViewport: true,
             });

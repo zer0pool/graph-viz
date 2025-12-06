@@ -1967,78 +1967,106 @@ body {
     background: #2c974b;
 }
 
-.cy-minimap {
+#graph-shell #cytoscape-minimap {
     position: absolute !important;
-    bottom: 18px !important;
-    right: 18px !important;
+    bottom: 20px !important;
+    right: 20px !important;
     top: auto !important;
     left: auto !important;
     width: 220px !important;
-    height: 124px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
+    height: 140px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
     border-radius: 8px !important;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15) !important;
     z-index: 40 !important;
     border: 1px solid #d0d7de !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+}
+
+#graph-shell #cytoscape-minimap canvas {
+    border-radius: 4px !important;
 }
 
 /* Autocomplete suggestions */
 .suggestions {
     position: absolute;
     top: 36px;
-    /* align under compact input */
     left: 0;
-    width: 320px;
+    width: 420px;
+    min-width: 320px;
     background: #fff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-    max-height: 280px;
+    border: 1px solid #c3cfd9;
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
+    max-height: 360px;
     overflow-y: auto;
     z-index: 2000;
-    /* above side panel and minimap */
 }
 
 .suggestions .group {
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
     color: #57606a;
-    background: #f6f8fa;
-    border-bottom: 1px solid #d8dee4;
+    background: #f4f6fb;
+    border-bottom: 1px solid #dce3eb;
 }
 
 .suggestions .group-title {
     padding: 4px 0;
-    font-weight: 600;
-    font-size: 11px;
+    font-weight: 700;
+    font-size: 12px;
     text-transform: uppercase;
     color: #424c54;
     margin-bottom: 4px;
 }
 
 .suggestions .item {
-    padding: 8px 10px;
+    padding: 12px 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+.suggestions .item-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.suggestions .item-text .primary {
+    font-weight: 600;
+    color: #111827;
+}
+
+.suggestions .item-text .secondary {
+    font-size: 12px;
+    color: #6b7280;
+}
+
 .suggestions .item .icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     background: #ddf4ff;
     color: #0969da;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .suggestions .item:hover {
     background: #f6f8fa;
+}
+
+.suggestions .group.empty {
+    text-align: center;
+    background: #fff;
+    color: #6b7280;
 }
 
 .suggestions .item.active {

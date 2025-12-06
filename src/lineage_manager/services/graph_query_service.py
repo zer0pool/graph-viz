@@ -150,14 +150,34 @@ class GraphQueryService:
 
     # Simple search (03)
     def search_suggestions(self, q: str, limit: int = 10):
-        # Search jobs by job_id or name, tables by full_name
-        like = f"%{q}%"
-        jobs = self.uow.jobs.search(q=like, limit=limit)
-        tables = self.uow.tables.search(q=like, limit=limit)
+        term = (q or "").strip()
+        if not term:
+            return {"query": q, "tables": [], "jobs": [], "owners": []}
+
+        jobs = self.uow.jobs.search_by_prefix(prefix=term, limit=limit)
+        tables = self.uow.tables.search_by_prefix(prefix=term, limit=limit)
+        owners = self.uow.jobs.search_owners_by_prefix(prefix=term, limit=limit)
+
         return {
-            "query": q,
-            "jobs": [{"job_id": j.job_id, "name": j.name} for j in jobs],
-            "tables": [{"full_name": t.full_name} for t in tables],
+            "query": term,
+            "jobs": [
+                {
+                    "job_id": job.job_id or job.name,
+                    "name": job.display_name,
+                    "owner": job.owner,
+                }
+                for job in jobs
+            ],
+            "tables": [
+                {
+                    "full_name": table.full_name,
+                    "table_name": table.table_name or table.full_name,
+                    "project": table.project_name,
+                    "dataset": table.dataset_name,
+                }
+                for table in tables
+            ],
+            "owners": owners,
         }
 
     def get_table_triggers(self, table_name: str):
