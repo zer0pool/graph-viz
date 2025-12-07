@@ -8,8 +8,7 @@
     cytoscape('core', 'minimap', function (options) {
         const cy = this;
 
-        // ✅ 여기 추가
-        let lastMargin = { x: 0, y: 0, ratio: 0 };
+        let lastViewState = null;
 
         const defaults = {
             position: 'top-right',
@@ -32,7 +31,7 @@
             width: '200px',
             height: '120px',
             opacity: options.overviewOpacity,
-            border: '1px solid #d0d7de',
+            border: '1px solid rgba(26, 115, 232, 0.7)',
             borderRadius: '6px',
             background: '#fff',
             boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
@@ -40,12 +39,11 @@
             zIndex: '50',
         });
 
-        // ✅ 왼쪽 아래로 위치 변경
-        minimap.style.bottom = '20px'; // 화면 아래쪽에서 20px 위
-        minimap.style.left = '20px';   // 왼쪽 여백 20px
-
-        minimap.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-        minimap.style.borderRadius = '8px';
+        minimap.style.bottom = '20px';
+        minimap.style.right = '20px';
+        minimap.style.left = 'auto';
+        minimap.style.boxShadow = '0 12px 32px rgba(15,23,42,0.18)';
+        minimap.style.borderRadius = '10px';
 
         // ✅ 위치 설정
         // const pos = options.position;
@@ -62,73 +60,65 @@
         let bb = null;
 
         /**
- * ✅ 미니맵 전체 렌더링 (여백 포함 + cachedImg 반영)
- */
-        /**
- * ✅ 미니맵 전체 렌더링 (여백 + 원본 비율 유지)
+ * ✅ 미니맵 전체 렌더링 (단순화된 노드 실루엣)
  */
         function renderFull() {
             try {
-                const imgData = cy.png({
-                    full: true,
-                    scale: options.zoomFactor,
-                    bg: options.background,
+                bb = cy.elements().boundingBox();
+                if (!bb || !isFinite(bb.w) || !isFinite(bb.h) || bb.w === 0 || bb.h === 0) {
+                    bb = { x1: -100, y1: -100, x2: 100, y2: 100, w: 200, h: 200 };
+                }
+
+                const margin = Math.min(minimap.width, minimap.height) * 0.08;
+                const innerWidth = Math.max(minimap.width - margin * 2, 10);
+                const innerHeight = Math.max(minimap.height - margin * 2, 10);
+                const scale = Math.min(innerWidth / bb.w, innerHeight / bb.h);
+                const drawWidth = bb.w * scale;
+                const drawHeight = bb.h * scale;
+                const offsetX = margin + (innerWidth - drawWidth) / 2;
+                const offsetY = margin + (innerHeight - drawHeight) / 2;
+
+                const tmpCanvas = document.createElement("canvas");
+                tmpCanvas.width = minimap.width;
+                tmpCanvas.height = minimap.height;
+                const tmpCtx = tmpCanvas.getContext("2d");
+
+                tmpCtx.clearRect(0, 0, minimap.width, minimap.height);
+                tmpCtx.globalAlpha = 1;
+                tmpCtx.fillStyle = "rgba(248, 250, 255, 0.95)";
+                tmpCtx.fillRect(0, 0, minimap.width, minimap.height);
+
+                const nodes = cy.nodes(":visible");
+                nodes.forEach((node) => {
+                    const pos = node.position();
+                    if (!pos) return;
+                    const x = offsetX + (pos.x - bb.x1) * scale;
+                    const y = offsetY + (pos.y - bb.y1) * scale;
+                    const baseSize = Math.max(node.width(), node.height());
+                    const radius = Math.min(6, Math.max(2, (baseSize || 20) * scale * 0.25));
+                    const type = (node.data("type") || "").toLowerCase();
+                    let color = "#94a3b8";
+                    if (type === "table") color = "#7baaf7";
+                    else if (type === "job") color = "#fbbc04";
+                    else if (type === "storage") color = "#a3bffa";
+
+                    tmpCtx.beginPath();
+                    tmpCtx.globalAlpha = 0.9;
+                    tmpCtx.fillStyle = color;
+                    tmpCtx.arc(x, y, radius, 0, Math.PI * 2);
+                    tmpCtx.fill();
                 });
+                tmpCtx.globalAlpha = 1;
 
-                const rawImg = new Image();
-                rawImg.onload = function () {
-                    bb = cy.elements().boundingBox();
-
-                    // ✅ 여백 비율 (0.1~0.2 권장)
-                    const marginRatio = 0.05;
-                    const marginX = minimap.width * marginRatio;
-                    const marginY = minimap.height * marginRatio;
-                    const innerWidth = minimap.width - marginX * 1;
-                    const innerHeight = minimap.height - marginY * 1;
-
-                    // ✅ 원본 그래프 비율 계산
-                    const aspect = bb.w / bb.h; // 그래프 비율 (가로/세로)
-                    let drawW = innerWidth;
-                    let drawH = innerHeight;
-
-                    if (drawW / drawH > aspect) {
-                        // 가로가 더 넓은 경우 → 세로 기준 축소
-                        drawW = drawH * aspect;
-                    } else {
-                        // 세로가 더 긴 경우 → 가로 기준 축소
-                        drawH = drawW / aspect;
-                    }
-
-                    // ✅ 중앙 정렬 보정
-                    const offsetX = marginX + (innerWidth - drawW) / 2;
-                    const offsetY = marginY + (innerHeight - drawH) / 2;
-
-                    // ✅ 임시 캔버스에 원본 비율로 그리기
-                    const tmpCanvas = document.createElement("canvas");
-                    tmpCanvas.width = minimap.width;
-                    tmpCanvas.height = minimap.height;
-                    const tmpCtx = tmpCanvas.getContext("2d");
-
-                    tmpCtx.fillStyle = "#fff";
-                    tmpCtx.fillRect(0, 0, minimap.width, minimap.height);
-
-                    // ✅ 비율 유지 + 중앙정렬 + 여백 적용
-                    tmpCtx.drawImage(rawImg, offsetX, offsetY, drawW, drawH);
-
-                    // ✅ 완성본을 cachedImg로 저장
-                    const finalImg = new Image();
-                    finalImg.onload = function () {
-                        cachedImg = finalImg;
-
-                        ctx.clearRect(0, 0, minimap.width, minimap.height);
-                        ctx.drawImage(finalImg, 0, 0, minimap.width, minimap.height);
-
-                        lastMargin = { x: offsetX, y: offsetY, ratio: marginRatio };
-                        drawViewportBox(offsetX, offsetY, marginRatio);
-                    };
-                    finalImg.src = tmpCanvas.toDataURL();
+                const finalImg = new Image();
+                finalImg.onload = function () {
+                    cachedImg = finalImg;
+                    ctx.clearRect(0, 0, minimap.width, minimap.height);
+                    ctx.drawImage(finalImg, 0, 0, minimap.width, minimap.height);
+                    lastViewState = { offsetX, offsetY, scale };
+                    drawViewportBox();
                 };
-                rawImg.src = imgData;
+                finalImg.src = tmpCanvas.toDataURL();
             } catch (e) {
                 console.warn("Minimap render failed:", e);
             }
@@ -140,12 +130,8 @@
         /**
          * ✅ 뷰포트 사각형만 빠르게 갱신 (여백 포함 + 누적 방지)
          */
-        function drawViewportBox(
-            marginX = lastMargin.x,
-            marginY = lastMargin.y,
-            marginRatio = lastMargin.ratio
-        ) {
-            if (!cachedImg || !bb) {
+        function drawViewportBox() {
+            if (!cachedImg || !bb || !lastViewState) {
                 console.warn("⚠️ cachedImg not ready yet");
                 return;
             }
@@ -154,32 +140,26 @@
             const zoom = cy.zoom();
             const container = cy.container().getBoundingClientRect();
 
-            const scaleX = minimap.width / bb.w;
-            const scaleY = minimap.height / bb.h;
-            const ratio = Math.min(scaleX, scaleY);
-
-            const vpW = (container.width * ratio) / zoom;
-            const vpH = (container.height * ratio) / zoom;
-            const vpX = (-pan.x - bb.x1) * ratio;
-            const vpY = (-pan.y - bb.y1) * ratio;
+            const { offsetX, offsetY, scale } = lastViewState;
+            const vpW = (container.width * scale) / zoom;
+            const vpH = (container.height * scale) / zoom;
+            const vpX = offsetX + (-pan.x - bb.x1) * scale;
+            const vpY = offsetY + (-pan.y - bb.y1) * scale;
 
             ctx.save();
 
-            // ✅ 이전 박스 제거용으로 전체를 clear
             ctx.clearRect(0, 0, minimap.width, minimap.height);
 
-            // ✅ margin 적용된 그래프 이미지 다시 그림
             ctx.drawImage(cachedImg, 0, 0, minimap.width, minimap.height);
 
             // ✅ 새 뷰포트 박스만 표시
-            ctx.strokeStyle = "#0969da";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-                vpX + marginX,
-                vpY + marginY,
-                vpW * (1 - marginRatio),
-                vpH * (1 - marginRatio)
-            );
+            ctx.strokeStyle = "#1a73e8";
+            ctx.lineWidth = 1;
+            ctx.fillStyle = "rgba(26, 115, 232, 0.12)";
+            ctx.beginPath();
+            ctx.rect(vpX, vpY, vpW, vpH);
+            ctx.fill();
+            ctx.stroke();
 
             ctx.restore();
         }
@@ -205,7 +185,7 @@
 
 
         // ✅ pan/zoom 시엔 뷰포트 박스만 갱신
-        cy.on('pan zoom', () => drawViewportBox(lastMargin.x, lastMargin.y, lastMargin.ratio));
+        cy.on('pan zoom', () => drawViewportBox());
 
         // 초기 렌더
         renderFull();
@@ -220,7 +200,8 @@
 
             // ✅ 왼쪽 아래 고정 (navbar 높이 고려 불필요)
             minimap.style.bottom = '20px';
-            minimap.style.left = '20px';
+            minimap.style.right = '20px';
+            minimap.style.left = 'auto';
 
             // Cytoscape 컨테이너에 다시 append (사라졌을 경우 대비)
             if (!cy.container().contains(minimap)) {
