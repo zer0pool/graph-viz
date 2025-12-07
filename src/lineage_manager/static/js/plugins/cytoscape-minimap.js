@@ -33,9 +33,9 @@
             height: '120px',
             opacity: options.overviewOpacity,
             border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            background: '#fff',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            borderRadius: '10px',
+            background: 'rgba(255,255,255,0.92)',
+            boxShadow: '0 12px 32px rgba(15,23,42,0.18)',
             cursor: 'move',
             zIndex: '50',
         });
@@ -44,8 +44,8 @@
         minimap.style.bottom = '20px'; // 화면 아래쪽에서 20px 위
         minimap.style.left = '20px';   // 왼쪽 여백 20px
 
-        minimap.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-        minimap.style.borderRadius = '8px';
+        minimap.style.boxShadow = '0 12px 32px rgba(15,23,42,0.18)';
+        minimap.style.borderRadius = '10px';
 
         // ✅ 위치 설정
         // const pos = options.position;
@@ -172,14 +172,18 @@
             ctx.drawImage(cachedImg, 0, 0, minimap.width, minimap.height);
 
             // ✅ 새 뷰포트 박스만 표시
-            ctx.strokeStyle = "#0969da";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
+            ctx.strokeStyle = "#1a73e8";
+            ctx.lineWidth = 1;
+            ctx.fillStyle = "rgba(26, 115, 232, 0.12)";
+            ctx.beginPath();
+            ctx.rect(
                 vpX + marginX,
                 vpY + marginY,
                 vpW * (1 - marginRatio),
                 vpH * (1 - marginRatio)
             );
+            ctx.fill();
+            ctx.stroke();
 
             ctx.restore();
         }

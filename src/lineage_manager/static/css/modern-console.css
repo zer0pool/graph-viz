@@ -2035,9 +2035,9 @@ body {
     left: auto !important;
     width: 220px !important;
     height: 140px !important;
-    background: rgba(15, 23, 42, 0.75) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18) !important;
     z-index: 40 !important;
     border: 1px solid #d0d7de !important;
     padding: 8px !important;
@@ -2046,7 +2046,7 @@ body {
 }
 
 #graph-shell #cytoscape-minimap canvas {
-    border-radius: 4px !important;
+    border-radius: 6px !important;
 }
 
 /* Autocomplete suggestions */
