@@ -188,3 +188,32 @@ class GraphQueryService:
         res = self.core.get_table_triggers(table_name)
         self._cache_set(key, res)
         return res
+
+    def get_table_lineage_summary(
+        self,
+        table_name: str,
+        max_roots: int = 50,
+        max_leaves: int = 50,
+    ):
+        key = f"lineage_summary:{table_name}:{max_roots}:{max_leaves}"
+        cached = self._cache_get(key)
+        if cached:
+            cached["cache"] = {
+                "cached": True,
+                "expires_in_sec": self.redis_ttl if self.redis_enabled else None,
+            }
+            return cached
+
+        res = self.core.get_table_lineage_summary(
+            table_name,
+            max_roots=max_roots,
+            max_leaves=max_leaves,
+        )
+
+        if res.get("status") == "success":
+            res["cache"] = {
+                "cached": False,
+                "expires_in_sec": self.redis_ttl if self.redis_enabled else None,
+            }
+            self._cache_set(key, res)
+        return res

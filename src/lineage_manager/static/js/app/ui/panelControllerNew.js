@@ -103,6 +103,9 @@ export class PanelController {
         this.isTimelinessLoading = false;
         this.selectedTimelinessDay = null;
         this.timelinessCache = null;
+        this.lineageSummaryCache = new Map();
+        this.lineageSummaryRequestId = 0;
+        this.isLineageSummaryLoading = false;
 
         this.viewGraphButton = document.getElementById("detail-view-graph");
         this.currentDetailType = null;
@@ -166,9 +169,10 @@ export class PanelController {
         this.activeTabs.table = "overview";
         this.activeTabs.job = "overview";
         this.isJobRunLoading = false;
+        this.lineageSummaryRequestId += 1;
 
         this.resetTimelinessState();
-        this.lineageProvider.setState(this.lineageProvider.createEmptyState());
+        this.resetLineageSummaryState();
         this.setViewGraphAvailability(false);
     }
 
@@ -241,13 +245,14 @@ export class PanelController {
         this.tableView.hide();
         this.jobView.show();
         this.triggerManager.hide();
-        this.lineageProvider.setState(this.lineageProvider.createEmptyState());
+        this.resetLineageSummaryState();
 
         this.currentTable = null;
         this.currentTableNode = null;
         this.currentJob = node.data("job_id") || node.id();
         this.currentJobNodeId = node.id();
         this.isJobRunLoading = false;
+        this.lineageSummaryRequestId += 1;
 
         this.jobView.setLabel(node.data("label") || node.id(), false);
         this.jobView.setRunsPlaceholder('Select "Run history" tab to load data.');
@@ -276,8 +281,10 @@ export class PanelController {
         this.currentJob = null;
         this.currentTable = node.data("full_name") || node.data("label") || null;
         this.currentTableNode = node;
+        this.lineageSummaryRequestId += 1;
 
         this.resetTimelinessState('Select "Activity" tab to load timeliness data.');
+        this.resetLineageSummaryState('Select "Lineage" tab to load lineage summary.');
 
         // Populate table metadata immediately from node data (fast UX)
         const detailPayload = this.buildTableDetailPayload(node);
@@ -327,8 +334,17 @@ export class PanelController {
                 });
         }
 
-        // Update lineage insights
-        this.lineageProvider.updateInsights(node);
+        // Prepare lineage summary view
+        if (this.activeTabs.table === "lineage") {
+            this.ensureLineageSummary();
+        } else if (this.currentTable) {
+            const cached = this.lineageSummaryCache.get(this.currentTable);
+            if (cached) {
+                this.lineageProvider.setSummary(cached);
+            } else {
+                this.lineageProvider.setIdle('Select "Lineage" tab to load lineage summary.');
+            }
+        }
 
         // Fetch timeliness if activity tab is active
         if (this.activeTabs.table === "activity" && this.currentTable) {
@@ -455,8 +471,8 @@ export class PanelController {
                     this.timelinessView.setIdle('Select "Activity" tab to load timeliness data.');
                 }
             } else if (group === "table" && tab === "lineage") {
-                if (this.currentTableNode) this.lineageProvider.updateInsights(this.currentTableNode);
-                else this.lineageProvider.setState(this.lineageProvider.createEmptyState());
+                if (this.currentTable) this.ensureLineageSummary();
+                else this.lineageProvider.setIdle("Select a table to view lineage summary.");
             } else if (group === "table" && tab === "schema") {
                 // Lazy-load schema when schema tab is opened
                 if (this.currentTable && !this.tableLoaded.schema) {
@@ -512,6 +528,15 @@ export class PanelController {
         }
     }
 
+    resetLineageSummaryState(message) {
+        this.isLineageSummaryLoading = false;
+        if (this.lineageProvider) {
+            this.lineageProvider.setIdle(
+                message || 'Select "Lineage" tab to load lineage summary.'
+            );
+        }
+    }
+
     /**
      * Fetch timeliness data
      */
@@ -546,6 +571,40 @@ export class PanelController {
             this.timelinessView.setError("Failed to load timeliness.");
         } finally {
             this.isTimelinessLoading = false;
+        }
+    }
+
+    async ensureLineageSummary(force = false) {
+        if (!this.currentTable || !this.api) return;
+        if (this.isLineageSummaryLoading && !force) return;
+
+        const cacheKey = this.currentTable;
+        if (!force && this.lineageSummaryCache.has(cacheKey)) {
+            this.lineageProvider.setSummary(this.lineageSummaryCache.get(cacheKey));
+            return;
+        }
+
+        const requestId = ++this.lineageSummaryRequestId;
+        this.isLineageSummaryLoading = true;
+        this.lineageProvider.setLoading();
+
+        try {
+            const payload = await this.api.fetchTableLineageSummary(cacheKey);
+            if (requestId !== this.lineageSummaryRequestId) return;
+            if (payload?.status === "success") {
+                this.lineageSummaryCache.set(cacheKey, payload);
+                this.lineageProvider.setSummary(payload);
+            } else {
+                throw new Error(payload?.message || "Lineage summary failed.");
+            }
+        } catch (error) {
+            if (requestId !== this.lineageSummaryRequestId) return;
+            console.warn("Failed to load lineage summary", error);
+            this.lineageProvider.setError("Failed to load lineage summary.");
+        } finally {
+            if (requestId === this.lineageSummaryRequestId) {
+                this.isLineageSummaryLoading = false;
+            }
         }
     }
 

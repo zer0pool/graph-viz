@@ -91,6 +91,17 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchTableLineageSummary(tableName, { maxRoots, maxLeaves } = {}) {
+    const params = new URLSearchParams();
+    if (Number.isFinite(maxRoots)) params.set("max_roots", String(maxRoots));
+    if (Number.isFinite(maxLeaves)) params.set("max_leaves", String(maxLeaves));
+    const query = params.toString();
+    const url = `/api/v1/tables/${encodeURIComponent(tableName)}/lineage-summary${query ? `?${query}` : ""}`;
+    const res = await this.request(url);
+    if (!res.ok) throw new Error(`Lineage summary failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobDetail(jobId) {
     console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);

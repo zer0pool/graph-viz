@@ -95,3 +95,48 @@ class GraphInitResponse(BaseModel):
     total_nodes_created: int
     edges_created: int
     jobs_fetched: int
+
+
+class LineageDepthMetrics(BaseModel):
+    upstream: int = Field(0, description="Max hops from root to the selected table")
+    downstream: int = Field(0, description="Max hops from the table to any leaf")
+
+
+class LineageMetrics(BaseModel):
+    root_count: int
+    leaf_count: int
+    upstream_table_count: int
+    downstream_table_count: int
+    upstream_job_count: int
+    downstream_job_count: int
+    depth: LineageDepthMetrics
+
+
+class LineageSection(BaseModel):
+    root_tables: List[str] = Field(default_factory=list, description="Upstream roots")
+    leaf_tables: List[str] = Field(default_factory=list, description="Downstream leaves")
+    tables: List[str] = Field(default_factory=list, description="All tables in direction")
+    jobs: List[str] = Field(default_factory=list, description="All jobs in direction")
+
+
+class LineagePaths(BaseModel):
+    preview: List[List[str]] = Field(default_factory=list, description="Short paths for panel preview")
+    full: List[List[str]] = Field(default_factory=list, description="Full paths for drawer view")
+
+
+class LineageCacheMeta(BaseModel):
+    cached: bool
+    expires_in_sec: Optional[int] = Field(
+        None, description="Seconds until cache entry expires (if applicable)"
+    )
+
+
+class TableLineageSummaryResponse(BaseModel):
+    status: str
+    table: str
+    metrics: LineageMetrics
+    upstream: LineageSection
+    downstream: LineageSection
+    paths: LineagePaths
+    timestamp: str
+    cache: LineageCacheMeta
