@@ -1090,8 +1090,82 @@ body {
     padding: 20px;
 }
 
+.drawer-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #4b5563;
+    font-size: 14px;
+}
+
 .drawer-section+.drawer-section {
     margin-top: 20px;
+}
+
+.path-graph-block {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+}
+
+.path-graph-block:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.path-graph-svg {
+    width: 100%;
+    max-width: 520px;
+    display: block;
+    margin: 8px 0 12px;
+}
+
+.path-more {
+    color: #6b7280;
+    font-size: 13px;
+    padding: 2px 0;
+}
+
+.path-toggle {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 0 0;
+    cursor: pointer;
+}
+
+.path-toggle:hover {
+    text-decoration: underline;
+}
+
+.path-connector {
+    stroke: #94a3b8;
+    stroke-width: 2;
+    fill: none;
+}
+
+.path-connector-flow {
+    stroke-dasharray: 4 4;
+    animation: path-flow 1.4s linear infinite;
+}
+
+@keyframes path-flow {
+    from {
+        stroke-dashoffset: 12;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.drawer-section-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+    margin: 16px 0 8px;
 }
 
 .drawer-search {

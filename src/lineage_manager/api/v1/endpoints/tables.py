@@ -4,7 +4,7 @@ import os
 import random
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
@@ -12,6 +12,7 @@ from lineage_manager.core.sse import broker
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_service import GraphService
 from lineage_manager.services.bigquery_service import BigQueryService
+from lineage_manager.api.v1.schemas import TableLineageSummaryResponse
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,36 @@ def get_table_triggers(
 ):
     """Get trigger ON/OFF status per job that consumes the table."""
     return svc.get_table_triggers(table_name)
+
+
+@router.get(
+    "/{table_name}/lineage-summary",
+    response_model=TableLineageSummaryResponse,
+)
+@inject
+def get_table_lineage_summary(
+    table_name: str,
+    max_roots: int = Query(50, ge=1, le=200),
+    max_leaves: int = Query(50, ge=1, le=200),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+):
+    """Return aggregated lineage metrics for the table detail lineage panel."""
+    result = svc.get_table_lineage_summary(
+        table_name, max_roots=max_roots, max_leaves=max_leaves
+    )
+    if result.get("status") != "success":
+        code = result.get("error_code")
+        message = result.get("message", "Failed to compute lineage summary.")
+        if code == "TABLE_NOT_FOUND":
+            raise HTTPException(status_code=404, detail=message)
+        raise HTTPException(status_code=500, detail=message)
+
+    # Ensure upstream/downstream sections carry both root/leaf keys for schema compatibility
+    result.setdefault("upstream", {}).setdefault("root_tables", [])
+    result["upstream"].setdefault("leaf_tables", [])
+    result.setdefault("downstream", {}).setdefault("leaf_tables", [])
+    result["downstream"].setdefault("root_tables", [])
+    return result
 
 
 @router.patch("/{table_name}/triggers/{job_id}")

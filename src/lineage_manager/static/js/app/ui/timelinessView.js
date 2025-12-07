@@ -185,7 +185,10 @@ export class TableTimelinessView {
   }
 
   renderDailySegment(params, api) {
-    const data = params.data;
+    const data = params?.data || {};
+    const fillColor = data.color || STATUS_COLORS.default;
+    const strokeColor = data.selected ? "#1A73E8" : "#d1d5db";
+    const label = data.dayLabel ?? "";
     const coord = api.coord([api.value(0), api.value(1)]);
     const bandWidth = api.size([1, 0])[0] * 0.9;
     const barHeight = Math.min(api.size([0, 1])[1] * 0.6, 34);
@@ -203,18 +206,18 @@ export class TableTimelinessView {
           r: radius,
         },
         style: {
-          fill: data.color,
-          stroke: data.selected ? "#1A73E8" : "#d1d5db",
+          fill: fillColor,
+          stroke: strokeColor,
           lineWidth: data.selected ? 2 : 1,
         },
       },
       {
         type: "text",
         style: {
-          text: data.dayLabel,
+          text: label,
           x: x + bandWidth / 2,
           y: y + barHeight / 2,
-          fill: data.textColor,
+          fill: data.textColor || "#ffffff",
           fontWeight: 600,
           fontSize: 12,
           textAlign: "center",
