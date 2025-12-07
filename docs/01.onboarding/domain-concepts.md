@@ -34,39 +34,34 @@ They represent the **nodes** in the lineage graph and act as the stable boundary
 
 ---
 
-# 3. Storage (Logical vs Physical)
-“Storage” refers to the *physical representation* or *materialized footprint* of a table.
+# 3. Storage
 
-Examples:
-- BigQuery columnar storage  
-- Parquet/ORC files  
-- Materialized tables or partitions  
+### Node Type Definitions
 
-Storage differs from Table because:
+- **Table**
+  - `node_type = "table"`
+  - Maintains table-specific metadata  
+    (e.g., schema, columns, partitioning)
 
-## Table vs Storage Separation
+- **Storage**  
+  Physical or external storage systems such as S3, GCS, SFTP, Kafka, etc.
+  - `node_type = "storage"`
+  - Stored under `properties`:
+    - `storage_kind`: `"s3"`, `"gcs"`, `"sftp"`, `"kafka"`, etc.
+    - `storage_path`: bucket path or external location identifier  
+    - `external_service_name` (optional): name of the external system managing the storage
 
-### 1) Table = Logical, Storage = Physical
-- Table defines schema, metadata, and logical lineage.
-- Storage defines file layout, partitions, and cost-related metrics.
+### Edge Construction Rules
+- Job → Table  
+- Job → Storage  
+- Table and Storage nodes are represented separately:  
+  Tables maintain table-level metadata, whereas Storage nodes rely on `properties` for descriptive information.
 
-### 2) One Table → Many Storage Layers
-- Logical view but no storage  
-- Partitioned tables with multiple storage objects  
-- Temporary or extracted storage layers
-
-### 3) Advantages of separating Table and Storage
-| Benefit | Explanation |
-|--------|-------------|
-| Clear lineage | Logical table lineage is easier to visualize |
-| Performance optimization | Storage metadata enables cost analysis |
-| Extensibility | Multiple storage formats can coexist |
-| Operational clarity | Logical vs physical ownership separation |
-
-### 4) Why Lineage Manager separates them
-- Logical lineage graph ignores physical layout  
-- BigQuery dry-run, slot cost, bytes processed → require storage metadata  
-- Physical storage analytics does not affect logical dependencies  
+### Design Rationale
+- Clearly separates logical data objects (Tables) from physical storage objects (Storage).  
+- Table nodes focus on schema- and query-level lineage.  
+- Storage nodes represent file- or bucket-level lineage coming from external systems.
+bucket-level data movement, complementing table-level logical lineage.
 
 ---
 
