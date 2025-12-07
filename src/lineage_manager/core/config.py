@@ -96,6 +96,7 @@ class Settings(BaseSettings):
     enable_swagger: bool = True
     enable_metrics: bool = False
     require_authentication: bool = False
+    enable_bigquery: bool = False
 
     # Redis settings using RedisSettings model
     redis: RedisSettings | None = None

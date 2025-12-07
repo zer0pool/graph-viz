@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import random
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Body, Depends, Query
@@ -9,6 +11,7 @@ from lineage_manager.core.container import GraphContainer
 from lineage_manager.core.sse import broker
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.bigquery_service import BigQueryService
 
 logger = logging.getLogger(__name__)
 
@@ -145,8 +148,28 @@ async def get_table_load_history(table_name: str):
 
 
 @router.get("/{table_name}/timeliness")
-async def get_table_timeliness(table_name: str, days: int = 7):
-    """Dummy timeliness data for ECharts timeline."""
+@inject
+async def get_table_timeliness(
+    table_name: str,
+    days: int = 7,
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+) -> dict:
+    """Return timeliness by querying `gizmopool.test_data.table_load_history` for the
+    given table_name. The function will match only on `table_name` column (ignoring project/dataset).
+    Falls back to dummy data if BigQuery access fails.
+    """
+    from lineage_manager.core.config import get_settings
+    settings = get_settings()
+    
+    # Try to get real timelines via BigQuery helper if enabled
+    if settings.enable_bigquery:
+        try:
+            payload = bigquery_svc.get_table_timelines_for_table(table_name, days)
+            return {"status": "success", "input": {"table": table_name, "days": days}, "result": payload}
+        except Exception as err:
+            logger.warning(f"BigQuery timelines fetch failed: {err}. Falling back to dummy data.")
+
+    # Fallback: previous dummy implementation
     await asyncio.sleep(1)
     daily_summary = []
     for idx in range(days):
@@ -178,3 +201,154 @@ async def get_table_timeliness(table_name: str, days: int = 7):
         "input": {"table": table_name, "days": days},
         "result": {"daily_summary": daily_summary, "hourly_detail": hourly_detail},
     }
+
+
+@router.get("/{table_name}/schema")
+@inject
+async def get_table_schema(
+    table_name: str,
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+):
+    """Return fixed dummy schema for a test BigQuery table regardless of input.
+
+    This ignores `table_name` and always returns the schema for
+    `gizmopool.austin_bikeshare.bikeshare_stations` as a placeholder until
+    real BigQuery integration is implemented.
+    """
+    from lineage_manager.core.config import get_settings
+    settings = get_settings()
+    
+    # Fixed table used for frontend/testing
+    fixed_full_name = "gizmopool.austin_bikeshare.bikeshare_stations"
+
+    # If enable_bigquery is set, try to fetch real schema from BigQuery when possible.
+    use_bq = settings.enable_bigquery
+
+    # 50% chance to return hacker_news sample schema to exercise RECORD columns
+    pick_hacker = random.random() < 0.5
+    hacker_table = "bigquery-public-data.hacker_news.comments"
+
+    if pick_hacker and use_bq:
+        try:
+            cols = bigquery_svc.get_table_schema(hacker_table)
+            return {"status": "success", "input": {"requested": table_name, "resolved": hacker_table}, "result": {"columns": cols}}
+        except Exception:
+            # fallback to static hacker sample if BQ fetch fails
+            pick_hacker = True
+
+    if pick_hacker and not use_bq:
+        # Return a static sample schema with a RECORD (nested) column to exercise UI
+        columns = [
+            {"name": "id", "type": "INTEGER", "mode": "NULLABLE", "description": "Comment id", "policy_tags": []},
+            {"name": "by", "type": "STRING", "mode": "NULLABLE", "description": "Author", "policy_tags": []},
+            {
+                "name": "metadata",
+                "type": "RECORD",
+                "mode": "REPEATED",
+                "description": "Nested metadata",
+                "policy_tags": [],
+                "fields": [
+                    {"name": "source","type": "STRING","mode": "NULLABLE","description": "source"},
+                    {"name": "score","type": "INTEGER","mode": "NULLABLE","description": "score"},
+                ],
+            },
+            {"name": "text", "type": "STRING", "mode": "NULLABLE", "description": "Comment text", "policy_tags": []},
+        ]
+        return {"status": "success", "input": {"requested": table_name, "resolved": hacker_table}, "result": {"columns": columns}}
+
+    # Default: return fixed stations schema (or real BQ if enabled)
+    if use_bq:
+        try:
+            cols = bigquery_svc.get_table_schema(fixed_full_name)
+            return {"status": "success", "input": {"requested": table_name, "resolved": fixed_full_name}, "result": {"columns": cols}}
+        except Exception:
+            # fallback to static
+            pass
+
+    columns = [
+        {
+            "name": "station_id",
+            "type": "INTEGER",
+            "mode": "REQUIRED",
+            "description": "Unique station identifier",
+            "policy_tags": [],
+        },
+        {
+            "name": "name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": "Station name",
+            "policy_tags": [],
+        },
+        {
+            "name": "latitude",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": "Latitude coordinate",
+            "policy_tags": [],
+        },
+        {
+            "name": "longitude",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": "Longitude coordinate",
+            "policy_tags": [],
+        },
+        {
+            "name": "capacity",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": "Number of docks",
+            "policy_tags": [],
+        },
+    ]
+    return {
+        "status": "success",
+        "input": {"requested": table_name, "resolved": fixed_full_name},
+        "result": {"columns": columns},
+    }
+
+
+@router.get("/{table_name}/detail")
+@inject
+async def get_table_detail(
+    table_name: str,
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+):
+    """Return fixed dummy table detail metadata for a test BigQuery table.
+
+    This always returns the metadata for
+    `gizmopool.austin_bikeshare.bikeshare_stations` regardless of path.
+    """
+    from lineage_manager.core.config import get_settings
+    settings = get_settings()
+    
+    fixed_full_name = "gizmopool.austin_bikeshare.bikeshare_stations"
+
+    # If BigQuery is enabled, attempt to fetch real detail; otherwise return static fixture
+    use_bq = settings.enable_bigquery
+    if use_bq:
+        try:
+            info = bigquery_svc.get_table_detail(fixed_full_name)
+            return {"status": "success", "input": {"requested": table_name, "resolved": fixed_full_name}, "result": info}
+        except Exception as err:
+            logger.warning(f"BigQuery get_table_detail failed: {err}; falling back to static detail")
+
+    detail = {
+        "full_name": fixed_full_name,
+        "table_type": "TABLE",
+        "description": "Austin bikeshare stations reference data",
+        "location": "US",
+        "created": "2025-01-10T12:00:00+00:00",
+        "modified": "2025-11-10T19:07:12+09:00",
+        "expires": None,
+        "labels": {"env": "dev", "team": "data-platform"},
+        "storage": {
+            "num_rows": 234,
+            "num_bytes": 12345,
+            "partitioning": None,
+            "clustering": [],
+            "encryption": "Google-managed key",
+        },
+    }
+    return {"status": "success", "input": {"requested": table_name}, "result": detail}

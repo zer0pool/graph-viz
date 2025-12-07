@@ -98,9 +98,11 @@ export class PanelController {
         this.jobOverviewRequestId = 0;
         this.jobRelations = { inputs: [], outputs: [] };
         this.activeTabs = { table: "overview", job: "overview" };
+        this.tableLoaded = { detail: false, schema: false };
         this.isJobRunLoading = false;
         this.isTimelinessLoading = false;
         this.selectedTimelinessDay = null;
+        this.timelinessCache = null;
 
         this.viewGraphButton = document.getElementById("detail-view-graph");
         this.currentDetailType = null;
@@ -277,9 +279,53 @@ export class PanelController {
 
         this.resetTimelinessState('Select "Activity" tab to load timeliness data.');
 
-        // Populate table metadata
+        // Populate table metadata immediately from node data (fast UX)
         const detailPayload = this.buildTableDetailPayload(node);
         this.tableView.setDetails(detailPayload);
+
+        // Then fetch authoritative detail from backend and overwrite view when available
+        this.tableLoaded.detail = false;
+        if (this.currentTable) {
+            this.api
+                .fetchTableDetail(this.currentTable)
+                .then((payload) => {
+                    // Payload expected shape: { status, input, result }
+                    if (!payload || payload.status !== "success") return;
+                    const result = payload.result || payload;
+                    // Map backend result to tableView expected shape
+                    const mapped = {
+                        fullName: result.full_name || result.fullName || this.currentTable,
+                        overview: {
+                            owner: result.owner || null,
+                            description: result.description || null,
+                            documentation_url: result.documentation_url || null,
+                            updated_at: result.modified || result.updated || result.modified_at || null,
+                            tags: result.labels || result.tags || null,
+                        },
+                        storage: {
+                            type: result.table_type || null,
+                            partition: result.storage?.partitioning || null,
+                            partition_field: null,
+                            partition_type: null,
+                            cluster_columns: result.storage?.clustering || null,
+                            location: result.location || null,
+                        },
+                        stats: {
+                            row_count: result.storage?.num_rows ?? null,
+                            size_bytes: result.storage?.num_bytes ?? null,
+                            storage_cost: null,
+                            updated_at: result.modified || null,
+                        },
+                        schema: {},
+                    };
+
+                    this.tableView.setDetails(mapped);
+                    this.tableLoaded.detail = true;
+                })
+                .catch((err) => {
+                    console.warn("Failed to fetch table detail", err);
+                });
+        }
 
         // Update lineage insights
         this.lineageProvider.updateInsights(node);
@@ -411,6 +457,24 @@ export class PanelController {
             } else if (group === "table" && tab === "lineage") {
                 if (this.currentTableNode) this.lineageProvider.updateInsights(this.currentTableNode);
                 else this.lineageProvider.setState(this.lineageProvider.createEmptyState());
+            } else if (group === "table" && tab === "schema") {
+                // Lazy-load schema when schema tab is opened
+                if (this.currentTable && !this.tableLoaded.schema) {
+                    this.tableLoaded.schema = false;
+                    this.tableView.renderSchema({ columns: [] });
+                    this.api
+                        .fetchTableSchema(this.currentTable)
+                        .then((payload) => {
+                            if (!payload || payload.status !== "success") return;
+                            const result = payload.result || payload;
+                            const schema = { columns: Array.isArray(result.columns) ? result.columns : [] };
+                            this.tableView.renderSchema(schema);
+                            this.tableLoaded.schema = true;
+                        })
+                        .catch((err) => {
+                            console.warn("Failed to fetch table schema", err);
+                        });
+                }
             } else if (group === "job" && tab === "runs" && this.currentJob) {
                 this.fetchJobRunHistory();
             } else if (group === "job" && tab === "lineage") {
@@ -471,6 +535,8 @@ export class PanelController {
 
             const result = payload.result || {};
             const daily = Array.isArray(result.daily_summary) ? result.daily_summary : [];
+            // Cache hourly detail for later per-day lookups
+            this.timelinessCache = result || null;
 
             this.selectedTimelinessDay = null;
             this.timelinessView.renderDaily(daily, this.selectedTimelinessDay);
@@ -486,16 +552,37 @@ export class PanelController {
     /**
      * Handle timeliness day selection
      */
-    handleTimelineTime(date) {
+    async handleTimelinessDay(date) {
         if (!date) return;
         this.selectedTimelinessDay = date;
-        this.renderTimelinessHourly(date);
+
+        // Try to use cached hourly_detail from previous timeliness fetch
+        let rows = null;
+        if (this.timelinessCache && this.timelinessCache.hourly_detail) {
+            rows = this.timelinessCache.hourly_detail[date] || null;
+        }
+
+        if (!rows) {
+            // Fetch fresh timeliness payload and update cache
+            try {
+                const payload = await this.api.fetchTableTimeliness(this.currentTable);
+                if (payload && payload.status === "success") {
+                    const result = payload.result || {};
+                    this.timelinessCache = result;
+                    rows = result.hourly_detail ? result.hourly_detail[date] || null : null;
+                }
+            } catch (err) {
+                console.warn("Failed to fetch hourly timeliness", err);
+            }
+        }
+
+        this.renderTimelinessHourly(date, rows);
     }
 
     /**
      * Render hourly timeliness
      */
-    renderTimelinessHourly(date) {
+    renderTimelinessHourly(date, rows = null) {
         if (!this.timelinessView) return;
 
         if (!date) {
@@ -504,7 +591,8 @@ export class PanelController {
         }
 
         this.timelinessView.setSelectedDate(date);
-        // Note: hourly data fetching would be handled by timelinessView module
+        // Render hourly rows (may be null which will clear the hourly chart)
+        this.timelinessView.renderHourly(date, rows);
     }
 
     /**
