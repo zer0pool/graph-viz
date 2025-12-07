@@ -5,6 +5,8 @@
  */
 
 const PATH_COLLAPSE_THRESHOLD = 3;
+const PATH_FLOW_STYLE =
+    (typeof window !== "undefined" && window.LINEAGE_FLOW_STYLE) || "particle"; // "particle" | "dash"
 
 export class LineageInsightProvider {
     constructor() {
@@ -27,6 +29,7 @@ export class LineageInsightProvider {
         };
 
         this.pathCollapseState = new Map();
+        this.connectorCounter = 0;
         this.bindDrawerEvents();
     }
 
@@ -386,6 +389,7 @@ export class LineageInsightProvider {
         });
 
         requestAnimationFrame(() => {
+            this.connectorCounter = 0;
             const wrapper = document.createElement("div");
             wrapper.className = "drawer-section path-graph-wrapper";
 
@@ -688,6 +692,7 @@ export class LineageInsightProvider {
             ? marginTop * 2 + (nodesToRender.length - 1) * nodeSpacing
             : 60;
         const strokeColor = "#94a3b8";
+        const useParticleFlow = PATH_FLOW_STYLE === "particle";
 
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
@@ -706,7 +711,8 @@ export class LineageInsightProvider {
         marker.setAttribute("orient", "auto");
         marker.setAttribute("markerWidth", "6");
         marker.setAttribute("markerHeight", "6");
-        marker.setAttribute("refX", "5.5");
+        // marker.setAttribute("refX", "5.5");
+        marker.setAttribute("refX", "4.5");
         marker.setAttribute("refY", "3");
         marker.setAttribute("viewBox", "0 0 6 6");
 
@@ -717,6 +723,8 @@ export class LineageInsightProvider {
         defs.appendChild(marker);
         svg.appendChild(defs);
 
+        const xlinkNS = "http://www.w3.org/1999/xlink";
+
         for (let i = 0; i < nodesToRender.length - 1; i++) {
             const parentY = marginTop + i * nodeSpacing;
             const childY = marginTop + (i + 1) * nodeSpacing;
@@ -726,6 +734,7 @@ export class LineageInsightProvider {
             const verticalEnd = childY;
             const elbowX = parentX;
             const horizontalEnd = childX - circleRadius - 2;
+            const connectorId = useParticleFlow ? `lineage-flow-${this.connectorCounter++}` : null;
 
             const connector = document.createElementNS(svgNS, "path");
             connector.setAttribute(
@@ -736,8 +745,31 @@ export class LineageInsightProvider {
             connector.setAttribute("stroke-width", "2");
             connector.setAttribute("fill", "none");
             connector.setAttribute("marker-end", `url(#${markerId})`);
-            connector.classList.add("path-connector", "path-connector-flow");
+            connector.classList.add("path-connector");
+            if (useParticleFlow && connectorId) {
+                connector.setAttribute("id", connectorId);
+            } else {
+                connector.classList.add("path-connector-flow");
+            }
             svg.appendChild(connector);
+
+            if (useParticleFlow && connectorId) {
+                const particle = document.createElementNS(svgNS, "circle");
+                particle.setAttribute("r", "2.5");
+                particle.setAttribute("fill", strokeColor);
+
+                const motion = document.createElementNS(svgNS, "animateMotion");
+                motion.setAttribute("dur", "1.6s");
+                motion.setAttribute("repeatCount", "indefinite");
+
+                const mpath = document.createElementNS(svgNS, "mpath");
+                mpath.setAttribute("href", `#${connectorId}`);
+                mpath.setAttributeNS(xlinkNS, "xlink:href", `#${connectorId}`);
+
+                motion.appendChild(mpath);
+                particle.appendChild(motion);
+                svg.appendChild(particle);
+            }
         }
 
         nodesToRender.forEach((node, index) => {
