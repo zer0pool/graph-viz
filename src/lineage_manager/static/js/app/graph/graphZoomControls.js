@@ -13,6 +13,7 @@ export class GraphZoomControls {
         this.view = graphView;
         this.minimapVisible = false;
         this.minimapEl = null;
+        this.minimapToggle = null;
     }
 
     /**
@@ -65,6 +66,9 @@ export class GraphZoomControls {
             updateZoomDisplay();
         });
 
+        this.minimapToggle = minimap;
+        this.updateMinimapToggleState();
+
         minimap?.addEventListener("click", (e) => {
             e.preventDefault();
             console.info("[Minimap] Toggle button clicked");
@@ -101,6 +105,7 @@ export class GraphZoomControls {
                 }
             });
         }
+        this.updateMinimapToggleState();
     }
 
     /**
@@ -179,12 +184,19 @@ export class GraphZoomControls {
         node.style.top = "auto";
         node.style.width = "220px";
         node.style.height = "140px";
-        node.style.background = "rgba(15, 23, 42, 0.75)";
-        node.style.borderRadius = "8px";
+        node.style.background = "rgba(255, 255, 255, 0.92)";
+        node.style.border = "1px solid rgba(26, 115, 232, 0.7)";
+        node.style.borderRadius = "10px";
         node.style.padding = "8px";
-        node.style.boxShadow = "0 1px 6px rgba(0, 0, 0, 0.15)";
+        node.style.boxShadow = "0 12px 32px rgba(15, 23, 42, 0.18)";
         node.style.pointerEvents = "auto";
         node.style.zIndex = "40";
+    }
+
+    updateMinimapToggleState() {
+        if (!this.minimapToggle) return;
+        this.minimapToggle.classList.toggle("minimap-active", this.minimapVisible);
+        this.minimapToggle.setAttribute("aria-pressed", this.minimapVisible ? "true" : "false");
     }
 
     /**

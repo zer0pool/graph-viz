@@ -209,26 +209,48 @@ export class TableDetailView {
     renderSchema(schema = {}) {
         const columns = Array.isArray(schema.columns) ? schema.columns : [];
 
-        if (this.schemaCount) this.schemaCount.textContent = String(columns.length);
+        // Walk nested RECORD fields and produce a flat list with depth for indentation
+        const rows = [];
+        const walk = (cols, prefix = "", depth = 0) => {
+            cols.forEach((col) => {
+                const colName = col.name || "-";
+                const displayName = prefix ? `${prefix}.${colName}` : colName;
+                const type = col.type || col.data_type || "-";
+                const mode = col.mode || col.nullable || "-";
+                const desc = col.description || col.comment || "";
+                rows.push({ name: displayName, type, mode, desc, depth });
+
+                // If nested RECORD/RECORD type, recurse into fields
+                const isRecord = String(type).toUpperCase() === "RECORD" || String(type).toUpperCase() === "STRUCT";
+                if (isRecord && Array.isArray(col.fields) && col.fields.length) {
+                    walk(col.fields, displayName, depth + 1);
+                }
+            });
+        };
+
+        walk(columns);
+
+        if (this.schemaCount) this.schemaCount.textContent = String(rows.length);
 
         if (!this.schemaBody || !this.schemaEmpty) return;
 
-        if (!columns.length) {
+        if (!rows.length) {
             this.schemaBody.innerHTML = "";
             this.schemaEmpty.hidden = false;
             return;
         }
 
         this.schemaEmpty.hidden = true;
-        this.schemaBody.innerHTML = columns
+        this.schemaBody.innerHTML = rows
             .map((col) => {
+                const indent = col.depth ? `style="padding-left:${col.depth * 14}px"` : "";
                 const name = col.name || "-";
-                const type = col.type || col.data_type || "-";
-                const mode = col.mode || col.nullable || "-";
-                const desc = col.description || col.comment || "";
+                const type = col.type || "-";
+                const mode = col.mode || "-";
+                const desc = col.desc || "";
 
                 return `<tr>
-          <td>${name}</td>
+          <td ${indent}>${name}</td>
           <td>${type}</td>
           <td>${mode}</td>
           <td>${desc || ""}</td>

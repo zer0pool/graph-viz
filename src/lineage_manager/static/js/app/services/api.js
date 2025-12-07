@@ -79,6 +79,18 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchTableDetail(tableName) {
+    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
+    if (!res.ok) throw new Error(`Table detail failed: ${res.status}`);
+    return res.json();
+  }
+
+  async fetchTableSchema(tableName) {
+    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/schema`);
+    if (!res.ok) throw new Error(`Table schema failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobDetail(jobId) {
     console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);

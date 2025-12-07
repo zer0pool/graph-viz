@@ -10,6 +10,7 @@ from lineage_manager.services.graph_initializer import GraphInitializerService
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_service import GraphService
 from lineage_manager.services.user_service import UserService
+from lineage_manager.services.bigquery_service import BigQueryService
 
 
 class GraphContainer(containers.DeclarativeContainer):
@@ -50,6 +51,9 @@ class GraphContainer(containers.DeclarativeContainer):
         graph_service=graph_service,
     )
     user_service = providers.Factory(UserService, uow=uow)
+
+    # BigQuery service (optional; requires google credentials and library)
+    bigquery_service = providers.Factory(BigQueryService)
 
     oidc_provider = providers.Singleton(
         OIDCProviderClient,
