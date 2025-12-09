@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     require_authentication: bool = False
     enable_bigquery: bool = False
 
+    # SSE / Event settings
+    sse_buffer_size: int = 256
+    event_poll_interval_ms: int = 15_000
+
     # Redis settings using RedisSettings model
     redis: RedisSettings | None = None
 

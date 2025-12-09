@@ -9,6 +9,7 @@ from lineage_manager.services.graph_build_service import GraphBuildService
 from lineage_manager.services.graph_initializer import GraphInitializerService
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.job_service import JobService
 from lineage_manager.services.user_service import UserService
 from lineage_manager.services.bigquery_service import BigQueryService
 
@@ -50,6 +51,7 @@ class GraphContainer(containers.DeclarativeContainer):
         job_manager=job_manager_adapter,
         graph_service=graph_service,
     )
+    job_service = providers.Factory(JobService, job_manager=job_manager_adapter)
     user_service = providers.Factory(UserService, uow=uow)
 
     # BigQuery service (optional; requires google credentials and library)
