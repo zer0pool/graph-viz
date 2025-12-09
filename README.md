@@ -57,6 +57,45 @@ make lint
 make format
 ```
 
+## 로컬에서 변경 사항 확인하기 (PR 전 셀프 테스트)
+
+### 1) 사전 요구 사항
+- Python 3.11+ (로컬 실행 시)
+- MySQL 8.0 이상
+
+### 2) DB 준비
+- 로컬 MySQL이 없다면 Docker로 임시 컨테이너를 띄우세요.
+  ```bash
+  docker run --name lineage-mysql -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=lineage_manager -p 3306:3306 -d mysql:8.0
+  ```
+- 이미 MySQL이 있다면 `.env`에 다음 값을 맞춰 적어두세요.
+  ```env
+  DB_HOST=localhost
+  DB_USER=root
+  DB_PASSWORD=root123
+  DB_NAME=lineage_manager
+  ```
+
+### 3) 애플리케이션 실행
+```bash
+make venv          # 가상환경 생성
+make install-dev   # 의존성 설치
+make run           # 서버 실행 (기본 포트 5003)
+```
+
+### 4) 브라우저에서 확인
+- `http://localhost:5003/lineage-manager/` 접속 후 수정한 정적 리소스를 확인합니다.
+- 로그인 플로우까지 검증하려면 OIDC 값을 채우고 서버를 재시작하세요.
+  ```env
+  APP_OIDC_CLIENT_ID=...
+  APP_OIDC_CLIENT_SECRET=...
+  APP_OIDC_REDIRECT_URI=http://localhost:5003/oidc/callback
+  ```
+
+### 5) 종료 및 정리
+- 서버 중단: 실행 중인 터미널에서 `Ctrl+C`
+- 임시 MySQL 종료: `docker stop lineage-mysql && docker rm lineage-mysql`
+
 ## 배포
 
 ### Docker 이미지 사용
