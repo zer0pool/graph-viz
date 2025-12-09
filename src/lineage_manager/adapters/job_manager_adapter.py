@@ -229,6 +229,25 @@ class JobManagerAdapter(JobManagerPort):
             logger.exception("Full exception details:")
             return []
 
+    async def get_job_run_history(self, job_id: str) -> List[Dict[str, Any]]:
+        """Fetch run history for a specific job from Job Manager API."""
+        url = f"{self.base_url}/job/{job_id}/run-history"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url)
+                logger.debug(f"Run history response status: {response.status_code}")
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error fetching run history for {job_id}: {e}")
+            if hasattr(e, "response") and e.response:
+                logger.error(f"Response status: {e.response.status_code}")
+                logger.error(f"Response text: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error fetching run history for {job_id}: {e}")
+            raise
+
     async def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a specific job from Job Manager API."""
         try:
