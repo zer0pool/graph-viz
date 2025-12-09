@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from datetime import datetime
 from hashlib import sha1
 
@@ -22,6 +23,13 @@ router = APIRouter(
     dependencies=AUTH_DEPS,
 )
 
+def _sanitize_stats_for_hash(stats: dict) -> dict:
+    cleaned = deepcopy(stats)
+    database = cleaned.get("database")
+    if isinstance(database, dict) and "timestamp" in database:
+        database.pop("timestamp", None)
+    return cleaned
+
 
 @router.get("/trigger-status")
 @inject
@@ -44,7 +52,10 @@ def get_state_hash(
 ):
     stats = graph_service.get_health_stats()
     snapshot = broker.snapshot()
-    baseline = {"stats": stats, "last_event_id": snapshot["last_event_id"]}
+    baseline = {
+        "stats": _sanitize_stats_for_hash(stats),
+        "last_event_id": snapshot["last_event_id"],
+    }
     payload = {
         "stats": stats,
         "last_event_id": snapshot["last_event_id"],

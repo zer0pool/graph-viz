@@ -19,10 +19,10 @@
 <body data-poll-interval="15000">
     <!-- Navbar -->
     <div id="navbar">
-        <div class="nav-brand">
+        <a href="/lineage-manager/" class="nav-brand" aria-label="Lineage Manager home">
             <img src="static/images/logo.png" alt="Logo" class="nav-logo">
             <h2>Lineage Manager</h2>
-        </div>
+        </a>
         <div id="search-bar">
             <svg id="search-icon" viewBox="0 0 16 16">
                 <path
@@ -255,6 +255,15 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            <div id="run-history-pagination" class="run-history-pagination" hidden>
+                                <button id="run-history-prev" type="button" class="pagination-btn" aria-label="Previous page">
+                                    Previous
+                                </button>
+                                <span id="run-history-page-label">Page 1 of 1</span>
+                                <button id="run-history-next" type="button" class="pagination-btn" aria-label="Next page">
+                                    Next
+                                </button>
+                            </div>
                         </div>
                         <div id="job-lineage-pane" class="detail-pane" data-tab-panel="lineage">
                             <div id="job-lineage-placeholder" class="detail-placeholder">Select "Lineage" to view
@@ -479,20 +488,12 @@
     <div id="profile-panel" class="profile-panel" hidden>
         <div class="profile-card">
             <button id="profile-close" class="profile-close" title="Close">&times;</button>
-            <div id="profile-loading" class="profile-state" hidden>
-                <div class="spinner" aria-hidden="true"></div>
-                <p>Loading profile...</p>
-            </div>
-            <div id="profile-error" class="profile-state profile-state--error" hidden>
-                <p id="profile-error-message">We couldn't load your profile. Please try again.</p>
-                <button id="profile-retry" class="btn-secondary" type="button">Retry</button>
-            </div>
             <div id="profile-content">
-                <img id="profile-photo" alt="Profile photo">
-                <h2 id="profile-name">User</h2>
-                <p id="profile-email"></p>
-                <div id="profile-job-count" class="profile-meta"></div>
-                <ul id="profile-job-list" class="profile-jobs"></ul>
+                    <img id="profile-photo" alt="Profile photo">
+                    <h2 id="profile-name">User</h2>
+                <div id="profile-attribute-box" class="profile-attribute-box" aria-label="Profile attributes" hidden>
+                    <ul id="profile-attribute-list" class="profile-attribute-list"></ul>
+                </div>
                 <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
             </div>
         </div>

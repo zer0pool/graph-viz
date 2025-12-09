@@ -42,6 +42,7 @@ class UserService:
                 "preferred_username": user.preferred_username,
                 "roles": user.roles or [],
                 "dept": user.dept,
+                "organization": user.dept,
                 "locale": user.locale,
                 "last_login_at": (
                     user.last_login_at.isoformat() if user.last_login_at else None

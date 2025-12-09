@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, func, or_, select, desc
 
 from lineage_manager.models import GraphEdge, GraphNode
 from lineage_manager.repositories.base_repository import BaseRepository
@@ -135,3 +135,16 @@ class JobRepository(BaseRepository):
             if len(owners) >= limit:
                 break
         return owners
+
+    def list_by_owner(self, owner: str, limit: int = 10):
+        """Return jobs attributed to the supplied owner name."""
+        if not owner:
+            return []
+        owner_field = GraphNode.properties["owner"].as_string()
+        stmt = (
+            self._base_query()
+            .where(func.lower(owner_field) == owner.lower())
+            .order_by(desc(GraphNode.updated_at))
+            .limit(limit)
+        )
+        return self.db.execute(stmt).scalars().all()

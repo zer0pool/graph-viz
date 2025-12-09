@@ -25,5 +25,12 @@ def get_me(
     if not profile:
         logger.warning("Authenticated user '%s' not found in profile store", ctx_user["sub"])
         raise HTTPException(status_code=404, detail="User not found")
-    logger.debug("Returning profile for user '%s'", ctx_user["sub"])
+    user_info = profile.get("user", {})
+    logger.info(
+        "Profile requested for %s: name=%s, email=%s, organization=%s",
+        ctx_user["sub"],
+        user_info.get("name"),
+        user_info.get("email"),
+        user_info.get("organization"),
+    )
     return profile

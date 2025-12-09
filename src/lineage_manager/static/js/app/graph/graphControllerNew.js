@@ -34,6 +34,8 @@ export class GraphController {
         this.tooltip = null;
         this.zoomControls = null;
         this.expansion = null;
+        this.initialSearchSnapshot = null;
+        this.initialSearchCenterLabel = null;
 
         // Configuration
         this.graphCanvas = document.getElementById("cy");
@@ -161,6 +163,10 @@ export class GraphController {
 
         if (options.rememberInitial) {
             this.persistence.setBaseGraph(payload, options.centerLabel);
+            if (options.rememberInitialSearch) {
+                this.initialSearchSnapshot = JSON.parse(JSON.stringify(payload));
+                this.initialSearchCenterLabel = options.centerLabel;
+            }
         }
 
         // Re-init view
@@ -301,11 +307,14 @@ export class GraphController {
         }
         this.resetHiddenNodes();
 
-        const baseGraph = this.persistence.getBaseGraph();
+        const baseGraph =
+            this.initialSearchSnapshot ?? this.persistence.getBaseGraph();
         if (baseGraph) {
             const snapshot = JSON.parse(JSON.stringify(baseGraph));
             this.renderGraph(snapshot, {
-                centerLabel: this.persistence.getBaseCenterLabel(),
+                centerLabel:
+                    this.initialSearchCenterLabel ??
+                    this.persistence.getBaseCenterLabel(),
                 resetViewport: true,
             });
         } else if (this.view.getCy()) {

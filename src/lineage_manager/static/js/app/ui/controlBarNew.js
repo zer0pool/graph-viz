@@ -74,6 +74,7 @@ export class ControlBar {
             this.graph.renderGraph(payload, {
                 centerLabel: targetLabel,
                 rememberInitial: true,
+                rememberInitialSearch: true,
                 resetViewport: true,
             });
         } catch (error) {
@@ -87,6 +88,7 @@ export class ControlBar {
             this.graph.renderGraph(payload, {
                 centerLabel: targetLabel,
                 rememberInitial: true,
+                rememberInitialSearch: true,
                 resetViewport: true,
             });
         }

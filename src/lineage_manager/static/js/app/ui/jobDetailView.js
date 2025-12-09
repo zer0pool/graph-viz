@@ -14,6 +14,10 @@ export class JobDetailView {
         runDrawerFields,
         runDrawerSubtitle,
         runDrawerClose,
+        runHistoryPagination,
+        runHistoryPageLabel,
+        runHistoryPrev,
+        runHistoryNext,
         overviewPlaceholder,
         overviewContent,
         overviewFields = {},
@@ -62,6 +66,13 @@ export class JobDetailView {
         this.lineageOutputs = lineageOutputs;
 
         this.collapseState = {};
+        this.runHistoryPagination = runHistoryPagination;
+        this.runHistoryPageLabel = runHistoryPageLabel;
+        this.runHistoryPrev = runHistoryPrev;
+        this.runHistoryNext = runHistoryNext;
+        this.runHistoryPage = 0;
+        this.runHistoryPageSize = 10;
+        this.initPaginationControls();
 
         this.bindRunDrawer();
     }
@@ -267,23 +278,36 @@ export class JobDetailView {
         if (!this.runsBody) return;
 
         this.latestRuns = Array.isArray(rows) ? rows : [];
-        this.renderTimeline(this.latestRuns);
+        this.runHistoryPage = 0;
+        this.renderRunsPage();
+    }
+
+    renderRunsPage() {
+        if (!this.runsBody) return;
 
         if (!this.latestRuns.length) {
             this.setRunsPlaceholder("No run history available.");
+            if (this.runHistoryPagination) this.runHistoryPagination.hidden = true;
             return;
         }
 
-        this.runsBody.innerHTML = this.latestRuns
-            .map((entry, index) => {
-                const status = (entry.status || "unknown").toLowerCase();
-                const start = entry.start_time || "-";
-                const durationRaw = entry.duration_sec != null ? entry.duration_sec : (entry.duration || entry.elapsed || null);
+        const pageRuns = this.getPageRunsWithIndices();
+        this.renderTimeline(pageRuns.map(({ run }) => run), pageRuns.map(({ index }) => index));
+        this.runsBody.innerHTML = pageRuns
+            .map(({ run, index }) => {
+                const status = (run.status || "unknown").toLowerCase();
+                const start = run.start_time || "-";
+                const durationRaw =
+                    run.duration_sec != null
+                        ? run.duration_sec
+                        : run.duration != null
+                        ? run.duration
+                        : run.elapsed;
                 const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
                 return `<tr data-run-idx="${index}">
                     <td><span class="status-pill status-${status}">${status}</span></td>
                     <td>${start}</td>
-                    <td title="${durationRaw != null ? durationRaw + ' seconds' : ''}">${duration}</td>
+                    <td title="${durationRaw != null ? `${durationRaw} seconds` : ""}">${duration}</td>
                     <td><button type="button" class="link-btn view-run" data-run-idx="${index}">Details</button></td>
                 </tr>`;
             })
@@ -296,27 +320,85 @@ export class JobDetailView {
                 if (run) this.openRunDrawer(run);
             });
         });
+
+        this.renderPaginationControls();
     }
 
-    renderTimeline(runs = []) {
+    initPaginationControls() {
+        if (this.runHistoryPrev) {
+            this.runHistoryPrev.addEventListener("click", () =>
+                this.changeRunHistoryPage(this.runHistoryPage - 1)
+            );
+        }
+        if (this.runHistoryNext) {
+            this.runHistoryNext.addEventListener("click", () =>
+                this.changeRunHistoryPage(this.runHistoryPage + 1)
+            );
+        }
+    }
+
+    changeRunHistoryPage(page) {
+        const pageCount = this.getRunHistoryPageCount();
+        const normalized = Math.min(Math.max(page, 0), pageCount - 1);
+        if (normalized === this.runHistoryPage) return;
+        this.runHistoryPage = normalized;
+        this.renderRunsPage();
+    }
+
+    getRunHistoryPageCount() {
+        if (!this.latestRuns.length) return 1;
+        return Math.max(1, Math.ceil(this.latestRuns.length / this.runHistoryPageSize));
+    }
+
+    renderPaginationControls() {
+        if (!this.runHistoryPagination) return;
+        const pageCount = this.getRunHistoryPageCount();
+        if (this.runHistoryPageLabel) {
+            this.runHistoryPageLabel.textContent = `Page ${this.runHistoryPage + 1} of ${pageCount}`;
+        }
+        this.runHistoryPagination.hidden = pageCount <= 1;
+        if (this.runHistoryPrev) {
+            this.runHistoryPrev.disabled = this.runHistoryPage <= 0;
+        }
+        if (this.runHistoryNext) {
+            this.runHistoryNext.disabled = this.runHistoryPage >= pageCount - 1;
+        }
+    }
+
+    getPageRunsWithIndices() {
+        const start = this.runHistoryPage * this.runHistoryPageSize;
+        const slice = this.latestRuns.slice(start, start + this.runHistoryPageSize);
+        return slice.map((run, idx) => ({ run, index: start + idx }));
+    }
+
+    renderTimeline(runs = [], globalIndices = []) {
         if (!this.runsTimeline) return;
         if (!runs.length) {
             this.setTimelinePlaceholder("No run history available.");
             return;
         }
 
-        const dots = runs
-            .map((run, idx) => {
-                const status = (run.status || "unknown").toLowerCase();
-                const start = run.start_time || "-";
-                const durationRaw = run.duration_sec != null ? run.duration_sec : (run.duration || run.elapsed || null);
-                const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
-                const tooltip = `${start} • ${status}${duration ? ` • ${duration}` : ""}`;
-                return `<button type="button" class="timeline-dot status-${status}" data-run-idx="${idx}" title="${tooltip}"></button>`;
-            })
-            .join("");
+        const points = this.calculateTimelinePoints(runs);
 
-        this.runsTimeline.innerHTML = `<div class="timeline-track">${dots}</div>`;
+        this.runsTimeline.innerHTML = `
+            <div class="timeline-track">
+                <div class="timeline-track-line" aria-hidden="true"></div>
+            </div>`;
+
+        const track = this.runsTimeline.querySelector(".timeline-track");
+        if (!track) return;
+
+        points.forEach((point, idx) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `timeline-dot status-${point.severity}`;
+            const globalIndex = Number.isFinite(globalIndices[idx]) ? globalIndices[idx] : idx;
+            button.dataset.runIdx = globalIndex.toString();
+            button.style.left = `${point.left.toFixed(2)}%`;
+            button.title = point.tooltip;
+            button.setAttribute("aria-label", point.tooltip);
+            track.appendChild(button);
+        });
 
         this.runsTimeline.querySelectorAll(".timeline-dot").forEach((dot) => {
             dot.addEventListener("click", (e) => {
@@ -325,6 +407,80 @@ export class JobDetailView {
                 if (run) this.openRunDrawer(run);
             });
         });
+    }
+
+    calculateTimelinePoints(runs = []) {
+        const totalRuns = runs.length;
+        if (!totalRuns) return [];
+
+        const entries = runs.map((run, idx) => {
+            const timestamp = this.getRunTimestamp(run);
+            return { run, timestamp, idx };
+        });
+
+        let minTime = Infinity;
+        let maxTime = -Infinity;
+        entries.forEach(({ timestamp }) => {
+            if (timestamp != null) {
+                minTime = Math.min(minTime, timestamp);
+                maxTime = Math.max(maxTime, timestamp);
+            }
+        });
+
+        const hasValidRange = minTime !== Infinity && maxTime !== -Infinity && maxTime > minTime;
+        const range = hasValidRange ? maxTime - minTime : null;
+
+        return entries.map(({ run, timestamp, idx }) => {
+            const fallback = totalRuns > 1 ? (idx / (totalRuns - 1)) * 100 : 50;
+            const rawLeft = hasValidRange && timestamp != null ? ((timestamp - minTime) / range) * 100 : fallback;
+            const left = Math.min(Math.max(rawLeft, 0), 100);
+            const stateValue = (run.state || run.status || "unknown").toLowerCase();
+            const durationRaw = run.duration_sec != null ? run.duration_sec : (run.duration || run.elapsed || null);
+            const durationLabel = durationRaw != null ? this.formatDuration(durationRaw) : null;
+            const labelTime = run.start_time || run.data_interval_end || run.dag_run_id || "";
+            const tooltipParts = [];
+            if (labelTime) tooltipParts.push(labelTime);
+            tooltipParts.push(stateValue);
+            if (durationLabel) tooltipParts.push(`Duration: ${durationLabel}`);
+            const tooltip = tooltipParts.join(" • ");
+            return {
+                run,
+                left,
+                severity: this.getTimelineSeverity(stateValue),
+                tooltip,
+            };
+        });
+    }
+
+    getRunTimestamp(run = {}) {
+        return (
+            this.parseTimestamp(run.data_interval_end) ??
+            this.extractTimestampFromDagRunId(run.dag_run_id) ??
+            this.parseTimestamp(run.start_time) ??
+            this.parseTimestamp(run.finish_time ?? run.end_time ?? null)
+        );
+    }
+
+    parseTimestamp(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+
+    extractTimestampFromDagRunId(dagRunId = "") {
+        if (!dagRunId) return null;
+        const match = dagRunId.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/);
+        if (!match) return null;
+        return this.parseTimestamp(match[0]);
+    }
+
+    getTimelineSeverity(status = "") {
+        if (!status) return "unknown";
+        if (/failed|error|cancelled/.test(status)) return "error";
+        if (/warn|warning|delay|late|skipped|timeout/.test(status)) return "warning";
+        if (/running|pending|queued|scheduled/.test(status)) return "running";
+        if (/success|completed|done/.test(status)) return "success";
+        return "unknown";
     }
 
     bindRunDrawer() {
@@ -343,6 +499,12 @@ export class JobDetailView {
 
         const safe = (v, fallback = "-") => (v === undefined || v === null || v === "" ? fallback : v);
         const status = (run.status || "unknown").toLowerCase();
+        const durationRaw =
+            run.duration_sec != null
+                ? run.duration_sec
+                : run.duration != null
+                    ? run.duration
+                    : run.elapsed;
         const fields = [
             { label: "Run ID", value: safe(run.run_id || run.run) },
             { label: "Status", value: status },

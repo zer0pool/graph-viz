@@ -36,6 +36,10 @@ export class PanelController {
             runDrawerFields: document.getElementById("run-drawer-fields"),
             runDrawerSubtitle: document.getElementById("run-drawer-subtitle"),
             runDrawerClose: document.getElementById("run-drawer-close"),
+            runHistoryPagination: document.getElementById("run-history-pagination"),
+            runHistoryPageLabel: document.getElementById("run-history-page-label"),
+            runHistoryPrev: document.getElementById("run-history-prev"),
+            runHistoryNext: document.getElementById("run-history-next"),
             // Summary elements
             sumRunning: document.getElementById("sum-running"),
             sumSuccess: document.getElementById("sum-success"),
