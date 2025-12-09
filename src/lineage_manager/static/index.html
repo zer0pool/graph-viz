@@ -453,12 +453,22 @@
     <div id="profile-panel" class="profile-panel" hidden>
         <div class="profile-card">
             <button id="profile-close" class="profile-close" title="Close">&times;</button>
-            <img id="profile-photo" alt="Profile photo">
-            <h2 id="profile-name">User</h2>
-            <p id="profile-email"></p>
-            <div id="profile-job-count" class="profile-meta"></div>
-            <ul id="profile-job-list" class="profile-jobs"></ul>
-            <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
+            <div id="profile-loading" class="profile-state" hidden>
+                <div class="spinner" aria-hidden="true"></div>
+                <p>Loading profile...</p>
+            </div>
+            <div id="profile-error" class="profile-state profile-state--error" hidden>
+                <p id="profile-error-message">We couldn't load your profile. Please try again.</p>
+                <button id="profile-retry" class="btn-secondary" type="button">Retry</button>
+            </div>
+            <div id="profile-content">
+                <img id="profile-photo" alt="Profile photo">
+                <h2 id="profile-name">User</h2>
+                <p id="profile-email"></p>
+                <div id="profile-job-count" class="profile-meta"></div>
+                <ul id="profile-job-list" class="profile-jobs"></ul>
+                <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
+            </div>
         </div>
     </div>
 

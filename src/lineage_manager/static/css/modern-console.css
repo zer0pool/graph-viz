@@ -141,6 +141,10 @@ body {
     display: none !important;
 }
 
+.profile-content[hidden] {
+    display: none !important;
+}
+
 .profile-card {
     background: #ffffff;
     border-radius: 16px;
@@ -210,6 +214,43 @@ body {
 .profile-jobs .empty {
     text-align: center;
     color: #6e7781;
+}
+
+.profile-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    color: #4b5563;
+    padding: 16px;
+    text-align: center;
+}
+
+.profile-state--error {
+    background: #fff5f5;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .logout-btn {

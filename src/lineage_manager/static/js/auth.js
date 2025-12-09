@@ -4,6 +4,16 @@ import { ApiClient } from "./app/services/api.js";
   // Create API client instance
   let api = null;
   const DEFAULT_AVATAR = "https://www.gravatar.com/avatar/?d=mp";
+  const AVATAR_COLORS = [
+    "#2563EB",
+    "#7C3AED",
+    "#059669",
+    "#DC2626",
+    "#EA580C",
+    "#2563EB",
+    "#6B7280",
+    "#0891B2",
+  ];
   const TOKEN_KEY = "lm.tokens";
   const USER_KEY = "lm.user";
   const VERIFIER_KEY = "lm.pkce_verifier";
@@ -33,12 +43,58 @@ import { ApiClient } from "./app/services/api.js";
     return result;
   }
 
+  function getInitials(name) {
+    if (!name || typeof name !== "string") return "?";
+    const cleaned = name.replace(/[\s_-]+/g, " ").trim();
+    if (!cleaned) return "?";
+    const parts = cleaned.split(" ").filter(Boolean);
+    const first = parts[0] || "";
+    const second = parts[1] || "";
+    const initials =
+      (first[0] || "").toUpperCase() +
+      ((second[0] || first[1] || "").toUpperCase());
+    return initials || "?";
+  }
+
+  function pickColor(seed) {
+    if (!seed) return AVATAR_COLORS[0];
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) {
+      hash = (hash << 5) - hash + seed.charCodeAt(i);
+      hash |= 0; // force 32-bit int
+    }
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+
+  function generateInitialsAvatar(name, size = 96) {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const initials = getInitials(name);
+    const bg = pickColor(name || initials);
+
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `${Math.floor(size * 0.45)}px "Segoe UI", Roboto, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initials, size / 2, size / 2);
+
+    return canvas.toDataURL("image/png");
+  }
+
   class AuthClient {
     constructor(apiClient) {
       this.config = null;
       this.tokens = null;
       this.user = null;
       this.profileCache = null;
+      this.profileError = null;
       this.requireAuth = true;
       this.apiClient = apiClient;
       this.ready = this.initialize();
@@ -51,6 +107,9 @@ import { ApiClient } from "./app/services/api.js";
         await this.handleRedirect();
         this.restoreSession();
         this.bindUI();
+        if (this.isAuthenticated()) {
+          await this.preloadProfile();
+        }
       } catch (err) {
         console.error("Auth init failed", err);
       }
@@ -80,6 +139,14 @@ import { ApiClient } from "./app/services/api.js";
       } catch (_) {
         this.tokens = null;
         this.user = null;
+      }
+    }
+
+    async preloadProfile() {
+      try {
+        await this.fetchProfile({ silent: true, force: true });
+      } catch (err) {
+        console.warn("[Auth] Profile preload failed", err);
       }
     }
 
@@ -231,6 +298,7 @@ import { ApiClient } from "./app/services/api.js";
       const logoutBtn = document.getElementById("logout-btn");
       const chip = document.getElementById("user-chip");
       const profileClose = document.getElementById("profile-close");
+      const profileRetry = document.getElementById("profile-retry");
 
       loginBtn?.addEventListener("click", (e) => {
         e.preventDefault();
@@ -247,11 +315,25 @@ import { ApiClient } from "./app/services/api.js";
           console.error(err);
         }
       });
+      profileRetry?.addEventListener("click", () => this.showProfile(true));
       profileClose?.addEventListener("click", () => this.hideProfile());
       const overlay = document.getElementById("profile-panel");
       overlay?.addEventListener("click", (evt) => {
         if (evt.target === overlay) this.hideProfile();
       });
+    }
+
+    applyProfileData(profile) {
+      if (!profile?.user) return;
+      this.user = { ...(this.user || {}), ...profile.user };
+      sessionStorage.setItem(USER_KEY, JSON.stringify(this.user));
+      this.updateUI();
+    }
+
+    getAvatarUrl(user, size = 96) {
+      if (user?.picture) return user.picture;
+      const name = user?.name || user?.email || user?.sub || "";
+      return generateInitialsAvatar(name, size);
     }
 
     updateUI() {
@@ -266,15 +348,44 @@ import { ApiClient } from "./app/services/api.js";
       if (authed && this.user) {
         nameEl && (nameEl.textContent = this.user.name || this.user.email || this.user.sub);
         if (avatarEl) {
-          avatarEl.src = this.user.picture || DEFAULT_AVATAR;
+          avatarEl.src = this.getAvatarUrl(this.user, 64);
         }
       } else if (avatarEl) {
         avatarEl.src = DEFAULT_AVATAR;
       }
     }
 
-    async showProfile() {
-      if (this.requireAuth) this.ensureAuthenticated();
+    toggleProfileView({ loading = false, error = false } = {}) {
+      const loadingEl = document.getElementById("profile-loading");
+      const errorEl = document.getElementById("profile-error");
+      const contentEl = document.getElementById("profile-content");
+      if (loadingEl) loadingEl.hidden = !loading;
+      if (errorEl) errorEl.hidden = !error;
+      if (contentEl) contentEl.hidden = loading || error;
+    }
+
+    showProfileContent() {
+      this.toggleProfileView({ loading: false, error: false });
+    }
+
+    showProfileLoading() {
+      this.toggleProfileView({ loading: true, error: false });
+    }
+
+    setProfileErrorMessage(err) {
+      const errorEl = document.getElementById("profile-error-message");
+      const fallback = "We couldn't load your profile. Please try again.";
+      if (!errorEl) return;
+      const text = err?.message || err?.statusText || fallback;
+      errorEl.textContent = text;
+    }
+
+    showProfileError(err) {
+      this.setProfileErrorMessage(err);
+      this.toggleProfileView({ loading: false, error: true });
+    }
+
+    renderProfile(profile) {
       const panel = document.getElementById("profile-panel");
       const jobsList = document.getElementById("profile-job-list");
       const jobCount = document.getElementById("profile-job-count");
@@ -282,13 +393,14 @@ import { ApiClient } from "./app/services/api.js";
       const emailEl = document.getElementById("profile-email");
       const photoEl = document.getElementById("profile-photo");
 
-      const profile = await this.fetchProfile();
       if (!profile) return;
       const { user, jobs } = profile;
-      nameEl && (nameEl.textContent = user.name || user.preferred_username || user.email || "Unknown User");
+      nameEl &&
+        (nameEl.textContent =
+          user.name || user.preferred_username || user.email || "Unknown User");
       emailEl && (emailEl.textContent = user.email || "");
       if (photoEl) {
-        photoEl.src = user.picture || DEFAULT_AVATAR;
+        photoEl.src = this.getAvatarUrl(user);
       }
       if (jobCount) jobCount.textContent = `${profile.jobs_count} recent jobs`;
       if (jobsList) {
@@ -307,20 +419,52 @@ import { ApiClient } from "./app/services/api.js";
       if (panel) panel.hidden = false;
     }
 
+    async showProfile(forceRefresh = false) {
+      if (this.requireAuth) this.ensureAuthenticated();
+      const panel = document.getElementById("profile-panel");
+      if (panel) panel.hidden = false;
+      this.showProfileLoading();
+      try {
+        const profile = await this.fetchProfile({ force: forceRefresh });
+        this.renderProfile(profile);
+        this.showProfileContent();
+      } catch (err) {
+        console.error(err);
+        this.showProfileError(err);
+      }
+    }
+
     hideProfile() {
       const panel = document.getElementById("profile-panel");
       if (panel) panel.hidden = true;
+      this.showProfileContent();
     }
 
-    async fetchProfile() {
-      if (this.profileCache && Date.now() - this.profileCache.fetchedAt < 60_000) {
+    async fetchProfile({ force = false, silent = false } = {}) {
+      if (
+        !force &&
+        this.profileCache &&
+        Date.now() - this.profileCache.fetchedAt < 60_000
+      ) {
         return this.profileCache.data;
       }
+      if (this.requireAuth) this.ensureAuthenticated();
       console.debug("[Auth] Fetching profile");
-      const data = await this.apiClient.fetchProfile();
-      console.debug(`[Auth] Profile fetched for ${data?.user?.sub}`);
-      this.profileCache = { data, fetchedAt: Date.now() };
-      return data;
+      try {
+        const data = await this.apiClient.fetchProfile();
+        console.debug(`[Auth] Profile fetched for ${data?.user?.sub}`);
+        this.profileCache = { data, fetchedAt: Date.now() };
+        this.profileError = null;
+        this.applyProfileData(data);
+        return data;
+      } catch (err) {
+        this.profileError = err;
+        if (silent) {
+          console.warn("[Auth] Profile fetch failed", err);
+          return null;
+        }
+        throw err;
+      }
     }
   }
 
