@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     workers: int = 4
 
     # CORS Settings
-    allowed_origins: list[str] = ["http://localhost:8000", "http://localhost:3000"]
+    allowed_origins: list[str] = ["http://localhost:5003", "http://localhost:3000"]
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     cors_allow_headers: list[str] = ["*"]
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     oidc_issuer_url: str = "https://accounts.google.com"
     oidc_client_id: str = ""
     oidc_client_secret: str = ""
-    oidc_redirect_uri: str = "http://localhost:8000"
+    oidc_redirect_uri: str = "http://localhost:5003"
     oidc_audience: str | None = None
     oidc_jwks_cache_seconds: int = 3600
     oidc_scopes: List[str] = ["openid", "email", "profile"]
