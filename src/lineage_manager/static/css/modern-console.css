@@ -970,14 +970,25 @@ body {
 .run-drawer {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(15, 23, 42, 0.4);
     display: flex;
     justify-content: flex-end;
     z-index: 450;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.35s ease, background 0.35s ease, visibility 0.35s ease;
 }
 
 .run-drawer[hidden] {
-    display: none;
+    display: flex;
+}
+
+.run-drawer.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    background: rgba(15, 23, 42, 0.45);
 }
 
 .run-drawer .drawer-content {
@@ -987,8 +998,8 @@ body {
     box-shadow: -12px 0 30px rgba(15, 23, 42, 0.25);
     display: flex;
     flex-direction: column;
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
+    transform: translateX(110%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .run-drawer.open .drawer-content {

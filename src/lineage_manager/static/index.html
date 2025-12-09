@@ -37,7 +37,7 @@
             <button id="login-btn" class="btn-primary">Sign in with Google</button>
             <div id="user-chip" class="user-chip" hidden>
                 <img id="user-avatar" alt="User profile">
-                <span id="user-chip-name"></span>
+
                 <span class="caret">▼</span>
             </div>
         </div>
@@ -231,11 +231,16 @@
                                 <div class="run-history-hint">Recent executions</div>
                             </div>
                             <div id="run-history-summary" class="run-summary" aria-hidden="false">
-                                <div class="summary-item"><span class="summary-label">Running:</span> <span id="sum-running">0</span></div>
-                                <div class="summary-item"><span class="summary-label">Success:</span> <span id="sum-success">0</span></div>
-                                <div class="summary-item"><span class="summary-label">Failed:</span> <span id="sum-failed">0</span></div>
-                                <div class="summary-item"><span class="summary-label">Skipped:</span> <span id="sum-skipped">0</span></div>
-                                <div class="summary-item"><span class="summary-label">Total:</span> <span id="sum-total">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Running:</span> <span
+                                        id="sum-running">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Success:</span> <span
+                                        id="sum-success">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Failed:</span> <span
+                                        id="sum-failed">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Skipped:</span> <span
+                                        id="sum-skipped">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Total:</span> <span
+                                        id="sum-total">0</span></div>
                             </div>
                             <div id="job-run-timeline" class="run-timeline" aria-label="Run history timeline">
                                 <div class="timeline-placeholder">Select "Run history" to load data.</div>
@@ -256,11 +261,13 @@
                                 </tbody>
                             </table>
                             <div id="run-history-pagination" class="run-history-pagination" hidden>
-                                <button id="run-history-prev" type="button" class="pagination-btn" aria-label="Previous page">
+                                <button id="run-history-prev" type="button" class="pagination-btn"
+                                    aria-label="Previous page">
                                     Previous
                                 </button>
                                 <span id="run-history-page-label">Page 1 of 1</span>
-                                <button id="run-history-next" type="button" class="pagination-btn" aria-label="Next page">
+                                <button id="run-history-next" type="button" class="pagination-btn"
+                                    aria-label="Next page">
                                     Next
                                 </button>
                             </div>
@@ -270,11 +277,11 @@
                                 related tables.</div>
                             <div id="job-lineage-content" class="job-lineage" hidden>
                                 <div class="job-io-grid">
-                                <div class="job-io-card">
-                                    <div class="detail-subheading">Input tables</div>
-                                    <ul id="job-lineage-inputs" class="io-list"></ul>
-                                </div>
-                                <div class="job-io-card">
+                                    <div class="job-io-card">
+                                        <div class="detail-subheading">Input tables</div>
+                                        <ul id="job-lineage-inputs" class="io-list"></ul>
+                                    </div>
+                                    <div class="job-io-card">
                                         <div class="detail-subheading">Output tables</div>
                                         <ul id="job-lineage-outputs" class="io-list"></ul>
                                     </div>
@@ -283,19 +290,20 @@
                         </div>
                     </div>
 
-                <!-- Run Detail Drawer -->
-                <div id="run-detail-drawer" class="run-drawer" hidden>
-                    <div class="drawer-content">
-                        <div class="drawer-header">
-                            <div>
-                                <div class="drawer-title">Run details</div>
-                                <div class="drawer-subtitle" id="run-drawer-subtitle"></div>
+                    <!-- Run Detail Drawer -->
+                    <div id="run-detail-drawer" class="run-drawer" hidden>
+                        <div class="drawer-content">
+                            <div class="drawer-header">
+                                <div>
+                                    <div class="drawer-title">Run details</div>
+                                    <div class="drawer-subtitle" id="run-drawer-subtitle"></div>
+                                </div>
+                                <button id="run-drawer-close" class="drawer-close" type="button"
+                                    aria-label="Close">×</button>
                             </div>
-                            <button id="run-drawer-close" class="drawer-close" type="button" aria-label="Close">×</button>
+                            <div class="drawer-body" id="run-drawer-fields"></div>
                         </div>
-                        <div class="drawer-body" id="run-drawer-fields"></div>
                     </div>
-                </div>
                 </div>
 
                 <!-- Table Details -->
@@ -489,8 +497,8 @@
         <div class="profile-card">
             <button id="profile-close" class="profile-close" title="Close">&times;</button>
             <div id="profile-content">
-                    <img id="profile-photo" alt="Profile photo">
-                    <h2 id="profile-name">User</h2>
+                <img id="profile-photo" alt="Profile photo">
+                <h2 id="profile-name">User</h2>
                 <div id="profile-attribute-box" class="profile-attribute-box" aria-label="Profile attributes" hidden>
                     <ul id="profile-attribute-list" class="profile-attribute-list"></ul>
                 </div>
