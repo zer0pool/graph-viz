@@ -9,6 +9,11 @@ export class JobDetailView {
         tabs,
         panels,
         runsBody,
+        runsTimeline,
+        runDrawer,
+        runDrawerFields,
+        runDrawerSubtitle,
+        runDrawerClose,
         overviewPlaceholder,
         overviewContent,
         overviewFields = {},
@@ -24,6 +29,26 @@ export class JobDetailView {
         this.tabs = tabs;
         this.panels = panels;
         this.runsBody = runsBody;
+        this.runsTimeline = runsTimeline;
+        this.runDrawer = runDrawer;
+        this.runDrawerFields = runDrawerFields;
+        this.runDrawerSubtitle = runDrawerSubtitle;
+        this.runDrawerClose = runDrawerClose;
+        this.sumRunning = null;
+        this.sumSuccess = null;
+        this.sumFailed = null;
+        this.sumSkipped = null;
+        this.sumTotal = null;
+
+        // accept optional summary elements from constructor args
+        if (arguments[0]) {
+            this.sumRunning = arguments[0].sumRunning || null;
+            this.sumSuccess = arguments[0].sumSuccess || null;
+            this.sumFailed = arguments[0].sumFailed || null;
+            this.sumSkipped = arguments[0].sumSkipped || null;
+            this.sumTotal = arguments[0].sumTotal || null;
+        }
+        this.latestRuns = [];
 
         this.overviewPlaceholder = overviewPlaceholder;
         this.overviewContent = overviewContent;
@@ -37,6 +62,8 @@ export class JobDetailView {
         this.lineageOutputs = lineageOutputs;
 
         this.collapseState = {};
+
+        this.bindRunDrawer();
     }
 
     show() {
@@ -62,6 +89,7 @@ export class JobDetailView {
         this.renderIOLinks([], []);
         this.setLineagePlaceholder('Select "Lineage" to view related tables.');
         this.setRunsPlaceholder('Select "Run history" to load data.');
+        this.setTimelinePlaceholder('Select "Run history" to load data.');
     }
 
     setLabel(text, visible = true) {
@@ -190,38 +218,167 @@ export class JobDetailView {
     setRunsPlaceholder(message, loading = false) {
         if (!this.runsBody) return;
         const spinner = loading ? '<span class="spinner"></span>' : "";
-        this.runsBody.innerHTML = `<tr><td class="loading-cell" colspan="6">${spinner}${message}</td></tr>`;
+        this.runsBody.innerHTML = `<tr><td class="loading-cell" colspan="4">${spinner}${message}</td></tr>`;
+        this.setTimelinePlaceholder(message);
     }
 
-    renderRuns(rows) {
+    setTimelinePlaceholder(message) {
+        if (!this.runsTimeline) return;
+        this.runsTimeline.innerHTML = `<div class="timeline-placeholder">${message}</div>`;
+    }
+
+    formatDuration(sec) {
+        if (sec === null || sec === undefined) return "-";
+        const s = Number(sec);
+        if (Number.isNaN(s) || s < 0) return "-";
+
+        const d = Math.floor(s / 86400);
+        let rem = s % 86400;
+        const h = Math.floor(rem / 3600);
+        rem = rem % 3600;
+        const m = Math.floor(rem / 60);
+        const secLeft = rem % 60;
+
+        const parts = [];
+        if (d > 0) parts.push(`${d}d`);
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}m`);
+        if (parts.length === 0 && secLeft > 0) parts.push(`${secLeft}s`);
+        return parts.join(" ");
+    }
+
+    renderSummary(runs = []) {
+        if (!Array.isArray(runs)) return;
+        const sum = {
+            running: runs.filter((r) => (r.status || "").toLowerCase() === "running").length,
+            success: runs.filter((r) => (r.status || "").toLowerCase() === "success").length,
+            failed: runs.filter((r) => (r.status || "").toLowerCase() === "failed").length,
+            skipped: runs.filter((r) => (r.status || "").toLowerCase() === "skipped").length,
+            total: runs.length,
+        };
+        if (this.sumRunning) this.sumRunning.textContent = sum.running;
+        if (this.sumSuccess) this.sumSuccess.textContent = sum.success;
+        if (this.sumFailed) this.sumFailed.textContent = sum.failed;
+        if (this.sumSkipped) this.sumSkipped.textContent = sum.skipped;
+        if (this.sumTotal) this.sumTotal.textContent = sum.total;
+    }
+
+    renderRuns(rows = []) {
         if (!this.runsBody) return;
-        if (!rows.length) {
+
+        this.latestRuns = Array.isArray(rows) ? rows : [];
+        this.renderTimeline(this.latestRuns);
+
+        if (!this.latestRuns.length) {
             this.setRunsPlaceholder("No run history available.");
             return;
         }
 
-        this.runsBody.innerHTML = rows
+        this.runsBody.innerHTML = this.latestRuns
             .map((entry, index) => {
-                const run = entry.run_id || entry.run || `#${index + 1}`;
-                const status = entry.status || "-";
+                const status = (entry.status || "unknown").toLowerCase();
                 const start = entry.start_time || "-";
-                const end = entry.end_time || "-";
-                const duration =
-                    entry.duration_sec != null
-                        ? `${entry.duration_sec}s`
-                        : entry.duration || entry.elapsed || "-";
-                const triggeredBy = entry.triggered_by || entry.source_job || "-";
-
-                return `<tr>
-          <td>${run}</td>
-          <td>${status}</td>
-          <td>${start}</td>
-          <td>${end}</td>
-          <td>${duration}</td>
-          <td>${triggeredBy}</td>
-        </tr>`;
+                const durationRaw = entry.duration_sec != null ? entry.duration_sec : (entry.duration || entry.elapsed || null);
+                const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
+                return `<tr data-run-idx="${index}">
+                    <td><span class="status-pill status-${status}">${status}</span></td>
+                    <td>${start}</td>
+                    <td title="${durationRaw != null ? durationRaw + ' seconds' : ''}">${duration}</td>
+                    <td><button type="button" class="link-btn view-run" data-run-idx="${index}">Details</button></td>
+                </tr>`;
             })
             .join("");
+
+        this.runsBody.querySelectorAll(".view-run").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const idx = Number(e.currentTarget.dataset.runIdx);
+                const run = this.latestRuns[idx];
+                if (run) this.openRunDrawer(run);
+            });
+        });
+    }
+
+    renderTimeline(runs = []) {
+        if (!this.runsTimeline) return;
+        if (!runs.length) {
+            this.setTimelinePlaceholder("No run history available.");
+            return;
+        }
+
+        const dots = runs
+            .map((run, idx) => {
+                const status = (run.status || "unknown").toLowerCase();
+                const start = run.start_time || "-";
+                const durationRaw = run.duration_sec != null ? run.duration_sec : (run.duration || run.elapsed || null);
+                const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
+                const tooltip = `${start} • ${status}${duration ? ` • ${duration}` : ""}`;
+                return `<button type="button" class="timeline-dot status-${status}" data-run-idx="${idx}" title="${tooltip}"></button>`;
+            })
+            .join("");
+
+        this.runsTimeline.innerHTML = `<div class="timeline-track">${dots}</div>`;
+
+        this.runsTimeline.querySelectorAll(".timeline-dot").forEach((dot) => {
+            dot.addEventListener("click", (e) => {
+                const idx = Number(e.currentTarget.dataset.runIdx);
+                const run = this.latestRuns[idx];
+                if (run) this.openRunDrawer(run);
+            });
+        });
+    }
+
+    bindRunDrawer() {
+        if (this.runDrawerClose) {
+            this.runDrawerClose.addEventListener("click", () => this.closeRunDrawer());
+        }
+        if (this.runDrawer) {
+            this.runDrawer.addEventListener("click", (e) => {
+                if (e.target === this.runDrawer) this.closeRunDrawer();
+            });
+        }
+    }
+
+    openRunDrawer(run = {}) {
+        if (!this.runDrawer || !this.runDrawerFields) return;
+
+        const safe = (v, fallback = "-") => (v === undefined || v === null || v === "" ? fallback : v);
+        const status = (run.status || "unknown").toLowerCase();
+        const fields = [
+            { label: "Run ID", value: safe(run.run_id || run.run) },
+            { label: "Status", value: status },
+            { label: "Triggered by", value: safe(run.triggered_by || run.trigger || run.source_job) },
+            { label: "Start", value: safe(run.start_time) },
+            { label: "End", value: safe(run.end_time) },
+            {
+                label: "Duration",
+                value: durationRaw != null ? this.formatDuration(durationRaw) : safe(run.duration || run.elapsed || "-", "-"),
+            },
+            { label: "Data interval end", value: safe(run.data_interval_end) },
+        ];
+
+        this.runDrawerFields.innerHTML = `<div class="run-detail-grid">
+            ${fields
+                .map(
+                    (f) => `<div class="field">
+                        <div class="label">${f.label}</div>
+                        <div class="value">${f.value}</div>
+                    </div>`
+                )
+                .join("")}
+        </div>`;
+
+        if (this.runDrawerSubtitle) {
+            this.runDrawerSubtitle.textContent = safe(run.run_id || run.run || "");
+        }
+
+        this.runDrawer.hidden = false;
+        this.runDrawer.classList.add("open");
+    }
+
+    closeRunDrawer() {
+        if (!this.runDrawer) return;
+        this.runDrawer.classList.remove("open");
+        this.runDrawer.hidden = true;
     }
 }
 

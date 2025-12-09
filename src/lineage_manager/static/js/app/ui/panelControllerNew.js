@@ -31,6 +31,17 @@ export class PanelController {
             tabs: document.getElementById("job_tabs"),
             panels: document.querySelector('.detail-tab-panels[data-tab-group="job"]'),
             runsBody: document.getElementById("job-runs-body"),
+            runsTimeline: document.getElementById("job-run-timeline"),
+            runDrawer: document.getElementById("run-detail-drawer"),
+            runDrawerFields: document.getElementById("run-drawer-fields"),
+            runDrawerSubtitle: document.getElementById("run-drawer-subtitle"),
+            runDrawerClose: document.getElementById("run-drawer-close"),
+            // Summary elements
+            sumRunning: document.getElementById("sum-running"),
+            sumSuccess: document.getElementById("sum-success"),
+            sumFailed: document.getElementById("sum-failed"),
+            sumSkipped: document.getElementById("sum-skipped"),
+            sumTotal: document.getElementById("sum-total"),
             overviewPlaceholder: document.getElementById("job-overview-placeholder"),
             overviewContent: document.getElementById("job-overview-content"),
             overviewFields: {

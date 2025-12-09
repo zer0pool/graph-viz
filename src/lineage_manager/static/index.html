@@ -226,20 +226,32 @@
                             </div>
                         </div>
                         <div id="job-run-pane" class="detail-pane" data-tab-panel="runs">
-                            <table id="job-runs" class="detail-table">
+                            <div class="run-history-header">
+                                <div class="detail-subheading">Run history</div>
+                                <div class="run-history-hint">Recent executions</div>
+                            </div>
+                            <div id="run-history-summary" class="run-summary" aria-hidden="false">
+                                <div class="summary-item"><span class="summary-label">Running:</span> <span id="sum-running">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Success:</span> <span id="sum-success">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Failed:</span> <span id="sum-failed">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Skipped:</span> <span id="sum-skipped">0</span></div>
+                                <div class="summary-item"><span class="summary-label">Total:</span> <span id="sum-total">0</span></div>
+                            </div>
+                            <div id="job-run-timeline" class="run-timeline" aria-label="Run history timeline">
+                                <div class="timeline-placeholder">Select "Run history" to load data.</div>
+                            </div>
+                            <table id="job-runs" class="detail-table run-table">
                                 <thead>
                                     <tr>
-                                        <th>Run ID</th>
                                         <th>Status</th>
                                         <th>Start</th>
-                                        <th>End</th>
                                         <th>Duration</th>
-                                        <th>Triggered by</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="job-runs-body">
                                     <tr>
-                                        <td colspan="6">Select "Run history" to load data.</td>
+                                        <td colspan="4">Select "Run history" to load data.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -261,6 +273,20 @@
                             </div>
                         </div>
                     </div>
+
+                <!-- Run Detail Drawer -->
+                <div id="run-detail-drawer" class="run-drawer" hidden>
+                    <div class="drawer-content">
+                        <div class="drawer-header">
+                            <div>
+                                <div class="drawer-title">Run details</div>
+                                <div class="drawer-subtitle" id="run-drawer-subtitle"></div>
+                            </div>
+                            <button id="run-drawer-close" class="drawer-close" type="button" aria-label="Close">×</button>
+                        </div>
+                        <div class="drawer-body" id="run-drawer-fields"></div>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Table Details -->
