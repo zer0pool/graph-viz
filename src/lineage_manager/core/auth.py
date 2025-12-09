@@ -177,6 +177,7 @@ def serialize_user(claims: Dict[str, Any], db_user) -> Dict[str, Any]:
         "roles": claims.get("roles") or getattr(db_user, "roles", []) or [],
         "dept": claims.get("dept") or getattr(db_user, "dept", None),
         "locale": claims.get("locale") or getattr(db_user, "locale", None),
+        "organization": claims.get("organization"),
     }
     return merged
 

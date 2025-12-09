@@ -18,6 +18,7 @@ import { ApiClient } from "./app/services/api.js";
   const USER_KEY = "lm.user";
   const VERIFIER_KEY = "lm.pkce_verifier";
   const STATE_KEY = "lm.pkce_state";
+  const DEFAULT_ORGANIZATION = "Lineage Manager";
 
   function base64Url(buffer) {
     return btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -45,15 +46,24 @@ import { ApiClient } from "./app/services/api.js";
 
   function getInitials(name) {
     if (!name || typeof name !== "string") return "?";
-    const cleaned = name.replace(/[\s_-]+/g, " ").trim();
+    const cleaned = name
+      .replace(/[^A-Za-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!cleaned) return "?";
     const parts = cleaned.split(" ").filter(Boolean);
-    const first = parts[0] || "";
-    const second = parts[1] || "";
-    const initials =
-      (first[0] || "").toUpperCase() +
-      ((second[0] || first[1] || "").toUpperCase());
-    return initials || "?";
+    if (parts.length >= 2) {
+      return (
+        (parts[0][0] || "").toUpperCase() +
+        (parts[parts.length - 1][0] || "").toUpperCase()
+      );
+    }
+    const single = parts[0] || "";
+    const letters = single.replace(/[^A-Za-z0-9]/g, "");
+    if (letters.length >= 2) {
+      return (letters[0] + letters[1]).toUpperCase();
+    }
+    return (letters[0] || "?").toUpperCase();
   }
 
   function pickColor(seed) {
@@ -331,7 +341,6 @@ import { ApiClient } from "./app/services/api.js";
     }
 
     getAvatarUrl(user, size = 96) {
-      if (user?.picture) return user.picture;
       const name = user?.name || user?.email || user?.sub || "";
       return generateInitialsAvatar(name, size);
     }
@@ -355,74 +364,88 @@ import { ApiClient } from "./app/services/api.js";
       }
     }
 
-    toggleProfileView({ loading = false, error = false } = {}) {
+    toggleProfileView({ loading = false } = {}) {
       const loadingEl = document.getElementById("profile-loading");
-      const errorEl = document.getElementById("profile-error");
       const contentEl = document.getElementById("profile-content");
       if (loadingEl) loadingEl.hidden = !loading;
-      if (errorEl) errorEl.hidden = !error;
-      if (contentEl) contentEl.hidden = loading || error;
+      if (contentEl) contentEl.hidden = loading;
     }
 
     showProfileContent() {
-      this.toggleProfileView({ loading: false, error: false });
+      this.toggleProfileView({ loading: false });
     }
 
     showProfileLoading() {
-      this.toggleProfileView({ loading: true, error: false });
-    }
-
-    setProfileErrorMessage(err) {
-      const errorEl = document.getElementById("profile-error-message");
-      const fallback = "We couldn't load your profile. Please try again.";
-      if (!errorEl) return;
-      const text = err?.message || err?.statusText || fallback;
-      errorEl.textContent = text;
-    }
-
-    showProfileError(err) {
-      this.setProfileErrorMessage(err);
-      this.toggleProfileView({ loading: false, error: true });
+      this.toggleProfileView({ loading: true });
     }
 
     renderProfile(profile) {
+      console.info("[Auth] Profile payload:", profile);
       const panel = document.getElementById("profile-panel");
-      const jobsList = document.getElementById("profile-job-list");
-      const jobCount = document.getElementById("profile-job-count");
       const nameEl = document.getElementById("profile-name");
       const emailEl = document.getElementById("profile-email");
       const photoEl = document.getElementById("profile-photo");
+      const orgEl = document.getElementById("profile-organization");
+      const subEl = document.getElementById("profile-sub");
 
       if (!profile) return;
       const { user, jobs } = profile;
       nameEl &&
         (nameEl.textContent =
-          user.name || user.preferred_username || user.email || "Unknown User");
+          user.name || user.preferred_username || user.email || "User");
       emailEl && (emailEl.textContent = user.email || "");
+      const organizationValue = user.organization || DEFAULT_ORGANIZATION;
+      orgEl && (orgEl.textContent = `Organization: ${organizationValue}`);
+      subEl && (subEl.textContent = user.sub ? `Identifier: ${user.sub}` : "");
       if (photoEl) {
         photoEl.src = this.getAvatarUrl(user);
       }
-      if (jobCount) jobCount.textContent = `${profile.jobs_count} recent jobs`;
-      if (jobsList) {
-        jobsList.innerHTML = "";
-        if (jobs.length === 0) {
-          jobsList.innerHTML = '<li class="empty">No jobs registered yet.</li>';
-        } else {
-          jobs.forEach((job) => {
-            const li = document.createElement("li");
-            li.innerHTML = `<div class="job-title">${job.name || job.job_id}</div>
-              <div class="job-meta">${job.job_id}${job.updated_at ? ` • ${new Date(job.updated_at).toLocaleString()}` : ""}</div>`;
-            jobsList.appendChild(li);
-          });
-        }
-      }
       if (panel) panel.hidden = false;
+      this.populateProfileAttributes(user);
+    }
+
+    populateProfileAttributes(user = {}) {
+      const box = document.getElementById("profile-attribute-box");
+      const list = document.getElementById("profile-attribute-list");
+      if (!box || !list) return;
+      const entries = [
+        ["Username", user.preferred_username],
+        ["Organization", user.organization || DEFAULT_ORGANIZATION],
+        ["Department", user.dept],
+        [
+          "Roles",
+          Array.isArray(user.roles) && user.roles.length
+            ? user.roles.join(", ")
+            : user.roles || null,
+        ],
+        ["Locale", user.locale],
+        [
+          "Last login",
+          user.last_login_at ? new Date(user.last_login_at).toLocaleString() : null,
+        ],
+      ]
+        .filter(([_, value]) => value !== null && value !== undefined && value !== "")
+        .map(([label, value]) => ({ label, value }));
+
+      list.innerHTML = entries
+        .map(
+          (entry) => `
+            <li class="profile-attribute-item">
+              <strong>${entry.label}</strong>
+              <span>${entry.value}</span>
+            </li>`
+        )
+        .join("");
+      box.hidden = entries.length === 0;
     }
 
     async showProfile(forceRefresh = false) {
       if (this.requireAuth) this.ensureAuthenticated();
       const panel = document.getElementById("profile-panel");
-      if (panel) panel.hidden = false;
+      if (panel) {
+        panel.hidden = false;
+        requestAnimationFrame(() => panel.classList.add("is-visible"));
+      }
       this.showProfileLoading();
       try {
         const profile = await this.fetchProfile({ force: forceRefresh });
@@ -430,13 +453,16 @@ import { ApiClient } from "./app/services/api.js";
         this.showProfileContent();
       } catch (err) {
         console.error(err);
-        this.showProfileError(err);
+        this.hideProfile();
       }
     }
 
     hideProfile() {
       const panel = document.getElementById("profile-panel");
-      if (panel) panel.hidden = true;
+      if (panel) {
+        panel.classList.remove("is-visible");
+        panel.hidden = true;
+      }
       this.showProfileContent();
     }
 
