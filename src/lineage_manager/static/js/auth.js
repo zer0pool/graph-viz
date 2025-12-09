@@ -87,16 +87,27 @@ import { ApiClient } from "./app/services/api.js";
       const params = new URLSearchParams(window.location.search);
       if (!params.has("code")) return;
       console.info("[Auth] Handling OIDC redirect callback");
+
       const code = params.get("code");
       const returnedState = params.get("state");
       const storedState = sessionStorage.getItem(STATE_KEY);
+
       if (storedState && returnedState && storedState !== returnedState) {
         throw new Error("Invalid OIDC state");
       }
+
       const verifier = sessionStorage.getItem(VERIFIER_KEY);
+
+      if (!verifier) {
+        console.error("PKCE verifier missing – cannot exchange token");
+        return;
+      }
+
       await this.exchangeAuthorizationCode(code, verifier);
+
       sessionStorage.removeItem(VERIFIER_KEY);
       sessionStorage.removeItem(STATE_KEY);
+
       params.delete("code");
       params.delete("state");
       const newQuery = params.toString();

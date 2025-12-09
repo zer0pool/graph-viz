@@ -73,7 +73,7 @@ docker-build:
 	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f deploy/docker/Dockerfile .
 
 docker-run:
-	docker run -d --name $(DOCKER_IMAGE) -p $(PORT):8000 $(DOCKER_IMAGE):$(DOCKER_TAG)
+	docker run -d --name $(DOCKER_IMAGE) -p $(PORT):5003 $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 docker-stop:
 	docker stop $(DOCKER_IMAGE) || true
