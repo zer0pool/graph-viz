@@ -16,7 +16,7 @@ AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
 router = APIRouter(
     prefix="/api/v1/graph",
     tags=["graph"],
-    dependencies=AUTH_DEPS,
+    # dependencies=AUTH_DEPS,  # Disabled for embedded mode POC
 )
 
 

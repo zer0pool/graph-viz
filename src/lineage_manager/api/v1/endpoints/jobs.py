@@ -16,7 +16,7 @@ AUTH_DEPS = [Depends(require_authenticated_user)] if 1==0 else []
 router = APIRouter(
     prefix="/api/v1/jobs",
     tags=["Jobs"],
-    dependencies=AUTH_DEPS,
+    # dependencies=AUTH_DEPS,
 )
 
 

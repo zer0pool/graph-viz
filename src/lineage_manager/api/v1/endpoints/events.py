@@ -20,7 +20,7 @@ AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
 router = APIRouter(
     prefix="/api/v1/events",
     tags=["events"],
-    dependencies=AUTH_DEPS,
+    # dependencies=AUTH_DEPS,  # Disabled for embedded mode POC
 )
 
 def _sanitize_stats_for_hash(stats: dict) -> dict:
