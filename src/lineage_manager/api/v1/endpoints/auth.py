@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from lineage_manager.core.auth import (
     AuthenticationError,
     OIDCProviderClient,
-    serialize_user,
+    AuthenticationError,
+    OIDCProviderClient,
 )
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.container import GraphContainer
@@ -77,8 +78,7 @@ def exchange_authorization_code(
                 status_code=400, detail=f"Failed to verify ID token: {exc}"
             )
 
-        db_user = user_service.record_login(claims)
-        user_payload = serialize_user(claims, db_user)
+        user_payload = user_service.record_login(claims)
 
         logger.info(
             "User '%s' authenticated successfully with ID token",
@@ -116,8 +116,7 @@ def exchange_authorization_code(
         logger.warning("ID token verification failed: %s", exc)
         raise HTTPException(status_code=400, detail=f"Failed to verify ID token: {exc}")
 
-    db_user = user_service.record_login(claims)
-    user_payload = serialize_user(claims, db_user)
+    user_payload = user_service.record_login(claims)
 
     logger.info(
         "User '%s' exchanged authorization code successfully", user_payload.get("sub")

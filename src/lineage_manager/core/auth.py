@@ -204,8 +204,7 @@ async def require_authenticated_user(
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
     user_service = container.user_service()
-    db_user = user_service.record_login(claims)
-    user_payload = serialize_user(claims, db_user)
+    user_payload = user_service.record_login(claims)
     request.state.user = user_payload
     return user_payload
 

@@ -119,6 +119,16 @@ import { ApiClient } from "./app/services/api.js";
         this.bindUI();
         if (this.isAuthenticated()) {
           await this.preloadProfile();
+        } else if (this.requireAuth) {
+          const params = new URLSearchParams(window.location.search);
+          const hasCode =
+            params.has("code") || (window.formData && window.formData.has("code"));
+
+          if (!hasCode) {
+            console.info("[Auth] Not authenticated, redirecting to login...");
+            this.startLogin();
+            return;
+          }
         }
       } catch (err) {
         console.error("Auth init failed", err);
@@ -162,11 +172,18 @@ import { ApiClient } from "./app/services/api.js";
 
     async handleRedirect() {
       const params = new URLSearchParams(window.location.search);
-      if (!params.has("code")) return;
+      let code = params.get("code");
+      let returnedState = params.get("state");
+
+      // Check for POST form data if URL params are missing
+      if (!code && window.formData && window.formData.has("code")) {
+        code = window.formData.get("code");
+        returnedState = window.formData.get("state");
+      }
+
+      if (!code) return;
       console.info("[Auth] Handling OIDC redirect callback");
 
-      const code = params.get("code");
-      const returnedState = params.get("state");
       const storedState = sessionStorage.getItem(STATE_KEY);
 
       if (storedState && returnedState && storedState !== returnedState) {
@@ -185,11 +202,13 @@ import { ApiClient } from "./app/services/api.js";
       sessionStorage.removeItem(VERIFIER_KEY);
       sessionStorage.removeItem(STATE_KEY);
 
-      params.delete("code");
-      params.delete("state");
-      const newQuery = params.toString();
-      const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ""}`;
-      window.history.replaceState({}, document.title, newUrl);
+      if (params.has("code")) {
+        params.delete("code");
+        params.delete("state");
+        const newQuery = params.toString();
+        const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ""}`;
+        window.history.replaceState({}, document.title, newUrl);
+      }
     }
 
     async exchangeAuthorizationCode(code, verifier) {
