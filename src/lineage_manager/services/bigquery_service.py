@@ -1,5 +1,8 @@
 import os
+import logging
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 try:
     from google.cloud import bigquery
@@ -82,18 +85,49 @@ class BigQueryService:
             raise RuntimeError("google-cloud-bigquery is not installed")
         client = self._ensure_client()
 
+        # Parse standard BigQuery id: project.dataset.table
+        parts = table_name.split(".")
+        if len(parts) == 3:
+            project_id, dataset_id, table_id = parts
+        else:
+            project_id, dataset_id, table_id = ("unknown", "unknown", table_name)
+            if len(parts) == 2:
+                project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
+
+        # --- DEBUG: FORCE DUMMY DATA ---
+        # Randomly choose between DAILY and HOURLY dummy tables for demonstration
+        # This block simulates real data by redirecting all queries to our test tables.
+        # To disable, simply remove or comment out this block.
+        import random
+        is_hourly_demo = True # random.choice([True, False])
+        if is_hourly_demo:
+             # Hourly dummy table
+             project_id, dataset_id, table_id = ("demo", "analytics", "hourly_stats")
+        else:
+             # Daily dummy table
+             project_id, dataset_id, table_id = ("demo", "analytics", "daily_report")
+        
+        logger.info(f"[DEBUG] Redirecting timeline query to dummy table: {project_id}.{dataset_id}.{table_id} (Input was: {table_name})")
+        # -------------------------------
+
+        logger.info(f"Fetching timelines for {project_id}.{dataset_id}.{table_id} (days={days})")
+
         query = (
-            "SELECT table_name, data_interval_start, data_interval_end, schedule, "
-            "EXTRACT(DATE FROM data_interval_start) AS date, EXTRACT(HOUR FROM data_interval_start) AS hour "
+            "SELECT project_name, dataset_name, table_name, period, cron_schedule, "
+            "date, hour, start_time "
             "FROM `gizmopool.test_data.table_load_history` "
-            "WHERE table_name = @table_name "
-            "AND data_interval_start >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL @days DAY) "
-            "ORDER BY data_interval_start"
+            "WHERE project_name = @project_id "
+            "AND dataset_name = @dataset_id "
+            "AND table_name = @table_id "
+            "AND start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL @days DAY) "
+            "ORDER BY start_time"
         )
 
         job_config = bigquery.QueryJobConfig(
             query_parameters=[
-                bigquery.ScalarQueryParameter("table_name", "STRING", table_name),
+                bigquery.ScalarQueryParameter("project_id", "STRING", project_id),
+                bigquery.ScalarQueryParameter("dataset_id", "STRING", dataset_id),
+                bigquery.ScalarQueryParameter("table_id", "STRING", table_id),
                 bigquery.ScalarQueryParameter("days", "INT64", int(days)),
             ]
         )
@@ -104,45 +138,55 @@ class BigQueryService:
         from collections import defaultdict
         date_hours = defaultdict(set)
         date_rows = defaultdict(list)
-        schedules = []
+        periods = set()
 
         for r in rows:
-            d = r.get("date")
+            d = r.get("date")  # Should be date object or string 'YYYY-MM-DD'
+            # format date if needed
+            if hasattr(d, "isoformat"):
+                d_str = d.isoformat()
+            else:
+                d_str = str(d)
+                
             hour = int(r.get("hour") or 0)
-            date_hours[str(d)].add(hour)
-            date_rows[str(d)].append(r)
-            if r.get("schedule") is not None:
-                try:
-                    schedules.append(int(r.get("schedule")))
-                except Exception:
-                    pass
+            date_hours[d_str].add(hour)
+            date_rows[d_str].append(r)
+            
+            p = r.get("period")
+            if p:
+                periods.add(str(p).upper())
 
-        schedule_val = 24 if 24 in schedules else (schedules[0] if schedules else None)
-        is_hourly = schedule_val == 24
+        # Heuristic for hourly vs daily based on 'period' column
+        # If 'HOURLY' is in period, treat as hourly.
+        # Fallback: check if we see many hours per day?
+        is_hourly = "HOURLY" in periods
 
         from datetime import date, timedelta
         today = date.today()
-        dates = [(today - timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)]
+        dates_range = [(today - timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)]
 
         daily_summary = []
         hourly_detail = {}
 
-        for d in dates:
+        for d in dates_range:
             hours = date_hours.get(d, set())
             if is_hourly:
                 expected = 24
                 success = len(hours)
             else:
                 expected = 1
-                success = len(date_rows.get(d, []))
+                # If we have any row for the day, success=1, else 0
+                success = 1 if date_rows.get(d) else 0
 
             fail = max(0, expected - success)
             rate = round(success / expected, 3) if expected else 0
+            # Simple traffic light logic
             status = "good" if rate >= 0.99 else ("warning" if rate >= 0.5 else "bad")
 
             daily_summary.append(
                 {
                     "date": d,
+                    "period": "HOURLY" if is_hourly else "DAILY",
                     "success_count": success,
                     "fail_count": fail,
                     "status": status,
@@ -154,12 +198,82 @@ class BigQueryService:
                 rows_for_date = []
                 for hour in range(24):
                     state = "loaded" if hour in hours else "missing"
+                    # Construct rough timestamp for visualization
                     interval_start = f"{d}T{hour:02d}:00:00Z"
                     interval_end = f"{d}T{hour:02d}:59:59Z"
-                    rows_for_date.append({"hour": f"{hour:02d}", "state": state, "interval_start": interval_start, "interval_end": interval_end})
+                    rows_for_date.append({
+                        "hour": f"{hour:02d}", 
+                        "state": state, 
+                        "interval_start": interval_start, 
+                        "interval_end": interval_end
+                    })
                 hourly_detail[d] = rows_for_date
 
-        return {"daily_summary": daily_summary, "hourly_detail": hourly_detail}
+        return {
+            "daily_summary": daily_summary, 
+            "hourly_detail": hourly_detail,
+            "time_range": {
+                "start": dates_range[0],  # Oldest
+                "end": dates_range[-1],   # Newest (Today)
+            }
+        }
+
+    def get_table_load_history(self, table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
+        client = self._ensure_client()
+        
+        # Parse standard BigQuery id: project.dataset.table
+        parts = table_name.split(".")
+        if len(parts) == 3:
+            project_id, dataset_id, table_id = parts
+        else:
+            # Fallback or error handling; usually assume last part is table, previous is dataset
+            # But query requires all 3. If invalid format, return empty or try partial match.
+            # Here we assume valid input or handle strictly.
+            project_id, dataset_id, table_id = ("unknown", "unknown", table_name)
+            if len(parts) == 2:
+                project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
+
+        logger.info(f"Fetching load history for {project_id}.{dataset_id}.{table_id} (limit={limit})")
+
+        query = (
+            "SELECT * "
+            "FROM `gizmopool.test_data.table_load_history` "
+            "WHERE project_name = @project_id "
+            "AND dataset_name = @dataset_id "
+            "AND table_name = @table_id "
+            "ORDER BY start_time DESC "
+            "LIMIT @limit"
+        )
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("project_id", "STRING", project_id),
+                bigquery.ScalarQueryParameter("dataset_id", "STRING", dataset_id),
+                bigquery.ScalarQueryParameter("table_id", "STRING", table_id),
+                bigquery.ScalarQueryParameter("limit", "INT64", limit),
+            ]
+        )
+        
+        logger.debug(f"Executing BQ query with params: project={project_id}, dataset={dataset_id}, table={table_id}")
+        query_job = client.query(query, job_config=job_config)
+        
+        results = []
+        for row in query_job.result():
+            # Convert Row to dict
+            item = dict(row)
+            # Ensure serialization of datetime objects
+            for k, v in item.items():
+                if hasattr(v, 'isoformat'):
+                    item[k] = v.isoformat()
+            
+            # Map run_id if not present (UI key)
+            if "run_id" not in item:
+                # Use data_interval_start or start_time Aas run_id fallback
+                item["run_id"] = item.get("data_interval_start") or item.get("start_time")
+                
+            results.append(item)
+            
+        logger.info(f"Retrieved {len(results)} load history records for {table_name}")
+        return results
 
 
 # Backwards-compatible module-level helper that instantiates a service when called.

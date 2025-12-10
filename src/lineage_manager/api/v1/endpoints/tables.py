@@ -100,6 +100,40 @@ async def set_table_trigger(
     return result
 
 
+@router.get("/{table_name}/details")
+@inject
+def get_table_details(
+    table_name: str,
+    bq_service: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+):
+    """
+    Get detailed metadata for a table (schema, storage, etc).
+    For demo purposes, this always fetches metadata from 'gizmopool.test_data.table_load_history'
+    but allows the frontend to display the requested table_name as the identity.
+    """
+    target_table = "gizmopool.test_data.table_load_history"
+    try:
+        # Fetch real BQ metadata for the test table
+        details = bq_service.get_table_detail(target_table)
+        
+        # Patch the identity to match the requested table
+        details["full_name"] = table_name
+        # Optionally patch description if you want it to look generic or keep the real one
+        
+        return {"status": "success", "result": details}
+    except Exception as e:
+        logger.error(f"Failed to fetch table details for {table_name}: {e}")
+        # Return a graceful error structure or raise 500
+        return {
+            "status": "error", 
+            "message": str(e),
+            "result": {
+                "full_name": table_name,
+                "description": "Could not retrieve remote metadata."
+            }
+        }
+
+
 @router.patch("/{table_name}/triggers")
 @inject
 async def bulk_set_table_trigger(
@@ -130,8 +164,26 @@ async def bulk_set_table_trigger(
 
 
 @router.get("/{table_name}/load-history")
-async def get_table_load_history(table_name: str):
-    """Return dummy load timeline data with a guaranteed 1s response time."""
+@inject
+async def get_table_load_history(
+    table_name: str,
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+):
+    """Return load timeline data. Queries BigQuery if enabled, otherwise returns dummy data."""
+    from lineage_manager.core.config import get_settings
+    settings = get_settings()
+
+    if settings.enable_bigquery:
+        try:
+            timeline = bigquery_svc.get_table_load_history(table_name)
+            return {
+                "status": "success",
+                "input": {"table": table_name},
+                "result": {"timeline": timeline},
+            }
+        except Exception as err:
+            logger.warning(f"BigQuery load history fetch failed: {err}. Falling back to dummy data.")
+
     await asyncio.sleep(1)
     timeline = [
         {
@@ -202,27 +254,39 @@ async def get_table_timeliness(
 
     # Fallback: previous dummy implementation
     await asyncio.sleep(1)
+    from datetime import date, timedelta
+    today = date.today()
+    
     daily_summary = []
-    for idx in range(days):
+    # Generate last N days ending today
+    for i in range(days - 1, -1, -1):
+        d = today - timedelta(days=i)
+        d_str = d.isoformat()
+        
+        # logical index for pattern
+        idx = days - 1 - i
         success = max(0, 24 - idx)
         fail = idx % 3
         status = "good" if fail == 0 else ("warning" if fail == 1 else "bad")
         daily_summary.append(
             {
-                "date": f"2025-04-{idx + 1:02d}",
+                "date": d_str,
+                "period": "HOURLY", 
                 "success_count": success,
                 "fail_count": fail,
                 "status": status,
                 "rate": round(success / 24, 3),
             }
         )
+
+    last_date = daily_summary[-1]["date"]
     hourly_detail = {
-        daily_summary[-1]["date"]: [
+        last_date: [
             {
                 "hour": f"{hour:02d}",
                 "state": "loaded" if hour % 3 else "missing",
-                "interval_start": f"2025-04-{days:02d}T{hour:02d}:00:00Z",
-                "interval_end": f"2025-04-{days:02d}T{hour:02d}:59:59Z",
+                "interval_start": f"{last_date}T{hour:02d}:00:00Z",
+                "interval_end": f"{last_date}T{hour:02d}:59:59Z",
             }
             for hour in range(24)
         ]
@@ -230,7 +294,20 @@ async def get_table_timeliness(
     return {
         "status": "success",
         "input": {"table": table_name, "days": days},
-        "result": {"daily_summary": daily_summary, "hourly_detail": hourly_detail},
+        "result": {
+            "daily_summary": daily_summary, 
+            "hourly_detail": hourly_detail,
+            "time_range": {
+                "start": daily_summary[-1]["date"] if daily_summary else None, # Oldest in list loop (actually loop is reverse so check order)
+                # Wait, loop was: for i in range(days - 1, -1, -1). 
+                # idx=0 (oldest) -> appended first?
+                # No, loop i=6 (oldest) to 0 (today).
+                # d = today - 6 days.
+                # So daily_summary[0] is Oldest. daily_summary[-1] is Today.
+                "start": daily_summary[0]["date"],
+                "end": daily_summary[-1]["date"],
+            }
+        },
     }
 
 

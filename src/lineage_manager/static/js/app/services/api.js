@@ -80,8 +80,16 @@ export class ApiClient {
   }
 
   async fetchTableDetail(tableName) {
+    // This is the old/unused endpoint if it existed, but we are adding 'details' now
+    // Actually, I will replace this with the new specific 'details' endpoint
     const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
     if (!res.ok) throw new Error(`Table detail failed: ${res.status}`);
+    return res.json();
+  }
+
+  async fetchTableDetails(tableName) {
+    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/details`);
+    if (!res.ok) throw new Error(`Table details fetch failed: ${res.status}`);
     return res.json();
   }
 
@@ -132,23 +140,23 @@ export class ApiClient {
     console.debug("[Api] Starting exchangeAuthorizationCode process");
     const fullUrl = `${this.baseUrl}/api/v1/auth/exchange`;
     console.info("[Api] POST /api/v1/auth/exchange");
-    
+
     // If ID token is provided, send it directly
     if (idToken) {
       console.info("[Api] Sending ID token directly for verification");
 
-      
+
       // Convert to form data for consistency
       const formData = new URLSearchParams();
       if (idToken) formData.append("id_token", idToken);
-      
+
 
       const res = await fetch(fullUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
       });
-   
+
       if (!res.ok) {
         console.error("[Api] ID token verification failed", res.status);
         const responseText = await res.text();
@@ -160,9 +168,9 @@ export class ApiClient {
 
       return payload;
     }
-      
+
     // Check for common issues with the verifier
-    if (verifier) {  
+    if (verifier) {
       // Clean the verifier to remove any potential whitespace issues
       const cleanVerifier = verifier.trim();
       if (cleanVerifier !== verifier) {
@@ -170,28 +178,28 @@ export class ApiClient {
         verifier = cleanVerifier;
       }
     }
-    
+
     // Convert to form data for ADFS compatibility
     const formData = new URLSearchParams();
     if (code) formData.append("code", code);
     if (verifier) formData.append("code_verifier", verifier);
-   
-    
+
+
     const res = await fetch(fullUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: formData.toString(),
     });
 
- 
+
     if (!res.ok) {
       console.error("[Api] Authorization code exchange failed", res.status);
- 
+
       throw new Error(`Exchange failed: ${res.status}`);
     }
     const payload = await res.json();
     console.info("[Api] Authorization code exchange succeeded");
-  
+
     return payload;
   }
 
