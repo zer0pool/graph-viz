@@ -1,4 +1,4 @@
-import { EVENT_ID_STORAGE_KEY } from "../config.js";
+import { EVENT_ID_STORAGE_KEY, BASE_URL } from "../config.js";
 import { rememberEventId, readLastEventId } from "./api.js";
 
 export class EventService {
@@ -31,7 +31,7 @@ export class EventService {
     if (!window.authClient?.isAuthenticated()) return;
     const token = window.authClient.getIdToken();
     if (!token) return;
-    const url = new URL("/api/v1/events/trigger-status", window.location.origin);
+    const url = new URL(`${BASE_URL}/api/v1/events/trigger-status`, window.location.origin);
     url.searchParams.set("access_token", token);
     const last = readLastEventId();
     if (last) url.searchParams.set("lastEventId", String(last));
