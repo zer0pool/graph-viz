@@ -32,6 +32,7 @@ export class GraphController {
         this.relations = relationState;
         this.api = api;
         this.searchState = searchState;
+        this.lineageState = lineageState; // Use imported singleton
 
         // Delegate instances
         this.view = null;
@@ -150,7 +151,11 @@ export class GraphController {
                 type: data.type, // 'job' or 'table'
                 source: "graph",
                 label: data.label || data.id,
-                full_name: data.full_name || data.id
+                // Ensure full_name is passed. Cytoscape data uses 'full_name' key if present.
+                // data object here is node.data().
+                full_name: data.full_name || data.label || data.id,
+                job_id: data.job_id, // Pass job_id for jobs
+                data: data // Pass full data object for reference
             });
 
             this.selection.selectNode(target);
@@ -439,7 +444,6 @@ export class GraphController {
         // Final updates
         this.panel.setPlaceholder();
         this.applyFilters();
-        // this.listView.updateListView(); // Legacy handling
         this.updateToolbarVisibility();
         this.resetTableTabs();
 
@@ -537,9 +541,15 @@ export class GraphController {
         const layoutDirection = this.persistence.getLastLayoutDirection() || "horizontal";
         this.positioning.forceLayout(layoutDirection, true);
 
-        // Update UI
+        // Update state
         this.applyFilters();
-        this.listView.updateListView();
+        // this.listView.updateListView(); // Removed
+
+        // Publish new state
+        const currentNodes = cy.nodes().map(n => ({ id: n.id(), data: n.data() }));
+        const currentEdges = cy.edges().map(e => ({ id: e.id(), data: e.data() }));
+        this.lineageState.setGraphData(currentNodes, currentEdges);
+
         this.updateToolbarVisibility();
 
         // Refresh detail panel if parent node is currently selected
@@ -722,10 +732,17 @@ export class GraphController {
         // Final updates
         this.panel.setPlaceholder();
         this.applyFilters();
-        this.listView.updateListView();
+        // this.listView.updateListView(); // Removed
+
+        // Update Lineage State
+        this.lineageState.setGraphData(
+            nodes.map(n => ({ id: n.data.id, data: n.data })),
+            edges.map(e => ({ id: e.data.id, data: e.data }))
+        );
+
         this.updateToolbarVisibility();
         this.resetTableTabs();
-        this.listView.setViewMode(this.listView.getViewMode());
+        // this.listView.setViewMode(this.listView.getViewMode()); // Removed
     }
 
     /**
@@ -796,6 +813,11 @@ export class GraphController {
         cy.remove(target);
         this.clearSelection();
         this.updateToolbarVisibility();
+
+        // Update Lineage State
+        const currentNodes = cy.nodes().map(n => ({ id: n.id(), data: n.data() }));
+        const currentEdges = cy.edges().map(e => ({ id: e.id(), data: e.data() }));
+        this.lineageState.setGraphData(currentNodes, currentEdges);
 
         return true;
     }

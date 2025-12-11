@@ -110,6 +110,12 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchTableHierarchy(tableName) {
+    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/hierarchy`);
+    if (!res.ok) throw new Error(`Hierarchy fetch failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobDetail(jobId) {
     console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);

@@ -120,21 +120,31 @@ export function getGraphStyles() {
     {
       selector: "node.selected",
       style: {
-        "border-width": 3,
+        "border-width": 4,
         "overlay-color": "#0f172a",
-        "overlay-opacity": 0.12,
+        "overlay-opacity": 0.05,
+        "shadow-blur": 12,
+        "shadow-color": "#000",
+        "shadow-opacity": 0.2,
+        "shadow-offset-y": 2,
       },
     },
     {
       selector: "node.selected[type='table']",
       style: {
-        "border-color": "#1a73e8",
+        "border-color": "#1967d2", // Darker Blue
+        "background-color": "#e8f0fe", // Light Blue active state
+        "shadow-color": "#1967d2",
+        "shadow-opacity": 0.4,
       },
     },
     {
       selector: "node.selected[type='job']",
       style: {
-        "border-color": "#fb8c00",
+        "border-color": "#e65100", // Darker Orange
+        "background-color": "#fff7ed", // Light Orange active state
+        "shadow-color": "#e65100",
+        "shadow-opacity": 0.4,
       },
     },
     {

@@ -846,24 +846,30 @@ class GraphService:
                 while queue:
                     curr_id, curr_type, depth, parent_name = queue.popleft()
                     
-                    # Fetch current object to get name
+                    # Fetch current object to get name and properties
                     obj_name = ""
+                    obj_props = {}
+                    
                     if curr_type == "table":
                         t = uow.tables.get_by_id(curr_id)
                         obj_name = t.full_name
+                        # Assuming table has .properties or similar
+                        obj_props = getattr(t, "properties", {}) or {}
                     else:
                         j = uow.jobs.get_by_id(curr_id)
                         obj_name = j.job_id
+                        # Jobs usually have job_metadata
+                        obj_props = getattr(j, "job_metadata", {}) or {}
 
-                    # Add to result (skip adding center node here if we handle it outside, 
-                    # but spec shows depth 0. Let's add it if depth >= 0)
+                    # Add to result
                     if depth > 0 or (depth == 0 and curr_id == start_node.id): 
                          result_list.append({
-                            "id": obj_name, # Use name as ID for frontend simplicity or internal ID? Spec uses name.
+                            "id": obj_name, 
                             "name": obj_name,
                             "type": curr_type.upper(),
                             "depth": depth,
-                            "parent": parent_name
+                            "parent": parent_name,
+                            "properties": obj_props
                         })
 
                     if depth >= max_depth:
@@ -912,8 +918,10 @@ class GraphService:
             
             # Remove the center node from downstream list to avoid duplication if it appears in both (at depth 0)
             # Actually, bfs_traverse adds depth 0. The spec shows depth 0 in "UPSTREAM" section normally.
-            # Let's keep depth 0 in upstream list, and remove it from downstream list if present.
-            downstream_list = [item for item in downstream_list if item["depth"] > 0]
+            # User Request: "Selected table comes at top of Downstream too."
+            # So we SHOULD include it.
+            # downstream_list = [item for item in downstream_list if item["depth"] > 0] 
+            pass
             
             return {
                 "status": "success",

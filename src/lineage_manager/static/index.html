@@ -159,15 +159,18 @@
 
                     <!-- Full Lineage Hierarchy -->
                     <div id="list-view-full" hidden>
-                        <div class="full-lineage-controls">
-                            <div class="control-group">
-                                <button id="btn-load-full-lineage" class="btn-primary" type="button">Load Full
-                                    Lineage</button>
-                                <span id="full-lineage-target-label" class="muted-text">for selected node</span>
+                        <div class="full-lineage-header">
+                            <h3 id="full-lineage-title">Full Lineage</h3>
+                            <div class="full-lineage-actions">
+                                <button id="btn-load-full-lineage" class="btn-gcp" type="button" title="Reload">
+                                    <span class="icon">⟲</span> Reload
+                                </button>
+                                <button id="btn-download-full-lineage" class="btn-gcp" type="button" disabled>
+                                    <span class="icon">⬇</span> Excel
+                                </button>
                             </div>
-                            <button id="btn-download-full-lineage" class="btn-secondary" type="button" disabled>Download
-                                CSV</button>
                         </div>
+                        <div id="full-lineage-notice" class="muted-text mb-2">Select a table to view lineage.</div>
                         <div id="full-lineage-container" class="full-lineage-tree">
                             <div class="empty-state">Select a node in the graph and click <strong>Load Full
                                     Lineage</strong>.</div>

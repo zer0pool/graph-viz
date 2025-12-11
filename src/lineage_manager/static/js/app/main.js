@@ -66,7 +66,7 @@ class App {
 
     // Setup UI shell
     setupExplorerShell();
-    setupViewToggle(graph);
+    setupViewToggle(graph, listView);
     setupDetailTabs();
     setupDetailResizer();
 

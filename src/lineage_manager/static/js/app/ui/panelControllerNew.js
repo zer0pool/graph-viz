@@ -304,6 +304,9 @@ export class PanelController {
         this.currentTable = null;
         this.currentTableNode = null;
         this.currentJob = node.data("job_id") || node.id();
+        // If node.id() is internal (j123), and job_id is missing, we might have an issue.
+        // But let's prioritize data("job_id") if available, claiming it as the authoritative ID.
+        // The backend expects the real job_id.
         this.currentJobNodeId = node.id();
         this.isJobRunLoading = false;
         this.lineageSummaryRequestId += 1;
@@ -416,6 +419,23 @@ export class PanelController {
             if (requestId !== this.jobOverviewRequestId) return;
             const overview = this.buildJobOverview(detail);
             this.jobView.renderOverview(overview);
+
+            // Populate I/O links from API response
+            const inputs = detail.reference_tables || [];
+            // Handle destination_table as single string or array if schema differs
+            let outputs = [];
+            if (detail.destination_table) {
+                outputs = [detail.destination_table];
+            } else if (Array.isArray(detail.destinations)) {
+                outputs = detail.destinations;
+            }
+
+            // Update local state for lineage tab
+            this.jobRelations = { inputs, outputs };
+
+            // Render directly
+            this.jobView.renderIOLinks(inputs, outputs);
+
         } catch (err) {
             if (requestId !== this.jobOverviewRequestId) return;
             console.error("Job detail fetch failed", err);

@@ -19,15 +19,18 @@ class ListView {
             currentTableBody: document.querySelector("#node-list-table tbody"),
             downloadCurrentBtn: document.getElementById("list-download"),
 
-            // Full Lineage
+            // Full Lineage - Refactored
             fullContainer: document.getElementById("list-view-full"),
             fullTreeContainer: document.getElementById("full-lineage-container"),
-            loadFullBtn: document.getElementById("btn-load-full-lineage"),
+
+            // New Header Elements
+            fullTitle: document.getElementById("full-lineage-title"),
+            fullNotice: document.getElementById("full-lineage-notice"),
+            reloadFullBtn: document.getElementById("btn-load-full-lineage"),
             downloadFullBtn: document.getElementById("btn-download-full-lineage"),
-            fullTargetLabel: document.getElementById("full-lineage-target-label"),
         };
 
-        this.currentMode = "current"; // "current" | "full"
+        this.currentMode = "current";
         this.expandedNodes = new Set(); // For tree folding if implemented later
 
         this.bindEvents();
@@ -42,28 +45,41 @@ class ListView {
             });
         });
 
-        // Load Full Lineage
-        this.elements.loadFullBtn.addEventListener("click", () => {
-            this.loadFullLineage();
-        });
+        // ACTION: Reload Full Lineage
+        if (this.elements.reloadFullBtn) {
+            this.elements.reloadFullBtn.addEventListener("click", () => {
+                this.loadFullLineage();
+            });
+        }
 
         // Download buttons
         this.elements.downloadCurrentBtn.addEventListener("click", () => this.downloadCSV("current"));
-        this.elements.downloadFullBtn.addEventListener("click", () => this.downloadCSV("full"));
+        if (this.elements.downloadFullBtn) {
+            this.elements.downloadFullBtn.addEventListener("click", () => this.downloadCSV("full"));
+        }
 
         // Row Click Delegation (Current)
         this.elements.currentTableBody.addEventListener("click", (e) => {
             const row = e.target.closest("tr");
             if (row && row.dataset.id) {
-                this.selectNode(row.dataset.id, row.dataset.type);
+                const data = this.nodeDataMap?.get(row.dataset.id) || {};
+                this.selectNode(row.dataset.id, row.dataset.type, data);
             }
         });
 
         // Tree Click Delegation (Full)
+        // Card layout might change structure, but we rely on bubbling.
         this.elements.fullTreeContainer.addEventListener("click", (e) => {
-            const row = e.target.closest(".tree-row");
+            const row = e.target.closest("tr"); // Now rows in tables
             if (row && row.dataset.id) {
-                this.selectNode(row.dataset.id, row.dataset.type);
+                const props = JSON.parse(decodeURIComponent(row.dataset.props || "{}"));
+                this.selectNode(row.dataset.id, row.dataset.type, {
+                    id: row.dataset.id,
+                    type: row.dataset.type,
+                    label: row.dataset.label,
+                    full_name: row.dataset.label,
+                    ...props
+                });
             }
         });
     }
@@ -106,12 +122,38 @@ class ListView {
         }
     }
 
-    selectNode(id, type) {
+    /**
+     * Handle global view switching (Graph vs List)
+     */
+    setViewMode(mode = "graph") {
+        const isList = mode === "list";
+        // Toggle container visibility
+        if (this.elements.view) {
+            this.elements.view.hidden = !isList;
+        }
+
+        // Also toggle the graph container (managed by ID usually, or we can assume it's #cy or #graph-container)
+        // Ideally receiving the graph container reference would be better, but we can query it or assume standard ID.
+        // GraphController manages 'cy' but maybe not the wrapper.
+        // Let's grab #cy.
+        const graphArea = document.getElementById("cy");
+        if (graphArea) {
+            graphArea.hidden = isList;
+        }
+
+        // If switching to list, ensure we have initial data rendered if empty
+        if (isList) {
+            // Maybe trigger a render update if needed?
+        }
+    }
+
+    selectNode(id, type, data = {}) {
         selectionState.set({
             id: id,
             type: type,
             source: "list",
-            label: id // Or fetch label from DOM
+            label: data.label || id,
+            data: data
         });
     }
 
@@ -123,9 +165,9 @@ class ListView {
             else row.classList.remove("selected");
         });
 
-        // Highlight in Full Tree
-        const treeRows = this.elements.fullTreeContainer.querySelectorAll(".tree-row");
-        treeRows.forEach(row => {
+        // Highlight in Full Lineage Tables
+        const fullRows = this.elements.fullTreeContainer.querySelectorAll("tr");
+        fullRows.forEach(row => {
             if (row.dataset.id === id) row.classList.add("selected");
             else row.classList.remove("selected");
         });
@@ -137,12 +179,22 @@ class ListView {
     }
 
     updateFullLineageTargetLabel(node) {
+        // Update Title: "Full Lineage — [Name]"
         if (node) {
-            this.elements.fullTargetLabel.textContent = `for ${node.label || node.id}`;
-            this.elements.loadFullBtn.disabled = false;
+            // Cytoscape node or plain object?
+            const label = typeof node.data === 'function' ? node.data('label') : (node.label || node.data?.label || node.id);
+            this.elements.fullTitle.textContent = `Full Lineage — ${label}`;
+
+            // Update Notice
+            this.elements.fullNotice.textContent = `for ${label}`;
+            this.elements.fullNotice.hidden = false;
+
+            this.elements.reloadFullBtn.disabled = false;
         } else {
-            this.elements.fullTargetLabel.textContent = "Select a node first";
-            this.elements.loadFullBtn.disabled = true;
+            this.elements.fullTitle.textContent = "Full Lineage";
+            this.elements.fullNotice.textContent = "Select a table to view lineage.";
+            this.elements.reloadFullBtn.disabled = true;
+            this.elements.downloadFullBtn.disabled = true;
         }
     }
 
@@ -151,27 +203,29 @@ class ListView {
         if (!selected) return;
 
         this.elements.fullTreeContainer.innerHTML = '<div class="loading-state">Loading hierarchy...</div>';
+        this.elements.fullNotice.hidden = true; // Hide notice while loading content
 
         try {
-            // Determine full name - if graph node has special data structure, extracting name might vary.
-            // Assuming ID is enough or label is full name for tables? 
-            // For jobs, id is job_id. For tables, full_name is expected.
-            // Let's rely on selectionState providing a useful identifier.
-            // If it's a table, we use its ID (which usually is full_name or mapped).
-            // NOTE: Backend API expects table_name. Jobs might not work on this specific endpoint yet 
-            // if it's strictly /tables/.../hierarchy. 
-            // Spec implies "Select Table/Job", but endpoint is /tables/.../hierarchy.
-            // Let's assume for now it works for tables, or jobs if we add logic.
-            // Ideally backend service should handle both or we have /jobs/.../hierarchy.
-            // The python code I wrote: `uow.tables.get_by_full_name(table_name)`. So it ONLY supports tables currently.
+            // Determine full name
+            let fullName = null;
+            let type = null;
 
-            if (selected.type !== "table") {
-                alert("Full lineage hierarchy is currently supported for Tables only.");
+            if (typeof selected.data === 'function') {
+                // Cytoscape node
+                fullName = selected.data('full_name') || selected.data('label') || selected.id();
+                type = selected.data('type');
+            } else {
+                // Plain object
+                fullName = selected.data?.full_name || selected.label || selected.id;
+                type = selected.type;
+            }
+
+            if (type !== "table") {
                 this.elements.fullTreeContainer.innerHTML = '<div class="empty-state">Select a <strong>Table</strong> to view full lineage.</div>';
                 return;
             }
 
-            const payload = await this.api.fetchTableHierarchy(selected.id); // selected.id should be full_name for tables
+            const payload = await this.api.fetchTableHierarchy(fullName);
             if (payload.status === "success") {
                 lineageState.setFullLineage(payload); // Will trigger render via subscribe
                 this.elements.downloadFullBtn.disabled = false;
@@ -186,10 +240,6 @@ class ListView {
     }
 
     renderCurrentNodes(nodes) {
-        // nodes is Cytoscape collection or array of data?
-        // GraphController usually maintains cy instance. 
-        // If lineageState.graphData is array of node data objects:
-
         if (!nodes) return;
 
         const tbody = this.elements.currentTableBody;
@@ -202,16 +252,26 @@ class ListView {
             return na.localeCompare(nb);
         });
 
+        // Store data map for click handling if needed, or attach to DOM
+        this.nodeDataMap = new Map();
+
         sorted.forEach(node => {
             const data = node.data;
             if (!data || data.id === "visual_anchor") return; // Skip dummy
+
+            this.nodeDataMap.set(data.id, data);
 
             const tr = document.createElement("tr");
             tr.dataset.id = data.id;
             tr.dataset.type = data.type; // job or table
 
             // Should match graph selection
-            if (selectionState.selectedNode && selectionState.selectedNode.id === data.id) {
+            // Handles both Cytoscape node object (check via .id() method) and plain object (.id property)
+            const selectedId = selectionState.selectedNode ?
+                (typeof selectionState.selectedNode.id === 'function' ? selectionState.selectedNode.id() : selectionState.selectedNode.id)
+                : null;
+
+            if (selectedId === data.id) {
                 tr.classList.add("selected");
             }
 
@@ -222,10 +282,10 @@ class ListView {
             typeTd.innerHTML = `<span class="badge ${data.type}">${data.type}</span>`;
 
             const ownerTd = document.createElement("td");
-            ownerTd.textContent = data.owner || "-"; // Cytoscape data might not have owner unless piped
+            ownerTd.textContent = data.owner || "-";
 
             const updatedTd = document.createElement("td");
-            updatedTd.textContent = "-"; // Graph data usually minimal
+            updatedTd.textContent = "-";
 
             tr.append(nameTd, typeTd, ownerTd, updatedTd);
             tbody.append(tr);
@@ -233,80 +293,347 @@ class ListView {
     }
 
     renderFullLineage(data) {
+        this.lastFullLineageData = data;
         const container = this.elements.fullTreeContainer;
         container.innerHTML = "";
 
-        // Structure: UPSTREAM section, DOWNSTREAM section
-        // Helper to render recursion/list
+        // Helper to create Card Section aka "APA Table Container"
+        const createApaTable = (directionLabel, items, tableIndex) => {
+            const card = document.createElement("div");
+            card.className = "lineage-card";
 
-        const createSection = (title, items) => {
-            const section = document.createElement("div");
-            section.className = "lineage-section";
+            // Use existing card structure but inner content will be APA style
+            const count = items ? items.length : 0;
+            // Removed standard card header to focus on APA title style inside body? 
+            // Or keep card for container/border? User wants "Table 1..."
+            // Let's keep the card container for layout but maybe simplify the header.
+            // Actually, APA tables usually stand alone. But fitting into our UI (Card), let's put the title inside the card body.
+            // We can remove the "lineage-card-header" or make it minimal.
+            // Let's keep it consistent with previous step for container, but satisfy the Title requirement.
 
-            const header = document.createElement("h4");
-            header.textContent = title;
-            section.appendChild(header);
+            const body = document.createElement("div");
+            body.className = "lineage-card-body apa-container";
 
             if (!items || items.length === 0) {
-                const empty = document.createElement("div");
-                empty.className = "muted-text";
-                empty.textContent = "None";
-                section.appendChild(empty);
-                return section;
+                body.innerHTML = '<div class="muted-text" style="padding:12px;">None</div>';
+                card.appendChild(body);
+                return card;
             }
 
-            // Items are flat list with depth. We render them in order (they come BFS/sorted from backend?)
-            // Backend BFS returns locally sorted by encounter, so loosely depth-sorted.
-            // Let's sort by depth first to be safe, though tree structure implies parent-child order.
-            // Simple approach: Render flat list with indentation = depth * 20px.
+            // 1. Convert List to Tree (Map ID -> Node with children)
+            // Backend returns a BFS list where each node appears once.
+            // We use 'parent' field to reconstruct hierarchy.
+            const idMap = new Map();
+            const roots = [];
 
-            const list = document.createElement("div");
-            list.className = "tree-list";
-
+            // Initialize map
             items.forEach(item => {
-                const row = document.createElement("div");
-                row.className = "tree-row";
-                row.dataset.id = item.id; // full_name or job_id
-                row.dataset.type = item.type.toLowerCase();
-
-                // Indentation
-                // const indent = item.depth * 20;
-                // row.style.paddingLeft = `${indent}px`;
-
-                // Better visual: Spacer divs
-                const spacer = document.createElement("span");
-                spacer.className = "tree-spacer";
-                spacer.style.width = `${item.depth * 24}px`;
-                spacer.innerHTML = item.depth > 0 ? '└─' : '';
-
-                const content = document.createElement("span");
-                content.className = "tree-content";
-
-                const badge = document.createElement("span");
-                badge.className = `badge ${item.type.toLowerCase()}`;
-                badge.textContent = item.type[0]; // T or J
-
-                const label = document.createElement("span");
-                label.className = "tree-label";
-                label.textContent = item.name;
-
-                content.append(badge, label);
-                row.append(spacer, content);
-
-                if (selectionState.selectedNode && selectionState.selectedNode.id === item.id) {
-                    row.classList.add("selected");
-                }
-
-                list.appendChild(row);
+                // clone to avoid mutating original if reused
+                idMap.set(item.name, { ...item, children: [] });
             });
 
-            section.appendChild(list);
-            return section;
+            // Build Tree
+            items.forEach(item => {
+                const node = idMap.get(item.name);
+                if (item.depth === 0) {
+                    roots.push(node);
+                } else if (item.parent) {
+                    const parent = idMap.get(item.parent);
+                    if (parent) {
+                        parent.children.push(node);
+                    } else {
+                        // Parent not in this list (maybe filtered out?), treat as quasi-root or orphan
+                        // But for Upstream/Downstream lists, parent should exist unless it's the anchor via Job.
+                        // Wait, 'parent' in data is the *immediate* parent (Job or Table).
+                        // If Table->Job->Table, the backend logic sets 'parent' to the immediate predecessor name.
+                        // Graph Service: result_list.append(..., "parent": parent_name)
+                        // This seems correct.
+                        // However, if we skip Jobs in display, we logic might get tricky.
+                        // But here 'items' contains Jobs AND Tables? 
+                        // Let's check filter below.
+                        // Ah, the original code had: const tableItems = items.filter(...)
+                        // If we filter items FIRST, we break the parent links (Table -> Job -> Table).
+                        // WE MUST BUILD TREE WITH ALL ITEMS, THEN FLATTEN, THEN FILTER.
+                    }
+                }
+            });
+
+            // 2. DFS Flatten with Lines
+            const flatList = [];
+
+            // recursive helper
+            const traverse = (nodes, prefix = "", isLastChild = false) => {
+                nodes.forEach((node, index) => {
+                    const isLast = index === nodes.length - 1;
+
+                    // Determine current node's marker
+                    // ├─ for middle, └─ for last
+                    // If depth 0, no marker
+                    let marker = "";
+                    let childPrefix = prefix;
+
+                    if (node.depth > 0) {
+                        marker = isLast ? "└─ " : "├─ ";
+                        childPrefix += isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;";
+                    }
+
+                    // Add to result with calculated prefix
+                    // We only want to adding TABLES to the final list, but we must traverse JOBS.
+                    if (node.type === "TABLE" || node.depth === 0) {
+                        flatList.push({
+                            ...node,
+                            treePrefix: (node.depth === 0) ? "" : (prefix + marker)
+                        });
+                    }
+
+                    // Traverse children
+                    // If this node is a TABLE, its children are JOBS.
+                    // If this node is a JOB, its children are TABLES.
+                    // We just traverse node.children.
+                    // NOTE: If we want to hide the JOB level indentation, we shouldn't add to prefix when traversing JOB?
+                    // User wants: Table -> Table (with line).
+                    // Logic: Table A -> Job 1 -> Table B.
+                    // If we skip Job 1 visually, Table B should look like child of Table A.
+                    // So when recursing from Table -> Job, DO NOT change prefix?
+                    // When recursing from Job -> Table, ADD prefix?
+                    // Let's try: One visual hop per Table-to-Table.
+
+                    if (node.type === "TABLE" || node.depth === 0) {
+                        // Entering Job Layer: don't indent yet, just pass through?
+                        // Actually, the line must connect Table A to Table B.
+                        // Table A
+                        // ├─ Table B (via Job 1)
+                        // └─ Table C (via Job 2)
+                        // The branch splits at Table A.
+                        // So Table A's children (Jobs) effectively represent the branches.
+                        traverse(node.children, childPrefix, isLast);
+                    } else {
+                        // Entering Table Layer (from Job):
+                        // We are inside a Job (branch).
+                        // Usually a Job has 1 output table (or multiple).
+                        // If Job has multiple tables, they share the same "Via Job" context.
+                        // Visually, strictly speaking, Table B is child of Job.
+                        // If we hide Job, Table B is child of Table A.
+                        traverse(node.children, prefix, isLast); // Pass prefix through? 
+                    }
+                });
+            };
+
+            // RE-THINKING PREFIX LOGIC FOR "Table-to-Table" Visualization
+            // Data: Root (Table) -> [Job1, Job2]
+            // Job1 -> [Table A]
+            // Job2 -> [Table B]
+            // Visual:
+            // Root
+            // ├─ Table A
+            // └─ Table B
+
+            // The branching happens at Root. Root has 2 "logical" children (Table A, Table B).
+            // So we should iterate Root's *Jobs*, and for each Job, iterate its *Tables*.
+            // The "Last Child" logic applies to the *Jobs* (because they distinct branches).
+
+            const traverseLogical = (nodes, prefix) => {
+                nodes.forEach((node, index) => {
+                    // node is typically a JOB (child of a Table)
+                    // Or it could be a TABLE if direct link? (unlikely in this model)
+
+                    const isLast = index === nodes.length - 1;
+                    const marker = isLast ? "└─ " : "├─ ";
+                    const nextPrefix = prefix + (isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;");
+
+                    // For each Job, get its children (Tables)
+                    if (node.children && node.children.length > 0) {
+                        node.children.forEach(childTable => {
+                            // This childTable is the "Logical Child" of the previous Table
+                            // We render THIS table.
+                            flatList.push({
+                                ...childTable,
+                                treePrefix: prefix + marker
+                            });
+
+                            // Recurse: This table might have its own Jobs...
+                            if (childTable.children && childTable.children.length > 0) {
+                                traverseLogical(childTable.children, nextPrefix);
+                            }
+                        });
+                    }
+                });
+            };
+
+            // Start Traversal
+            // Roots are Tables.
+            if (roots.length > 0) {
+                // Add Root First
+                flatList.push({ ...roots[0], treePrefix: "" });
+                // Traverse its children (Jobs)
+                traverseLogical(roots[0].children, "");
+            }
+
+            // FILTER: Tables only (or Root) - Actually flatList is already built exactly how we want.
+            const tableItems = flatList;
+
+            // Unified Title: Table X. Title
+            const titleDiv = document.createElement("div");
+            titleDiv.className = "apa-table-label"; // Re-using label class which is bold
+            titleDiv.textContent = `${directionLabel}`;
+            body.appendChild(titleDiv);
+
+            const table = document.createElement("table");
+            table.className = "apa-table";
+
+            // Columns: Table Name | Via Job | Depth | Owner | Info
+            const thead = document.createElement("thead");
+            thead.innerHTML = `
+                <tr>
+                    <th>Table Name</th>
+                    <th>Via Job</th>
+                    <th style="width: 60px;">Depth</th>
+                    <th>Owner</th>
+                    <th>Info</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+
+            let tableCount = 0;
+            let jobCount = 0;
+
+            tableItems.forEach(item => {
+                tableCount++;
+                const tr = document.createElement("tr");
+                tr.dataset.id = item.id;
+                tr.dataset.type = item.type.toLowerCase();
+                tr.dataset.label = item.name;
+
+                // Keep props in dataset 
+                const tProps = item.properties || {};
+                const owner = tProps.owner || "-";
+                const info = tProps.description || tProps.table_type || "-";
+                tr.dataset.props = encodeURIComponent(JSON.stringify(tProps));
+
+                // Calculate Logical Table Depth
+                // Backend returns graph depth (Table->Job->Table = 2 hops)
+                // We want Table->Table = 1 "Depth"
+                const logicalDepth = Math.floor(item.depth / 2);
+
+                const indentPadding = logicalDepth * 20;
+
+                // Find Connected Job
+                let jobName = "-";
+                let jobStatusPill = "";
+
+                if (item.parent) {
+                    const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
+                    if (parentNode && parentNode.type === "JOB") {
+                        jobCount++;
+                        jobName = parentNode.name;
+                        const jProps = parentNode.properties || {};
+                        const status = jProps.status || jProps.run_status || "unknown";
+                        jobStatusPill = `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
+                    }
+                }
+
+                if (selectionState.selectedNode && selectionState.selectedNode.id === item.id) {
+                    tr.classList.add("selected");
+                }
+
+                if (item.depth === 0) tr.classList.add("depth-root-row");
+
+                // Icon selection
+                // Simple Circle: &#9679; (Black Circle) or CSS shape
+                // User asked for "small circle icon or table icon".
+                // Reverted icon as per user request.
+                // Highlight Root Table Name with a distinct badge/capsule style.
+                let nameHtml = `<span class="node-label-text">${item.name}</span>`;
+
+                if (item.depth === 0) {
+                    nameHtml = `<span class="root-table-badge">${item.name}</span>`;
+                }
+
+                // Strict Left Align for Root Row (No inline padding overrides, use CSS default)
+                // For children, apply indentation. 
+                // Strict Left Align for Root Row
+                const cellStyle = (item.depth === 0) ? '' : 'style="font-family: monospace;"'; // Monospace for alignment
+
+                const prefixHtml = item.depth === 0 ? '' : `<span style="color: #94a3b8; font-family: monospace; font-size: 14px; white-space: pre; margin-right: 2px;">${item.treePrefix}</span>`;
+
+                tr.innerHTML = `
+                    <td title="${item.name}">
+                        <div style="display: flex; align-items: center;">
+                           ${prefixHtml}
+                           ${nameHtml}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>${jobName}</span>
+                            ${jobStatusPill}
+                        </div>
+                    </td>
+                    <td>${logicalDepth}</td>
+                    <td>${owner}</td>
+                    <td>${info}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // TOTAL ROW (Simplified & Right Aligned)
+            const totalTr = document.createElement("tr");
+            totalTr.className = "apa-total-row";
+            totalTr.innerHTML = `
+                <td colspan="5" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
+                    Total — Tables: ${tableCount} • Jobs: ${jobCount}
+                </td>
+            `;
+            tbody.appendChild(totalTr);
+
+            table.appendChild(tbody);
+            body.appendChild(table);
+            card.appendChild(body);
+            return card;
         };
 
-        container.appendChild(createSection("Upstream", data.upstream));
-        container.appendChild(document.createElement("hr"));
-        container.appendChild(createSection("Downstream", data.downstream));
+        // Helper to count unique jobs
+        const getCounts = (items) => {
+            if (!items) return { t: 0, j: 0 };
+
+            // Count Tables (Type TABLE or Depth 0)
+            const tableCount = items.filter(i => i.type === "TABLE" || i.depth === 0).length;
+
+            // Count Unique Jobs (Type JOB)
+            // Filter by type "JOB" explicitly to avoid counting tables as parents
+            const uniqueJobs = new Set(
+                items.filter(i => i.type === "JOB").map(i => i.name)
+            );
+
+            return { t: tableCount, j: uniqueJobs.size };
+        };
+
+        if (data.upstream && data.upstream.length > 0) {
+            const c = getCounts(data.upstream);
+            container.appendChild(createApaTable(`Upstream (${c.t} tables / ${c.j} jobs)`, data.upstream, 1));
+        }
+
+        if (data.downstream && data.downstream.length > 0) {
+            const c = getCounts(data.downstream);
+            container.appendChild(createApaTable(`Downstream (${c.t} tables / ${c.j} jobs)`, data.downstream, 2));
+        }
+
+        // If no data, show empty state
+        if ((!data.upstream || data.upstream.length === 0) && (!data.downstream || data.downstream.length === 0)) {
+            container.innerHTML = '<div class="empty-state">No lineage data available.</div>';
+        }
+
+        // 3. Footer Note (Subtle)
+        const footer = document.createElement("div");
+        footer.className = "lineage-footer-note";
+        const dateStr = new Date().toISOString().split('T')[0];
+        footer.innerHTML = `
+            <div class="footer-separator"></div>
+            <span>Note: Generated from analysis at ${dateStr}.</span>
+        `;
+        container.appendChild(footer);
     }
 
     downloadCSV(mode) {
@@ -314,7 +641,6 @@ class ListView {
         let filename = "lineage.csv";
 
         if (mode === "current") {
-            // Download from table
             const rows = Array.from(this.elements.currentTableBody.querySelectorAll("tr"));
             content = "ID,Type,Owner\n";
             rows.forEach(tr => {
@@ -323,28 +649,149 @@ class ListView {
                 const owner = tr.children[2].textContent;
                 content += `${id},${type},${owner}\n`;
             });
-            filename = "current_graph_nodes.csv";
+            const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } else {
-            // Full Lineage from state
-            const data = lineageState.fullLineage;
-            if (!data) return;
+            // Redirect full lineage export to Excel
+            this.downloadExcel();
+        }
+    }
 
-            content = "Direction,Depth,Type,Name,Parent\n";
-            (data.upstream || []).forEach(item => {
-                content += `Upstream,${item.depth},${item.type},${item.name},${item.parent || ''}\n`;
+    downloadExcel() {
+        if (!this.lastFullLineageData) return;
+
+        const data = this.lastFullLineageData;
+        const rootNode = selectionState.selectedNode;
+        const rootName = rootNode ? (rootNode.label || rootNode.id) : "Unknown";
+        const dateStr = new Date().toISOString().split('T')[0];
+
+        // Define Styles for Excel (HTML approach)
+        const styles = `
+            <style>
+                table { border-collapse: collapse; font-family: Arial, sans-serif; }
+                th { border: 1px solid #000; background-color: #f0f0f0; font-weight: bold; padding: 5px; text-align: left; }
+                td { border: 1px solid #000; padding: 5px; vertical-align: top; }
+                .title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+                .root-row { background-color: #d9d9d9; font-weight: bold; }
+                .note { font-style: italic; color: #555; margin-top: 10px; }
+            </style>
+        `;
+
+        // Helper to build table HTML
+        const buildTableHtml = (title, items) => {
+            if (!items || items.length === 0) return "";
+
+            // Filter
+            const tableItems = items.filter(i => i.type === "TABLE" || i.depth === 0);
+
+            let html = `<tr><td colspan="5" class="title" style="border:none; font-weight:bold; font-size:14px;">${title}</td></tr>`;
+            html += `
+                <tr>
+                    <th>Table Name</th>
+                    <th>Via Job</th>
+                    <th>Depth</th>
+                    <th>Owner</th>
+                    <th>Info</th>
+                </tr>
+            `;
+
+            tableItems.forEach(item => {
+                const logicalDepth = Math.floor(item.depth / 2);
+                let indent = "";
+                for (let i = 0; i < logicalDepth; i++) indent += " &nbsp; "; // Approx indentation
+                if (logicalDepth > 0) indent += "└ ";
+
+                let jobName = "-";
+                let jobStatus = "-";
+
+                if (item.parent) {
+                    const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
+                    if (parentNode && parentNode.type === "JOB") {
+                        jobName = parentNode.name;
+                        const jProps = parentNode.properties || {};
+                        jobStatus = jProps.status || jProps.run_status || "unknown";
+                    }
+                }
+
+                const tProps = item.properties || {};
+                const owner = tProps.owner || "-";
+                const info = tProps.description || tProps.table_type || "-";
+
+                // Style for Root
+                const rowStyle = (item.depth === 0) ? 'style="background-color:#d9d9d9; font-weight:bold;"' : '';
+
+                html += `
+                    <tr ${rowStyle}>
+                        <td>${indent}${item.name}</td>
+                        <td>${jobName} (${jobStatus})</td>
+                        <td>${logicalDepth}</td>
+                        <td>${owner}</td>
+                        <td>${info}</td>
+                    </tr>
+                `;
             });
-            (data.downstream || []).forEach(item => {
-                content += `Downstream,${item.depth},${item.type},${item.name},${item.parent || ''}\n`;
-            });
-            filename = "full_lineage_hierarchy.csv";
+
+            html += `<tr><td colspan="5" style="border:none;"></td></tr>`; // Spacer
+            return html;
+        };
+
+        let bodyContent = "<table>";
+
+        // Upstream
+        if (data.upstream && data.upstream.length > 0) {
+            bodyContent += buildTableHtml(`Table 1. Upstream Lineage for ${rootName}`, data.upstream);
         }
 
-        const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
+        // Downstream
+        if (data.downstream && data.downstream.length > 0) {
+            bodyContent += buildTableHtml(`Table 2. Downstream Lineage for ${rootName}`, data.downstream);
+        }
+
+        bodyContent += `
+            <tr>
+                <td colspan="5" style="border:none; font-style:italic;">
+                    Note. Lineage Information from analysis. Created at ${dateStr}.
+                </td>
+            </tr>
+        `;
+        bodyContent += "</table>";
+
+        const fullHtml = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="UTF-8">
+                <!--[if gte mso 9]>
+                <xml>
+                <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                <x:Name>Lineage Report</x:Name>
+                <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+                </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+                ${styles}
+            </head>
+            <body>
+                ${bodyContent}
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob([fullHtml], { type: "application/vnd.ms-excel" });
         const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = "hidden";
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `lineage_export_${rootName}_${Date.now()}.xls`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
