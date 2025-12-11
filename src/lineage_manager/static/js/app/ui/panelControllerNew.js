@@ -9,7 +9,7 @@ import TableDetailView from "./tableDetailView.js";
 import { TableTimelinessView } from "./timelinessView.js";
 import TriggerManager from "./triggerManager.js";
 import LineageInsightProvider from "./lineageInsightProvider.js";
-import { RelationState } from "../state.js";
+import { RelationState, selectionState } from "../state.js";
 
 export class PanelController {
     constructor(apiClient) {
@@ -128,6 +128,46 @@ export class PanelController {
         this.setPlaceholder();
         this.bindTabEvents();
         this.bindTimelinessEvents();
+
+        // Subscribe to shared state
+        selectionState.subscribe((nodeData) => {
+            if (!nodeData) {
+                this.setPlaceholder();
+            } else {
+                // Adapter: Ensure we have a "node-like" object
+                // If nodeData comes from GraphController, it *might* have rich data in nodeData.data
+                // If from ListController, it might be minimal { id, type, label }
+
+                // Construct a standardized node object for internal methods
+                const mockNode = {
+                    id: () => nodeData.id,
+                    data: (key) => {
+                        // Access data property if available, else fallback to nodeData root props
+                        const d = nodeData.data || nodeData;
+                        if (key) return d[key];
+                        return d;
+                    }
+                };
+
+                this.updateMetadata(mockNode);
+
+                // Note: updateRelations expects 'incomers'/'outgoers' which are Cy-specific function.
+                // If source is 'list', we don't have graph topology here unless we query graph or lineage state.
+                // For now, if source is not graph, we might skip updateRelations or try to use lineageState?
+                if (nodeData.source === "graph") {
+                    // If we passed the REAL cy element in nodeData (not serializable), we could use it.
+                    // But we shouldn't pass Cy elements in state.
+                    // So PanelController needs to handle "No graph relations available" or Query GraphController?
+                    // Ideally PanelController shouldn't know GraphController.
+                    // Solution: GraphController updates RelationState? Yes, GraphController updates RelationState!
+                    // And PanelController should subscribe to RelationState changes?
+                    // Currently GraphController calls `this.panel.updateRelations(node)`.
+                    // We removed that.
+                    // GraphController should update `relationState.set(upstream, downstream)`.
+                    // And PanelController should read from `this.relations`.
+                }
+            }
+        });
     }
 
     bindViewGraphButton() {

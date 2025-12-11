@@ -9,17 +9,26 @@ import { GraphSelection } from "./graphSelection.js";
 import GraphFiltering from "./graphFiltering.js";
 import GraphPersistence from "./graphPersistence.js";
 import GraphPositioning from "./graphPositioning.js";
-import GraphListView from "./graphListView.js";
 import GraphNodeSerializer from "./graphNodeSerializer.js";
 import GraphTooltip from "./graphTooltip.js";
 import GraphZoomControls from "./graphZoomControls.js";
 import GraphExpansion from "./graphExpansion.js";
 
+import { selectionState, lineageState } from "../state.js";
+
 export class GraphController {
     constructor({ panel, filterState, selectionState, relationState, api, searchState }) {
         this.panel = panel;
         this.filterState = filterState;
-        this.selectionState = selectionState;
+        this.selectionStateStore = selectionState; // Old legacy state object passed in main.js, we should migrate
+        // Ideally we use the imported singleton 'selectionState' from state.js now.
+        // But main.js passes 'selectionState' (which is the old legacy one from state.js if main.js is not updated?)
+        // Wait, main.js imports { SelectionState } from "./state.js" and instantiates `new SelectionState()`. 
+        // My new `state.js` exports CONST `selectionState`.
+        // I need to be careful. The new design says Use Singleton.
+        // Let's rely on the imported singleton for new features, but basic wiring might need clean up in main.js later.
+        // For now, let's use the imported `selectionState` for pub/sub.
+
         this.relations = relationState;
         this.api = api;
         this.searchState = searchState;
@@ -30,7 +39,6 @@ export class GraphController {
         this.filtering = null;
         this.persistence = null;
         this.positioning = null;
-        this.listView = null;
         this.tooltip = null;
         this.zoomControls = null;
         this.expansion = null;
@@ -39,6 +47,28 @@ export class GraphController {
 
         // Configuration
         this.graphCanvas = document.getElementById("cy");
+
+        // Subscribe to shared state selection
+        selectionState.subscribe((nodeData) => {
+            if (nodeData && nodeData.source !== "graph") {
+                // Determine if we need to load/highlight this node
+                // Ideally traverse to it or select it if visible
+                const cy = this.view ? this.view.getCy() : null;
+                if (cy) {
+                    const el = cy.$(`#${nodeData.id}`);
+                    if (el && el.length > 0) {
+                        this.selection.selectNode(el);
+                        // Optional: Center on it?
+                        // this.centerOnNode(nodeData.id); 
+                    } else {
+                        // Node not in graph, maybe just clear graph selection?
+                        this.selection.clearSelection();
+                    }
+                }
+            } else if (!nodeData) {
+                this.selection.clearSelection();
+            }
+        });
 
         document.addEventListener("job-detail:view-in-graph", (event) => {
             const nodeId = event.detail?.nodeId;
@@ -68,20 +98,14 @@ export class GraphController {
         this.zoomControls = new GraphZoomControls(this.view);
         this.expansion = new GraphExpansion(this.view, GraphNodeSerializer);
 
-        const listViewContainer = document.getElementById("node-list-table");
-        const listViewElement = document.getElementById("list-view");
-        this.listView = new GraphListView(
-            this.view,
-            this.graphCanvas,
-            listViewElement
-        );
+
 
         // Setup event bindings
         this.bindGraphEvents();
         this.bindPositionEvents();
         this.bindViewportEvents();
         this.zoomControls.bindControls();
-        this.listView.bindListDownload();
+        // this.listView.bindListDownload(); // Handled by new ListView
 
         return this.view.getCy();
     }
@@ -105,7 +129,8 @@ export class GraphController {
 
         cy.on("mouseout", "node", (evt) => {
             evt.target.removeClass("hovered");
-            if (!this.selectionState.node) this.selection.resetHighlight();
+            // Check global state? For now relying on local interactions for hover
+            if (!selectionState.selectedNode) this.selection.resetHighlight();
             this.tooltip.hide();
         });
 
@@ -118,18 +143,309 @@ export class GraphController {
                 return;
             }
 
-            this.selectNode(target);
+            // Publish Selection State
+            const data = target.data();
+            selectionState.set({
+                id: data.id,
+                type: data.type, // 'job' or 'table'
+                source: "graph",
+                label: data.label || data.id,
+                full_name: data.full_name || data.id
+            });
+
+            this.selection.selectNode(target);
             this.selection.highlightNeighborhood(target);
-            this.panel.renderTriggers(target);
+            // Panel update handled by PanelController subscribing to selectionState
+            // this.panel.updateMetadata(target); <-- REMOVED
+            // this.panel.updateRelations(target); <-- REMOVED
+            // this.panel.renderTriggers(target); <-- REMOVED
+            // But we might want internal visual update?
         });
 
         cy.on("tap", (evt) => {
-            if (evt.target === cy) this.clearSelection();
+            if (evt.target === cy) {
+                selectionState.clear();
+                this.clearSelection();
+            }
         });
 
         cy.on("dbltap", "node", () => {
             document.dispatchEvent(new CustomEvent("detail-panel:toggle"));
         });
+    }
+
+    /**
+     * Handle aggregate node click with heartbeat animation
+     */
+    async handleAggregateClick(aggregateNode) {
+        // ... (Existing implementation unchanged) ...
+        const cy = this.view.getCy();
+        if (!cy) return;
+
+        const data = aggregateNode.data();
+        const hiddenNodes = data.hiddenNodes || [];
+        const hiddenEdges = data.hiddenEdges || [];
+        const parentId = data.parentId;
+        const direction = data.direction;
+        const batchNumber = data.batchNumber || 0;
+
+        const pulseCount = 4;
+        const pulseDuration = 500;
+
+        for (let i = 0; i < pulseCount; i++) {
+            aggregateNode.addClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+            aggregateNode.removeClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+        }
+
+        const BATCH_SIZE = 3;
+        const nextBatch = hiddenNodes.slice(0, BATCH_SIZE);
+        const remaining = hiddenNodes.slice(BATCH_SIZE);
+
+        const newNodeIds = [];
+        nextBatch.forEach((node) => {
+            if (!cy.$(`#${node.id}`).length) {
+                const added = cy.add(GraphNodeSerializer.serialize(node));
+                added.addClass("just-added");
+                newNodeIds.push(node.id);
+                setTimeout(() => added.removeClass("just-added"), 600);
+            }
+        });
+
+        const newNodeIdSet = new Set(newNodeIds);
+        const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
+
+        hiddenEdges.forEach((edge) => {
+            if (existingNodeIds.has(edge.source) && existingNodeIds.has(edge.target)) {
+                const edgeId = `${edge.source}__${edge.target}__${edge.io || ""}`;
+                if (!cy.$(`#${edgeId}`).length) {
+                    cy.add({
+                        data: {
+                            id: edgeId,
+                            source: edge.source,
+                            target: edge.target,
+                            io: edge.io || "",
+                        },
+                    });
+                }
+            }
+        });
+
+        cy.remove(aggregateNode);
+
+        if (remaining.length > 0) {
+            const remainingEdges = hiddenEdges.filter((e) => {
+                const remainingIds = new Set(remaining.map(n => n.id));
+                return remainingIds.has(e.source) || remainingIds.has(e.target);
+            });
+
+            const newAggregate = this.expansion.createAggregateNode(
+                parentId,
+                remaining,
+                remainingEdges,
+                direction,
+                batchNumber + 1
+            );
+
+            if (newAggregate) {
+                cy.add(GraphNodeSerializer.serialize(newAggregate));
+            }
+        }
+
+        const layoutDirection = this.persistence.getLastLayoutDirection() || "horizontal";
+        this.positioning.forceLayout(layoutDirection, true);
+
+        this.applyFilters();
+        // this.listView.updateListView(); <-- Legacy, remove?
+        // Update shared lineage state with new graph data
+        this.publishGraphState();
+
+        this.updateToolbarVisibility();
+    }
+
+    publishGraphState() {
+        const cy = this.view.getCy();
+        if (!cy) return;
+        const nodes = cy.nodes().map(n => n.json());
+        const edges = cy.edges().map(e => e.json());
+        lineageState.setGraphData(nodes, edges);
+    }
+
+    // ... (unchanged methods: bindPositionEvents, bindViewportEvents) ...
+    bindPositionEvents() {
+        const cy = this.view.getCy();
+        if (!cy) return;
+        cy.on("dragfree", "node", (evt) => {
+            const pos = evt.target.position();
+            this.persistence.setPosition(evt.target.id(), { x: pos.x, y: pos.y });
+        });
+    }
+
+    bindViewportEvents() {
+        const cy = this.view.getCy();
+        if (!cy) return;
+        cy.on("zoom", () => this.persistence.cacheViewport());
+        cy.on("pan", () => this.persistence.cacheViewport());
+    }
+
+    /**
+     * Render graph from payload
+     */
+    renderGraph(payload, options = {}) {
+        if (selectionState.selectedNode) {
+            this.clearSelection();
+        }
+
+        if (options.resetViewport) {
+            this.persistence.clearViewport();
+        }
+
+        if (options.rememberInitial) {
+            this.persistence.setBaseGraph(payload, options.centerLabel);
+            if (options.rememberInitialSearch) {
+                this.initialSearchSnapshot = JSON.parse(JSON.stringify(payload));
+                this.initialSearchCenterLabel = options.centerLabel;
+            }
+        }
+
+        // Re-init view
+        this.view.destroy();
+        this.init(document.getElementById("cy"));
+
+        // Apply progressive expansion if center node is specified
+        let nodesToRender = payload.nodes || [];
+        let edgesToRender = payload.edges || [];
+
+        if (options.centerLabel && nodesToRender.length > 1) {
+            // Find center node
+            const centerNode = nodesToRender.find(n =>
+                n.full_name === options.centerLabel ||
+                n.name === options.centerLabel ||
+                n.job_id === options.centerLabel
+            );
+
+            if (centerNode) {
+                // Apply progressive expansion
+                const result = this.expansion.classifyNodesByDirection(
+                    centerNode.id,
+                    nodesToRender,
+                    edgesToRender
+                );
+
+                const INITIAL_VISIBLE = 4;
+                const aggregateNodes = [];
+                let visibleNodes = [centerNode];
+                let visibleEdges = [];
+
+                // Process upstream
+                if (result.upstream.length > INITIAL_VISIBLE) {
+                    const visible = result.upstream.slice(0, INITIAL_VISIBLE);
+                    const hidden = result.upstream.slice(INITIAL_VISIBLE);
+
+                    visibleNodes.push(...visible);
+
+                    // Get edges for hidden nodes
+                    const hiddenIds = new Set(hidden.map(n => n.id));
+                    const hiddenEdges = edgesToRender.filter(e =>
+                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
+                    );
+
+                    const aggregate = this.expansion.createAggregateNode(
+                        centerNode.id,
+                        hidden,
+                        hiddenEdges,
+                        "upstream",
+                        0
+                    );
+                    if (aggregate) aggregateNodes.push(aggregate);
+                } else {
+                    visibleNodes.push(...result.upstream);
+                }
+
+                // Process downstream
+                if (result.downstream.length > INITIAL_VISIBLE) {
+                    const visible = result.downstream.slice(0, INITIAL_VISIBLE);
+                    const hidden = result.downstream.slice(INITIAL_VISIBLE);
+
+                    visibleNodes.push(...visible);
+
+                    const hiddenIds = new Set(hidden.map(n => n.id));
+                    const hiddenEdges = edgesToRender.filter(e =>
+                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
+                    );
+
+                    const aggregate = this.expansion.createAggregateNode(
+                        centerNode.id,
+                        hidden,
+                        hiddenEdges,
+                        "downstream",
+                        0
+                    );
+                    if (aggregate) aggregateNodes.push(aggregate);
+                } else {
+                    visibleNodes.push(...result.downstream);
+                }
+
+                // Add aggregate nodes to visible nodes
+                visibleNodes.push(...aggregateNodes);
+
+                // Filter edges to only visible nodes
+                const visibleIds = new Set(visibleNodes.map(n => n.id));
+                visibleEdges = edgesToRender.filter(e =>
+                    visibleIds.has(e.source) && visibleIds.has(e.target)
+                );
+
+                nodesToRender = visibleNodes;
+                edgesToRender = visibleEdges;
+            }
+        }
+
+        // Serialize nodes
+        const hiddenNodes = this.persistence.getHiddenNodes();
+        const visibleNodes = nodesToRender.filter((n) => !hiddenNodes.has(n.id));
+        const nodes = visibleNodes.map((n) => GraphNodeSerializer.serialize(n));
+
+        // Filter edges to visible nodes
+        const allowedNodeIds = new Set(visibleNodes.map((n) => n.id));
+        const edges = edgesToRender
+            .filter((e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target))
+            .map((e) => ({
+                data: {
+                    id: e.id || `${e.source}_${e.target}`,
+                    source: e.source,
+                    target: e.target,
+                    io: e.io || "",
+                },
+            }));
+
+        // Render
+        this.view.render(nodes, edges);
+
+        // Position nodes
+        const shouldForceLayout = !this.persistence.nodePositions.size || options.forceLayoutDirection;
+        if (shouldForceLayout) {
+            const direction = options.forceLayoutDirection || this.persistence.getLastLayoutDirection();
+            this.positioning.forceLayout(direction, false);
+        } else {
+            this.persistence.applyCachedPositions();
+            this.positioning.positionNodes(options.centerLabel);
+            this.persistence.applyViewport();
+        }
+
+        // Setup minimap
+        this.zoomControls.setupMinimap();
+
+        // Final updates
+        this.panel.setPlaceholder();
+        this.applyFilters();
+        // this.listView.updateListView(); // Legacy handling
+        this.updateToolbarVisibility();
+        this.resetTableTabs();
+
+
+        // Push state
+        this.publishGraphState();
     }
 
     /**
@@ -462,7 +778,6 @@ export class GraphController {
         if (!this.positioning) return;
         this.positioning.forceLayout(direction, preserveViewport);
         this.applyFilters();
-        this.listView.updateListView();
         this.updateToolbarVisibility();
     }
 
@@ -480,7 +795,6 @@ export class GraphController {
         this.persistence.hideNode(id);
         cy.remove(target);
         this.clearSelection();
-        this.listView.updateListView();
         this.updateToolbarVisibility();
 
         return true;
@@ -546,7 +860,6 @@ export class GraphController {
         const direction_val = this.persistence.getLastLayoutDirection();
         this.positioning.forceLayout(direction_val, true);
         this.applyFilters();
-        this.listView.updateListView();
         this.updateToolbarVisibility();
     }
 

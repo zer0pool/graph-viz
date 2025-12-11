@@ -795,14 +795,138 @@ class GraphService:
 
             return {
                 "status": "success",
-                "table": table_name,
-                "count": len(items),
                 "jobs": items,
             }
         except Exception as e:
             logger.error(f"Failed to get trigger settings for table {table_name}: {e}")
             logger.exception("Full traceback:")
             return {"status": "error", "message": str(e)}
+
+    def get_table_lineage_hierarchy(self, table_name: str, max_depth: int = 20):
+        """
+        Return full upstream/downstream lineage hierarchy for List View.
+        
+        Returns:
+            {
+                "upstream": [ {id, name, type, depth, parent}, ... ],
+                "downstream": [ {id, name, type, depth, parent}, ... ],
+                "root_nodes": [],
+                "leaf_nodes": []
+            }
+        """
+        uow = self.uow
+        try:
+            center = uow.tables.get_by_full_name(table_name)
+            if not center:
+                return {
+                    "status": "error",
+                    "message": f"Table '{table_name}' not found",
+                    "upstream": [], "downstream": []
+                }
+            
+            # Helper for BFS traversal
+            def bfs_traverse(start_node, direction):
+                # direction: "upstream" (inputs) or "downstream" (outputs)
+                # For upstream: Table <-(output)-- Job <-(input)-- Table
+                # For downstream: Table --(input)-> Job --(output)-> Table
+                
+                result_list = []
+                visited = set()
+                # Queue item: (node_id, node_type, current_depth, parent_name)
+                # Start with center table at depth 0
+                queue = deque([(start_node.id, "table", 0, None)])
+                visited.add(("table", start_node.id))
+                
+                # Add center node to list at depth 0
+                if direction == "upstream": # Only add center once or handle separately? 
+                    # Spec implies listing from depth 0. Let's include depth 0 in both or just logic?
+                    # Spec Example: L3_OUT_008 (selected) at depth 0.
+                    pass 
+
+                while queue:
+                    curr_id, curr_type, depth, parent_name = queue.popleft()
+                    
+                    # Fetch current object to get name
+                    obj_name = ""
+                    if curr_type == "table":
+                        t = uow.tables.get_by_id(curr_id)
+                        obj_name = t.full_name
+                    else:
+                        j = uow.jobs.get_by_id(curr_id)
+                        obj_name = j.job_id
+
+                    # Add to result (skip adding center node here if we handle it outside, 
+                    # but spec shows depth 0. Let's add it if depth >= 0)
+                    if depth > 0 or (depth == 0 and curr_id == start_node.id): 
+                         result_list.append({
+                            "id": obj_name, # Use name as ID for frontend simplicity or internal ID? Spec uses name.
+                            "name": obj_name,
+                            "type": curr_type.upper(),
+                            "depth": depth,
+                            "parent": parent_name
+                        })
+
+                    if depth >= max_depth:
+                        continue
+                    
+                    next_depth = depth + 1
+                    
+                    if direction == "upstream":
+                        # Traverse upwards: 
+                        # If Table: find jobs that output to this table (Producers)
+                        # If Job: find tables that are inputs to this job
+                        if curr_type == "table":
+                            producers = uow.job_table_links.get_jobs_by_table_and_io_type(curr_id, "output")
+                            for job in producers:
+                                if ("job", job.id) not in visited:
+                                    visited.add(("job", job.id))
+                                    queue.append((job.id, "job", next_depth, obj_name))
+                        else: # Job
+                            inputs = uow.job_table_links.get_tables_by_job_and_io_type(curr_id, "input")
+                            for tbl in inputs:
+                                if ("table", tbl.id) not in visited:
+                                    visited.add(("table", tbl.id))
+                                    queue.append((tbl.id, "table", next_depth, obj_name))
+                                    
+                    else: # downstream
+                        # Traverse downwards:
+                        # If Table: find jobs that take this table as input (Consumers)
+                        # If Job: find tables that are outputs of this job
+                        if curr_type == "table":
+                            consumers = uow.job_table_links.get_jobs_by_table_and_io_type(curr_id, "input")
+                            for job in consumers:
+                                if ("job", job.id) not in visited:
+                                    visited.add(("job", job.id))
+                                    queue.append((job.id, "job", next_depth, obj_name))
+                        else: # Job
+                            outputs = uow.job_table_links.get_tables_by_job_and_io_type(curr_id, "output")
+                            for tbl in outputs:
+                                if ("table", tbl.id) not in visited:
+                                    visited.add(("table", tbl.id))
+                                    queue.append((tbl.id, "table", next_depth, obj_name))
+
+                return result_list
+
+            upstream_list = bfs_traverse(center, "upstream")
+            downstream_list = bfs_traverse(center, "downstream")
+            
+            # Remove the center node from downstream list to avoid duplication if it appears in both (at depth 0)
+            # Actually, bfs_traverse adds depth 0. The spec shows depth 0 in "UPSTREAM" section normally.
+            # Let's keep depth 0 in upstream list, and remove it from downstream list if present.
+            downstream_list = [item for item in downstream_list if item["depth"] > 0]
+            
+            return {
+                "status": "success",
+                "upstream": upstream_list,
+                "downstream": downstream_list,
+                "root_nodes": [], # Placeholder as per spec requirement
+                "leaf_nodes": []  # Placeholder
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting lineage hierarchy for {table_name}: {e}")
+            return {"status": "error", "message": str(e)}
+
 
     def get_table_lineage_summary(
         self,
