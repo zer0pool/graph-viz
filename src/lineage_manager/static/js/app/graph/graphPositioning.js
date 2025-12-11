@@ -5,10 +5,10 @@
 
 const BASE_VERTICAL_SPACING = 70;
 const BASE_HORIZONTAL_SPACING = 220;
-const DAGRE_NODE_SEP_HORIZONTAL = 160;
-const DAGRE_NODE_SEP_VERTICAL = 110;
-const DAGRE_RANK_SEP_HORIZONTAL = 240;
-const DAGRE_RANK_SEP_VERTICAL = 160;
+const DAGRE_NODE_SEP_HORIZONTAL = 80;
+const DAGRE_NODE_SEP_VERTICAL = 60;
+const DAGRE_RANK_SEP_HORIZONTAL = 100;
+const DAGRE_RANK_SEP_VERTICAL = 60;
 const DAGRE_EDGE_SEP = 16;
 
 export class GraphPositioning {
@@ -292,9 +292,10 @@ export class GraphPositioning {
                     : Math.max(DAGRE_NODE_SEP_HORIZONTAL, sampleHeight * 1.4),
             rankSep:
                 direction === "vertical"
-                    ? Math.max(DAGRE_RANK_SEP_VERTICAL, sampleHeight * 2)
-                    : Math.max(DAGRE_RANK_SEP_HORIZONTAL, sampleWidth * 1.6),
+                    ? Math.max(DAGRE_RANK_SEP_VERTICAL, sampleHeight * 1.5)
+                    : Math.max(DAGRE_RANK_SEP_HORIZONTAL, sampleWidth * 0.8),
             edgeSep: DAGRE_EDGE_SEP,
+            sort: (a, b) => a.id().localeCompare(b.id()),
             animate: false,
         };
 
