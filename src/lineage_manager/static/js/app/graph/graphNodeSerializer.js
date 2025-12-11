@@ -104,6 +104,12 @@ export class GraphNodeSerializer {
                 table_overview: tableOverview,
                 table_schema: tableSchema,
                 table_activity: tableActivity,
+                // Pass-through properties for aggregate nodes
+                hiddenNodes: n.hiddenNodes,
+                hiddenEdges: n.hiddenEdges,
+                parentId: n.parentId,
+                direction: n.direction,
+                batchNumber: n.batchNumber,
             },
         };
     }

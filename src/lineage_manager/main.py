@@ -12,6 +12,7 @@ from lineage_manager.api.v1.endpoints import diagnostics as diag_ep
 from lineage_manager.api.v1.endpoints import events as events_ep
 from lineage_manager.api.v1.endpoints import expand as expand_ep
 from lineage_manager.api.v1.endpoints import graph, jobs
+from lineage_manager.api.v1.endpoints import lineage as lineage_ep
 from lineage_manager.api.v1.endpoints import search as search_ep
 from lineage_manager.api.v1.endpoints import sync as sync_ep
 from lineage_manager.api.v1.endpoints import tables as tables_ep
@@ -85,6 +86,7 @@ def create_app() -> GraphApp:
             graph,
             jobs,
             tables_ep,
+            lineage_ep,
             search_ep,
             expand_ep,
             sync_ep,
@@ -126,16 +128,17 @@ def create_app() -> GraphApp:
     # ----------------------------------------
     # 2️⃣ Register API routers
     # ----------------------------------------
-    app.include_router(auth_ep.router)
     app.include_router(graph.router)
     app.include_router(jobs.router)
+    app.include_router(tables_ep.router)
+    app.include_router(lineage_ep.router)
     app.include_router(search_ep.router)
     app.include_router(expand_ep.router)
     app.include_router(sync_ep.router)
     app.include_router(events_ep.router)
-    app.include_router(diag_ep.router)
-    app.include_router(tables_ep.router)
     app.include_router(users_ep.router)
+    app.include_router(auth_ep.router)
+    app.include_router(diag_ep.router)
 
     # ----------------------------------------
     # 3️⃣ Return default page (index.html)

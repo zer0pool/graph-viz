@@ -149,8 +149,8 @@ class GraphService:
             for up in up_jobs:
                 logger.debug(f"Creating dependency edge: {up} -> {job.id}")
                 uow.edges.add(up, job.id, "job", "job", "dependency")
-                uow.closures.add_direct(up, job.id, "job", "job")
-                uow.closures.expand_closure(up, job.id, "job", "job")
+                uow.closures.add_direct(up, job.id)
+                uow.closures.expand_closure(up, job.id)
 
             logger.info(
                 f"Job registration completed successfully for job_id: {job.name}"

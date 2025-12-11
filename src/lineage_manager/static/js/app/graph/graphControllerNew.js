@@ -111,6 +111,13 @@ export class GraphController {
 
         cy.on("tap", "node", (evt) => {
             const target = evt.target;
+
+            // Handle aggregate node clicks
+            if (target.data("type") === "aggregate") {
+                this.handleAggregateClick(target);
+                return;
+            }
+
             this.selectNode(target);
             this.selection.highlightNeighborhood(target);
             this.panel.renderTriggers(target);
@@ -123,6 +130,106 @@ export class GraphController {
         cy.on("dbltap", "node", () => {
             document.dispatchEvent(new CustomEvent("detail-panel:toggle"));
         });
+    }
+
+    /**
+     * Handle aggregate node click with heartbeat animation
+     */
+    async handleAggregateClick(aggregateNode) {
+        const cy = this.view.getCy();
+        if (!cy) return;
+
+        const data = aggregateNode.data();
+        const hiddenNodes = data.hiddenNodes || [];
+        const hiddenEdges = data.hiddenEdges || [];
+        const parentId = data.parentId;
+        const direction = data.direction;
+        const batchNumber = data.batchNumber || 0;
+
+        // Heartbeat animation (2 seconds, 4 pulses)
+        const pulseCount = 4;
+        const pulseDuration = 500; // 500ms per pulse
+
+        for (let i = 0; i < pulseCount; i++) {
+            aggregateNode.addClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+            aggregateNode.removeClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+        }
+
+        // Get next batch (3 nodes at a time)
+        const BATCH_SIZE = 3;
+        const nextBatch = hiddenNodes.slice(0, BATCH_SIZE);
+        const remaining = hiddenNodes.slice(BATCH_SIZE);
+
+        // Add next batch nodes to graph
+        const newNodeIds = [];
+        nextBatch.forEach((node) => {
+            if (!cy.$(`#${node.id}`).length) {
+                const added = cy.add(GraphNodeSerializer.serialize(node));
+                added.addClass("just-added");
+                newNodeIds.push(node.id);
+                setTimeout(() => added.removeClass("just-added"), 600);
+            }
+        });
+
+        // Add edges for new nodes
+        const newNodeIdSet = new Set(newNodeIds);
+        const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
+
+        hiddenEdges.forEach((edge) => {
+            // Only add edge if both nodes are now visible
+            if (existingNodeIds.has(edge.source) && existingNodeIds.has(edge.target)) {
+                const edgeId = `${edge.source}__${edge.target}__${edge.io || ""}`;
+                if (!cy.$(`#${edgeId}`).length) {
+                    cy.add({
+                        data: {
+                            id: edgeId,
+                            source: edge.source,
+                            target: edge.target,
+                            io: edge.io || "",
+                        },
+                    });
+                }
+            }
+        });
+
+        // Remove old aggregate node
+        cy.remove(aggregateNode);
+
+        // Create new aggregate if more nodes remain
+        if (remaining.length > 0) {
+            const remainingEdges = hiddenEdges.filter((e) => {
+                const remainingIds = new Set(remaining.map(n => n.id));
+                return remainingIds.has(e.source) || remainingIds.has(e.target);
+            });
+
+            const newAggregate = this.expansion.createAggregateNode(
+                parentId,
+                remaining,
+                remainingEdges,
+                direction,
+                batchNumber + 1
+            );
+
+            if (newAggregate) {
+                cy.add(GraphNodeSerializer.serialize(newAggregate));
+            }
+        }
+
+        // Relayout graph
+        const layoutDirection = this.persistence.getLastLayoutDirection() || "horizontal";
+        this.positioning.forceLayout(layoutDirection, true);
+
+        // Update UI
+        this.applyFilters();
+        this.listView.updateListView();
+        this.updateToolbarVisibility();
+
+        // Refresh detail panel if parent node is currently selected
+        if (this.selectionState.node && this.selectionState.node.id() === parentId) {
+            this.selectNode(this.selectionState.node);
+        }
     }
 
     /**
@@ -173,14 +280,102 @@ export class GraphController {
         this.view.destroy();
         this.init(document.getElementById("cy"));
 
+        // Apply progressive expansion if center node is specified
+        let nodesToRender = payload.nodes || [];
+        let edgesToRender = payload.edges || [];
+
+        if (options.centerLabel && nodesToRender.length > 1) {
+            // Find center node
+            const centerNode = nodesToRender.find(n =>
+                n.full_name === options.centerLabel ||
+                n.name === options.centerLabel ||
+                n.job_id === options.centerLabel
+            );
+
+            if (centerNode) {
+                // Apply progressive expansion
+                const result = this.expansion.classifyNodesByDirection(
+                    centerNode.id,
+                    nodesToRender,
+                    edgesToRender
+                );
+
+                const INITIAL_VISIBLE = 4;
+                const aggregateNodes = [];
+                let visibleNodes = [centerNode];
+                let visibleEdges = [];
+
+                // Process upstream
+                if (result.upstream.length > INITIAL_VISIBLE) {
+                    const visible = result.upstream.slice(0, INITIAL_VISIBLE);
+                    const hidden = result.upstream.slice(INITIAL_VISIBLE);
+
+                    visibleNodes.push(...visible);
+
+                    // Get edges for hidden nodes
+                    const hiddenIds = new Set(hidden.map(n => n.id));
+                    const hiddenEdges = edgesToRender.filter(e =>
+                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
+                    );
+
+                    const aggregate = this.expansion.createAggregateNode(
+                        centerNode.id,
+                        hidden,
+                        hiddenEdges,
+                        "upstream",
+                        0
+                    );
+                    if (aggregate) aggregateNodes.push(aggregate);
+                } else {
+                    visibleNodes.push(...result.upstream);
+                }
+
+                // Process downstream
+                if (result.downstream.length > INITIAL_VISIBLE) {
+                    const visible = result.downstream.slice(0, INITIAL_VISIBLE);
+                    const hidden = result.downstream.slice(INITIAL_VISIBLE);
+
+                    visibleNodes.push(...visible);
+
+                    const hiddenIds = new Set(hidden.map(n => n.id));
+                    const hiddenEdges = edgesToRender.filter(e =>
+                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
+                    );
+
+                    const aggregate = this.expansion.createAggregateNode(
+                        centerNode.id,
+                        hidden,
+                        hiddenEdges,
+                        "downstream",
+                        0
+                    );
+                    if (aggregate) aggregateNodes.push(aggregate);
+                } else {
+                    visibleNodes.push(...result.downstream);
+                }
+
+                // Add aggregate nodes to visible nodes
+                visibleNodes.push(...aggregateNodes);
+
+                // Filter edges to only visible nodes
+                const visibleIds = new Set(visibleNodes.map(n => n.id));
+                visibleEdges = edgesToRender.filter(e =>
+                    visibleIds.has(e.source) && visibleIds.has(e.target)
+                );
+
+                nodesToRender = visibleNodes;
+                edgesToRender = visibleEdges;
+            }
+        }
+
         // Serialize nodes
         const hiddenNodes = this.persistence.getHiddenNodes();
-        const visibleNodes = (payload.nodes || []).filter((n) => !hiddenNodes.has(n.id));
+        const visibleNodes = nodesToRender.filter((n) => !hiddenNodes.has(n.id));
         const nodes = visibleNodes.map((n) => GraphNodeSerializer.serialize(n));
 
         // Filter edges to visible nodes
         const allowedNodeIds = new Set(visibleNodes.map((n) => n.id));
-        const edges = (payload.edges || [])
+        const edges = edgesToRender
             .filter((e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target))
             .map((e) => ({
                 data: {
