@@ -64,23 +64,22 @@ class App {
     setupDetailTabs();
     setupDetailResizer();
 
-    // Setup auth-dependent features
-    if (window.authClient.requireAuth) {
-      const events = new EventService({ api, graph, panel, searchState, filterState });
+    // Check for deep links
+    this.handleUrlParams(controls);
+  }
 
-      if (window.authClient.isAuthenticated()) {
-        events.start();
-      }
+  handleUrlParams(controls) {
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get("job_id");
+    const tableName = params.get("table_name") || params.get("table") || params.get("node");
 
-      document.addEventListener("auth:state-changed", (evt) => {
-        if (evt.detail?.authenticated) {
-          events.start();
-        } else {
-          events.stop();
-          graph.clearSelection();
-          graph.renderGraph({ nodes: [], edges: [] }, { resetViewport: true });
-        }
-      });
+    if (jobId) {
+      console.log("Deep link: initializing with job", jobId);
+      // Wait briefly for init? Or just call immediately.
+      controls.handleSearch(jobId, "job");
+    } else if (tableName) {
+      console.log("Deep link: initializing with table", tableName);
+      controls.handleSearch(tableName, "table");
     }
   }
 }

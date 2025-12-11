@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/v1/users",
     tags=["users"],
+    # dependencies=AUTH_DEPS,  # Disabled for embedded mode POC
 )
 
 
