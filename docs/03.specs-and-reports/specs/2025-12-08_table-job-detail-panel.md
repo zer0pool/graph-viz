@@ -279,6 +279,8 @@ Example Response
     }
   }
 }
+Note: Backend uses `period` or `cron_schedule` column to detect hourly vs daily.
+Note: Backend queries `gizmopool.test_data.table_load_history`.
 
 8. Frontend Behavior
 8.1 Activity Tab Initialization

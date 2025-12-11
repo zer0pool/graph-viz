@@ -23,6 +23,7 @@ export class JobDetailView {
         overviewFields = {},
         inputList,
         outputList,
+        runHistoryRange,
         lineagePlaceholder,
         lineageContent,
         lineageInputs,
@@ -59,6 +60,7 @@ export class JobDetailView {
         this.overviewFields = overviewFields;
         this.inputList = inputList;
         this.outputList = outputList;
+        this.runHistoryRange = runHistoryRange;
 
         this.lineagePlaceholder = lineagePlaceholder;
         this.lineageContent = lineageContent;
@@ -264,14 +266,40 @@ export class JobDetailView {
             running: runs.filter((r) => (r.status || "").toLowerCase() === "running").length,
             success: runs.filter((r) => (r.status || "").toLowerCase() === "success").length,
             failed: runs.filter((r) => (r.status || "").toLowerCase() === "failed").length,
-            skipped: runs.filter((r) => (r.status || "").toLowerCase() === "skipped").length,
             total: runs.length,
         };
         if (this.sumRunning) this.sumRunning.textContent = sum.running;
         if (this.sumSuccess) this.sumSuccess.textContent = sum.success;
         if (this.sumFailed) this.sumFailed.textContent = sum.failed;
-        if (this.sumSkipped) this.sumSkipped.textContent = sum.skipped;
-        if (this.sumTotal) this.sumTotal.textContent = sum.total;
+
+        // Calculate and render date range
+        if (this.runHistoryRange && runs.length > 0) {
+            let minTime = Infinity;
+            let maxTime = -Infinity;
+            runs.forEach(r => {
+                const ts = this.getRunTimestamp(r);
+                if (ts) {
+                    minTime = Math.min(minTime, ts);
+                    maxTime = Math.max(maxTime, ts);
+                }
+            });
+
+            if (minTime !== Infinity && maxTime !== -Infinity) {
+                const formatDate = (ts) => {
+                    return new Date(ts).toLocaleDateString(undefined, {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    });
+                };
+                const startStr = formatDate(minTime);
+                const endStr = formatDate(maxTime);
+                const dateText = startStr === endStr ? startStr : `${startStr} - ${endStr}`;
+                this.runHistoryRange.textContent = dateText;
+            } else {
+                this.runHistoryRange.textContent = "No valid dates";
+            }
+        } else if (this.runHistoryRange) {
+            this.runHistoryRange.textContent = "-";
+        }
     }
 
     renderRuns(rows = []) {
@@ -279,6 +307,10 @@ export class JobDetailView {
 
         this.latestRuns = Array.isArray(rows) ? rows : [];
         this.runHistoryPage = 0;
+
+        // Render timeline with ALL runs (filtering for failed dots)
+        this.renderTimeline(this.latestRuns);
+
         this.renderRunsPage();
     }
 
@@ -292,7 +324,6 @@ export class JobDetailView {
         }
 
         const pageRuns = this.getPageRunsWithIndices();
-        this.renderTimeline(pageRuns.map(({ run }) => run), pageRuns.map(({ index }) => index));
         this.runsBody.innerHTML = pageRuns
             .map(({ run, index }) => {
                 const status = (run.status || "unknown").toLowerCase();
@@ -301,8 +332,8 @@ export class JobDetailView {
                     run.duration_sec != null
                         ? run.duration_sec
                         : run.duration != null
-                        ? run.duration
-                        : run.elapsed;
+                            ? run.duration
+                            : run.elapsed;
                 const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
                 return `<tr data-run-idx="${index}">
                     <td><span class="status-pill status-${status}">${status}</span></td>
@@ -371,87 +402,155 @@ export class JobDetailView {
         return slice.map((run, idx) => ({ run, index: start + idx }));
     }
 
-    renderTimeline(runs = [], globalIndices = []) {
+    async renderTimeline(allRuns = []) {
         if (!this.runsTimeline) return;
-        if (!runs.length) {
+
+        // Clear previous content
+        this.runsTimeline.innerHTML = "";
+
+        if (!allRuns.length) {
             this.setTimelinePlaceholder("No run history available.");
             return;
         }
 
-        const points = this.calculateTimelinePoints(runs);
+        // Create container for Title + Chart
+        const wrapper = document.createElement("div");
+        wrapper.style.marginBottom = "8px";
 
-        this.runsTimeline.innerHTML = `
-            <div class="timeline-track">
-                <div class="timeline-track-line" aria-hidden="true"></div>
-            </div>`;
+        const title = document.createElement("div");
+        title.textContent = "Run Status";
+        title.style.fontSize = "12px";
+        title.style.color = "#6b7280";
+        title.style.textTransform = "uppercase";
+        title.style.letterSpacing = "0.05em";
+        title.style.marginBottom = "8px";
+        title.style.fontWeight = "600";
+        wrapper.appendChild(title);
 
-        const track = this.runsTimeline.querySelector(".timeline-track");
-        if (!track) return;
+        const CHART_HEIGHT = 40;
+        const container = document.createElement("div");
+        container.style.width = "100%";
+        container.style.height = `${CHART_HEIGHT}px`;
+        wrapper.appendChild(container);
 
-        points.forEach((point, idx) => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = `timeline-dot status-${point.severity}`;
-            const globalIndex = Number.isFinite(globalIndices[idx]) ? globalIndices[idx] : idx;
-            button.dataset.runIdx = globalIndex.toString();
-            button.style.left = `${point.left.toFixed(2)}%`;
-            button.title = point.tooltip;
-            button.setAttribute("aria-label", point.tooltip);
-            track.appendChild(button);
+        this.runsTimeline.appendChild(wrapper);
+
+        // Sort runs by time (oldest to newest for the chart)
+        const sortedRuns = [...allRuns].sort((a, b) => {
+            const tA = this.getRunTimestamp(a) || 0;
+            const tB = this.getRunTimestamp(b) || 0;
+            return tA - tB;
         });
 
-        this.runsTimeline.querySelectorAll(".timeline-dot").forEach((dot) => {
-            dot.addEventListener("click", (e) => {
-                const idx = Number(e.currentTarget.dataset.runIdx);
-                const run = this.latestRuns[idx];
-                if (run) this.openRunDrawer(run);
-            });
-        });
-    }
+        // Colors
+        const COLORS = {
+            SUCCESS: "#188038",
+            FAILED: "#C5221F",
+            RUNNING: "#1a73e8",
+            UNKNOWN: "#E5E7EB" // Gray
+        };
 
-    calculateTimelinePoints(runs = []) {
-        const totalRuns = runs.length;
-        if (!totalRuns) return [];
+        const getStatusColor = (status) => {
+            const s = (status || "").toLowerCase();
+            if (/success|completed|done/.test(s)) return COLORS.SUCCESS;
+            if (/failed|error|cancelled/.test(s)) return COLORS.FAILED;
+            if (/running|pending|queued/.test(s)) return COLORS.RUNNING;
+            return COLORS.UNKNOWN;
+        };
 
-        const entries = runs.map((run, idx) => {
-            const timestamp = this.getRunTimestamp(run);
-            return { run, timestamp, idx };
-        });
-
-        let minTime = Infinity;
-        let maxTime = -Infinity;
-        entries.forEach(({ timestamp }) => {
-            if (timestamp != null) {
-                minTime = Math.min(minTime, timestamp);
-                maxTime = Math.max(maxTime, timestamp);
-            }
-        });
-
-        const hasValidRange = minTime !== Infinity && maxTime !== -Infinity && maxTime > minTime;
-        const range = hasValidRange ? maxTime - minTime : null;
-
-        return entries.map(({ run, timestamp, idx }) => {
-            const fallback = totalRuns > 1 ? (idx / (totalRuns - 1)) * 100 : 50;
-            const rawLeft = hasValidRange && timestamp != null ? ((timestamp - minTime) / range) * 100 : fallback;
-            const left = Math.min(Math.max(rawLeft, 0), 100);
-            const stateValue = (run.state || run.status || "unknown").toLowerCase();
-            const durationRaw = run.duration_sec != null ? run.duration_sec : (run.duration || run.elapsed || null);
-            const durationLabel = durationRaw != null ? this.formatDuration(durationRaw) : null;
-            const labelTime = run.start_time || run.data_interval_end || run.dag_run_id || "";
-            const tooltipParts = [];
-            if (labelTime) tooltipParts.push(labelTime);
-            tooltipParts.push(stateValue);
-            if (durationLabel) tooltipParts.push(`Duration: ${durationLabel}`);
-            const tooltip = tooltipParts.join(" • ");
+        // Prepare data series
+        // X-axis: indices (0 to N-1)
+        // Y-axis: always 1 (full height bar)
+        const seriesData = sortedRuns.map((run, idx) => {
+            const status = run.state || run.status || "unknown";
             return {
-                run,
-                left,
-                severity: this.getTimelineSeverity(stateValue),
-                tooltip,
+                value: 1, // Full height
+                itemStyle: {
+                    color: getStatusColor(status)
+                },
+                // Store run data for tooltip/click
+                data: run,
+                runIndex: idx // index in sorted list
             };
         });
+
+        const option = {
+            grid: {
+                top: 5,
+                bottom: 5, // Compact
+                left: 0,
+                right: 0
+            },
+            tooltip: {
+                trigger: "item",
+                confine: true,
+                formatter: (params) => {
+                    const run = params.data.data;
+                    const status = (run.state || run.status || "unknown").toUpperCase();
+                    const startRaw = run.start_time || run.data_interval_end || "-";
+                    const durationRaw = run.duration_sec != null ? run.duration_sec : (run.duration || run.elapsed || null);
+                    const duration = durationRaw != null ? this.formatDuration(durationRaw) : "-";
+
+                    return `
+                        <div style="font-size:12px; font-weight:600; margin-bottom:4px;">RUN ID: ${run.run_id || run.run || "-"}</div>
+                        <div style="font-size:11px;">Status: <span style="color:${params.color}">${status}</span></div>
+                        <div style="font-size:11px;">Start: ${startRaw}</div>
+                        <div style="font-size:11px;">Duration: ${duration}</div>
+                    `;
+                }
+            },
+            xAxis: {
+                type: "category",
+                show: false,
+                data: sortedRuns.map((_, i) => i)
+            },
+            yAxis: {
+                type: "value",
+                show: false,
+                max: 1
+            },
+            series: [
+                {
+                    type: "bar",
+                    data: seriesData,
+                    barWidth: "90%", // Distinct blocks (Airflow style)
+                    barCategoryGap: "10%",
+                    cursor: "pointer",
+                    showBackground: true,
+                    backgroundStyle: {
+                        color: "#f1f5f9"
+                    }
+                }
+            ]
+        };
+
+        // Initialize ECharts
+        if (window.echarts) {
+            const chart = window.echarts.init(container);
+            chart.setOption(option);
+
+            chart.on("click", (params) => {
+                if (params.data && params.data.data) {
+                    this.openRunDrawer(params.data.data);
+                }
+            });
+
+            // Auto resize
+            new ResizeObserver(() => {
+                chart.resize();
+            }).observe(container);
+        } else {
+            console.warn("ECharts not found on window");
+            this.setTimelinePlaceholder("Chart library not loaded.");
+        }
     }
 
+    calculateTimelinePoints(runs = [], indices = [], minTime, maxTime) {
+        // Deprecated but kept if needed for fallback logic, though not used by renderTimeline anymore.
+        return [];
+    }
+
+    // getRunTimestamp maintained from existing code
     getRunTimestamp(run = {}) {
         return (
             this.parseTimestamp(run.data_interval_end) ??
@@ -472,15 +571,6 @@ export class JobDetailView {
         const match = dagRunId.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/);
         if (!match) return null;
         return this.parseTimestamp(match[0]);
-    }
-
-    getTimelineSeverity(status = "") {
-        if (!status) return "unknown";
-        if (/failed|error|cancelled/.test(status)) return "error";
-        if (/warn|warning|delay|late|skipped|timeout/.test(status)) return "warning";
-        if (/running|pending|queued|scheduled/.test(status)) return "running";
-        if (/success|completed|done/.test(status)) return "success";
-        return "unknown";
     }
 
     bindRunDrawer() {

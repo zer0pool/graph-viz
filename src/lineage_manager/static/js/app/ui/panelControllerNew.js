@@ -44,8 +44,7 @@ export class PanelController {
             sumRunning: document.getElementById("sum-running"),
             sumSuccess: document.getElementById("sum-success"),
             sumFailed: document.getElementById("sum-failed"),
-            sumSkipped: document.getElementById("sum-skipped"),
-            sumTotal: document.getElementById("sum-total"),
+            runHistoryRange: document.getElementById("run-history-range"),
             overviewPlaceholder: document.getElementById("job-overview-placeholder"),
             overviewContent: document.getElementById("job-overview-content"),
             overviewFields: {
@@ -449,23 +448,16 @@ export class PanelController {
                 documentation_url: overviewMeta.documentation_url || metadata.documentation_url,
                 updated_at: updatedAt,
                 tags,
-                labels,
             },
             storage: {
                 type: storageType,
                 partition: partitionValue,
-                partition_field: storageMeta.partition_field || props.partition_field || partitionValue,
-                partition_type: storageMeta.partition_type || props.partition_type || storageMeta.partitionType,
-                cluster_columns: storageMeta.cluster_columns || props.cluster_columns || storageMeta.clusterColumns,
-                location: storageMeta.location || metadata.location || props.location,
+                location: storageMeta.location || props.location || "US",
             },
             stats: {
-                row_count: statsMeta.row_count ?? schemaBlock.row_count ?? schemaBlock.rows ?? data.rows ?? data.row_count ?? props.row_count ?? null,
-                size_bytes: statsMeta.size_bytes ?? statsMeta.storage_bytes ?? schemaBlock.size_bytes ?? null,
-                storage_cost: statsMeta.storage_cost ?? null,
-                updated_at: updatedAt,
-            },
-            schema: schemaBlock,
+                schema: schemaBlock,
+                fields: schemaBlock.fields || [],
+            }
         };
     }
 
@@ -479,7 +471,9 @@ export class PanelController {
 
             this.activeTabs[group] = tab;
 
-            if (group === "table" && tab === "activity") {
+            if (group === "table" && tab === "overview" && this.currentTable) {
+                this.fetchTableOverview(this.currentTable);
+            } else if (group === "table" && tab === "activity") {
                 this.timelinessView.resize();
                 if (this.currentTable) this.ensureActivityData();
                 else {
@@ -528,6 +522,7 @@ export class PanelController {
      */
     bindTimelinessEvents() {
         this.timelinessView.onDaySelected((date) => this.handleTimelinessDay(date));
+        this.timelinessView.onRangeChanged((days) => this.fetchTimeliness(true, days));
         document.addEventListener("detail-panel:resized", () => this.timelinessView.resize());
     }
 
@@ -552,10 +547,8 @@ export class PanelController {
         }
     }
 
-    /**
-     * Fetch timeliness data
-     */
-    async fetchTimeliness(force = false) {
+
+    async fetchTimeliness(force = false, days = 7) {
         if (!this.currentTable || !this.timelinessView) return;
         if (this.isTimelinessLoading && !force) return;
 
@@ -564,7 +557,8 @@ export class PanelController {
 
         const started = Date.now();
         try {
-            const payload = await this.api.fetchTableTimeliness(this.currentTable);
+            // Pass days to API (e.g. ?days=14)
+            const payload = await this.api.fetchTableTimeliness(this.currentTable, days);
             const elapsed = Date.now() - started;
 
             if (elapsed < 1000) {
@@ -579,7 +573,8 @@ export class PanelController {
             this.timelinessCache = result || null;
 
             this.selectedTimelinessDay = null;
-            this.timelinessView.renderDaily(daily, this.selectedTimelinessDay);
+            // Pass time_range to renderDaily so it can align charts to server time
+            this.timelinessView.renderDaily(daily, this.selectedTimelinessDay, result.time_range);
             this.timelinessView.clearHourly();
         } catch (err) {
             console.error("Timeliness fetch failed", err);
@@ -715,6 +710,72 @@ export class PanelController {
         this.elements.statusText.textContent = message;
         this.elements.status.hidden = !visible;
     }
+    // ... (fetchJobRunHistory is fine) ...
+
+    async fetchTableOverview(tableId) {
+        if (!tableId) return;
+
+        try {
+            // Use the new details endpoint that mocks the ID but fetches real data
+            const payload = await this.api.fetchTableDetails(tableId);
+            if (payload.status !== "success") throw new Error(payload.message || "Failed");
+
+            const detail = payload.result || {};
+            const storage = detail.storage || {};
+            const overview = detail.overview || {};
+
+            // Populate DOM
+            this.setSafeText("table-full-name", detail.full_name || tableId);
+
+            // Handle owner fallback properly
+            let owner = overview.owner || detail.owner || "-";
+            if (owner === "-" && detail.labels && detail.labels.owner) {
+                owner = detail.labels.owner;
+            }
+            this.setSafeText("table-owner", owner);
+
+            this.setSafeText("table-storage", detail.storage_type || "BIGQUERY");
+            this.setSafeText("table-partition", storage.partitioning || "-");
+
+            // Dates - index.html has table-updated, usually corresponds to modified
+            this.setSafeText("table-updated", this.formatDate(detail.modified));
+
+            // Storage Details
+            this.setSafeText("table-storage-type", "BigQuery");
+            this.setSafeText("table-partition-field", storage.partitioning ? (storage.partitioning.match(/\((.*?)\)/)?.[1] || "DAY") : "-");
+            this.setSafeText("table-partition-type", storage.partitioning ? storage.partitioning.split("(")[0] : "-");
+
+            this.setSafeText("table-cluster-columns", (storage.clustering || []).join(", ") || "-");
+            this.setSafeText("table-storage-location", detail.location || "-");
+
+            // Stats
+            this.setSafeText("table-stat-rows", (storage.num_rows || 0).toLocaleString());
+            this.setSafeText("table-stat-size", this.formatBytes(storage.num_bytes || 0));
+
+        } catch (err) {
+            console.error("Table overview load failed", err);
+        }
+    }
+
+    formatBytes(bytes, decimals = 2) {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    }
+
+    formatDate(isoString) {
+        if (!isoString) return "-";
+        return new Date(isoString).toLocaleString();
+    }
+
+    setSafeText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
 }
 
 export default PanelController;
