@@ -58,6 +58,46 @@ export function getGraphStyles() {
       },
     },
     {
+      selector: "node[type='aggregate']",
+      style: {
+        shape: "round-rectangle",
+        width: "label",
+        height: 32,
+        padding: "8px 16px",
+        "border-width": 2,
+        "border-style": "dashed",
+        "border-color": "#9ca3af",
+        "background-color": "#f9fafb",
+        "font-size": "12px",
+        "font-weight": 500,
+        "font-style": "italic",
+        color: "#6b7280",
+        label: "data(label)",
+        "text-halign": "center",
+        "text-valign": "center",
+        cursor: "pointer",
+        "transition-property": "border-color, background-color, border-width",
+        "transition-duration": "200ms",
+      },
+    },
+    {
+      selector: "node[type='aggregate']:hover",
+      style: {
+        "border-color": "#1a73e8",
+        "background-color": "#e8f0fe",
+        color: "#1967d2",
+        "border-width": 2.5,
+      },
+    },
+    {
+      selector: "node[type='aggregate'].heartbeat",
+      style: {
+        "border-width": 3,
+        "overlay-opacity": 0.15,
+        "overlay-color": "#1a73e8",
+      },
+    },
+    {
       selector: "node.hovered",
       style: {
         "border-color": "#0f172a",

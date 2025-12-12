@@ -111,11 +111,13 @@ returns:
 
 This mimics the real Job Manager's paging logic.
 """
-
+from pydantic import BaseModel
 from fastapi import FastAPI, Query
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 import re
+
+
 
 app = FastAPI(
     title="Connected DAG Dummy Job Manager (200 items, strict table naming)",
@@ -152,6 +154,14 @@ def validate_table_name(name: str) -> str:
     return name
 
 
+# 1) Request body models
+class JobSelector(BaseModel):
+    scheduling_type: str
+    job_id: str
+
+class JobSelectorRequest(BaseModel):
+    jobs: List[JobSelector]
+    
 def is_s3(name: str) -> bool:
     return name.startswith("s3://")
 
@@ -401,3 +411,217 @@ def get_job_run_history(job_id: str):
             }
         )
     return runs
+
+
+@app.post("/api/v1/jobs/scheduling-lineage/by_ids")
+def get_scheduling_lineage_by_ids(payload: JobSelectorRequest):
+    """
+    테스트용 API:
+    - Body로 { jobs: [ { scheduling_type, job_id }, ... ] } 를 받는다.
+    - 각 job에 대해 GET /api/v1/jobs/scheduling-lineage/ 와 동일한 형태의
+      scheduling-lineage 객체를 생성해서 반환한다.
+    - upstreams / downstreams 는 각각 5개씩 더미로 생성.
+    """
+
+    results = []
+
+    for idx, item in enumerate(payload.jobs, start=1):
+        # 5개 upstream (모두 table 타입, trigger=True)
+        upstreams = [
+            {
+                "type": "table",
+                "name": f"demo.analytics.BYIDS_UP_{idx}_{i:03d}",
+                "trigger": True,
+            }
+            for i in range(1, 6)
+        ]
+
+        # 5개 downstream (모두 table 타입)
+        downstreams = [
+            {
+                "type": "table",
+                "name": f"demo.analytics.BYIDS_DOWN_{idx}_{i:03d}",
+            }
+            for i in range(1, 6)
+        ]
+
+        lineage = {
+            "type": item.scheduling_type,          # 요청 그대로
+            "job_id": item.job_id,                 # 요청 그대로
+            "name": item.job_id,
+            "upstreams": upstreams,
+            "downstreams": downstreams,
+            "destination_type": "table",
+            "schedule": {"cron": "@daily"},
+            "meta": {
+                "owner": "tester",
+                "labels": {"env": "test", "source": "by_ids"},
+                "write_mode": "append",
+                "run_status": "RUN",
+            },
+            "create_datetime": "2024-12-01T02:00:00Z",
+            "update_datetime": "2024-12-01T03:15:00Z",
+            "successful_dag_runs_count": 10,
+        }
+
+        results.append(lineage)
+
+    total = len(results)
+    offset = 0
+    limit = total
+    next_offset = None
+
+    return {
+        "status": "success",
+        "result": results,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "next_offset": next_offset,
+            "total": total,
+        },
+    }
+
+
+@app.post("/api/v1/jobs/scheduling-lineage/progressive_test")
+def get_progressive_expansion_test_data(payload: JobSelectorRequest):
+    """
+    Progressive Expansion 테스트용 API:
+    - 41개의 계층적 job 데이터 생성
+    - Level 0: 20 jobs (각 Level 1 job의 upstream)
+    - Level 1: 10 jobs (CENTER_JOB의 upstream)
+    - Level 2: 1 CENTER_JOB
+    - Level 3: 10 jobs (CENTER_JOB의 downstream)
+    
+    요청된 job_id에 따라 적절한 upstream/downstream 반환
+    """
+    
+    results = []
+    requested_job_ids = {item.job_id for item in payload.jobs}
+    
+    # Level 0 jobs (20 jobs) - 각각 1개의 input, 1개의 output
+    for i in range(1, 21):
+        job_id = f"LEVEL0_JOB_{i:03d}"
+        if job_id in requested_job_ids:
+            results.append({
+                "type": "SELF-TYPE",
+                "job_id": job_id,
+                "name": job_id,
+                "upstreams": [
+                    {"type": "table", "name": f"test.level0.input_{i:03d}", "trigger": True}
+                ],
+                "downstreams": [
+                    {"type": "table", "name": f"test.level0.output_{i:03d}"}
+                ],
+                "destination_type": "table",
+                "schedule": {"cron": "@daily"},
+                "meta": {
+                    "owner": "test_user",
+                    "labels": {"level": "0", "test": "progressive_expansion"},
+                    "write_mode": "append",
+                    "run_status": "RUN",
+                },
+                "create_datetime": "2024-12-01T02:00:00Z",
+                "update_datetime": "2024-12-01T03:15:00Z",
+                "successful_dag_runs_count": 10,
+            })
+    
+    # Level 1 jobs (10 jobs) - 각각 2개의 Level 0 output을 읽음
+    for i in range(1, 11):
+        job_id = f"LEVEL1_JOB_{i:03d}"
+        if job_id in requested_job_ids:
+            upstream_idx1 = (i - 1) * 2 + 1
+            upstream_idx2 = (i - 1) * 2 + 2
+            
+            results.append({
+                "type": "SELF-TYPE",
+                "job_id": job_id,
+                "name": job_id,
+                "upstreams": [
+                    {"type": "table", "name": f"test.level0.output_{upstream_idx1:03d}", "trigger": True},
+                    {"type": "table", "name": f"test.level0.output_{upstream_idx2:03d}", "trigger": True},
+                ],
+                "downstreams": [
+                    {"type": "table", "name": f"test.level1.output_{i:03d}"}
+                ],
+                "destination_type": "table",
+                "schedule": {"cron": "@daily"},
+                "meta": {
+                    "owner": "test_user",
+                    "labels": {"level": "1", "test": "progressive_expansion"},
+                    "write_mode": "append",
+                    "run_status": "RUN",
+                },
+                "create_datetime": "2024-12-01T02:00:00Z",
+                "update_datetime": "2024-12-01T03:15:00Z",
+                "successful_dag_runs_count": 10,
+            })
+    
+    # CENTER_JOB - 10개의 Level 1 output을 읽음
+    if "CENTER_JOB" in requested_job_ids:
+        upstreams = [
+            {"type": "table", "name": f"test.level1.output_{i:03d}", "trigger": True}
+            for i in range(1, 11)
+        ]
+        
+        results.append({
+            "type": "SELF-TYPE",
+            "job_id": "CENTER_JOB",
+            "name": "CENTER_JOB",
+            "upstreams": upstreams,
+            "downstreams": [
+                {"type": "table", "name": "test.center.main_output"}
+            ],
+            "destination_type": "table",
+            "schedule": {"cron": "@daily"},
+            "meta": {
+                "owner": "test_user",
+                "labels": {"level": "2", "test": "progressive_expansion", "center": "true"},
+                "write_mode": "append",
+                "run_status": "RUN",
+            },
+            "create_datetime": "2024-12-01T02:00:00Z",
+            "update_datetime": "2024-12-01T03:15:00Z",
+            "successful_dag_runs_count": 10,
+        })
+    
+    # Level 3 jobs (10 jobs) - CENTER output을 읽음
+    for i in range(1, 11):
+        job_id = f"LEVEL3_JOB_{i:03d}"
+        if job_id in requested_job_ids:
+            results.append({
+                "type": "SELF-TYPE",
+                "job_id": job_id,
+                "name": job_id,
+                "upstreams": [
+                    {"type": "table", "name": "test.center.main_output", "trigger": True}
+                ],
+                "downstreams": [
+                    {"type": "table", "name": f"test.level3.output_{i:03d}"}
+                ],
+                "destination_type": "table",
+                "schedule": {"cron": "@daily"},
+                "meta": {
+                    "owner": "test_user",
+                    "labels": {"level": "3", "test": "progressive_expansion"},
+                    "write_mode": "append",
+                    "run_status": "RUN",
+                },
+                "create_datetime": "2024-12-01T02:00:00Z",
+                "update_datetime": "2024-12-01T03:15:00Z",
+                "successful_dag_runs_count": 10,
+            })
+    
+    total = len(results)
+    
+    return {
+        "status": "success",
+        "result": results,
+        "pagination": {
+            "limit": total,
+            "offset": 0,
+            "next_offset": None,
+            "total": total,
+        },
+    }
+

@@ -237,8 +237,8 @@ export class PanelController {
         this.relations.set(upstream, downstream);
 
         if (this.currentJobNodeId === node.id()) {
-            const inputs = upstream.filter((item) => item.type === "table");
-            const outputs = downstream.filter((item) => item.type === "table");
+            const inputs = upstream.filter((item) => item.type !== "job");
+            const outputs = downstream.filter((item) => item.type !== "job");
             this.jobRelations = { inputs, outputs };
             this.jobView.renderIOLinks(inputs, outputs);
             this.jobView.renderLineageSummary(inputs, outputs);
