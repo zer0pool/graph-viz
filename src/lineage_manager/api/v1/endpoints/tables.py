@@ -25,7 +25,7 @@ router = APIRouter(
 )
 
 
-@router.get("/{table_name}/impact")
+@router.get("/{table_name:path}/impact")
 @inject
 def get_table_impact(
     table_name: str,
@@ -44,18 +44,20 @@ def get_table_impact(
     )
 
 
-@router.get("/{table_name}/triggers")
+@router.get("/{table_name:path}/triggers")
 @inject
 def get_table_triggers(
     table_name: str,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
 ):
     """Get trigger ON/OFF status per job that consumes the table."""
+    if _is_external_storage(table_name):
+        return {"status": "success", "table": table_name, "count": 0, "jobs": []}
     return svc.get_table_triggers(table_name)
 
 
 @router.get(
-    "/{table_name}/lineage-summary",
+    "/{table_name:path}/lineage-summary",
     response_model=TableLineageSummaryResponse,
 )
 @inject
@@ -84,7 +86,7 @@ def get_table_lineage_summary(
     return result
 
 
-@router.patch("/{table_name}/triggers/{job_id}")
+@router.patch("/{table_name:path}/triggers/{job_id}")
 @inject
 async def set_table_trigger(
     table_name: str,
@@ -100,7 +102,7 @@ async def set_table_trigger(
     return result
 
 
-@router.get("/{table_name}/details")
+@router.get("/{table_name:path}/details")
 @inject
 def get_table_details(
     table_name: str,
@@ -134,7 +136,7 @@ def get_table_details(
         }
 
 
-@router.patch("/{table_name}/triggers")
+@router.patch("/{table_name:path}/triggers")
 @inject
 async def bulk_set_table_trigger(
     table_name: str,
@@ -163,7 +165,7 @@ async def bulk_set_table_trigger(
     return result
 
 
-@router.get("/{table_name}/load-history")
+@router.get("/{table_name:path}/load-history")
 @inject
 async def get_table_load_history(
     table_name: str,
@@ -230,7 +232,7 @@ async def get_table_load_history(
     }
 
 
-@router.get("/{table_name}/timeliness")
+@router.get("/{table_name:path}/timeliness")
 @inject
 async def get_table_timeliness(
     table_name: str,
@@ -311,7 +313,7 @@ async def get_table_timeliness(
     }
 
 
-@router.get("/{table_name}/schema")
+@router.get("/{table_name:path}/schema")
 @inject
 async def get_table_schema(
     table_name: str,
@@ -417,7 +419,11 @@ async def get_table_schema(
     }
 
 
-@router.get("/{table_name}/detail")
+def _is_external_storage(name: str) -> bool:
+    return name.startswith("s3://") or name.startswith("gs://") or name.startswith("gcs://") or "/" in name
+
+
+@router.get("/{table_name:path}/detail")
 @inject
 async def get_table_detail(
     table_name: str,
@@ -425,9 +431,29 @@ async def get_table_detail(
 ):
     """Return fixed dummy table detail metadata for a test BigQuery table.
 
-    This always returns the metadata for
-    `gizmopool.austin_bikeshare.bikeshare_stations` regardless of path.
+    If S3/GCS path, returns specific dummy data.
     """
+    if _is_external_storage(table_name):
+        return {
+            "status": "success",
+            "input": {"requested": table_name},
+            "result": {
+                "full_name": table_name,
+                "table_type": "EXTERNAL",
+                "description": "-",
+                "location": "-",
+                "created": "-",
+                "modified": "-",
+                "expires": None,
+                "labels": {},
+                "storage": {
+                    "storage_type": "S3" if "s3" in table_name else "External",
+                    "num_rows": "-",
+                    "num_bytes": "-",
+                },
+            },
+        }
+
     from lineage_manager.core.config import get_settings
     settings = get_settings()
     

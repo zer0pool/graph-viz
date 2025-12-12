@@ -260,23 +260,35 @@ export class JobDetailView {
         return parts.join(" ");
     }
 
-    renderSummary(runs = []) {
-        if (!Array.isArray(runs)) return;
-        const sum = {
-            running: runs.filter((r) => (r.status || "").toLowerCase() === "running").length,
-            success: runs.filter((r) => (r.status || "").toLowerCase() === "success").length,
-            failed: runs.filter((r) => (r.status || "").toLowerCase() === "failed").length,
-            total: runs.length,
-        };
+    renderSummary(data = []) {
+        if (!data) return;
+
+        // Support both direct summary object (backend calculated) and array (legacy calc)
+        let sum;
+        if (Array.isArray(data)) {
+            sum = {
+                running: data.filter((r) => ["running", "pending", "queued"].includes((r.status || "").toLowerCase())).length,
+                success: data.filter((r) => ["success", "completed", "done"].includes((r.status || "").toLowerCase())).length,
+                failed: data.filter((r) => ["failed", "error", "cancelled"].includes((r.status || "").toLowerCase())).length,
+                total: data.length,
+            };
+        } else {
+            sum = {
+                running: data.running || 0,
+                success: data.success || 0,
+                failed: data.failed || 0,
+                total: data.total || 0
+            };
+        }
         if (this.sumRunning) this.sumRunning.textContent = sum.running;
         if (this.sumSuccess) this.sumSuccess.textContent = sum.success;
         if (this.sumFailed) this.sumFailed.textContent = sum.failed;
 
-        // Calculate and render date range
-        if (this.runHistoryRange && runs.length > 0) {
+        // Calculate and render date range only if we have the runs array
+        if (this.runHistoryRange && Array.isArray(data) && data.length > 0) {
             let minTime = Infinity;
             let maxTime = -Infinity;
-            runs.forEach(r => {
+            data.forEach(r => {
                 const ts = this.getRunTimestamp(r);
                 if (ts) {
                     minTime = Math.min(minTime, ts);

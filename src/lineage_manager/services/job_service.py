@@ -54,9 +54,20 @@ class JobService:
                 }
             )
 
+        # Calculate summary statistics
+        summary = {
+            "total": len(timeline),
+            "running": sum(1 for r in timeline if r["status"] in ("running", "queued", "pending")),
+            "success": sum(1 for r in timeline if r["status"] == "success"),
+            "failed": sum(1 for r in timeline if r["status"] == "failed"),
+        }
+
         return {
             "status": "success",
             "input": {"job_id": job_id},
-            "result": {"timeline": timeline},
+            "result": {
+                "timeline": timeline,
+                "summary": summary,
+            },
         }
 

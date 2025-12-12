@@ -694,7 +694,11 @@ export class PanelController {
             if (payload.status !== "success") throw new Error("run history failed");
 
             const rows = Array.isArray(payload.result?.timeline) ? payload.result.timeline : [];
+            const summary = payload.result?.summary || {};
+
             this.jobView.renderRuns(rows);
+            // Pass the backend-calculated summary directly
+            this.jobView.renderSummary(summary);
         } catch (err) {
             this.jobView.setRunsPlaceholder("Failed to load run history.");
         } finally {
