@@ -56,6 +56,16 @@ def get_table_triggers(
     return svc.get_table_triggers(table_name)
 
 
+@router.get("/{table_name:path}/hierarchy")
+@inject
+def get_table_hierarchy(
+    table_name: str,
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """Return full upstream/downstream lineage hierarchy for List View."""
+    return svc.get_table_lineage_hierarchy(table_name)
+
+
 @router.get(
     "/{table_name:path}/lineage-summary",
     response_model=TableLineageSummaryResponse,

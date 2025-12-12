@@ -132,21 +132,49 @@
                 <div id="cy"></div>
                 <div id="list-view" hidden>
                     <div class="list-toolbar">
-                        <div class="list-title">Current nodes</div>
+                        <div class="view-toggle list-mode-toggle" role="tablist">
+                            <button class="view-tab active" data-list-mode="current" role="tab">Current Nodes</button>
+                            <button class="view-tab" data-list-mode="full" role="tab">Full Hierarchy</button>
+                        </div>
                     </div>
-                    <table id="node-list-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Owner</th>
-                                <th>Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                    <div class="list-download-row">
-                        <button id="list-download" class="list-download-btn" type="button">Download</button>
+
+                    <!-- Current Graph Nodes -->
+                    <div id="list-view-current">
+                        <table id="node-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Owner</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="list-download-row">
+                            <button id="list-download" class="list-download-btn" type="button">Download Current
+                                CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Full Lineage Hierarchy -->
+                    <div id="list-view-full" hidden>
+                        <div class="full-lineage-header">
+                            <h3 id="full-lineage-title">Full Lineage</h3>
+                            <div class="full-lineage-actions">
+                                <button id="btn-load-full-lineage" class="btn-gcp" type="button" title="Reload">
+                                    <span class="icon">⟲</span> Reload
+                                </button>
+                                <button id="btn-download-full-lineage" class="btn-gcp" type="button" disabled>
+                                    <span class="icon">⬇</span> Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div id="full-lineage-notice" class="muted-text mb-2">Select a table to view lineage.</div>
+                        <div id="full-lineage-container" class="full-lineage-tree">
+                            <div class="empty-state">Select a node in the graph and click <strong>Load Full
+                                    Lineage</strong>.</div>
+                        </div>
                     </div>
                 </div>
                 <div id="graph-status" class="floating-panel" hidden>

@@ -56,7 +56,7 @@ export function setupExplorerShell() {
     });
 }
 
-export function setupViewToggle(graph) {
+export function setupViewToggle(graphController, listViewController) {
     const tabs = document.querySelectorAll(".view-tab");
     if (!tabs.length) return;
 
@@ -67,7 +67,11 @@ export function setupViewToggle(graph) {
             btn.classList.toggle("active", active);
             btn.setAttribute("aria-selected", active ? "true" : "false");
         });
-        graph.listView?.setViewMode?.(mode);
+
+        // Update both controllers if they have the method
+        listViewController?.setViewMode?.(mode);
+        // If GraphController needs to pause or resize when hidden, call it here
+        // graphController.handleViewChange(mode); 
     };
 
     tabs.forEach((btn) => {

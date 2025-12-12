@@ -9,8 +9,9 @@ import { ApiClient } from "./services/api.js";
 import { EventService } from "./services/events.js";
 import { PanelController } from "./ui/panelControllerNew.js";
 import { GraphController } from "./graph/graphControllerNew.js";
+import ListView from "./ui/listView.js";
 import { ControlBar } from "./ui/controlBarNew.js";
-import { FilterState, SearchState, SelectionState, RelationState } from "./state.js";
+import { FilterState, SearchState, RelationState, selectionState, lineageState } from "./state.js";
 import { setupExplorerShell, setupViewToggle, setupDetailTabs, setupDetailResizer } from "./setup/layoutSetup.js";
 
 (function bootstrap() {
@@ -31,25 +32,30 @@ class App {
     const pollInterval = readPollInterval();
     document.body.dataset.pollInterval = String(pollInterval);
 
-    // Create state
+    // Create state (Use shared singletons where available)
     const filterState = new FilterState();
     const searchState = new SearchState();
-    const selectionState = new SelectionState();
     const relationState = new RelationState();
+    // selectionState is imported as singleton
 
     // Create services
     const api = new ApiClient(window.authClient);
 
     // Create main controllers
     const panel = new PanelController(api);
+
+    // Inject shared state into GraphController
     const graph = new GraphController({
       panel,
       filterState,
-      selectionState,
+      selectionState, // Pass the singleton
       relationState,
       api,
       searchState,
     });
+
+    const listView = new ListView(api, graph);
+
     const controls = new ControlBar({ api, graph, panel, filterState, searchState });
 
     // Initialize graph
@@ -60,7 +66,7 @@ class App {
 
     // Setup UI shell
     setupExplorerShell();
-    setupViewToggle(graph);
+    setupViewToggle(graph, listView);
     setupDetailTabs();
     setupDetailResizer();
 
