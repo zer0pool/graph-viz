@@ -1,235 +1,278 @@
+# lineage_manager/core/config.py
+"""
+Configuration module - Manages all settings in a single file
+Priority: .env > OS environment > default values
+"""
+
 from functools import lru_cache
 from typing import List, Optional
+import json
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class RedisSettings(BaseSettings):
-    """Redis configuration settings with priority: .env > OS environment"""
+# ============================================================================
+# Nested Settings Models
+# ============================================================================
 
+class RedisSettings(BaseSettings):
+    """Redis configuration"""
     host: str = "localhost"
     port: int = 6379
     db: int = 0
     default_ttl: int = 60
     enabled: bool = False
-
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="REDIS_",
-        case_sensitive=False,
+        env_prefix="REDIS_",   
     )
 
-
 class MySQLSettings(BaseSettings):
-    """MySQL configuration settings with priority: .env > OS environment"""
-
+    """MySQL database configuration"""
     driver: str = "mysql+pymysql"
-    host: str = "localhost"
-    port: int = 3306
+    host: str = "172.17.0.1"
+    port: int = 33306
     user: str = "root"
     password: str = "root123"
     name: str = "lineage_manager"
-
+    pool_size: int = 10
+    max_overflow: int = 20
+    echo: bool = False
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="DB_",
-        case_sensitive=False,
+        env_prefix="DB_",   
     )
-
+    
     @property
     def database_url(self) -> str:
-        """Build the database URL from MySQL settings."""
+        """Build database URL from MySQL settings"""
         url = (
             f"{self.driver}://{self.user}:{self.password}"
             f"@{self.host}:{self.port}/{self.name}"
         )
-        # Add charset for MySQL drivers
         if self.driver.startswith("mysql") and "charset=" not in url:
             url = f"{url}?charset=utf8mb4"
         return url
 
 
-class Settings(BaseSettings):
-    # Application Settings
-    app_name: str = "lineage-manager"
-    environment: str = "development"
-    debug: bool = True
-    secret_key: str = "your-secret-key-here"
-
-    # Server Settings
-    host: str = "0.0.0.0"
-    port: int = 5003
-    workers: int = 4
-
-    # CORS Settings
-    allowed_origins: list[str] = ["http://localhost:5003", "http://localhost:3000"]
-    cors_allow_credentials: bool = True
-    cors_allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    cors_allow_headers: list[str] = ["*"]
-
-    # Logging
-    log_level: str = "INFO"
-
-    # Rate Limiting
-    rate_limit_per_second: int = 10
-    rate_limit_burst: int = 20
-
-    # Static Files
-    static_url: str = "/static/"
-    static_root: str = "/app/static/"
-
-    # Database Settings
-    database_echo: bool = False
-    database_pool_size: int = 10
-    database_max_overflow: int = 20
-
-    # Job Manager API
-    job_manager_url: str = (
-        # "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
-        "http://0.0.0.0:9000"
+class OIDCSettings(BaseSettings):
+    """OpenID Connect (OIDC) / Authentication settings"""
+    issuer_url: str = "https://accounts.google.com"
+    client_id: str = ""
+    client_secret: str = ""
+    redirect_uri: str = "http://localhost:5003"
+    audience: Optional[str] = None
+    jwks_cache_seconds: int = 3600
+    scopes: List[str] = ["openid", "email", "profile"]
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="OIDC_",  
     )
 
-    # Feature Flags
+class FeatureFlags(BaseSettings):
+    """Feature flags for enabling/disabling functionality"""
     enable_swagger: bool = True
     enable_metrics: bool = False
     require_authentication: bool = False
     enable_bigquery: bool = False
+    enable_audit_logging: bool = True
+    enable_rate_limiting: bool = True
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="FEATURE_",  
+    )
 
-    # SSE / Event settings
-    sse_buffer_size: int = 256
+class CORSSettings(BaseSettings):
+    """Cross-Origin Resource Sharing (CORS) configuration"""
+    allowed_origins: list[str] = ["http://localhost:5003", "http://localhost:3000"]
+    allow_credentials: bool = True
+    allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: list[str] = ["*"]
+    expose_headers: list[str] = ["Content-Length", "Content-Range"]
+    max_age: int = 600
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="CORS_",  
+    )
+    
+    def to_dict(self) -> dict:
+        """Convert to dict format for FastAPI CORSMiddleware"""
+        return {
+            "allow_origins": self.allowed_origins,
+            "allow_credentials": self.allow_credentials,
+            "allow_methods": self.allow_methods,
+            "allow_headers": self.allow_headers,
+            "expose_headers": self.expose_headers,
+            "max_age": self.max_age,
+        }
+
+
+class RateLimitingSettings(BaseSettings):
+    """Rate limiting configuration"""
+    per_second: int = 10
+    burst: int = 20
+    enabled: bool = True
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="RATE_LIMIT_",  
+    )
+
+
+class SSESettings(BaseSettings):
+    """Server-Sent Events (SSE) configuration"""
+    buffer_size: int = 256
     event_poll_interval_ms: int = 15_000
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="SSE_",  
+    )
 
-    # Redis settings using RedisSettings model
-    redis: RedisSettings | None = None
 
-    # MySQL settings using MySQLSettings model
-    mysql: MySQLSettings | None = None
+# ============================================================================
+# Main Settings
+# ============================================================================
 
-    # OIDC / Authentication
-    oidc_issuer_url: str = "https://accounts.google.com"
-    oidc_client_id: str = ""
-    oidc_client_secret: str = ""
-    oidc_redirect_uri: str = "http://localhost:5003"
-    oidc_audience: str | None = None
-    oidc_jwks_cache_seconds: int = 3600
-    oidc_scopes: List[str] = ["openid", "email", "profile"]
-
-    def __init__(self, **data):
-        # Initialize nested models
-        if "redis" not in data:
-            data["redis"] = RedisSettings()
-        if "mysql" not in data:
-            data["mysql"] = MySQLSettings()
-        super().__init__(**data)
-
-    # Configuration with priority: .env > OS environment
+class Settings(BaseSettings):
+    """Main settings class - Combines all configuration sections"""
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # Server & Application Settings
+    # ─────────────────────────────────────────────────────────────────────
+    app_name: str = "lineage-manager"
+    environment: str = "development"
+    debug: bool = True
+    secret_key: str = "your-secret-key-here"
+    host: str = "0.0.0.0"
+    port: int = 5003
+    workers: int = 4
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # External Services
+    # ─────────────────────────────────────────────────────────────────────
+    job_manager_url: str = "http://0.0.0.0:9000"
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # Static Files
+    # ─────────────────────────────────────────────────────────────────────
+    static_url: str = "/static/"
+    static_root: str = "/app/static/"
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # Logging
+    # ─────────────────────────────────────────────────────────────────────
+    log_level: str = "INFO"
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # Nested Configuration Models
+    # ─────────────────────────────────────────────────────────────────────
+    redis: RedisSettings = RedisSettings()
+    mysql: MySQLSettings = MySQLSettings()
+    oidc: OIDCSettings = OIDCSettings()
+    feature_flags: FeatureFlags = FeatureFlags()
+    cors: CORSSettings = CORSSettings()
+    rate_limiting: RateLimitingSettings = RateLimitingSettings()
+    sse: SSESettings = SSESettings()
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_prefix="APP_",
         case_sensitive=False,
     )
-
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # Convenience Properties
+    # ─────────────────────────────────────────────────────────────────────
+    
     @property
     def database_url(self) -> str:
-        """Get the database URL from MySQL settings."""
+        """Get database URL"""
         return self.mysql.database_url
-
-    @field_validator("require_authentication", mode="before")
-    @classmethod
-    def _normalize_require_auth(cls, value):
-        if isinstance(value, str):
-            cleaned = value.split("#", 1)[0].strip()
-            if cleaned == "":
-                return cls.require_authentication
-            lowered = cleaned.lower()
-            if lowered in {"true", "1", "yes", "on"}:
-                return True
-            if lowered in {"false", "0", "no", "off"}:
-                return False
-        return value
-
+    
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment"""
+        return self.environment == "development"
+    
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment"""
+        return self.environment == "production"
+    
+    @property
+    def require_authentication(self) -> bool:
+        """Check if authentication is required"""
+        return self.feature_flags.require_authentication
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # String Representations
+    # ─────────────────────────────────────────────────────────────────────
+    
     def __repr__(self) -> str:
-        """Return a structured representation of the settings."""
+        """Return structured string representation"""
         return (
             f"Settings(\n"
-            f"  # Application Settings\n"
-            f"    app_name={self.app_name!r},\n"
-            f"    environment={self.environment!r},\n"
-            f"    debug={self.debug},\n"
-            f"    secret_key={self.secret_key!r},\n"
-            f"  # Server Settings\n"
-            f"    host={self.host!r},\n"
-            f"    port={self.port},\n"
-            f"    workers={self.workers},\n"
-            f"  # CORS Settings\n"
-            f"    allowed_origins={self.allowed_origins},\n"
-            f"    cors_allow_credentials={self.cors_allow_credentials},\n"
-            f"    cors_allow_methods={self.cors_allow_methods},\n"
-            f"    cors_allow_headers={self.cors_allow_headers},\n"
-            f"  # Logging\n"
-            f"    log_level={self.log_level!r},\n"
-            f"  # Rate Limiting\n"
-            f"    rate_limit_per_second={self.rate_limit_per_second},\n"
-            f"    rate_limit_burst={self.rate_limit_burst},\n"
-            f"  # Static Files\n"
-            f"    static_url={self.static_url!r},\n"
-            f"    static_root={self.static_root!r},\n"
-            f"  # Database Settings\n"
+            f"  # Server\n"
+            f"    app_name={self.app_name!r}, environment={self.environment!r},\n"
+            f"    debug={self.debug}, host={self.host!r}:{self.port},\n"
+            f"  # Database\n"
             f"    database_url={self.database_url!r},\n"
-            f"    database_echo={self.database_echo},\n"
-            f"    database_pool_size={self.database_pool_size},\n"
-            f"    database_max_overflow={self.database_max_overflow},\n"
-            f"  # Job Manager API\n"
-            f"    job_manager_url={self.job_manager_url!r},\n"
-            f"  # Feature Flags\n"
-            f"    enable_swagger={self.enable_swagger},\n"
-            f"    enable_metrics={self.enable_metrics},\n"
-            f"    require_authentication={self.require_authentication},\n"
-            f"  # Redis Settings\n"
-            f"    redis={self.redis!r},\n"
-            f"  # MySQL Settings\n"
-            f"    mysql={self.mysql!r},\n"
-            f"  # OIDC / Authentication\n"
-            f"    oidc_issuer_url={self.oidc_issuer_url!r},\n"
-            f"    oidc_client_id={self.oidc_client_id!r},\n"
-            f"    oidc_client_secret={self.oidc_client_secret!r},\n"
-            f"    oidc_redirect_uri={self.oidc_redirect_uri!r},\n"
-            f"    oidc_audience={self.oidc_audience!r},\n"
-            f"    oidc_jwks_cache_seconds={self.oidc_jwks_cache_seconds},\n"
-            f"    oidc_scopes={self.oidc_scopes},\n"
+            f"  # Redis\n"
+            f"    redis_enabled={self.redis.enabled}, host={self.redis.host}:{self.redis.port},\n"
+            f"  # OIDC\n"
+            f"    require_auth={self.feature_flags.require_authentication},\n"
+            f"    oidc_issuer={self.oidc.issuer_url!r},\n"
+            f"  # Features\n"
+            f"    swagger={self.feature_flags.enable_swagger},\n"
+            f"    audit_logging={self.feature_flags.enable_audit_logging},\n"
+            f"  # SSE\n"
+            f"    sse_buffer_size={self.sse.buffer_size},\n"
+            f"    event_poll_interval_ms={self.sse.event_poll_interval_ms},\n"            
             f")"
+
         )
-
+    
     def __str__(self) -> str:
-        """Return a JSON-formatted representation of the settings."""
-        import json
+        """Return JSON formatted representation"""
+        return json.dumps(self.model_dump(), indent=2, default=str)
 
-        return json.dumps(self.model_dump(), indent=2)
 
+# ============================================================================
+# Singleton Settings Loader
+# ============================================================================
 
 @lru_cache()
 def get_settings() -> Settings:
-    settings = Settings()
-    print(f"Database URL built from DB_* settings: {settings.database_url}")
-    print(f"Loaded settings: {repr(settings)}")
-    print(settings)
-    return settings
+    """Return singleton instance of Settings"""
+    return Settings()
 
+
+# ============================================================================
+# CLI Usage
+# ============================================================================
 
 if __name__ == "__main__":
-    # Print configuration when run directly
-    print("=== Lineage Manager Configuration ===")
     settings = get_settings()
-    print("=== Configuration Details ===")
-    print(f"Application Name: {settings.app_name}")
-    print(f"Environment: {settings.environment}")
-    print(f"Debug Mode: {settings.debug}")
-    print(f"Host: {settings.host}")
-    print(f"Port: {settings.port}")
-    print(f"Database URL: {settings.database_url}")
-    print(f"Job Manager URL: {settings.job_manager_url}")
-    print("=====================================")
+    print("=" * 50)
+    print("Lineage Manager Configuration")
+    print("=" * 50)
+    print(repr(settings))
+    print("\n" + "=" * 50)
+    print("Full Configuration (JSON)")
+    print("=" * 50)
+    print(settings)

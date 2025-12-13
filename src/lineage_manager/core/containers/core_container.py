@@ -30,11 +30,11 @@ class CoreContainer(containers.DeclarativeContainer):
     # Authentication - uses settings directly
     oidc_provider = providers.Singleton(
         OIDCProviderClient,
-        issuer=_settings.oidc_issuer_url,
-        client_id=_settings.oidc_client_id,
-        client_secret=_settings.oidc_client_secret,
-        redirect_uri=_settings.oidc_redirect_uri,
-        audience=_settings.oidc_audience,
-        scopes=_settings.oidc_scopes,
-        cache_seconds=_settings.oidc_jwks_cache_seconds,
+        issuer=_settings.oidc.issuer_url,
+        client_id=_settings.oidc.client_id,
+        client_secret=_settings.oidc.client_secret,
+        redirect_uri=_settings.oidc.redirect_uri,
+        audience=_settings.oidc.audience,
+        scopes=_settings.oidc.scopes,
+        cache_seconds=_settings.oidc.jwks_cache_seconds,
     )

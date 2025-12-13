@@ -74,4 +74,4 @@ class SSEBroker:
 
 
 _settings = get_settings()
-broker = SSEBroker(history_size=_settings.sse_buffer_size)
+broker = SSEBroker(history_size=_settings.sse.buffer_size)
