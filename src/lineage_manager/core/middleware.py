@@ -21,7 +21,7 @@ async def session_middleware(
     - Commits on success (HTTP < 400), rollbacks on error
     - Always removes the session registry at the end
     """
-    session_registry = container.database().session_factory  # scoped_session registry
+    session_registry = container.core.database().session_factory  # scoped_session registry
     # Expose on request for any ad-hoc dependency usage
     request.state.db = session_registry
     try:
@@ -62,4 +62,4 @@ def get_container_session(request: Request) -> Session:
     # Get container from app (should be set in main.py)
     container = request.app.container
     # Return an actual Session instance from scoped registry
-    return container.database().session_factory()
+    return container.core.database().session_factory()

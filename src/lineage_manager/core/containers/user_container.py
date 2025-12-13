@@ -2,6 +2,7 @@
 User Management Domain Container.
 
 Provides services for user profile and authentication management.
+Uses DependenciesContainer for database session (from CoreContainer).
 """
 
 from dependency_injector import containers, providers
@@ -14,18 +15,18 @@ from lineage_manager.services.user_service import UserService
 class UserContainer(containers.DeclarativeContainer):
     """User management domain container."""
     
-    # Dependencies from other containers
+    # Dependencies from CoreContainer (for database session)
     core = providers.DependenciesContainer()
     
-    # Repositories (direct injection - simpler than UoW for this domain)
+    # Repositories with direct session injection
     user_repository = providers.Factory(
         UserRepository,
-        db=core.write_session,
+        db=core.session_factory,
     )
     
     job_repository = providers.Factory(
         JobRepository,
-        db=core.read_session,  # Read-only for listing user's jobs
+        db=core.session_factory,
     )
     
     # Service with direct repository injection
@@ -33,5 +34,5 @@ class UserContainer(containers.DeclarativeContainer):
         UserService,
         user_repository=user_repository,
         job_repository=job_repository,
-        session=core.write_session,
+        session=core.session_factory,
     )

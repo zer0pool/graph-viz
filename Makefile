@@ -7,7 +7,7 @@ DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
 GAR_REGISTRY=asia-northeast3-docker.pkg.dev/gizmopool/test_server
 
-.PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop build-sec push-sec restart-sec
+.PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop build-sec push-sec restart-sec kill
 
 export PYTHONPATH=$(shell pwd)/src
 
@@ -26,7 +26,13 @@ install-dev:
 	. .venv/bin/activate && pip install black pytest pytest-cov flake8
 
 run:
+	$(MAKE) kill
 	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn $(APP) --reload --host 0.0.0.0 --port $(PORT)
+
+kill:
+	@echo "Killing process on port $(PORT)..."
+	-fuser -k -9 $(PORT)/tcp || true
+	@sleep 1
 
 run-prod:
 	. .venv/bin/activate && uvicorn $(APP) --host 0.0.0.0 --port $(PORT) --workers 4

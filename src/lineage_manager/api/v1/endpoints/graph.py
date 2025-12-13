@@ -7,7 +7,10 @@ from lineage_manager.api.v1.schemas import JobRegister, BatchJobSyncRequest
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
-from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.graph_command_service import GraphCommandService
+from lineage_manager.services.graph_query_service import GraphQueryService
+from lineage_manager.services.graph_sync_service import GraphSyncService
+from lineage_manager.services.graph_initializer import GraphInitializerService
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ router = APIRouter(
 @inject
 def register_job(
     payload: JobRegister,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
     """
     Register a new job using container pattern with proper session management.
@@ -35,7 +38,7 @@ def register_job(
     """
     logger.info(f"Received job registration request: {payload}")
     try:
-        job_id = graph_service.register_job(payload)
+        job_id = svc.register_job(payload)
         logger.info(f"Job registered successfully: {job_id}")
         return {"job_id": job_id}
     except Exception as e:
@@ -48,12 +51,12 @@ def register_job(
 @inject
 def register_lineage_job(
     payload: SchedulingLineage,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
     """Register a job using the SchedulingLineage payload."""
     logger.info(f"Received scheduling lineage registration request: {payload.job_id}")
     try:
-        job_id = graph_service.register_lineage_job(payload)
+        job_id = svc.register_lineage_job(payload)
         logger.info(f"Lineage job registered successfully: {job_id}")
         return {"job_id": job_id}
     except Exception as e:
@@ -65,7 +68,7 @@ def register_lineage_job(
 @router.post("/reset")
 @inject
 def reset_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
     """
     Reset the entire graph by clearing all graph-related data.
@@ -80,7 +83,7 @@ def reset_graph(
     """
     logger.info("Received graph reset request")
     try:
-        result = graph_service.reset_graph()
+        result = svc.reset_graph()
         logger.info("Graph reset completed successfully")
         return result
     except Exception as e:
@@ -93,7 +96,7 @@ def reset_graph(
 @router.post("/initialize")
 @inject
 async def initialize_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    initializer: GraphInitializerService = Depends(Provide[GraphContainer.graph.initializer_service]),
 ):
     """
     Initialize the graph by fetching all jobs from Job Manager API
@@ -111,7 +114,7 @@ async def initialize_graph(
     """
     logger.info("Received graph initialization request")
     try:
-        result = await graph_service.initialize_graph()
+        result = await initializer.initialize()
         logger.info(f"Graph initialization completed: {result.get('status')}")
         return result
     except Exception as e:
@@ -126,7 +129,7 @@ async def initialize_graph(
 @router.get("/health")
 @inject
 def health_check(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Get basic database statistics for health monitoring.
@@ -140,7 +143,7 @@ def health_check(
     """
     logger.info("Received health check request")
     try:
-        result = graph_service.get_health_stats()
+        result = svc.get_health_stats()
         logger.info(f"Health check completed: {result['status']}")
         return result
     except Exception as e:
@@ -159,7 +162,7 @@ def get_table(
     depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
     include_tables: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Get DAG (Directed Acyclic Graph) information for a specific table.
@@ -173,7 +176,7 @@ def get_table(
 
     logger.info(f"Received table DAG request for: {full_name}")
     try:
-        result = graph_service.get_table_dag(
+        result = svc.get_table_dag(
             full_name=full_name,
             direction=direction,
             depth=depth,
@@ -198,10 +201,10 @@ def get_job_neighbors(
     level: int = 1,
     direction: str = Query("both", enum=["upstream", "downstream", "both"]),
     limit: int | None = Query(None, ge=1, le=1000),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     try:
-        return graph_service.get_job_neighbors(
+        return svc.get_job_neighbors(
             job_id=job_id, level=level, direction=direction, limit=limit
         )
     except Exception as e:
@@ -218,10 +221,10 @@ def get_table_neighbors(
     level: int = 1,
     direction: str = Query("both", enum=["upstream", "downstream", "both"]),
     limit: int | None = Query(None, ge=1, le=1000),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     try:
-        return graph_service.get_table_neighbors(
+        return svc.get_table_neighbors(
             table_name=table_name, level=level, direction=direction, limit=limit
         )
     except Exception as e:
@@ -239,7 +242,7 @@ def get_table_neighbors(
 def sync_job_lineage(
     lineage: SchedulingLineage,
     dry_run: bool = Query(False, description="Preview changes without committing"),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphSyncService = Depends(Provide[GraphContainer.graph.sync_service]),
 ):
     """
     Directly sync a job's lineage information to the graph.
@@ -251,7 +254,7 @@ def sync_job_lineage(
     """
     logger.info(f"Received direct sync request for job: {lineage.job_id}, dry_run={dry_run}")
     try:
-        result = graph_service.sync_single_job(lineage, dry_run=dry_run)
+        result = svc.sync_single_job(lineage, dry_run=dry_run)
         logger.info(f"Sync completed for {lineage.job_id}: {result.get('status')}")
         return result
     except Exception as e:
@@ -265,7 +268,7 @@ def sync_job_lineage(
 async def sync_jobs_by_ids(
     request: BatchJobSyncRequest,  # Import will be added
     dry_run: bool = Query(False, description="Preview changes without committing"),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphSyncService = Depends(Provide[GraphContainer.graph.sync_service]),
 ):
     """
     Sync multiple jobs by fetching their lineages from Job Manager.
@@ -277,7 +280,7 @@ async def sync_jobs_by_ids(
     """
     logger.info(f"Received batch sync request for {len(request.jobs)} jobs, dry_run={dry_run}")
     try:
-        result = await graph_service.sync_multiple_jobs(
+        result = await svc.sync_multiple_jobs(
             job_requests=[job.dict() for job in request.jobs],
             dry_run=dry_run
         )

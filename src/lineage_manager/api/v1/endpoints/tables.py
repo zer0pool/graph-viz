@@ -10,7 +10,7 @@ from lineage_manager.core.auth import is_auth_enabled, require_authenticated_use
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.core.sse import broker
 from lineage_manager.services.graph_query_service import GraphQueryService
-from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.bigquery_service import BigQueryService
 from lineage_manager.api.v1.schemas import TableLineageSummaryResponse
 
@@ -31,7 +31,7 @@ def get_table_impact(
     table_name: str,
     max_depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Return downstream tables impacted by a base table, with writer jobs per depth.
@@ -39,7 +39,7 @@ def get_table_impact(
     logger.info(
         f"Received impact request for table={table_name}, max_depth={max_depth}, include_jobs={include_jobs}"
     )
-    return graph_service.get_table_impact(
+    return svc.get_table_impact(
         base_table=table_name, max_depth=max_depth, include_jobs=include_jobs
     )
 
@@ -60,7 +60,7 @@ def get_table_triggers(
 @inject
 def get_table_hierarchy(
     table_name: str,
-    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """Return full upstream/downstream lineage hierarchy for List View."""
     return svc.get_table_lineage_hierarchy(table_name)
@@ -102,7 +102,7 @@ async def set_table_trigger(
     table_name: str,
     job_id: str,
     body: dict = Body(..., example={"trigger": True}),
-    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
     """Set trigger ON/OFF for a job that consumes the table, and emit SSE."""
     trigger = bool(body.get("trigger", True))
@@ -151,7 +151,7 @@ def get_table_details(
 async def bulk_set_table_trigger(
     table_name: str,
     body: dict = Body(..., example={"trigger": False}),
-    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
     """Bulk set trigger ON/OFF for all jobs that consume the table.
 
