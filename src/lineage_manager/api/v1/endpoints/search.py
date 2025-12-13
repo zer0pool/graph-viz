@@ -20,6 +20,6 @@ router = APIRouter(
 def suggest(
     q: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=100),
-    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     return svc.search_suggestions(q=q, limit=limit)

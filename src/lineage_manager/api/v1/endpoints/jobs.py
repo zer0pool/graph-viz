@@ -24,7 +24,7 @@ router = APIRouter(
 @inject
 def get_job_detail(
     job_id: str,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     job = graph_service.get_job(job_id)
     if not job:
@@ -50,7 +50,7 @@ def get_job_detail(
 def get_job_graph(
     job_id: str,
     depth: int = 1,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     deps = graph_service.get_job_dependencies(job_id, max_depth=depth)
     if deps.get("status") == "error":
@@ -69,7 +69,7 @@ class JobUpdateRequest(BaseModel):
 def update_job(
     job_id: str,
     payload: JobUpdateRequest,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     job = graph_service.get_job(job_id)
     if not job:
@@ -115,7 +115,7 @@ def update_job(
 @inject
 def toggle_job_status(
     job_id: str,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     job = graph_service.toggle_job_enabled(job_id)
     if not job:
@@ -138,7 +138,7 @@ def toggle_job_status(
 @inject
 async def get_job_run_history(
     job_id: str,
-    job_service: JobService = Depends(Provide[GraphContainer.job_service]),
+    job_service: JobService = Depends(Provide[GraphContainer.job.job_service]),
 ):
     """Fetch run history from Job Manager via service layer."""
     return await job_service.get_run_history(job_id)

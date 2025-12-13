@@ -26,7 +26,7 @@ async def sync_graph(
     source: Optional[str] = Body(None, embed=True),
     reset: bool = Body(False, embed=True),
     jobs: Optional[List[JobRegister]] = Body(None, embed=True),
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ) -> Dict[str, Any]:
     """
     Synchronize graph data.
@@ -51,7 +51,7 @@ async def sync_graph(
 @router.get("/sync/status")
 @inject
 def sync_status(
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     status = svc.last_sync_status()
     if not status:
@@ -64,7 +64,7 @@ def sync_status(
 async def sync_node(
     node_type: str = Body(..., embed=True),
     node_db_id: int = Body(..., embed=True),
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """Sync a single node (job or table-related producers) from Job Manager."""
     return await svc.sync_node(node_type=node_type, node_db_id=node_db_id)

@@ -30,7 +30,7 @@ async def get_table_upstream(
     node_type: Optional[str] = Query(
         None, description="Filter by node type (table/job)"
     ),
-    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.uow]),
+    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.graph.write_uow]),
 ):
     """
     Get all upstream dependencies for a table.
@@ -68,7 +68,7 @@ async def get_table_downstream(
     node_type: Optional[str] = Query(
         None, description="Filter by node type (table/job)"
     ),
-    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.uow]),
+    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.graph.write_uow]),
 ):
     """
     Get all downstream dependencies for a table.
@@ -103,7 +103,7 @@ async def get_table_downstream(
 async def get_job_upstream(
     job_id: str,
     max_depth: Optional[int] = Query(None, description="Maximum depth to traverse"),
-    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.uow]),
+    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.graph.write_uow]),
 ):
     """
     Get all upstream jobs.
@@ -138,7 +138,7 @@ async def get_job_upstream(
 async def get_job_downstream(
     job_id: str,
     max_depth: Optional[int] = Query(None, description="Maximum depth to traverse"),
-    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.uow]),
+    uow: GraphUnitOfWork = Depends(Provide[GraphContainer.graph.write_uow]),
 ):
     """
     Get all downstream jobs.

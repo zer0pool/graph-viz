@@ -29,7 +29,7 @@ class AuthCodePayload(BaseModel):
 @router.get("/config")
 @inject
 def get_auth_config(
-    oidc_client: OIDCProviderClient = Depends(Provide[GraphContainer.oidc_provider]),
+    oidc_client: OIDCProviderClient = Depends(Provide[GraphContainer.core.oidc_provider]),
 ):
     """
     Return minimal configuration so the frontend knows how to initiate OIDC login.
@@ -58,8 +58,8 @@ def exchange_authorization_code(
     code: Optional[str] = Form(None),
     id_token: Optional[str] = Form(None),
     code_verifier: Optional[str] = Form(None),
-    oidc_client: OIDCProviderClient = Depends(Provide[GraphContainer.oidc_provider]),
-    user_service: UserService = Depends(Provide[GraphContainer.user_service]),
+    oidc_client: OIDCProviderClient = Depends(Provide[GraphContainer.core.oidc_provider]),
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
 ):
     """
     Exchange an authorization code for tokens via the configured OIDC provider,

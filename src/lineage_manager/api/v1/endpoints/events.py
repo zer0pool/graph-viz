@@ -47,7 +47,7 @@ async def stream_trigger_status(
 @inject
 def get_state_hash(
     graph_service: GraphQueryService = Depends(
-        Provide[GraphContainer.graph_query_service]
+        Provide[GraphContainer.graph.query_service]
     ),
 ):
     stats = graph_service.get_health_stats()

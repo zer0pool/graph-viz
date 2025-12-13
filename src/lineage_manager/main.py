@@ -57,7 +57,7 @@ def create_app() -> GraphApp:
 
     # Initialize dependency injection container
     app_container = GraphContainer()
-    app_container.config.from_dict(settings.model_dump())
+    app_container.core.config.from_dict(settings.model_dump())
 
     # Create FastAPI app with Swagger configuration
     app = FastAPI(

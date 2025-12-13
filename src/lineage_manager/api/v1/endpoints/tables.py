@@ -31,7 +31,7 @@ def get_table_impact(
     table_name: str,
     max_depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Return downstream tables impacted by a base table, with writer jobs per depth.
@@ -48,7 +48,7 @@ def get_table_impact(
 @inject
 def get_table_triggers(
     table_name: str,
-    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """Get trigger ON/OFF status per job that consumes the table."""
     if _is_external_storage(table_name):
@@ -60,7 +60,7 @@ def get_table_triggers(
 @inject
 def get_table_hierarchy(
     table_name: str,
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """Return full upstream/downstream lineage hierarchy for List View."""
     return svc.get_table_lineage_hierarchy(table_name)
@@ -75,7 +75,7 @@ def get_table_lineage_summary(
     table_name: str,
     max_roots: int = Query(50, ge=1, le=200),
     max_leaves: int = Query(50, ge=1, le=200),
-    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """Return aggregated lineage metrics for the table detail lineage panel."""
     result = svc.get_table_lineage_summary(
@@ -102,7 +102,7 @@ async def set_table_trigger(
     table_name: str,
     job_id: str,
     body: dict = Body(..., example={"trigger": True}),
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """Set trigger ON/OFF for a job that consumes the table, and emit SSE."""
     trigger = bool(body.get("trigger", True))
@@ -116,7 +116,7 @@ async def set_table_trigger(
 @inject
 def get_table_details(
     table_name: str,
-    bq_service: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+    bq_service: BigQueryService = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ):
     """
     Get detailed metadata for a table (schema, storage, etc).
@@ -151,7 +151,7 @@ def get_table_details(
 async def bulk_set_table_trigger(
     table_name: str,
     body: dict = Body(..., example={"trigger": False}),
-    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """Bulk set trigger ON/OFF for all jobs that consume the table.
 
@@ -179,7 +179,7 @@ async def bulk_set_table_trigger(
 @inject
 async def get_table_load_history(
     table_name: str,
-    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ):
     """Return load timeline data. Queries BigQuery if enabled, otherwise returns dummy data."""
     from lineage_manager.core.config import get_settings
@@ -247,7 +247,7 @@ async def get_table_load_history(
 async def get_table_timeliness(
     table_name: str,
     days: int = 7,
-    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ) -> dict:
     """Return timeliness by querying `gizmopool.test_data.table_load_history` for the
     given table_name. The function will match only on `table_name` column (ignoring project/dataset).
@@ -327,7 +327,7 @@ async def get_table_timeliness(
 @inject
 async def get_table_schema(
     table_name: str,
-    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ):
     """Return fixed dummy schema for a test BigQuery table regardless of input.
 
@@ -437,7 +437,7 @@ def _is_external_storage(name: str) -> bool:
 @inject
 async def get_table_detail(
     table_name: str,
-    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery_service]),
+    bigquery_svc: BigQueryService = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ):
     """Return fixed dummy table detail metadata for a test BigQuery table.
 

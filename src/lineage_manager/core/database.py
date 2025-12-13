@@ -53,6 +53,16 @@ class Database:
     @property
     def session_factory(self) -> sessionmaker:
         return self._session_factory
+    
+    @property
+    def write_session_factory(self) -> sessionmaker:
+        """Session factory for write operations (currently same as session_factory)."""
+        return self._session_factory
+    
+    @property
+    def read_session_factory(self) -> sessionmaker:
+        """Session factory for read operations (currently same as session_factory)."""
+        return self._session_factory
 
     @contextmanager
     def session(self) -> AbstractContextManager[Session]:
