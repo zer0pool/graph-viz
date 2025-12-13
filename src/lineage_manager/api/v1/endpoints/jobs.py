@@ -8,8 +8,10 @@ from pydantic import BaseModel
 
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
-from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.graph_query_service import GraphQueryService
+from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.job_service import JobService
+from lineage_manager.api.v1.schemas import JobUpdateRequest
 
 AUTH_DEPS = [Depends(require_authenticated_user)] if 1==0 else []
 
@@ -24,9 +26,9 @@ router = APIRouter(
 @inject
 def get_job_detail(
     job_id: str,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
-    job = graph_service.get_job(job_id)
+    job = svc.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
     return {
@@ -50,18 +52,15 @@ def get_job_detail(
 def get_job_graph(
     job_id: str,
     depth: int = 1,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
-    deps = graph_service.get_job_dependencies(job_id, max_depth=depth)
+    deps = svc.get_job_neighbors(job_id, level=depth)
     if deps.get("status") == "error":
         raise HTTPException(status_code=500, detail=deps["message"])
     return {"job_id": job_id, "dependencies": deps, "depth": depth}
 
 
-class JobUpdateRequest(BaseModel):
-    status: Optional[str] = None
-    enabled: Optional[bool] = None
-    trigger_tables: Optional[List[str]] = None
+
 
 
 @router.patch("/{job_id}")
@@ -69,63 +68,40 @@ class JobUpdateRequest(BaseModel):
 def update_job(
     job_id: str,
     payload: JobUpdateRequest,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
-    job = graph_service.get_job(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
-
-    updates: dict = {}
-    meta = dict(getattr(job, "job_metadata", {}) or {})
-
-    if payload.status is not None:
-        if payload.status not in ["pending", "success", "failure", "disabled"]:
-            raise HTTPException(status_code=400, detail="Invalid status")
-        meta["status"] = payload.status
-        updates["status"] = payload.status
-
-    if payload.enabled is not None:
-        meta["enabled"] = bool(payload.enabled)
-        updates["enabled"] = bool(payload.enabled)
-
-    if payload.trigger_tables is not None:
-        job.trigger_tables = payload.trigger_tables
-        updates["trigger_tables"] = payload.trigger_tables
-
-    if not updates:
-        raise HTTPException(status_code=400, detail="No valid fields to update")
-
-    if "status" in updates or "enabled" in updates:
-        job.job_metadata = meta
-
     try:
-        graph_service.uow.commit()
-    except Exception:
-        graph_service.uow.rollback()
-        raise
-
-    return {
-        "job_id": job_id,
-        "updated": updates,
-        "message": f"Job '{job_id}' updated successfully.",
-    }
+        result = svc.update_job(job_id, payload)
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+        
+        # If result contains 'updated' as empty, previously we defined "No valid fields" here?
+        # The service returns what it updated.
+        if not result.get("updated"):
+             # Original logic: raise 400 if no valid fields.
+             # Service doesn't raise, just returns empty updates?
+             # My service implementation doesn't raise if updates empty.
+             # I should check if updates dict is empty.
+             raise HTTPException(status_code=400, detail="No valid fields to update")
+             
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to update job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{job_id}/actions/toggle")
 @inject
 def toggle_job_status(
     job_id: str,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
+    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
 ):
-    job = graph_service.toggle_job_enabled(job_id)
+    # Service handles transaction
+    job = svc.toggle_job_enabled(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
-
-    try:
-        graph_service.uow.commit()
-    except Exception:
-        graph_service.uow.rollback()
-        raise
 
     return {
         "job_id": job_id,

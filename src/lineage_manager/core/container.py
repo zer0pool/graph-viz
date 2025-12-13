@@ -2,6 +2,8 @@
 Application Container.
 
 Root container that wires all domain containers together.
+Each domain container uses get_settings() directly for configuration,
+so we only need to pass provider dependencies (database, adapters) between containers.
 """
 
 from dependency_injector import containers, providers
@@ -20,25 +22,28 @@ class ApplicationContainer(containers.DeclarativeContainer):
         packages=["lineage_manager.api.v1.endpoints"]
     )
     
-    # Core infrastructure
+    # ─────────────────────────────────────────────────────
+    # Core infrastructure (database, auth)
+    # ─────────────────────────────────────────────────────
     core = providers.Container(CoreContainer)
     
+    # ─────────────────────────────────────────────────────
     # Domain containers
-    job = providers.Container(
-        JobContainer,
-        core=core,
-    )
+    # ─────────────────────────────────────────────────────
     
+    # Job domain (no dependencies needed - uses settings directly)
+    job = providers.Container(JobContainer)
+    
+    # User domain (needs database from core)
     user = providers.Container(
         UserContainer,
         core=core,
     )
     
-    bigquery = providers.Container(
-        BigQueryContainer,
-        core=core,
-    )
+    # BigQuery domain (no dependencies needed)
+    bigquery = providers.Container(BigQueryContainer)
     
+    # Graph domain (needs database from core, adapter from job)
     graph = providers.Container(
         GraphDomainContainer,
         core=core,
@@ -48,4 +53,3 @@ class ApplicationContainer(containers.DeclarativeContainer):
 
 # Backward compatibility - expose old GraphContainer name
 GraphContainer = ApplicationContainer
-

@@ -152,3 +152,9 @@ class JobSyncRequest(BaseModel):
 class BatchJobSyncRequest(BaseModel):
     """Batch job sync request."""
     jobs: List[JobSyncRequest] = Field(..., description="List of jobs to sync")
+
+
+class JobUpdateRequest(BaseModel):
+    status: Optional[str] = None
+    enabled: Optional[bool] = None
+    trigger_tables: Optional[List[str]] = None

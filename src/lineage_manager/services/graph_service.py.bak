@@ -13,6 +13,7 @@ from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.models.job_data_transformer import JobDataTransformer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
+from lineage_manager.services.helpers.graph_traversal_helper import GraphTraversalHelper
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class GraphService:
     def __init__(self, uow: GraphUnitOfWork, job_manager: JobManagerAdapter):
         self.uow = uow
         self.job_manager = job_manager
+        self._traversal = GraphTraversalHelper(uow)  # Shared traversal helper
 
     # -----------------------------
     # Jobs (detail, dependencies, toggle)
@@ -434,119 +436,15 @@ class GraphService:
         if not job:
             return {"status": "error", "message": f"Job '{job_id}' not found"}
 
-        from sqlalchemy import and_, or_, select
+        result = self._traversal.bfs_neighbors(
+            "job", job.id, job, level, direction, limit
+        )
 
-        nodes: dict[str, dict] = {}
-        edges: list[dict] = []
-
-        # BFS frontier of tuples (type, db_id)
-        visited = set([("job", job.id)])
-        frontier = [("job", job.id)]
-
-        # always include the base job node
-        self._ensure_node_entry(nodes, "job", job)
-
-        added = 0
-        for _ in range(max(1, level)):
-            next_frontier = []
-            for ntype, nid in frontier:
-                if ntype == "job":
-                    # Job -> Tables (output) only for downstream/both
-                    if direction in ("downstream", "both"):
-                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(
-                            nid, "output"
-                        ):
-                            tkey = self._ensure_node_entry(nodes, "table", tbl)
-                            jkey = f"j{nid}"
-                            e = {"source": jkey, "target": tkey, "io": "output"}
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_job": job_id,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("table", tbl.id) not in visited:
-                                visited.add(("table", tbl.id))
-                                next_frontier.append(("table", tbl.id))
-
-                    # Tables -> Job (inputs) only for upstream/both
-                    if direction in ("upstream", "both"):
-                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(
-                            nid, "input"
-                        ):
-                            tkey = self._ensure_node_entry(nodes, "table", tbl)
-                            jkey = f"j{nid}"
-                            e = {"source": tkey, "target": jkey, "io": "input"}
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_job": job_id,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("table", tbl.id) not in visited:
-                                visited.add(("table", tbl.id))
-                                next_frontier.append(("table", tbl.id))
-
-                    # Note: skip job↔job dependency edges in neighbors output
-
-                else:  # table node
-                    # Producers (job -> table) are upstream
-                    if direction in ("upstream", "both"):
-                        for prod in uow.job_table_links.get_jobs_by_table_and_io_type(
-                            nid, "output"
-                        ):
-                            self._ensure_node_entry(nodes, "job", prod)
-                            e = {
-                                "source": f"j{prod.id}",
-                                "target": f"t{nid}",
-                                "io": "output",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_job": job_id,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("job", prod.id) not in visited:
-                                visited.add(("job", prod.id))
-                                next_frontier.append(("job", prod.id))
-
-                    # Consumers (table -> job) are downstream
-                    if direction in ("downstream", "both"):
-                        for cons in uow.job_table_links.get_jobs_by_table_and_io_type(
-                            nid, "input"
-                        ):
-                            self._ensure_node_entry(nodes, "job", cons)
-                            e = {
-                                "source": f"t{nid}",
-                                "target": f"j{cons.id}",
-                                "io": "input",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_job": job_id,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("job", cons.id) not in visited:
-                                visited.add(("job", cons.id))
-                                next_frontier.append(("job", cons.id))
-
-            frontier = next_frontier
-
-        return {"base_job": job_id, "nodes": list(nodes.values()), "edges": edges}
+        return {
+            "base_job": job_id,
+            "nodes": result["nodes"],
+            "edges": result["edges"],
+        }
 
     def get_table_neighbors(
         self,
@@ -561,116 +459,15 @@ class GraphService:
         if not table:
             return {"status": "error", "message": f"Table '{table_name}' not found"}
 
-        nodes: dict[str, dict] = {}
-        edges: list[dict] = []
+        result = self._traversal.bfs_neighbors(
+            "table", table.id, table, level, direction, limit
+        )
 
-        visited = set([("table", table.id)])
-        frontier = [("table", table.id)]
-        self._ensure_node_entry(nodes, "table", table)
-
-        added = 0
-        for _ in range(max(1, level)):
-            next_frontier = []
-            for ntype, nid in frontier:
-                if ntype == "table":
-                    # Producers (job -> table) are upstream
-                    if direction in ("upstream", "both"):
-                        for prod in uow.job_table_links.get_jobs_by_table_and_io_type(
-                            nid, "output"
-                        ):
-                            self._ensure_node_entry(nodes, "job", prod)
-                            e = {
-                                "source": f"j{prod.id}",
-                                "target": f"t{nid}",
-                                "io": "output",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_table": table_name,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("job", prod.id) not in visited:
-                                visited.add(("job", prod.id))
-                                next_frontier.append(("job", prod.id))
-
-                    # Consumers (table -> job) are downstream
-                    if direction in ("downstream", "both"):
-                        for cons in uow.job_table_links.get_jobs_by_table_and_io_type(
-                            nid, "input"
-                        ):
-                            self._ensure_node_entry(nodes, "job", cons)
-                            e = {
-                                "source": f"t{nid}",
-                                "target": f"j{cons.id}",
-                                "io": "input",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_table": table_name,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("job", cons.id) not in visited:
-                                visited.add(("job", cons.id))
-                                next_frontier.append(("job", cons.id))
-                else:
-                    # From job, hop to its output tables (downstream)
-                    if direction in ("downstream", "both"):
-                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(
-                            nid, "output"
-                        ):
-                            self._ensure_node_entry(nodes, "table", tbl)
-                            e = {
-                                "source": f"j{nid}",
-                                "target": f"t{tbl.id}",
-                                "io": "output",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_table": table_name,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("table", tbl.id) not in visited:
-                                visited.add(("table", tbl.id))
-                                next_frontier.append(("table", tbl.id))
-                    # From job, hop to its input tables (upstream)
-                    if direction in ("upstream", "both"):
-                        for tbl in uow.job_table_links.get_tables_by_job_and_io_type(
-                            nid, "input"
-                        ):
-                            self._ensure_node_entry(nodes, "table", tbl)
-                            e = {
-                                "source": f"t{tbl.id}",
-                                "target": f"j{nid}",
-                                "io": "input",
-                            }
-                            if e not in edges:
-                                edges.append(e)
-                                added += 1
-                            if limit and added >= limit:
-                                return {
-                                    "base_table": table_name,
-                                    "nodes": list(nodes.values()),
-                                    "edges": edges,
-                                }
-                            if ("table", tbl.id) not in visited:
-                                visited.add(("table", tbl.id))
-                                next_frontier.append(("table", tbl.id))
-
-            frontier = next_frontier
-
-        return {"base_table": table_name, "nodes": list(nodes.values()), "edges": edges}
+        return {
+            "base_table": table_name,
+            "nodes": result["nodes"],
+            "edges": result["edges"],
+        }
 
     def get_table_impact(
         self, base_table: str, max_depth: int = 3, include_jobs: bool = True
@@ -824,111 +621,37 @@ class GraphService:
                     "upstream": [], "downstream": []
                 }
             
-            # Helper for BFS traversal
-            def bfs_traverse(start_node, direction):
-                # direction: "upstream" (inputs) or "downstream" (outputs)
-                # For upstream: Table <-(output)-- Job <-(input)-- Table
-                # For downstream: Table --(input)-> Job --(output)-> Table
-                
-                result_list = []
-                visited = set()
-                # Queue item: (node_id, node_type, current_depth, parent_name)
-                # Start with center table at depth 0
-                queue = deque([(start_node.id, "table", 0, None)])
-                visited.add(("table", start_node.id))
-                
-                # Add center node to list at depth 0
-                if direction == "upstream": # Only add center once or handle separately? 
-                    # Spec implies listing from depth 0. Let's include depth 0 in both or just logic?
-                    # Spec Example: L3_OUT_008 (selected) at depth 0.
-                    pass 
-
-                while queue:
-                    curr_id, curr_type, depth, parent_name = queue.popleft()
-                    
-                    # Fetch current object to get name and properties
-                    obj_name = ""
-                    obj_props = {}
-                    
-                    if curr_type == "table":
-                        t = uow.tables.get_by_id(curr_id)
-                        obj_name = t.full_name
-                        # Assuming table has .properties or similar
-                        obj_props = getattr(t, "properties", {}) or {}
-                    else:
-                        j = uow.jobs.get_by_id(curr_id)
-                        obj_name = j.job_id
-                        # Jobs usually have job_metadata
-                        obj_props = getattr(j, "job_metadata", {}) or {}
-
-                    # Add to result
-                    if depth > 0 or (depth == 0 and curr_id == start_node.id): 
-                         result_list.append({
-                            "id": obj_name, 
-                            "name": obj_name,
-                            "type": curr_type.upper(),
-                            "depth": depth,
-                            "parent": parent_name,
-                            "properties": obj_props
-                        })
-
-                    if depth >= max_depth:
-                        continue
-                    
-                    next_depth = depth + 1
-                    
-                    if direction == "upstream":
-                        # Traverse upwards: 
-                        # If Table: find jobs that output to this table (Producers)
-                        # If Job: find tables that are inputs to this job
-                        if curr_type == "table":
-                            producers = uow.job_table_links.get_jobs_by_table_and_io_type(curr_id, "output")
-                            for job in producers:
-                                if ("job", job.id) not in visited:
-                                    visited.add(("job", job.id))
-                                    queue.append((job.id, "job", next_depth, obj_name))
-                        else: # Job
-                            inputs = uow.job_table_links.get_tables_by_job_and_io_type(curr_id, "input")
-                            for tbl in inputs:
-                                if ("table", tbl.id) not in visited:
-                                    visited.add(("table", tbl.id))
-                                    queue.append((tbl.id, "table", next_depth, obj_name))
-                                    
-                    else: # downstream
-                        # Traverse downwards:
-                        # If Table: find jobs that take this table as input (Consumers)
-                        # If Job: find tables that are outputs of this job
-                        if curr_type == "table":
-                            consumers = uow.job_table_links.get_jobs_by_table_and_io_type(curr_id, "input")
-                            for job in consumers:
-                                if ("job", job.id) not in visited:
-                                    visited.add(("job", job.id))
-                                    queue.append((job.id, "job", next_depth, obj_name))
-                        else: # Job
-                            outputs = uow.job_table_links.get_tables_by_job_and_io_type(curr_id, "output")
-                            for tbl in outputs:
-                                if ("table", tbl.id) not in visited:
-                                    visited.add(("table", tbl.id))
-                                    queue.append((tbl.id, "table", next_depth, obj_name))
-
-                return result_list
-
-            upstream_list = bfs_traverse(center, "upstream")
-            downstream_list = bfs_traverse(center, "downstream")
+            # Use traversal helper
+            upstream = self._traversal.bfs_lineage_hierarchy(
+                "table", center.id, center.full_name, "upstream", max_depth
+            )
+            downstream = self._traversal.bfs_lineage_hierarchy(
+                "table", center.id, center.full_name, "downstream", max_depth
+            )
             
-            # Remove the center node from downstream list to avoid duplication if it appears in both (at depth 0)
-            # Actually, bfs_traverse adds depth 0. The spec shows depth 0 in "UPSTREAM" section normally.
-            # User Request: "Selected table comes at top of Downstream too."
-            # So we SHOULD include it.
-            # downstream_list = [item for item in downstream_list if item["depth"] > 0] 
-            pass
+            # Identify roots and leaves from the traversal results
+            roots, leaves = self._traversal.find_root_and_leaf_nodes(upstream, downstream)
+            
+            # Helper skips depth 0 (center node), so we add it manually
+            center_node = {
+                "id": center.full_name,
+                "name": center.full_name,
+                "type": "TABLE",
+                "depth": 0,
+                "parent": None,
+                "properties": getattr(center, "properties", {}) or {}
+            }
+            
+            # Prepend center node to both lists
+            upstream.insert(0, center_node)
+            downstream.insert(0, center_node)
             
             return {
                 "status": "success",
-                "upstream": upstream_list,
-                "downstream": downstream_list,
-                "root_nodes": [], # Placeholder as per spec requirement
-                "leaf_nodes": []  # Placeholder
+                "upstream": upstream,
+                "downstream": downstream,
+                "root_nodes": roots,
+                "leaf_nodes": leaves
             }
 
         except Exception as e:

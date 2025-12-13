@@ -3,7 +3,8 @@ from typing import Any, Dict, List
 
 from lineage_manager.adapters.job_manager_adapter import JobManagerPort
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
-from lineage_manager.services.graph_service import GraphService
+from lineage_manager.services.graph_command_service import GraphCommandService
+from lineage_manager.services.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +12,15 @@ logger = logging.getLogger(__name__)
 class GraphInitializerService:
     """Service responsible for initializing the graph with data from Job Manager."""
 
-    def __init__(self, job_manager: JobManagerPort, graph_service: GraphService):
+    def __init__(
+        self,
+        job_manager: JobManagerPort,
+        command_service: GraphCommandService,
+        query_service: GraphQueryService,
+    ):
         self.job_manager = job_manager
-        self.graph_service = graph_service
+        self.command_service = command_service
+        self.query_service = query_service
         self.logger = logging.getLogger(__name__)
 
     async def initialize(self) -> Dict[str, Any]:
@@ -22,7 +29,7 @@ class GraphInitializerService:
             self.logger.info("Starting graph initialization")
 
             # Clear existing graph data
-            self.graph_service.reset_graph()
+            self.command_service.reset_graph()
 
             # Fetch all jobs from Job Manager API
             jobs_data = await self._fetch_jobs()
@@ -31,7 +38,7 @@ class GraphInitializerService:
             result = await self._process_jobs(jobs_data)
 
             # Get final statistics
-            stats = self.graph_service.get_health_stats()
+            stats = self.query_service.get_health_stats()
 
             return self._build_result(result, stats)
 
@@ -63,7 +70,7 @@ class GraphInitializerService:
 
         for job_data in jobs_data:
             try:
-                job_id = self.graph_service.register_lineage_job(job_data)
+                job_id = self.command_service.register_lineage_job(job_data)
                 self.logger.debug(f"Successfully registered job: {job_id}")
                 successful_registrations += 1
 

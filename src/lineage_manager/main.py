@@ -56,8 +56,8 @@ def create_app() -> GraphApp:
     logger = logging.getLogger(__name__)
 
     # Initialize dependency injection container
+    # Note: Each container uses get_settings() directly for configuration
     app_container = GraphContainer()
-    app_container.core.config.from_dict(settings.model_dump())
 
     # Create FastAPI app with Swagger configuration
     app = FastAPI(
