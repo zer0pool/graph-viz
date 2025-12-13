@@ -1,4 +1,6 @@
 import { selectionState, lineageState } from "../state.js";
+import { LineageTreeUtils } from "../utils/lineageTreeUtils.js";
+import { ExcelExportService } from "../services/excelExportService.js";
 
 class ListView {
     constructor(api, graphController) {
@@ -320,157 +322,8 @@ class ListView {
                 return card;
             }
 
-            // 1. Convert List to Tree (Map ID -> Node with children)
-            // Backend returns a BFS list where each node appears once.
-            // We use 'parent' field to reconstruct hierarchy.
-            const idMap = new Map();
-            const roots = [];
-
-            // Initialize map
-            items.forEach(item => {
-                // clone to avoid mutating original if reused
-                idMap.set(item.name, { ...item, children: [] });
-            });
-
-            // Build Tree
-            items.forEach(item => {
-                const node = idMap.get(item.name);
-                if (item.depth === 0) {
-                    roots.push(node);
-                } else if (item.parent) {
-                    const parent = idMap.get(item.parent);
-                    if (parent) {
-                        parent.children.push(node);
-                    } else {
-                        // Parent not in this list (maybe filtered out?), treat as quasi-root or orphan
-                        // But for Upstream/Downstream lists, parent should exist unless it's the anchor via Job.
-                        // Wait, 'parent' in data is the *immediate* parent (Job or Table).
-                        // If Table->Job->Table, the backend logic sets 'parent' to the immediate predecessor name.
-                        // Graph Service: result_list.append(..., "parent": parent_name)
-                        // This seems correct.
-                        // However, if we skip Jobs in display, we logic might get tricky.
-                        // But here 'items' contains Jobs AND Tables? 
-                        // Let's check filter below.
-                        // Ah, the original code had: const tableItems = items.filter(...)
-                        // If we filter items FIRST, we break the parent links (Table -> Job -> Table).
-                        // WE MUST BUILD TREE WITH ALL ITEMS, THEN FLATTEN, THEN FILTER.
-                    }
-                }
-            });
-
-            // 2. DFS Flatten with Lines
-            const flatList = [];
-
-            // recursive helper
-            const traverse = (nodes, prefix = "", isLastChild = false) => {
-                nodes.forEach((node, index) => {
-                    const isLast = index === nodes.length - 1;
-
-                    // Determine current node's marker
-                    // ├─ for middle, └─ for last
-                    // If depth 0, no marker
-                    let marker = "";
-                    let childPrefix = prefix;
-
-                    if (node.depth > 0) {
-                        marker = isLast ? "└─ " : "├─ ";
-                        childPrefix += isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;";
-                    }
-
-                    // Add to result with calculated prefix
-                    // We only want to adding TABLES to the final list, but we must traverse JOBS.
-                    if (node.type === "TABLE" || node.depth === 0) {
-                        flatList.push({
-                            ...node,
-                            treePrefix: (node.depth === 0) ? "" : (prefix + marker)
-                        });
-                    }
-
-                    // Traverse children
-                    // If this node is a TABLE, its children are JOBS.
-                    // If this node is a JOB, its children are TABLES.
-                    // We just traverse node.children.
-                    // NOTE: If we want to hide the JOB level indentation, we shouldn't add to prefix when traversing JOB?
-                    // User wants: Table -> Table (with line).
-                    // Logic: Table A -> Job 1 -> Table B.
-                    // If we skip Job 1 visually, Table B should look like child of Table A.
-                    // So when recursing from Table -> Job, DO NOT change prefix?
-                    // When recursing from Job -> Table, ADD prefix?
-                    // Let's try: One visual hop per Table-to-Table.
-
-                    if (node.type === "TABLE" || node.depth === 0) {
-                        // Entering Job Layer: don't indent yet, just pass through?
-                        // Actually, the line must connect Table A to Table B.
-                        // Table A
-                        // ├─ Table B (via Job 1)
-                        // └─ Table C (via Job 2)
-                        // The branch splits at Table A.
-                        // So Table A's children (Jobs) effectively represent the branches.
-                        traverse(node.children, childPrefix, isLast);
-                    } else {
-                        // Entering Table Layer (from Job):
-                        // We are inside a Job (branch).
-                        // Usually a Job has 1 output table (or multiple).
-                        // If Job has multiple tables, they share the same "Via Job" context.
-                        // Visually, strictly speaking, Table B is child of Job.
-                        // If we hide Job, Table B is child of Table A.
-                        traverse(node.children, prefix, isLast); // Pass prefix through? 
-                    }
-                });
-            };
-
-            // RE-THINKING PREFIX LOGIC FOR "Table-to-Table" Visualization
-            // Data: Root (Table) -> [Job1, Job2]
-            // Job1 -> [Table A]
-            // Job2 -> [Table B]
-            // Visual:
-            // Root
-            // ├─ Table A
-            // └─ Table B
-
-            // The branching happens at Root. Root has 2 "logical" children (Table A, Table B).
-            // So we should iterate Root's *Jobs*, and for each Job, iterate its *Tables*.
-            // The "Last Child" logic applies to the *Jobs* (because they distinct branches).
-
-            const traverseLogical = (nodes, prefix) => {
-                nodes.forEach((node, index) => {
-                    // node is typically a JOB (child of a Table)
-                    // Or it could be a TABLE if direct link? (unlikely in this model)
-
-                    const isLast = index === nodes.length - 1;
-                    const marker = isLast ? "└─ " : "├─ ";
-                    const nextPrefix = prefix + (isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;");
-
-                    // For each Job, get its children (Tables)
-                    if (node.children && node.children.length > 0) {
-                        node.children.forEach(childTable => {
-                            // This childTable is the "Logical Child" of the previous Table
-                            // We render THIS table.
-                            flatList.push({
-                                ...childTable,
-                                treePrefix: prefix + marker
-                            });
-
-                            // Recurse: This table might have its own Jobs...
-                            if (childTable.children && childTable.children.length > 0) {
-                                traverseLogical(childTable.children, nextPrefix);
-                            }
-                        });
-                    }
-                });
-            };
-
-            // Start Traversal
-            // Roots are Tables.
-            if (roots.length > 0) {
-                // Add Root First
-                flatList.push({ ...roots[0], treePrefix: "" });
-                // Traverse its children (Jobs)
-                traverseLogical(roots[0].children, "");
-            }
-
-            // FILTER: Tables only (or Root) - Actually flatList is already built exactly how we want.
-            const tableItems = flatList;
+            // Use LineageTreeUtils to build the tree structure
+            const tableItems = LineageTreeUtils.buildFlatTree(items);
 
             // Unified Title: Table X. Title
             const titleDiv = document.createElement("div");
@@ -594,29 +447,14 @@ class ListView {
             return card;
         };
 
-        // Helper to count unique jobs
-        const getCounts = (items) => {
-            if (!items) return { t: 0, j: 0 };
-
-            // Count Tables (Type TABLE or Depth 0)
-            const tableCount = items.filter(i => i.type === "TABLE" || i.depth === 0).length;
-
-            // Count Unique Jobs (Type JOB)
-            // Filter by type "JOB" explicitly to avoid counting tables as parents
-            const uniqueJobs = new Set(
-                items.filter(i => i.type === "JOB").map(i => i.name)
-            );
-
-            return { t: tableCount, j: uniqueJobs.size };
-        };
-
+        // Use LineageTreeUtils for counting
         if (data.upstream && data.upstream.length > 0) {
-            const c = getCounts(data.upstream);
+            const c = LineageTreeUtils.getCounts(data.upstream);
             container.appendChild(createApaTable(`Upstream (${c.t} tables / ${c.j} jobs)`, data.upstream, 1));
         }
 
         if (data.downstream && data.downstream.length > 0) {
-            const c = getCounts(data.downstream);
+            const c = LineageTreeUtils.getCounts(data.downstream);
             container.appendChild(createApaTable(`Downstream (${c.t} tables / ${c.j} jobs)`, data.downstream, 2));
         }
 
@@ -665,136 +503,10 @@ class ListView {
     downloadExcel() {
         if (!this.lastFullLineageData) return;
 
-        const data = this.lastFullLineageData;
         const rootNode = selectionState.selectedNode;
         const rootName = rootNode ? (rootNode.label || rootNode.id) : "Unknown";
-        const dateStr = new Date().toISOString().split('T')[0];
 
-        // Define Styles for Excel (HTML approach)
-        const styles = `
-            <style>
-                table { border-collapse: collapse; font-family: Arial, sans-serif; }
-                th { border: 1px solid #000; background-color: #f0f0f0; font-weight: bold; padding: 5px; text-align: left; }
-                td { border: 1px solid #000; padding: 5px; vertical-align: top; }
-                .title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
-                .root-row { background-color: #d9d9d9; font-weight: bold; }
-                .note { font-style: italic; color: #555; margin-top: 10px; }
-            </style>
-        `;
-
-        // Helper to build table HTML
-        const buildTableHtml = (title, items) => {
-            if (!items || items.length === 0) return "";
-
-            // Filter
-            const tableItems = items.filter(i => i.type === "TABLE" || i.depth === 0);
-
-            let html = `<tr><td colspan="5" class="title" style="border:none; font-weight:bold; font-size:14px;">${title}</td></tr>`;
-            html += `
-                <tr>
-                    <th>Table Name</th>
-                    <th>Via Job</th>
-                    <th>Depth</th>
-                    <th>Owner</th>
-                    <th>Info</th>
-                </tr>
-            `;
-
-            tableItems.forEach(item => {
-                const logicalDepth = Math.floor(item.depth / 2);
-                let indent = "";
-                for (let i = 0; i < logicalDepth; i++) indent += " &nbsp; "; // Approx indentation
-                if (logicalDepth > 0) indent += "└ ";
-
-                let jobName = "-";
-                let jobStatus = "-";
-
-                if (item.parent) {
-                    const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
-                    if (parentNode && parentNode.type === "JOB") {
-                        jobName = parentNode.name;
-                        const jProps = parentNode.properties || {};
-                        jobStatus = jProps.status || jProps.run_status || "unknown";
-                    }
-                }
-
-                const tProps = item.properties || {};
-                const owner = tProps.owner || "-";
-                const info = tProps.description || tProps.table_type || "-";
-
-                // Style for Root
-                const rowStyle = (item.depth === 0) ? 'style="background-color:#d9d9d9; font-weight:bold;"' : '';
-
-                html += `
-                    <tr ${rowStyle}>
-                        <td>${indent}${item.name}</td>
-                        <td>${jobName} (${jobStatus})</td>
-                        <td>${logicalDepth}</td>
-                        <td>${owner}</td>
-                        <td>${info}</td>
-                    </tr>
-                `;
-            });
-
-            html += `<tr><td colspan="5" style="border:none;"></td></tr>`; // Spacer
-            return html;
-        };
-
-        let bodyContent = "<table>";
-
-        // Upstream
-        if (data.upstream && data.upstream.length > 0) {
-            bodyContent += buildTableHtml(`Table 1. Upstream Lineage for ${rootName}`, data.upstream);
-        }
-
-        // Downstream
-        if (data.downstream && data.downstream.length > 0) {
-            bodyContent += buildTableHtml(`Table 2. Downstream Lineage for ${rootName}`, data.downstream);
-        }
-
-        bodyContent += `
-            <tr>
-                <td colspan="5" style="border:none; font-style:italic;">
-                    Note. Lineage Information from analysis. Created at ${dateStr}.
-                </td>
-            </tr>
-        `;
-        bodyContent += "</table>";
-
-        const fullHtml = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head>
-                <meta charset="UTF-8">
-                <!--[if gte mso 9]>
-                <xml>
-                <x:ExcelWorkbook>
-                <x:ExcelWorksheets>
-                <x:ExcelWorksheet>
-                <x:Name>Lineage Report</x:Name>
-                <x:WorksheetOptions>
-                <x:DisplayGridlines/>
-                </x:WorksheetOptions>
-                </x:ExcelWorksheet>
-                </x:ExcelWorksheets>
-                </x:ExcelWorkbook>
-                </xml>
-                <![endif]-->
-                ${styles}
-            </head>
-            <body>
-                ${bodyContent}
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob([fullHtml], { type: "application/vnd.ms-excel" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `lineage_export_${rootName}_${Date.now()}.xls`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        ExcelExportService.downloadLineageExcel(this.lastFullLineageData, rootName);
     }
 }
 
