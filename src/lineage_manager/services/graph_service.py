@@ -1211,3 +1211,442 @@ class GraphService:
             logger.error(f"bulk_set_table_triggers failed for {table_name}: {e}")
             logger.exception("Full traceback:")
             return {"status": "error", "message": str(e)}
+
+    # ========================================================================
+    # NEW: Direct Lineage Sync Methods (Refactored)
+    # ========================================================================
+
+    def sync_from_lineage(self, lineage: SchedulingLineage) -> None:
+        """
+        Sync a single SchedulingLineage to the graph.
+        
+        This replaces JobDataTransformer logic with direct mapping.
+        Supports all upstream/downstream types (table, s3, gcs, kafka, etc.)
+        """
+        # Support both 'properties' and 'metadata' names
+        props = lineage.properties or lineage.metadata or {}
+        
+        # 1. Create/Update Job Node
+        job_properties = self._extract_job_properties(props, lineage)
+        
+        job = self.uow.jobs.get_or_create(
+            job_id=lineage.job_id,
+            job_metadata=job_properties
+        )
+        
+        # 2. Create Upstream Nodes & Edges
+        # Deduplicate upstreams by name (Job Manager may send duplicates)
+        seen_upstreams = set()
+        for upstream in lineage.upstreams:
+            if upstream.name in seen_upstreams:
+                continue  # Skip duplicate
+            seen_upstreams.add(upstream.name)
+            
+            # Create node based on type (table, s3, gcs, kafka, etc.)
+            upstream_node = self._create_or_update_node(
+                item=upstream,
+                metadata_prefix="table",
+                lineage_props=props
+            )
+            
+            # Create edge: upstream → job
+            self.uow.edges.get_or_create(
+                source_id=upstream_node.name,
+                target_id=lineage.job_id,
+                label="input"
+            )
+        
+        # 3. Create Downstream Nodes & Edges
+        # Deduplicate downstreams by name (Job Manager may send duplicates)
+        seen_downstreams = set()
+        for downstream in lineage.downstreams:
+            if downstream.name in seen_downstreams:
+                continue  # Skip duplicate
+            seen_downstreams.add(downstream.name)
+            
+            # Create node based on type (table, s3, gcs, kafka, etc.)
+            downstream_node = self._create_or_update_node(
+                item=downstream,
+                metadata_prefix="table",
+                lineage_props=props
+            )
+            
+            # Create edge: job → downstream
+            self.uow.edges.get_or_create(
+                source_id=lineage.job_id,
+                target_id=downstream_node.name,
+                label="output"
+            )
+
+    def _extract_job_properties(
+        self,
+        props: dict,
+        lineage: SchedulingLineage
+    ) -> dict:
+        """
+        Extract job properties to store in job_node.properties column.
+        
+        Whitelisted keys that will be saved:
+        - owner, schedule, write_mode, scheduling_type
+        - configurations, revision_ids, status, draft_status
+        - destination, labels
+        """
+        ALLOWED_KEYS = {
+            "owner", "schedule", "write_mode", "scheduling_type",
+            "configurations", "revision_ids", "status", "draft_status",
+            "destination", "labels", "run_status",
+            "create_datetime", "update_datetime"
+        }
+        
+        job_props = {}
+        
+        # Copy whitelisted keys from properties
+        for key in ALLOWED_KEYS:
+            if key in props:
+                job_props[key] = props[key]
+        
+        # Add schedule from lineage object if present
+        if lineage.schedule:
+            job_props["schedule"] = lineage.schedule.dict()
+        
+        # Add timestamps
+        if lineage.create_datetime:
+            job_props["create_datetime"] = lineage.create_datetime.isoformat()
+        if lineage.update_datetime:
+            job_props["update_datetime"] = lineage.update_datetime.isoformat()
+        
+        # Extract trigger/reference tables for convenience
+        job_props["trigger_tables"] = self._extract_triggers(lineage.upstreams)
+        job_props["reference_tables"] = self._extract_references(lineage.upstreams)
+        job_props["destination_table"] = self._extract_destination(lineage.downstreams)
+        
+        return job_props
+
+    def _create_or_update_node(
+        self,
+        item,  # SchedulingLineageDependency
+        metadata_prefix: str,
+        lineage_props: dict
+    ):
+        """
+        Create or update a node (table, s3, gcs, kafka, etc.).
+        
+        Supports ALL types, not just tables.
+        Extracts metadata from lineage_props using prefix (e.g., "table.labels").
+        """
+        node_type = item.type  # "table", "s3", "gcs", "kafka", etc.
+        node_name = item.name
+        
+        # Extract node-specific metadata from lineage properties
+        # Example: "table.labels", "table.partition", "table.location"
+        node_metadata = self._extract_node_metadata(item, metadata_prefix, lineage_props)
+        
+        # Create/update node based on type
+        if node_type == "table":
+            node = self.uow.tables.get_or_create(
+                table_id=node_name,
+                full_name=node_name,
+                table_metadata=node_metadata
+            )
+        else:
+            # For non-table types (s3, gcs, kafka, etc.)
+            # Use table repository but mark type in metadata
+            node = self.uow.tables.get_or_create(
+                table_id=node_name,
+                full_name=node_name,
+                table_metadata={**node_metadata, "node_type": node_type}
+            )
+        
+        return node
+
+    def _extract_node_metadata(
+        self,
+        item,  # SchedulingLineageDependency
+        prefix: str,
+        lineage_props: dict
+    ) -> dict:
+        """
+        Extract node metadata from lineage properties.
+        
+        Looks for keys like "table.labels", "table.partition", etc.
+        Also adds owner if present in lineage_props.
+        """
+        node_metadata = {}
+        prefix_key = f"{prefix}."
+        
+        # Extract prefixed keys
+        for key, value in lineage_props.items():
+            if key.startswith(prefix_key):
+                clean_key = key[len(prefix_key):]
+                node_metadata[clean_key] = value
+        
+        # Add owner if present (saved to both job and table nodes)
+        if "owner" in lineage_props:
+            node_metadata["owner"] = lineage_props["owner"]
+        
+        # Add trigger flag if present
+        if hasattr(item, 'trigger') and item.trigger:
+            node_metadata['trigger'] = True
+        
+        return node_metadata
+
+    def _extract_destination(self, downstreams: list) -> Optional[str]:
+        """Extract first table from downstreams (for backward compatibility)."""
+        for item in downstreams:
+            if item.type == "table":
+                return item.name
+        return None
+
+    def _extract_triggers(self, upstreams: list) -> list:
+        """Extract trigger tables from upstreams."""
+        return [
+            item.name
+            for item in upstreams
+            if item.type == "table" and getattr(item, "trigger", False)
+        ]
+
+    def _extract_references(self, upstreams: list) -> list:
+        """Extract all reference tables from upstreams."""
+        return [
+            item.name
+            for item in upstreams
+            if item.type == "table"
+        ]
+
+    # ========================================================================
+    # Service Layer Orchestration Methods
+    # ========================================================================
+
+    def sync_single_job(
+        self,
+        lineage: SchedulingLineage,
+        dry_run: bool = False
+    ) -> dict:
+        """
+        Sync a single job lineage.
+        
+        Args:
+            lineage: SchedulingLineage payload
+            dry_run: If True, preview changes without committing
+        
+        Returns:
+            Dict with status and changes/results
+        """
+        if dry_run:
+            # Preview mode - no commit
+            changes = self.preview_sync_from_lineage(lineage)
+            return {
+                "status": "dry_run",
+                "job_id": lineage.job_id,
+                "changes": changes
+            }
+        else:
+            # Actual sync with commit
+            self.sync_from_lineage(lineage)
+            self.uow.commit()
+            return {
+                "status": "success",
+                "job_id": lineage.job_id,
+                "message": f"Job {lineage.job_id} synced successfully"
+            }
+
+    async def sync_multiple_jobs(
+        self,
+        job_requests: List[Dict[str, str]],
+        dry_run: bool = False
+    ) -> dict:
+        """
+        Sync multiple jobs by fetching lineages from Job Manager.
+        
+        This is the top-level orchestration method that:
+        1. Fetches lineages from Job Manager
+        2. Calls preview or actual sync based on dry_run flag
+        3. Handles commit
+        
+        Args:
+            job_requests: List of {"type": "...", "job_id": "..."}
+            dry_run: If True, preview changes without committing
+        
+        Returns:
+            Dict with status and results
+        """
+        # 1. Fetch lineages from Job Manager
+        lineages = await self.job_manager.fetch_lineages_by_ids(job_requests)
+        
+        if dry_run:
+            # 2a. Preview mode - no commit
+            results = []
+            for lineage in lineages:
+                changes = self.preview_sync_from_lineage(lineage)
+                results.append({
+                    "job_id": lineage.job_id,
+                    "changes": changes
+                })
+            
+            return {
+                "status": "dry_run",
+                "total_jobs": len(results),
+                "results": results
+            }
+        else:
+            # 2b. Actual sync with commit
+            results = []
+            for lineage in lineages:
+                try:
+                    self.sync_from_lineage(lineage)
+                    results.append({
+                        "job_id": lineage.job_id,
+                        "status": "success"
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to sync job {lineage.job_id}: {e}")
+                    results.append({
+                        "job_id": lineage.job_id,
+                        "status": "error",
+                        "message": str(e)
+                    })
+            
+            # Commit all changes at once
+            self.uow.commit()
+            
+            return {
+                "status": "success",
+                "results": results,
+                "total": len(results),
+                "succeeded": sum(1 for r in results if r["status"] == "success"),
+                "failed": sum(1 for r in results if r["status"] == "error")
+            }
+
+    def preview_sync_from_lineage(self, lineage: SchedulingLineage) -> dict:
+        """
+        Preview what would change if we sync this lineage.
+        Does NOT commit to database.
+        
+        Returns a dict describing all changes that would be made.
+        """
+        props = lineage.properties or lineage.metadata or {}
+        
+        changes = {
+            "job_node": None,
+            "nodes_created": [],
+            "nodes_updated": [],
+            "edges_created": []
+        }
+        
+        # 1. Check Job Node
+        existing_job = self.uow.jobs.get(lineage.job_id)
+        if existing_job:
+            # Compare properties
+            new_props = self._extract_job_properties(props, lineage)
+            old_props = existing_job.job_metadata or {}
+            
+            fields_changed = []
+            old_values = {}
+            new_values = {}
+            
+            for key in new_props:
+                if key not in old_props or old_props[key] != new_props[key]:
+                    fields_changed.append(key)
+                    old_values[key] = old_props.get(key)
+                    new_values[key] = new_props[key]
+            
+            if fields_changed:
+                changes["job_node"] = {
+                    "action": "update",
+                    "fields_changed": fields_changed,
+                    "old_values": old_values,
+                    "new_values": new_values
+                }
+        else:
+            changes["job_node"] = {
+                "action": "create",
+                "properties": self._extract_job_properties(props, lineage)
+            }
+        
+        # 2. Check Upstream Nodes (simplified - just check existence)
+        seen_upstreams = set()
+        for upstream in lineage.upstreams:
+            if upstream.name in seen_upstreams:
+                continue
+            seen_upstreams.add(upstream.name)
+            
+            existing_node = self.uow.tables.get(upstream.name)
+            if not existing_node:
+                changes["nodes_created"].append({
+                    "type": upstream.type,
+                    "name": upstream.name
+                })
+            
+            # Check if edge exists (simplified)
+            changes["edges_created"].append({
+                "source": upstream.name,
+                "target": lineage.job_id,
+                "label": "input"
+            })
+        
+        # 3. Check Downstream Nodes
+        seen_downstreams = set()
+        for downstream in lineage.downstreams:
+            if downstream.name in seen_downstreams:
+                continue
+            seen_downstreams.add(downstream.name)
+            
+            existing_node = self.uow.tables.get(downstream.name)
+            if not existing_node:
+                changes["nodes_created"].append({
+                    "type": downstream.type,
+                    "name": downstream.name
+                })
+            
+            changes["edges_created"].append({
+                "source": lineage.job_id,
+                "target": downstream.name,
+                "label": "output"
+            })
+        
+        return changes
+
+    # ========================================================================
+    # Sync Helper Methods (moved from GraphBuildService)
+    # ========================================================================
+    
+    _last_sync_result: Dict[str, Any] | None = None  # Class variable
+    
+    def sync_from_payload(
+        self, jobs: List[JobRegister], reset: bool = False
+    ) -> Dict[str, Any]:
+        """Sync graph from a list of JobRegister payloads."""
+        if reset:
+            self.reset_graph()
+
+        success = 0
+        errors: List[str] = []
+        for j in jobs:
+            try:
+                self.register_job(j)
+                success += 1
+            except Exception as e:
+                errors.append(f"{j.job_id}: {e}")
+
+        stats = self.get_health_stats()
+        result: Dict[str, Any] = {
+            "status": "success" if not errors else "partial",
+            "synced_jobs": success,
+            "errors": errors,
+            "database_stats": stats.get("database") if isinstance(stats, dict) else {},
+        }
+        GraphService._last_sync_result = result
+        return result
+
+    async def sync_from_job_manager(self, reset: bool = False) -> Dict[str, Any]:
+        """Sync graph by fetching all jobs from Job Manager."""
+        if reset:
+            self.reset_graph()
+        result = await self.initialize_graph()
+        GraphService._last_sync_result = result
+        return result
+
+    @classmethod
+    def last_sync_status(cls) -> Dict[str, Any] | None:
+        """Get the last sync result."""
+        return getattr(cls, "_last_sync_result", None)

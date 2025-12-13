@@ -140,3 +140,15 @@ class TableLineageSummaryResponse(BaseModel):
     paths: LineagePaths
     timestamp: str
     cache: LineageCacheMeta
+
+
+# New schemas for batch job sync
+class JobSyncRequest(BaseModel):
+    """Single job sync request."""
+    type: str = Field(..., description="Job scheduling type (req-type, self-type)")
+    job_id: str = Field(..., description="Job ID to sync")
+
+
+class BatchJobSyncRequest(BaseModel):
+    """Batch job sync request."""
+    jobs: List[JobSyncRequest] = Field(..., description="List of jobs to sync")

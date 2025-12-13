@@ -5,7 +5,6 @@ from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
 from lineage_manager.core.auth import OIDCProviderClient
 from lineage_manager.core.database import Database, db
 from lineage_manager.core.uow import GraphUnitOfWork
-from lineage_manager.services.graph_build_service import GraphBuildService
 from lineage_manager.services.graph_initializer import GraphInitializerService
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_service import GraphService
@@ -45,7 +44,6 @@ class GraphContainer(containers.DeclarativeContainer):
     graph_query_service = providers.Factory(
         GraphQueryService, uow=uow, core=graph_service
     )
-    graph_build_service = providers.Factory(GraphBuildService, core=graph_service)
     graph_initializer = providers.Factory(
         GraphInitializerService,
         job_manager=job_manager_adapter,
