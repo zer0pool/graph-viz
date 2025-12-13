@@ -14,10 +14,9 @@ export PYTHONPATH=$(shell pwd)/src
 all: venv install-dev format lint test
 
 venv:
-	$(PY) -m venv .venv --without-pip || { echo "Failed to create venv"; exit 1; }
-	. .venv/bin/activate || { echo "Failed to activate venv"; exit 1; }
-	pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+	$(PY) -m venv .venv || { echo "Failed to create venv"; exit 1; }
+	.venv/bin/pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
+	.venv/bin/pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
 
 activate:
 	@bash -c 'source .venv/bin/activate'

@@ -189,6 +189,14 @@ async def require_authenticated_user(
     """
     FastAPI dependency that validates the incoming bearer token and stores the user info in request state.
     """
+    # Allow GET/OPTIONS/HEAD/TRACE without auth
+    if request.method in ["GET", "OPTIONS", "HEAD", "TRACE"]:
+        return None
+
+    # Allow Swagger/Redoc UI
+    if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc") or request.url.path.startswith("/openapi.json"):
+        return None
+
     token = credentials.credentials if credentials else None
     if not token:
         token = request.query_params.get("access_token")
@@ -196,14 +204,14 @@ async def require_authenticated_user(
         raise HTTPException(status_code=401, detail="Missing Authorization token")
 
     container: GraphContainer = request.app.container
-    verifier: OIDCProviderClient = container.oidc_provider()
+    verifier: OIDCProviderClient = container.core.oidc_provider()
     try:
         claims = verifier.verify_id_token(token)
     except AuthenticationError as exc:
         logger.warning("Token verification failed: %s", exc)
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
-    user_service = container.user_service()
+    user_service = container.user.user_service()
     user_payload = user_service.record_login(claims)
     request.state.user = user_payload
     return user_payload

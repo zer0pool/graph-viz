@@ -47,22 +47,7 @@ def register_job(
         raise
 
 
-@router.post("/jobs/lineage")
-@inject
-def register_lineage_job(
-    payload: SchedulingLineage,
-    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
-):
-    """Register a job using the SchedulingLineage payload."""
-    logger.info(f"Received scheduling lineage registration request: {payload.job_id}")
-    try:
-        job_id = svc.register_lineage_job(payload)
-        logger.info(f"Lineage job registered successfully: {job_id}")
-        return {"job_id": job_id}
-    except Exception as e:
-        logger.error(f"Error registering lineage job: {e}")
-        logger.exception("Full traceback:")
-        raise
+
 
 
 @router.post("/reset")
@@ -262,7 +247,7 @@ def sync_job_lineage(
         logger.exception("Full traceback:")
         raise HTTPException(status_code=500, detail=str(e))
 
-
+ 
 @router.post("/jobs/sync/by_ids")
 @inject
 async def sync_jobs_by_ids(

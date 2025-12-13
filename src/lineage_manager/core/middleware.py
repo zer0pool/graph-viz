@@ -14,35 +14,27 @@ async def session_middleware(
     request: Request, call_next: Callable, container: GraphContainer
 ) -> Response:
     """
-    Provide a scoped SQLAlchemy Session per request and commit/rollback automatically.
+    Provide a scoped SQLAlchemy Session per request for lifecycle management.
 
     - Creates/gets a scoped_session registry from the container
     - Executes the request handler
-    - Commits on success (HTTP < 400), rollbacks on error
-    - Always removes the session registry at the end
+    - Performs rollback on unhandled exceptions
+    - Always removes the session registry at the end (cleanup)
+
+    Note: Transaction COMMIT is handled by the Service Layer (UoW), not here.
     """
     session_registry = container.core.database().session_factory  # scoped_session registry
     # Expose on request for any ad-hoc dependency usage
     request.state.db = session_registry
     try:
         response = await call_next(request)
-        # Commit on successful responses
-        try:
-            if getattr(response, "status_code", 500) < 400:
-                session_registry.commit()
-            else:
-                session_registry.rollback()
-        except Exception:
-            # If commit fails, ensure rollback to leave connection clean
-            session_registry.rollback()
-            raise
         return response
     except Exception:
-        # Ensure rollback on unhandled exceptions
+        # If unhandled exception occurs, rollback to be safe
         session_registry.rollback()
         raise
     finally:
-        # Remove the scoped session (clears thread/greenlet-local)
+        # Always remove the scoped session to return connection to pool
         session_registry.remove()
 
 
