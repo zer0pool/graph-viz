@@ -3,7 +3,7 @@ import logging
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from lineage_manager.api.v1.schemas import JobRegister
+from lineage_manager.api.v1.schemas import JobRegister, BatchJobSyncRequest
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
@@ -24,7 +24,7 @@ router = APIRouter(
 @inject
 def register_job(
     payload: JobRegister,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ):
     """
     Register a new job using container pattern with proper session management.
@@ -48,7 +48,7 @@ def register_job(
 @inject
 def register_lineage_job(
     payload: SchedulingLineage,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ):
     """Register a job using the SchedulingLineage payload."""
     logger.info(f"Received scheduling lineage registration request: {payload.job_id}")
@@ -65,7 +65,7 @@ def register_lineage_job(
 @router.post("/reset")
 @inject
 def reset_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ):
     """
     Reset the entire graph by clearing all graph-related data.
@@ -93,7 +93,7 @@ def reset_graph(
 @router.post("/initialize")
 @inject
 async def initialize_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_build_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ):
     """
     Initialize the graph by fetching all jobs from Job Manager API
@@ -229,3 +229,61 @@ def get_table_neighbors(
         from fastapi import HTTPException
 
         raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")
+
+# ========================================================================
+# NEW: Direct Lineage Sync APIs
+# ========================================================================
+
+@router.post("/jobs/sync")
+@inject
+def sync_job_lineage(
+    lineage: SchedulingLineage,
+    dry_run: bool = Query(False, description="Preview changes without committing"),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """
+    Directly sync a job's lineage information to the graph.
+    
+    Query params:
+    - dry_run: If true, return preview of changes without committing
+    
+    Use case: Copy lineage JSON from Job Manager Swagger → Paste here for testing
+    """
+    logger.info(f"Received direct sync request for job: {lineage.job_id}, dry_run={dry_run}")
+    try:
+        result = graph_service.sync_single_job(lineage, dry_run=dry_run)
+        logger.info(f"Sync completed for {lineage.job_id}: {result.get('status')}")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to sync job {lineage.job_id}: {e}")
+        logger.exception("Full traceback:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/jobs/sync/by_ids")
+@inject
+async def sync_jobs_by_ids(
+    request: BatchJobSyncRequest,  # Import will be added
+    dry_run: bool = Query(False, description="Preview changes without committing"),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+):
+    """
+    Sync multiple jobs by fetching their lineages from Job Manager.
+    
+    Query params:
+    - dry_run: If true, return preview of changes without committing
+    
+    Use case: Batch sync multiple jobs efficiently
+    """
+    logger.info(f"Received batch sync request for {len(request.jobs)} jobs, dry_run={dry_run}")
+    try:
+        result = await graph_service.sync_multiple_jobs(
+            job_requests=[job.dict() for job in request.jobs],
+            dry_run=dry_run
+        )
+        logger.info(f"Batch sync completed: {result.get('status')}")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to sync jobs: {e}")
+        logger.exception("Full traceback:")
+        raise HTTPException(status_code=500, detail=str(e))

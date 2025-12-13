@@ -270,3 +270,48 @@ class JobManagerAdapter(JobManagerPort):
         except Exception as e:
             logger.error(f"Unexpected error fetching job {job_id}: {e}")
             return None
+
+    async def fetch_lineages_by_ids(
+        self,
+        job_requests: List[Dict[str, str]]
+    ) -> List[SchedulingLineage]:
+        """
+        Fetch lineages for multiple jobs by their IDs.
+        
+        Calls Job Manager API: POST /api/v1/jobs/scheduling-lineage/by_ids
+        
+        Args:
+            job_requests: List of {"type": "req-type", "job_id": "..."}
+        
+        Returns:
+            List of SchedulingLineage objects
+        """
+        url = f"{self.base_url}/api/v1/jobs/scheduling-lineage/by_ids"
+        
+        try:
+            logger.info(f"Fetching lineages for {len(job_requests)} jobs from Job Manager")
+            
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    url,
+                    json={"jobs": job_requests}
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                # Parse response
+                payload = SchedulingLineageResponse.model_validate(data)
+                lineages = payload.result
+                
+                logger.info(f"Successfully fetched {len(lineages)} lineages")
+                return lineages
+                
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error fetching lineages by IDs: {e}")
+            if hasattr(e, "response") and e.response:
+                logger.error(f"Response status: {e.response.status_code}")
+                logger.error(f"Response text: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error fetching lineages by IDs: {e}")
+            raise

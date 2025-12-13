@@ -60,20 +60,31 @@ class SchedulingLineage(BaseModel):
     successful_dag_runs_count: Optional[int] = Field(
         None, description="Count of successful DAG runs as reported by Job Manager."
     )
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional catch-all metadata blob."
+    
+    # Support both 'metadata' and 'properties' for backward compatibility
+    properties: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Job and table properties (preferred over 'metadata')"
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="DEPRECATED: Use 'properties' instead. Kept for backward compatibility."
     )
 
     class Config:
         extra = "allow"
 
     @root_validator(pre=True)
-    def flatten_non_lineage_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_metadata_and_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Collect non-lineage attributes into the metadata blob so that the model
-        only exposes fields directly tied to lineage relationships.
+        Support both 'metadata' and 'properties' names with backward compatibility.
+        
+        Logic:
+        1. Collect non-lineage fields into a temp dict
+        2. Merge existing metadata and properties
+        3. Set both fields for compatibility
         """
-        metadata = dict(values.get("metadata") or {})
+        # Fields to pack into metadata/properties
         to_pack = (
             "owner",
             "labels",
@@ -84,11 +95,31 @@ class SchedulingLineage(BaseModel):
             "destinations",
             "reference_service",
             "configurations",
+            "scheduling_type",
+            "revision_ids",
+            "status",
+            "draft_status",
+            "destination",
         )
+        
+        # Start with existing metadata and properties
+        metadata = dict(values.get("metadata") or {})
+        properties = dict(values.get("properties") or {})
+        
+        # Pack non-lineage fields
         for key in to_pack:
             if key in values:
-                metadata.setdefault(key, values.pop(key))
-        values["metadata"] = metadata
+                val = values.pop(key)
+                metadata.setdefault(key, val)
+                properties.setdefault(key, val)
+        
+        # Merge: properties takes precedence over metadata
+        merged = {**metadata, **properties}
+        
+        # Set both for backward compatibility
+        values["properties"] = merged
+        values["metadata"] = merged
+        
         return values
 
 

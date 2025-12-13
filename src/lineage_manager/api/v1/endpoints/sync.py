@@ -7,7 +7,6 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
-from lineage_manager.services.graph_build_service import GraphBuildService
 from lineage_manager.services.graph_service import GraphService
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ async def sync_graph(
     source: Optional[str] = Body(None, embed=True),
     reset: bool = Body(False, embed=True),
     jobs: Optional[List[JobRegister]] = Body(None, embed=True),
-    svc: GraphBuildService = Depends(Provide[GraphContainer.graph_build_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ) -> Dict[str, Any]:
     """
     Synchronize graph data.
@@ -52,7 +51,7 @@ async def sync_graph(
 @router.get("/sync/status")
 @inject
 def sync_status(
-    svc: GraphBuildService = Depends(Provide[GraphContainer.graph_build_service]),
+    svc: GraphService = Depends(Provide[GraphContainer.graph_service]),
 ):
     status = svc.last_sync_status()
     if not status:
