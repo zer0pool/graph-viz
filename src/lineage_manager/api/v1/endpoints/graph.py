@@ -24,7 +24,7 @@ router = APIRouter(
 @inject
 def register_job(
     payload: JobRegister,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Register a new job using container pattern with proper session management.
@@ -48,7 +48,7 @@ def register_job(
 @inject
 def register_lineage_job(
     payload: SchedulingLineage,
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """Register a job using the SchedulingLineage payload."""
     logger.info(f"Received scheduling lineage registration request: {payload.job_id}")
@@ -65,7 +65,7 @@ def register_lineage_job(
 @router.post("/reset")
 @inject
 def reset_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Reset the entire graph by clearing all graph-related data.
@@ -93,7 +93,7 @@ def reset_graph(
 @router.post("/initialize")
 @inject
 async def initialize_graph(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Initialize the graph by fetching all jobs from Job Manager API
@@ -126,7 +126,7 @@ async def initialize_graph(
 @router.get("/health")
 @inject
 def health_check(
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Get basic database statistics for health monitoring.
@@ -159,7 +159,7 @@ def get_table(
     depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
     include_tables: bool = Query(True),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Get DAG (Directed Acyclic Graph) information for a specific table.
@@ -198,7 +198,7 @@ def get_job_neighbors(
     level: int = 1,
     direction: str = Query("both", enum=["upstream", "downstream", "both"]),
     limit: int | None = Query(None, ge=1, le=1000),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     try:
         return graph_service.get_job_neighbors(
@@ -218,7 +218,7 @@ def get_table_neighbors(
     level: int = 1,
     direction: str = Query("both", enum=["upstream", "downstream", "both"]),
     limit: int | None = Query(None, ge=1, le=1000),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_query_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     try:
         return graph_service.get_table_neighbors(
@@ -239,7 +239,7 @@ def get_table_neighbors(
 def sync_job_lineage(
     lineage: SchedulingLineage,
     dry_run: bool = Query(False, description="Preview changes without committing"),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Directly sync a job's lineage information to the graph.
@@ -265,7 +265,7 @@ def sync_job_lineage(
 async def sync_jobs_by_ids(
     request: BatchJobSyncRequest,  # Import will be added
     dry_run: bool = Query(False, description="Preview changes without committing"),
-    graph_service: GraphService = Depends(Provide[GraphContainer.graph_service]),
+    graph_service: GraphService = Depends(Provide[GraphContainer.graph.graph_service]),
 ):
     """
     Sync multiple jobs by fetching their lineages from Job Manager.

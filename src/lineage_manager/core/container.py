@@ -1,67 +1,51 @@
+"""
+Application Container.
+
+Root container that wires all domain containers together.
+"""
+
 from dependency_injector import containers, providers
-from sqlalchemy.orm import Session, scoped_session
 
-from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
-from lineage_manager.core.auth import OIDCProviderClient
-from lineage_manager.core.database import Database, db
-from lineage_manager.core.uow import GraphUnitOfWork
-from lineage_manager.services.graph_initializer import GraphInitializerService
-from lineage_manager.services.graph_query_service import GraphQueryService
-from lineage_manager.services.graph_service import GraphService
-from lineage_manager.services.job_service import JobService
-from lineage_manager.services.user_service import UserService
-from lineage_manager.services.bigquery_service import BigQueryService
+from lineage_manager.core.containers.core_container import CoreContainer
+from lineage_manager.core.containers.job_container import JobContainer
+from lineage_manager.core.containers.user_container import UserContainer
+from lineage_manager.core.containers.bigquery_container import BigQueryContainer
+from lineage_manager.core.containers.graph_container import GraphContainer as GraphDomainContainer
 
 
-class GraphContainer(containers.DeclarativeContainer):
-    """Dependency injection container for graph management with proper session management."""
-
+class ApplicationContainer(containers.DeclarativeContainer):
+    """Root application container that wires all domain containers."""
+    
     wiring_config = containers.WiringConfiguration(
         packages=["lineage_manager.api.v1.endpoints"]
     )
-
-    # Configuration
-    config = providers.Configuration()
-
-    # Database
-    database = providers.Singleton(Database)
-
-    # Session maker for creating request-scoped sessions
-    session_factory = providers.Singleton(lambda: db.session_factory)
-
-    # Unit of Work with proper session management
-    uow = providers.Factory(GraphUnitOfWork, db=database.provided.session_factory)
-
-    # Adapters
-    job_manager_adapter = providers.Singleton(
-        JobManagerAdapter, base_url=config.job_manager_url
+    
+    # Core infrastructure
+    core = providers.Container(CoreContainer)
+    
+    # Domain containers
+    job = providers.Container(
+        JobContainer,
+        core=core,
+    )
+    
+    user = providers.Container(
+        UserContainer,
+        core=core,
+    )
+    
+    bigquery = providers.Container(
+        BigQueryContainer,
+        core=core,
+    )
+    
+    graph = providers.Container(
+        GraphDomainContainer,
+        core=core,
+        job=job,
     )
 
-    # Core service (backward compat) and split services
-    graph_service = providers.Factory(
-        GraphService, uow=uow, job_manager=job_manager_adapter
-    )
-    graph_query_service = providers.Factory(
-        GraphQueryService, uow=uow, core=graph_service
-    )
-    graph_initializer = providers.Factory(
-        GraphInitializerService,
-        job_manager=job_manager_adapter,
-        graph_service=graph_service,
-    )
-    job_service = providers.Factory(JobService, job_manager=job_manager_adapter)
-    user_service = providers.Factory(UserService, uow=uow)
 
-    # BigQuery service (optional; requires google credentials and library)
-    bigquery_service = providers.Factory(BigQueryService)
+# Backward compatibility - expose old GraphContainer name
+GraphContainer = ApplicationContainer
 
-    oidc_provider = providers.Singleton(
-        OIDCProviderClient,
-        issuer=config.oidc_issuer_url,
-        client_id=config.oidc_client_id,
-        client_secret=config.oidc_client_secret,
-        redirect_uri=config.oidc_redirect_uri,
-        audience=config.oidc_audience,
-        scopes=config.oidc_scopes,
-        cache_seconds=config.oidc_jwks_cache_seconds,
-    )

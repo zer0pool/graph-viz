@@ -20,7 +20,7 @@ router = APIRouter(
 @inject
 def get_me(
     ctx_user: dict = Depends(require_authenticated_user),
-    user_service: UserService = Depends(Provide[GraphContainer.user_service]),
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
 ):
     profile = user_service.get_profile(ctx_user["sub"])
     if not profile:

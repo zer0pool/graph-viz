@@ -30,7 +30,7 @@ def expand(
     direction: str = Query("both", enum=["upstream", "downstream", "both"]),
     depth: int = Query(1, ge=1, le=5),
     limit: int | None = Query(None, ge=1, le=1000),
-    svc: GraphQueryService = Depends(Provide[GraphContainer.graph_query_service]),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     if node_type == "job":
         if node_db_id is not None:
