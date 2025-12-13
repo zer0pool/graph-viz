@@ -66,9 +66,9 @@ def create_app() -> GraphApp:
         version="1.0.0",
         debug=settings.debug,
         root_path="/lineage-manager",
-        docs_url="/docs" if settings.enable_swagger else None,
-        redoc_url="/redoc" if settings.enable_swagger else None,
-        openapi_url="/openapi.json" if settings.enable_swagger else None,
+        docs_url="/docs" if settings.feature_flags.enable_swagger else None,
+        redoc_url="/redoc" if settings.feature_flags.enable_swagger else None,
+        openapi_url="/openapi.json" if settings.feature_flags.enable_swagger else None,
     )
 
     # Add health check logging filter middleware

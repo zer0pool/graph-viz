@@ -24,7 +24,7 @@ class Database:
 
         # Engine settings
         engine_kwargs = {
-            "echo": settings.database_echo,
+            "echo": settings.mysql.echo,
             "future": True,
         }
 
@@ -33,8 +33,8 @@ class Database:
             {
                 "pool_pre_ping": True,
                 "pool_recycle": 1800,
-                "pool_size": settings.database_pool_size,
-                "max_overflow": settings.database_max_overflow,
+                "pool_size": settings.mysql.pool_size,
+                "max_overflow": settings.mysql.max_overflow,
             }
         )
 
