@@ -90,9 +90,9 @@ export const LineageTreeUtils = {
      */
     getCounts(items) {
         if (!items) return { t: 0, j: 0 };
-        const tableCount = items.filter(i => i.type === "TABLE" || i.depth === 0).length;
+        const tableCount = items.filter(i => (i.type && i.type.toLowerCase() === "table") || i.depth === 0).length;
         const uniqueJobs = new Set(
-            items.filter(i => i.type === "JOB").map(i => i.name)
+            items.filter(i => i.type && i.type.toLowerCase() === "job").map(i => i.name)
         );
         return { t: tableCount, j: uniqueJobs.size };
     }

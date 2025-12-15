@@ -4,6 +4,14 @@
  * Responsible for generating styled Excel exports from lineage data.
  */
 
+import { LineageTreeUtils } from "../utils/lineageTreeUtils.js";
+
+/**
+ * ExcelExportService
+ * 
+ * Responsible for generating styled Excel exports from lineage data.
+ */
+
 export const ExcelExportService = {
     /**
      * Generate and download Excel file from lineage data
@@ -27,17 +35,19 @@ export const ExcelExportService = {
         `;
 
         // Helper to build table HTML
-        const buildTableHtml = (title, items) => {
+        const buildTableHtml = (title, jobColHeader, items) => {
             if (!items || items.length === 0) return "";
 
-            // Filter to tables only
-            const tableItems = items.filter(i => i.type === "TABLE" || i.depth === 0);
+            // Use LineageTreeUtils to get the correct hierarchical order (same as UI)
+            // This returns a flat list with 'depth' and 'treePrefix' calculated
+            // It automatically filters/processes structure, but let's confirm it includes everything we need.
+            const tableItems = LineageTreeUtils.buildFlatTree(items);
 
             let html = `<tr><td colspan="5" class="title" style="border:none; font-weight:bold; font-size:14px;">${title}</td></tr>`;
             html += `
                 <tr>
                     <th>Table Name</th>
-                    <th>Via Job</th>
+                    <th>${jobColHeader}</th>
                     <th>Depth</th>
                     <th>Owner</th>
                     <th>Info</th>
@@ -45,17 +55,21 @@ export const ExcelExportService = {
             `;
 
             tableItems.forEach(item => {
+                // Logical depth for Tables (matches UI)
                 const logicalDepth = Math.floor(item.depth / 2);
+
+                // Indentation (Excel friendly usage of clean spaces/indent)
                 let indent = "";
-                for (let i = 0; i < logicalDepth; i++) indent += " &nbsp; ";
+                for (let i = 0; i < logicalDepth; i++) indent += "    ";
                 if (logicalDepth > 0) indent += "└ ";
 
                 let jobName = "-";
                 let jobStatus = "-";
 
+                // Look up parent job info (same as UI)
                 if (item.parent) {
                     const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
-                    if (parentNode && parentNode.type === "JOB") {
+                    if (parentNode && parentNode.type && parentNode.type.toLowerCase() === "job") {
                         jobName = parentNode.name;
                         const jProps = parentNode.properties || {};
                         jobStatus = jProps.status || jProps.run_status || "unknown";
@@ -66,12 +80,15 @@ export const ExcelExportService = {
                 const owner = tProps.owner || "-";
                 const info = tProps.description || tProps.table_type || "-";
 
+                // Use FULL NAME (item.id)
+                const displayName = item.id;
+
                 // Style for Root
                 const rowStyle = (item.depth === 0) ? 'style="background-color:#d9d9d9; font-weight:bold;"' : '';
 
                 html += `
                     <tr ${rowStyle}>
-                        <td>${indent}${item.name}</td>
+                        <td>${indent}${displayName}</td>
                         <td>${jobName} (${jobStatus})</td>
                         <td>${logicalDepth}</td>
                         <td>${owner}</td>
@@ -88,12 +105,12 @@ export const ExcelExportService = {
 
         // Upstream
         if (data.upstream && data.upstream.length > 0) {
-            bodyContent += buildTableHtml(`Table 1. Upstream Lineage for ${rootName}`, data.upstream);
+            bodyContent += buildTableHtml(`Table 1. Upstream Lineage for ${rootName}`, "Created By Job", data.upstream);
         }
 
         // Downstream
         if (data.downstream && data.downstream.length > 0) {
-            bodyContent += buildTableHtml(`Table 2. Downstream Lineage for ${rootName}`, data.downstream);
+            bodyContent += buildTableHtml(`Table 2. Downstream Lineage for ${rootName}`, "Used By Job", data.downstream);
         }
 
         bodyContent += `

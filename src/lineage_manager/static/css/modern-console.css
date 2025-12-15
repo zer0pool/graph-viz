@@ -3357,7 +3357,8 @@ body {
 }
 
 .full-lineage-table tbody tr.selected {
-    background-color: var(--bg-selected);
+    background-color: #E8F0FE;
+    /* User requested Light Blue Tint */
     border-left: 3px solid var(--primary-color);
 }
 
@@ -3383,4 +3384,157 @@ body {
 .full-lineage-table .status-pending {
     background: #e8f0fe;
     color: #1967d2;
+}
+
+/* Chip style for parameterized titles */
+.param-chip {
+    display: inline-block;
+    padding: 2px 12px;
+    background-color: #E8F0FE;
+    color: #1A73E8;
+    border: 1px solid #D2E3FC;
+    border-radius: 16px;
+    font-weight: normal;
+    /* detailed requirement: normal (bold ❌) */
+    font-size: 0.9em;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* UX Enhancements for List View */
+
+/* Row Flash Animation */
+@keyframes row-flash {
+    0% {
+        background-color: #fff;
+    }
+
+    30% {
+        background-color: #E8F0FE;
+        /* Light Blue Tint flash */
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+.flash-highlight {
+    animation: row-flash 0.8s ease-out;
+}
+
+/* Button Pulse Animation */
+@keyframes btn-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(26, 115, 232, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(26, 115, 232, 0);
+    }
+}
+
+.btn-pulse {
+    animation: btn-pulse 2s infinite;
+    background-color: #e8f0fe !important;
+    border-color: #1a73e8 !important;
+}
+
+/* Reload Helper Text */
+.reload-helper-text {
+    font-size: 13px;
+    color: #5F6368;
+    /* Google Grey 700 - Secondary Text */
+    margin-left: 12px;
+    font-weight: 400;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeIn 0.3s ease-in;
+    cursor: default;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Focus Target Label */
+.focus-target-label {
+    font-weight: 600;
+    color: #1A73E8;
+    /* Primary Blue */
+    background-color: #E8F0FE;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 4px;
+    font-size: 13px;
+}
+
+/* Full Lineage Actions Layout */
+.full-lineage-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.full-lineage-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    /* flex: 1; - Removed as width:100% handles it in column layout */
+    justify-content: flex-start;
+    /* Default left align */
+}
+
+/* Specific Order & Layout */
+#btn-load-full-lineage {
+    order: 1;
+}
+
+.reload-helper-text {
+    order: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Responsive Hiding */
+    transition: opacity 0.2s;
+}
+
+#btn-download-full-lineage {
+    order: 3;
+    margin-left: auto;
+    /* Push to right */
+}
+
+/* Responsive: Hide helper text on narrower screens */
+@media (max-width: 1100px) {
+    .reload-helper-text {
+        display: none !important;
+    }
+}
+
+/* Reload Blur Transition */
+.full-lineage-tree {
+    transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blur-loading {
+    filter: blur(1px);
+    transform: translateY(2px);
+    pointer-events: none;
 }
