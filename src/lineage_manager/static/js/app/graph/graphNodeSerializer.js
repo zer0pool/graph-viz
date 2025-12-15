@@ -89,7 +89,7 @@ export class GraphNodeSerializer {
                 label_length: labelText.length,
                 sub_label: secondary,
                 type,
-                full_name: n.full_name || n.label || null,
+                full_name: n.full_name || n.name || n.label || null,
                 owner,
                 description: n.description || metadata.description,
                 status: n.status || metadata.status,
