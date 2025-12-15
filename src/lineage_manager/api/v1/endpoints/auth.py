@@ -42,12 +42,12 @@ def get_auth_config(
             status_code=503, detail="OIDC metadata unavailable"
         ) from exc
 
-    require_auth = get_settings().require_authentication
-    config["require_authentication"] = require_auth
+    require_signin = get_settings().require_signin
+    config["require_signin"] = require_signin
     logger.debug(
-        "Auth config requested (issuer=%s, require_auth=%s)",
+        "Auth config requested (issuer=%s, require_signin=%s)",
         config.get("issuer"),
-        require_auth,
+        require_signin,
     )
     return config
 

@@ -10,19 +10,7 @@ except Exception:  # pragma: no cover - allow module import even without google 
     bigquery = None
 
 
-def _field_to_dict(field: "bigquery.schema.SchemaField") -> Dict[str, Any]:
-    base = {
-        "name": field.name,
-        "type": field.field_type,
-        "mode": field.mode,
-        "description": field.description,
-    }
-    if getattr(field, "field_type", "") == "RECORD":
-        # nested fields
-        base["fields"] = [
-            _field_to_dict(f) for f in (getattr(field, "fields", None) or [])
-        ]
-    return base
+
 
 
 class BigQueryService:
@@ -47,7 +35,21 @@ class BigQueryService:
         client = self._ensure_client()
         table = client.get_table(full_name)
         schema = getattr(table, "schema", [])
-        return [_field_to_dict(f) for f in schema]
+        return [self._field_to_dict(f) for f in schema]
+
+    def _field_to_dict(self,field: "bigquery.schema.SchemaField") -> Dict[str, Any]:
+        base = {
+            "name": field.name,
+            "type": field.field_type,
+            "mode": field.mode,
+            "description": field.description,
+        }
+        if getattr(field, "field_type", "") == "RECORD":
+            # nested fields
+            base["fields"] = [
+                self._field_to_dict(f) for f in (getattr(field, "fields", None) or [])
+            ]
+        return base
 
     def get_table_detail(self, full_name: str) -> Dict[str, Any]:
         client = self._ensure_client()
@@ -275,19 +277,4 @@ class BigQueryService:
             
         logger.info(f"Retrieved {len(results)} load history records for {table_name}")
         return results
-
-from lineage_manager.core.config import get_settings
-# Backwards-compatible module-level helper that instantiates a service when called.
-_default_service = BigQueryService(history_table=get_settings().feature_flags.history_table)
-
-
-def get_table_schema(full_name: str) -> List[Dict[str, Any]]:
-    return _default_service.get_table_schema(full_name)
-
-
-def get_table_detail(full_name: str) -> Dict[str, Any]:
-    return _default_service.get_table_detail(full_name)
-
-
-def get_table_timelines_for_table(table_name: str, days: int = 7) -> Dict[str, Any]:
-    return _default_service.get_table_timelines_for_table(table_name, days)
+ 

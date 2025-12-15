@@ -52,8 +52,11 @@ class GraphSyncService:
             # Use the JobDataTransformer to transform the job data
             transformed_data = JobDataTransformer.transform_job_to_graph_node(jd)
 
-            # Extract destination table from transformed data
-            destination_table = transformed_data.get("destination_table")
+            # Extract destination tables from transformed data
+            destination_tables = transformed_data.get("destination_tables", [])
+            # destination_type is singular in source job dict but plural in schema
+            dt = jd.get("destination_type")
+            destination_types = [dt] if dt else []
 
             jr = JobRegister(
                 job_id=jd.get("job_id", job_id),
@@ -61,8 +64,8 @@ class GraphSyncService:
                 labels=jd.get("labels", {}),
                 owner=jd.get("owner"),
                 write_mode=jd.get("write_mode"),
-                destination_type=jd.get("destination_type"),
-                destination_table=destination_table,
+                destination_types=destination_types,
+                destination_tables=destination_tables,
                 trigger_tables=transformed_data.get("trigger_tables", []),
                 reference_tables=transformed_data.get("reference_tables", []),
                 run_status=jd.get("run_status", "RUN"),

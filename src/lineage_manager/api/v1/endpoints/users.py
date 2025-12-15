@@ -9,10 +9,12 @@ from lineage_manager.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
+AUTH_DEPS = [Depends(require_authenticated_user)]
+
 router = APIRouter(
     prefix="/api/v1/users",
     tags=["users"],
-    # dependencies=AUTH_DEPS,  # Disabled for embedded mode POC
+    dependencies=AUTH_DEPS,
 )
 
 

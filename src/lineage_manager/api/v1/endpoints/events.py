@@ -15,12 +15,12 @@ from lineage_manager.services.graph_query_service import GraphQueryService
 
 settings = get_settings()
 
-AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
+AUTH_DEPS = [Depends(require_authenticated_user)]
 
 router = APIRouter(
     prefix="/api/v1/events",
     tags=["events"],
-    # dependencies=AUTH_DEPS,  # Disabled for embedded mode POC
+    dependencies=AUTH_DEPS,
 )
 
 def _sanitize_stats_for_hash(stats: dict) -> dict:

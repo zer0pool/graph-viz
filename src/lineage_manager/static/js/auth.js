@@ -105,7 +105,7 @@ import { ApiClient } from "./app/services/api.js";
       this.user = null;
       this.profileCache = null;
       this.profileError = null;
-      this.requireAuth = true;
+      this.requireSignin = false;
       this.apiClient = apiClient;
       this.ready = this.initialize();
     }
@@ -113,21 +113,22 @@ import { ApiClient } from "./app/services/api.js";
     async initialize() {
       try {
         this.config = await this.fetchConfig();
-        this.requireAuth = !(this.config?.require_authentication === false);
+        this.requireSignin = this.config?.require_signin === true;
         await this.handleRedirect();
         this.restoreSession();
         this.bindUI();
         if (this.isAuthenticated()) {
           await this.preloadProfile();
-        } else if (this.requireAuth) {
+        } else if (this.requireSignin) {
           const params = new URLSearchParams(window.location.search);
           const hasCode =
             params.has("code") || (window.formData && window.formData.has("code"));
 
-          if (!hasCode) {
-            console.info("[Auth] Not authenticated, redirecting to login...");
-            this.startLogin();
-            return;
+          if (hasCode) {
+            // Let handleRedirect process it
+          } else {
+            // Do not auto-redirect in open mode, just logging
+            console.info("[Auth] Public mode with optional sign-in");
           }
         }
       } catch (err) {
@@ -197,17 +198,22 @@ import { ApiClient } from "./app/services/api.js";
         return;
       }
 
-      await this.exchangeAuthorizationCode(code, verifier);
+      try {
+        await this.exchangeAuthorizationCode(code, verifier);
+      } catch (err) {
+        console.error("[Auth] Exchange failed, clearing code to prevent loop:", err);
+        // We suppress the error here so that the app can continue as unauthenticated
+      } finally {
+        sessionStorage.removeItem(VERIFIER_KEY);
+        sessionStorage.removeItem(STATE_KEY);
 
-      sessionStorage.removeItem(VERIFIER_KEY);
-      sessionStorage.removeItem(STATE_KEY);
-
-      if (params.has("code")) {
-        params.delete("code");
-        params.delete("state");
-        const newQuery = params.toString();
-        const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ""}`;
-        window.history.replaceState({}, document.title, newUrl);
+        if (params.has("code")) {
+          params.delete("code");
+          params.delete("state");
+          const newQuery = params.toString();
+          const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ""}`;
+          window.history.replaceState({}, document.title, newUrl);
+        }
       }
     }
 
@@ -244,14 +250,13 @@ import { ApiClient } from "./app/services/api.js";
     }
 
     isAuthenticated() {
-      if (!this.requireAuth) return true;
+      // Check token validity regardless of requireSignin flag
       if (!this.tokens) return false;
       if (!this.tokens.expires_at) return true;
       return this.tokens.expires_at > Date.now() - 5000;
     }
 
     ensureAuthenticated() {
-      if (!this.requireAuth) return;
       if (!this.isAuthenticated()) {
         throw new Error("AUTH_REQUIRED");
       }
@@ -263,8 +268,9 @@ import { ApiClient } from "./app/services/api.js";
 
     async fetchWithAuth(input, init = {}) {
       const headers = new Headers(init.headers || {});
-      if (this.requireAuth) {
-        this.ensureAuthenticated();
+
+      // Attach token if available, but do NOT block if missing (Open Frontend)
+      if (this.isAuthenticated()) {
         headers.set("Authorization", `Bearer ${this.tokens.id_token}`);
         if (this.user) {
           try {
@@ -275,6 +281,7 @@ import { ApiClient } from "./app/services/api.js";
           }
         }
       }
+
       console.debug(`[Auth] fetchWithAuth ${init.method || "GET"} ${input}`);
       const response = await fetch(input, { ...init, headers });
       console.debug(`[Auth] Response ${response.status} ${response.statusText}`);
@@ -371,12 +378,22 @@ import { ApiClient } from "./app/services/api.js";
       const avatarEl = document.getElementById("user-avatar");
 
       const authed = this.isAuthenticated();
-      if (loginBtn) loginBtn.hidden = authed || !this.requireAuth;
-      if (chip) chip.hidden = !authed || !this.requireAuth;
+      // Optional Sign-in: Show login button if not authenticated
+      if (loginBtn) loginBtn.hidden = authed;
+
+      // Chip: Visible if authenticated OR in anonymous mode (requireSignin=false)
+      if (chip) chip.hidden = !authed && this.requireSignin;
+
       if (authed && this.user) {
         nameEl && (nameEl.textContent = this.user.name || this.user.email || this.user.sub);
         if (avatarEl) {
           avatarEl.src = this.getAvatarUrl(this.user, 64);
+        }
+      } else if (!authed && !this.requireSignin) {
+        // Anonymous User
+        nameEl && (nameEl.textContent = "Anonymous");
+        if (avatarEl) {
+          avatarEl.src = this.getAvatarUrl({ name: "Anonymous" }, 64);
         }
       } else if (avatarEl) {
         avatarEl.src = DEFAULT_AVATAR;
@@ -459,7 +476,38 @@ import { ApiClient } from "./app/services/api.js";
     }
 
     async showProfile(forceRefresh = false) {
-      if (this.requireAuth) this.ensureAuthenticated();
+      // If we are not authenticated, we can't show the real profile.
+      if (!this.isAuthenticated()) {
+        if (!this.requireSignin) {
+          // Show Dummy Profile for Anonymous User
+          const dummyProfile = {
+            user: {
+              name: "Anonymous User",
+              first_name: "Anonymous",
+              last_name: "User",
+              email: "anonymous@lineage.manager",
+              preferred_username: "anonymous",
+              organization: "Public Access",
+              dept: "Guest Interaction",
+              roles: ["Viewer", "Guest"],
+              sub: "anonymous-session",
+              locale: navigator.language
+            }
+          };
+          this.renderProfile(dummyProfile);
+          this.showProfileContent();
+
+          const panel = document.getElementById("profile-panel");
+          if (panel) {
+            panel.hidden = false;
+            requestAnimationFrame(() => panel.classList.add("is-visible"));
+          }
+          return;
+        }
+        console.warn("[Auth] Cannot show profile: User not authenticated.");
+        return;
+      }
+      this.ensureAuthenticated();
       const panel = document.getElementById("profile-panel");
       if (panel) {
         panel.hidden = false;
@@ -493,7 +541,7 @@ import { ApiClient } from "./app/services/api.js";
       ) {
         return this.profileCache.data;
       }
-      if (this.requireAuth) this.ensureAuthenticated();
+      this.ensureAuthenticated();
       console.debug("[Auth] Fetching profile");
       try {
         const data = await this.apiClient.fetchProfile();

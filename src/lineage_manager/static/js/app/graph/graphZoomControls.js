@@ -36,47 +36,72 @@ export class GraphZoomControls {
             }
         };
 
-        zoomIn?.addEventListener("click", (e) => {
+        this.zoomInHandler = (e) => {
             e.preventDefault();
             const target = Math.min(cy.zoom() * 1.2, cy.maxZoom());
             cy.zoom(target);
             cy.center();
             updateZoomDisplay();
-        });
+        };
 
-        zoomOut?.addEventListener("click", (e) => {
+        this.zoomOutHandler = (e) => {
             e.preventDefault();
             const target = Math.max(cy.zoom() * 0.8, cy.minZoom());
             cy.zoom(target);
             cy.center();
             updateZoomDisplay();
-        });
+        };
 
-        reset?.addEventListener("click", (e) => {
+        this.resetHandler = (e) => {
             e.preventDefault();
             cy.fit();
             cy.center();
             updateZoomDisplay();
-        });
+        };
 
-        zoomReset?.addEventListener("click", (e) => {
+        this.zoomResetHandler = (e) => {
             e.preventDefault();
             cy.zoom(1.0);
             cy.center();
             updateZoomDisplay();
-        });
+        };
+
+        this.minimapHandler = (e) => {
+            e.preventDefault();
+            console.info("[Minimap] Toggle button clicked");
+            this.toggleMinimap();
+        };
+
+        zoomIn?.addEventListener("click", this.zoomInHandler);
+        zoomOut?.addEventListener("click", this.zoomOutHandler);
+        reset?.addEventListener("click", this.resetHandler);
+        zoomReset?.addEventListener("click", this.zoomResetHandler);
+        minimap?.addEventListener("click", this.minimapHandler);
 
         this.minimapToggle = minimap;
         this.updateMinimapToggleState();
 
-        minimap?.addEventListener("click", (e) => {
-            e.preventDefault();
-            console.info("[Minimap] Toggle button clicked");
-            this.toggleMinimap();
-        });
-
         cy.on("zoom", updateZoomDisplay);
         updateZoomDisplay();
+
+        // Store references for cleanup
+        this.domElements = { zoomIn, zoomOut, reset, zoomReset, minimap };
+    }
+
+    /**
+     * Unbind all controls
+     */
+    unbindControls() {
+        const { zoomIn, zoomOut, reset, zoomReset, minimap } = this.domElements || {};
+
+        if (this.zoomInHandler) zoomIn?.removeEventListener("click", this.zoomInHandler);
+        if (this.zoomOutHandler) zoomOut?.removeEventListener("click", this.zoomOutHandler);
+        if (this.resetHandler) reset?.removeEventListener("click", this.resetHandler);
+        if (this.zoomResetHandler) zoomReset?.removeEventListener("click", this.zoomResetHandler);
+        if (this.minimapHandler) minimap?.removeEventListener("click", this.minimapHandler);
+
+        this.minimapVisible = false;
+        this.cleanupMinimapElements();
     }
 
     /**

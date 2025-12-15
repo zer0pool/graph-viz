@@ -23,14 +23,16 @@ class JobDataTransformer:
                     if upstream.get("trigger", False):
                         trigger_tables.append(table_name)
 
-        # Extract destination table from downstreams
-        destination_table = None
+        # Extract destination tables from downstreams
+        destination_tables = []
         downstreams = job_data.get("downstreams", [])
 
         for downstream in downstreams:
             if downstream.get("type") == "table":
-                destination_table = downstream.get("name")
-
+                table_name = downstream.get("name")
+                if table_name:
+                    destination_tables.append(table_name)
+                    
         # Extract schedule information
         schedule = job_data.get("schedule", {})
         schedule_cron = schedule.get("interval") if schedule else None
@@ -42,8 +44,8 @@ class JobDataTransformer:
             "owner": job_data.get("owner"),
             "labels": job_data.get("labels", {}),
             "write_mode": job_data.get("write_mode"),
-            "destination_type": job_data.get("destination_type"),
-            "destination_table": destination_table,
+            "destination_types": [job_data.get("destination_type")] if job_data.get("destination_type") else [],
+            "destination_tables": destination_tables,
             "trigger_tables": trigger_tables,
             "reference_tables": reference_tables,
         }
@@ -90,10 +92,11 @@ class JobDataTransformer:
             for dep in lineage.upstreams
             if getattr(dep, "name", None) and getattr(dep, "trigger", False)
         ]
-        destination_table = next(
-            (dep.name for dep in lineage.downstreams if getattr(dep, "name", None)),
-            None,
-        )
+        destination_tables = [
+            dep.name 
+            for dep in lineage.downstreams 
+            if getattr(dep, "name", None)
+        ]
 
         metadata = dict(lineage.metadata or {})
         schedule_payload = (
@@ -108,8 +111,8 @@ class JobDataTransformer:
             labels=metadata.get("labels", {}),
             owner=metadata.get("owner"),
             write_mode=metadata.get("write_mode"),
-            destination_type=lineage.destination_type or metadata.get("destination_type"),
-            destination_table=destination_table,
+            destination_types=[lineage.destination_type] if lineage.destination_type else getattr(metadata, "destination_types", []),
+            destination_tables=destination_tables,
             trigger_tables=trigger_tables,
             reference_tables=upstream_tables,
             run_status=metadata.get("run_status", "RUN"),
