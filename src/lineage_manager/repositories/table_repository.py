@@ -15,24 +15,18 @@ class TableRepository(BaseRepository):
     def _base_query(self) -> Select:
         return select(GraphNode).where(GraphNode.node_type == "table")
 
-    def get_or_create(self, full_name: str):
+    def get_or_create(self, full_name: str, **kwargs):
         row = self.db.execute(
             self._base_query().where(GraphNode.name == full_name)
         ).scalar_one_or_none()
+        
         if row:
             return row
-
-        parts = full_name.split(".")
-        project = parts[0] if len(parts) > 0 else None
-        dataset = parts[1] if len(parts) > 1 else None
-        table = parts[2] if len(parts) > 2 else None
-
-        properties = {
-            "project_name": project,
-            "dataset_name": dataset,
-            "table_name": table,
-            "storage_type": "database",
-            "storage_path": full_name,
+        
+        properties = {            
+            "labels": kwargs.get("labels", {}),
+            "owner": kwargs.get("owner"),
+            "write_mode": kwargs.get("write_mode")            
         }
         row = GraphNode(node_type="table", name=full_name, properties=properties)
         self.db.add(row)

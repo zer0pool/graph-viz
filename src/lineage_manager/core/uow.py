@@ -7,6 +7,7 @@ from lineage_manager.repositories.job_table_link_repository import (
     JobTableLinkRepository,
 )
 from lineage_manager.repositories.table_repository import TableRepository
+from lineage_manager.repositories.user_repository import UserRepository
 
 
 class BaseUnitOfWork:
@@ -56,6 +57,13 @@ class GraphUnitOfWork(BaseUnitOfWork):
         self.closures = ClosureRepository(db)
 
 
+class UserUnitOfWork(BaseUnitOfWork):
+    """
+    Unit of Work for User domain.
+    """
+    def __init__(self, db: Session):
+        super().__init__(db)
+        self.users = UserRepository(db)
 class ReadOnlyUnitOfWork:
     """
     Read-only Unit of Work (no commit/rollback).

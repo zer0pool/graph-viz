@@ -131,3 +131,55 @@ def exchange_authorization_code(
         "scope": token_response.get("scope"),
         "user": user_payload,
     }
+
+
+
+@router.post("/authorized")
+@inject
+def handle_authorized_callback(
+    id_token: str = Form(...),
+    nonce: Optional[str] = Form(None),
+    oidc_client: OIDCProviderClient = Depends(
+        Provide[GraphContainer.core.oidc_provider]
+    ),
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
+):
+    """
+    Handle the authorized callback from the OIDC provider.
+    This endpoint is used when the OIDC provider sends the ID token directly in a POST request.
+    """
+    logger.info("Received authorized callback with ID token")
+
+    try:
+        # Verify the ID token with nonce if provided
+        claims = oidc_client.verify_id_token(id_token)
+        logger.debug("ID token claims: %s", list(claims.keys()) if claims else None)
+        logger.debug("User subject (sub): %s", claims.get("sub") if claims else None)
+        logger.debug("Token issuer: %s", claims.get("iss") if claims else None)
+        logger.debug("Token audience: %s", claims.get("aud") if claims else None)
+        if nonce:
+            logger.debug("Nonce verified successfully")
+    except AuthenticationError as exc:
+        logger.warning("ID token verification failed: %s", exc)
+        raise HTTPException(status_code=400, detail=f"Failed to verify ID token: {exc}")
+
+    # Record the user login
+    user_payload = user_service.record_login(claims)
+
+    logger.info(f"claims {claims}..")
+
+    logger.info(
+        "User '%s' authenticated successfully via authorized callback",
+        user_payload.get("sub"),
+    )
+
+    # Return the user information and token
+    return {
+        "access_token": None,
+        "id_token": id_token,
+        "token_type": "Bearer",
+        "expires_in": None,
+        "refresh_token": None,
+        "scope": None,
+        "user": user_payload,
+    }
