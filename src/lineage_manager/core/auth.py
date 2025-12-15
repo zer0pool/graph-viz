@@ -182,30 +182,48 @@ async def require_authenticated_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ):
-    """
-    FastAPI dependency that validates the incoming bearer token and stores the user info in request state.
-    """
-    # Allow GET/OPTIONS/HEAD/TRACE without auth
+    # Allow GET/OPTIONS/HEAD/TRACE without auth (redundant if we allow anonymous everywhere, but keeps fast path)
     if request.method in ["GET", "OPTIONS", "HEAD", "TRACE"]:
-        return None
+        # We still want to populate user if token exists, so don't return early if we want strict logging
+        # But if the goal is "remove all auth dependencies", we can just fall through.
+        pass
 
     # Allow Swagger/Redoc UI
     if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc") or request.url.path.startswith("/openapi.json"):
         return None
 
+    # Try to get token
     token = credentials.credentials if credentials else None
     if not token:
         token = request.query_params.get("access_token")
+    
+    # If no token, return anonymous user (Open Backend)
     if not token:
-        raise HTTPException(status_code=401, detail="Missing Authorization token")
+        request.state.user = {
+            "sub": "anonymous-user",
+            "name": "Anonymous",
+            "email": "anonymous@lineage.manager",
+            "roles": ["admin"],
+            "dept": "Engineering"
+        }
+        return request.state.user
 
     container: GraphContainer = request.app.container
     verifier: OIDCProviderClient = container.core.oidc_provider()
     try:
         claims = verifier.verify_id_token(token)
     except AuthenticationError as exc:
-        logger.warning("Token verification failed: %s", exc)
-        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+        logger.warning(f"Token verification failed: {exc}. Falling back to anonymous.")
+        # Fallback to anonymous on bad token? Or raise?
+        # User said "all APIs available". Let's fallback to anonymous to be safe/open.
+        request.state.user = {
+            "sub": "anonymous-user",
+            "name": "Anonymous",
+            "email": "anonymous@lineage.manager",
+            "roles": ["admin"],
+            "dept": "Engineering"
+        }
+        return request.state.user
 
     user_service = container.user.user_service()
     user_payload = user_service.record_login(claims)
@@ -214,4 +232,5 @@ async def require_authenticated_user(
 
 
 def is_auth_enabled() -> bool:
-    return get_settings().require_authentication
+    # Used for UI signaling only
+    return get_settings().require_signin

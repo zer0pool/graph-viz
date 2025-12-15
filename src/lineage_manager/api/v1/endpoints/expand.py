@@ -9,7 +9,8 @@ from lineage_manager.services.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
 
-AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
+AUTH_DEPS = [Depends(require_authenticated_user)]
+
 
 router = APIRouter(
     prefix="/api/v1/graph",

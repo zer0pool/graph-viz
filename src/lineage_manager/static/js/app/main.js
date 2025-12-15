@@ -48,7 +48,7 @@ class App {
     const graph = new GraphController({
       panel,
       filterState,
-      selectionState, // Pass the singleton
+      // selectionState removed - used as singleton
       relationState,
       api,
       searchState,

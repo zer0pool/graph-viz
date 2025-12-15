@@ -24,7 +24,7 @@ class GraphCommandService:
         with uow:
             job = self._create_job_node(job_data)
             in_ids = self._process_reference_tables(job, job_data)
-            self._process_destination_table(job, job_data)
+            self._process_destination_tables(job, job_data)
             self._create_upstream_relationships(job, in_ids)
             
             logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
@@ -198,8 +198,8 @@ class GraphCommandService:
             labels=job_data.labels or {},
             owner=job_data.owner,
             write_mode=job_data.write_mode,
-            destination_type=job_data.destination_type,
-            destination_table=job_data.destination_table,
+            destination_types=job_data.destination_types,
+            destination_tables=job_data.destination_tables,
             trigger_tables=job_data.trigger_tables,
             reference_tables=job_data.reference_tables,
             job_metadata=job_data.metadata or {},
@@ -221,14 +221,15 @@ class GraphCommandService:
             )
         return in_ids
 
-    def _process_destination_table(self, job, job_data: JobRegister):
-        if not job_data.destination_table:
+    def _process_destination_tables(self, job, job_data: JobRegister):
+        if not job_data.destination_tables:
             return
         
-        logger.debug(f"Processing destination table: {job_data.destination_table}")
-        tbl = self.uow.tables.get_or_create(job_data.destination_table)
-        self.uow.job_table_links.link_job_table(job.id, tbl.id, "output")
-        self.uow.edges.create_job_table_edge(job.id, tbl.id, "output")
+        logger.debug(f"Processing destination tables: {job_data.destination_tables}")
+        for t in job_data.destination_tables:
+            tbl = self.uow.tables.get_or_create(t)
+            self.uow.job_table_links.link_job_table(job.id, tbl.id, "output")
+            self.uow.edges.create_job_table_edge(job.id, tbl.id, "output")
 
     def preview_lineage_job(self, lineage: SchedulingLineage) -> dict:
         """
@@ -426,7 +427,7 @@ class GraphCommandService:
         
         job_props["trigger_tables"] = self._extract_triggers(lineage.upstreams)
         job_props["reference_tables"] = self._extract_references(lineage.upstreams)
-        job_props["destination_table"] = self._extract_destination(lineage.downstreams)
+        job_props["destination_tables"] = self._extract_destinations(lineage.downstreams)
         
         return job_props
 
@@ -474,11 +475,12 @@ class GraphCommandService:
         
         return node_metadata
 
-    def _extract_destination(self, downstreams: list) -> Optional[str]:
-        for item in downstreams:
-            if item.type == "table":
-                return item.name
-        return None
+    def _extract_destinations(self, downstreams: list) -> List[str]:
+        return [
+            item.name
+            for item in downstreams
+            if item.type == "table"
+        ]
 
     def _extract_triggers(self, upstreams: list) -> list:
         return [

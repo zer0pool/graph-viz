@@ -5,11 +5,11 @@ from lineage_manager.core.auth import is_auth_enabled, require_authenticated_use
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.graph_query_service import GraphQueryService
 
-AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
+AUTH_DEPS = [Depends(require_authenticated_user)]
 
 router = APIRouter(
     prefix="/api/v1/search",
-    tags=["Search"],
+    tags=["search"],
     dependencies=AUTH_DEPS,
 )
 

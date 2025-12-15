@@ -152,7 +152,7 @@ body {
     justify-content: flex-end;
     padding: 16px;
     z-index: 200;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 .profile-panel .profile-card {

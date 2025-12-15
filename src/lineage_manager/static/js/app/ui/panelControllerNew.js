@@ -417,17 +417,47 @@ export class PanelController {
         try {
             const detail = await this.api.fetchJobDetail(jobId);
             if (requestId !== this.jobOverviewRequestId) return;
-            const overview = this.buildJobOverview(detail);
-            this.jobView.renderOverview(overview);
+            // Render overview with properties
+            // The API now returns a 'properties' object containing most metadata
+            const overviewData = detail.properties || {};
+            // Ensure status/enabled are available if they were on the top level before
+            overviewData.status = overviewData.status || detail.status;
+            overviewData.enabled = overviewData.enabled || detail.enabled;
 
-            // Populate I/O links from API response
-            const inputs = detail.reference_tables || [];
-            // Handle destination_table as single string or array if schema differs
+            this.jobView.renderOverview(overviewData);
+
+            // Populate I/O links from API response (using upstreams/downstreams)
+            let inputs = [];
+            if (Array.isArray(detail.upstreams)) {
+                inputs = detail.upstreams
+                    .filter(u => u.type === 'table')
+                    .map(u => u.name);
+            }
+
             let outputs = [];
-            if (detail.destination_table) {
-                outputs = [detail.destination_table];
-            } else if (Array.isArray(detail.destinations)) {
-                outputs = detail.destinations;
+            if (Array.isArray(detail.downstreams)) {
+                outputs = detail.downstreams
+                    .filter(d => d.type === 'table')
+                    .map(d => d.name);
+            }
+
+            // Fallback to legacy fields if new ones are empty (just in case)
+            if (inputs.length === 0 && Array.isArray(detail.reference_tables)) {
+                inputs = detail.reference_tables;
+            }
+            if (outputs.length === 0) {
+                if (detail.destination_table) outputs = [detail.destination_table];
+                else if (Array.isArray(detail.destinations)) outputs = detail.destinations;
+            }
+
+
+            // If API returns empty lists but we already have relations from the graph (via updateRelations),
+            // prefer the graph data to avoid clearing the list.
+            if (inputs.length === 0 && this.jobRelations.inputs.length > 0) {
+                inputs = this.jobRelations.inputs;
+            }
+            if (outputs.length === 0 && this.jobRelations.outputs.length > 0) {
+                outputs = this.jobRelations.outputs;
             }
 
             // Update local state for lineage tab
@@ -435,6 +465,7 @@ export class PanelController {
 
             // Render directly
             this.jobView.renderIOLinks(inputs, outputs);
+            this.jobView.renderLineageSummary(inputs, outputs);
 
         } catch (err) {
             if (requestId !== this.jobOverviewRequestId) return;
