@@ -32,8 +32,9 @@ class BigQueryService:
     environment or via configuration. Otherwise callers can rely on fallback data.
     """
 
-    def __init__(self):
+    def __init__(self, history_table:str ):
         # No-op init; client is created on demand. Keep constructor lightweight for DI.
+        self.history_table = history_table
         pass
 
     def _ensure_client(self):
@@ -275,9 +276,9 @@ class BigQueryService:
         logger.info(f"Retrieved {len(results)} load history records for {table_name}")
         return results
 
-
+from lineage_manager.core.config import get_settings
 # Backwards-compatible module-level helper that instantiates a service when called.
-_default_service = BigQueryService()
+_default_service = BigQueryService(history_table=get_settings().feature_flags.history_table)
 
 
 def get_table_schema(full_name: str) -> List[Dict[str, Any]]:

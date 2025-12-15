@@ -84,6 +84,7 @@ class FeatureFlags(BaseSettings):
     enable_bigquery: bool = False
     enable_audit_logging: bool = True
     enable_rate_limiting: bool = True
+    history_table: str = "history"
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -8,10 +8,10 @@ No configuration needed - uses Google Cloud credentials from environment.
 from dependency_injector import containers, providers
 
 from lineage_manager.services.bigquery_service import BigQueryService
-
+from lineage_manager.core.config import get_settings
 
 class BigQueryContainer(containers.DeclarativeContainer):
     """BigQuery integration domain container."""
     
     # Service (no DB or config needed - uses GCP environment credentials)
-    bigquery_service = providers.Factory(BigQueryService)
+    bigquery_service = providers.Factory(BigQueryService, history_table=get_settings().feature_flags.history_table)

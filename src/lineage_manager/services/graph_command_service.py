@@ -21,21 +21,14 @@ class GraphCommandService:
         """
         logger.info(f"Starting job registration for job_id: {job_data.job_id}")
         uow = self.uow
-        try:
+        with uow:
             job = self._create_job_node(job_data)
             in_ids = self._process_reference_tables(job, job_data)
             self._process_destination_table(job, job_data)
             self._create_upstream_relationships(job, in_ids)
             
-            uow.commit()
             logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
             return job.id
-        except Exception as e:
-            logger.error(
-                f"Error during job registration for job_id {job_data.job_id}: {e}"
-            )
-            uow.rollback()
-            raise
 
 
 
@@ -51,16 +44,11 @@ class GraphCommandService:
         meta.setdefault("status", "pending")
         job.job_metadata = meta
         
-        try:
-            self.uow.commit()
+        with self.uow:
             # Attach for response convenience
             setattr(job, "enabled", meta["enabled"])
             setattr(job, "status", meta.get("status"))
             return job
-        except Exception:
-            self.uow.rollback()
-            raise
-            raise
             
     def update_job(self, job_id: str, payload: JobUpdateRequest) -> Optional[Dict[str, Any]]:
         """Update job mutable fields."""
@@ -91,11 +79,8 @@ class GraphCommandService:
             job.job_metadata = meta
         
         if updates:
-             try:
-                 uow.commit()
-             except Exception:
-                 uow.rollback()
-                 raise
+             with uow:
+                 pass
 
         return {
             "job_id": job_id,
@@ -105,7 +90,7 @@ class GraphCommandService:
     def reset_graph(self):
         """Delete all graph-related table data"""
         uow = self.uow
-        try:
+        with uow:
             logger.info("Starting graph reset - clearing all graph data")
             # Order matters: closure → edge → job_table_link → job → table
             uow.closures.clear_all()
@@ -113,16 +98,11 @@ class GraphCommandService:
             uow.job_table_links.clear_all()
             uow.jobs.clear_all()
             uow.tables.clear_all()
-            uow.commit()
             logger.info("✅ Graph reset complete: all graph data cleared.")
             return {
                 "status": "success",
                 "message": "Graph reset complete: all graph data cleared.",
             }
-        except Exception as e:
-            logger.error(f"❌ Graph reset failed: {e}")
-            uow.rollback()
-            raise
 
     def set_table_trigger(self, table_name: str, job_id: str, trigger: bool):
         """Set trigger ON/OFF for a specific job consuming a given table."""
@@ -150,7 +130,9 @@ class GraphCommandService:
             except Exception:
                 pass
 
-            uow.commit()
+            with uow:
+                pass
+            
             self._invalidate_trigger_cache(table_name)
 
             return {
@@ -162,38 +144,37 @@ class GraphCommandService:
             }
         except Exception as e:
             logger.error(f"Failed to set trigger for {job_id}/{table_name}: {e}")
-            uow.rollback()
             return {"status": "error", "message": str(e)}
 
     def bulk_set_table_triggers(self, table_name: str, trigger: bool):
         """Set trigger ON/OFF for all jobs that consume the table."""
         uow = self.uow
         try:
-            table = uow.tables.get_by_full_name(table_name)
-            if not table:
-                return {"status": "error", "message": f"Table '{table_name}' not found"}
+            with uow:
+                table = uow.tables.get_by_full_name(table_name)
+                if not table:
+                    return {"status": "error", "message": f"Table '{table_name}' not found"}
 
-            jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
-            changed, unchanged = [], []
-            for j in jobs:
-                trig_list = list(j.trigger_tables or [])
-                has = table_name in trig_list
-                if trigger and not has:
-                    trig_list.append(table_name)
-                    j.trigger_tables = trig_list
-                    changed.append(j.job_id)
-                elif not trigger and has:
-                    j.trigger_tables = [t for t in trig_list if t != table_name]
-                    changed.append(j.job_id)
-                else:
-                    unchanged.append(j.job_id)
-                # Edge flag best-effort
-                try:
-                    uow.edges.set_input_trigger(j.id, table.id, trigger)
-                except Exception:
-                    pass
+                jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
+                changed, unchanged = [], []
+                for j in jobs:
+                    trig_list = list(j.trigger_tables or [])
+                    has = table_name in trig_list
+                    if trigger and not has:
+                        trig_list.append(table_name)
+                        j.trigger_tables = trig_list
+                        changed.append(j.job_id)
+                    elif not trigger and has:
+                        j.trigger_tables = [t for t in trig_list if t != table_name]
+                        changed.append(j.job_id)
+                    else:
+                        unchanged.append(j.job_id)
+                    # Edge flag best-effort
+                    try:
+                        uow.edges.set_input_trigger(j.id, table.id, trigger)
+                    except Exception:
+                        pass
 
-            uow.commit()
             self._invalidate_trigger_cache(table_name)
 
             return {
@@ -207,7 +188,6 @@ class GraphCommandService:
             }
         except Exception as e:
             logger.error(f"bulk_set_table_triggers failed for {table_name}: {e}")
-            uow.rollback()
             return {"status": "error", "message": str(e)}
 
     # --- Helpers ---
@@ -299,7 +279,7 @@ class GraphCommandService:
                 continue
             seen_upstreams.add(upstream.name)
             
-            existing_node = self.uow.tables.get(upstream.name)
+            existing_node = self.uow.tables.get_by_full_name(upstream.name)
             if not existing_node:
                 changes["nodes_created"].append({
                     "type": upstream.type,
@@ -319,7 +299,7 @@ class GraphCommandService:
                 continue
             seen_downstreams.add(downstream.name)
             
-            existing_node = self.uow.tables.get(downstream.name)
+            existing_node = self.uow.tables.get_by_full_name(downstream.name)
             if not existing_node:
                 changes["nodes_created"].append({
                     "type": downstream.type,
@@ -413,6 +393,8 @@ class GraphCommandService:
         # We reuse the logic that finds jobs producing our input tables
         self._create_upstream_relationships(job, input_table_ids)
         
+        uow.commit()
+        
         return job.id
 
     # --- Helpers moved from GraphSyncService ---
@@ -459,14 +441,12 @@ class GraphCommandService:
         node_metadata = self._extract_node_metadata(item, metadata_prefix, lineage_props)
         
         if node_type == "table":
-            node = self.uow.tables.get_or_create(
-                table_id=node_name,
+            node = self.uow.tables.get_or_create(    
                 full_name=node_name,
                 table_metadata=node_metadata
             )
         else:
-            node = self.uow.tables.get_or_create(
-                table_id=node_name,
+            node = self.uow.tables.get_or_create(        
                 full_name=node_name,
                 table_metadata={**node_metadata, "node_type": node_type}
             )
