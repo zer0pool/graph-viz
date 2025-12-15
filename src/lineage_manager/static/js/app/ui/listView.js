@@ -79,7 +79,7 @@ class ListView {
                     id: row.dataset.id,
                     type: row.dataset.type,
                     label: row.dataset.label,
-                    full_name: row.dataset.label,
+                    full_name: row.dataset.id,
                     ...props
                 });
             }
@@ -91,10 +91,15 @@ class ListView {
         selectionState.subscribe((nodeData) => {
             if (nodeData) {
                 this.highlightNode(nodeData.id);
-                this.updateFullLineageTargetLabel(nodeData);
+                // Enable reload but DO NOT change title
+                this.elements.reloadFullBtn.disabled = false;
+
+                // UX: Check if we need to suggest Reload
+                this.checkReloadSuggestion(nodeData);
             } else {
                 this.clearHighlight();
-                this.updateFullLineageTargetLabel(null);
+                this.elements.reloadFullBtn.disabled = true;
+                this.clearReloadSuggestion();
             }
         });
 
@@ -145,7 +150,16 @@ class ListView {
 
         // If switching to list, ensure we have initial data rendered if empty
         if (isList) {
-            // Maybe trigger a render update if needed?
+            // Check if we have a selection to default to Full Lineage
+            if (selectionState.selectedNode) {
+                this.setMode("full");
+                // Auto-load if not already loaded for this node?
+                // Simple check: just call loadFullLineage, it handles idempotent logic or re-fetches.
+                // Better UX: Auto-load.
+                this.loadFullLineage();
+            } else {
+                this.setMode("current");
+            }
         }
     }
 
@@ -163,48 +177,122 @@ class ListView {
         // Highlight in Current Table
         const currentRows = this.elements.currentTableBody.querySelectorAll("tr");
         currentRows.forEach(row => {
-            if (row.dataset.id === id) row.classList.add("selected");
-            else row.classList.remove("selected");
+            if (row.dataset.id === id) {
+                row.classList.add("selected");
+                // Reset animation
+                row.classList.remove("flash-highlight");
+                void row.offsetWidth; // trigger reflow
+                row.classList.add("flash-highlight");
+            } else {
+                row.classList.remove("selected");
+                row.classList.remove("flash-highlight");
+            }
         });
 
         // Highlight in Full Lineage Tables
         const fullRows = this.elements.fullTreeContainer.querySelectorAll("tr");
         fullRows.forEach(row => {
-            if (row.dataset.id === id) row.classList.add("selected");
-            else row.classList.remove("selected");
+            if (row.dataset.id === id) {
+                row.classList.add("selected");
+                // Reset animation
+                row.classList.remove("flash-highlight");
+                void row.offsetWidth; // trigger reflow
+                row.classList.add("flash-highlight");
+            } else {
+                row.classList.remove("selected");
+                row.classList.remove("flash-highlight");
+            }
         });
     }
 
     clearHighlight() {
-        this.elements.currentTableBody.querySelectorAll(".selected").forEach(el => el.classList.remove("selected"));
-        this.elements.fullTreeContainer.querySelectorAll(".selected").forEach(el => el.classList.remove("selected"));
+        this.elements.currentTableBody.querySelectorAll(".selected").forEach(el => {
+            el.classList.remove("selected");
+            el.classList.remove("flash-highlight");
+        });
+        this.elements.fullTreeContainer.querySelectorAll(".selected").forEach(el => {
+            el.classList.remove("selected");
+            el.classList.remove("flash-highlight");
+        });
     }
 
-    updateFullLineageTargetLabel(node) {
-        // Update Title: "Full Lineage — [Name]"
-        if (node) {
-            // Cytoscape node or plain object?
-            const label = typeof node.data === 'function' ? node.data('label') : (node.label || node.data?.label || node.id);
-            this.elements.fullTitle.textContent = `Full Lineage — ${label}`;
+    /**
+     * Updates the Full Lineage Title based on the loaded root node, NOT selection.
+     */
+    updateFullLineageTitle(label) {
+        this.currentRootName = label; // Store for comparison
+        if (label) {
+            // User requested Pill/Chip style for the name
+            this.elements.fullTitle.innerHTML = `Full Lineage — <span class="param-chip">${label}</span>`;
 
-            // Update Notice
-            this.elements.fullNotice.textContent = `for ${label}`;
-            this.elements.fullNotice.hidden = false;
-
-            this.elements.reloadFullBtn.disabled = false;
+            this.elements.fullNotice.hidden = true;
+            this.elements.downloadFullBtn.disabled = false;
         } else {
             this.elements.fullTitle.textContent = "Full Lineage";
             this.elements.fullNotice.textContent = "Select a table to view lineage.";
-            this.elements.reloadFullBtn.disabled = true;
+            this.elements.fullNotice.hidden = false;
             this.elements.downloadFullBtn.disabled = true;
+        }
+
+        // When title updates (fresh load), clear suggestions
+        this.clearReloadSuggestion();
+    }
+
+    checkReloadSuggestion(nodeData) {
+        // If selected ID is different from current displayed root, suggest reload
+        // nodeData.id is the full name usually (from selectNode logic)
+        const selectedId = nodeData.id;
+        const label = nodeData.label || selectedId; // Use label or ID for display
+
+        if (this.currentRootName && selectedId !== this.currentRootName) {
+            this.showReloadSuggestion(label);
+        } else {
+            this.clearReloadSuggestion();
         }
     }
 
+    showReloadSuggestion(label) {
+        // Update button tooltip
+        this.elements.reloadFullBtn.title = `Reload and set focus to ${label}`;
+
+        // Create helper text if not exists
+        if (!this.elements.reloadHelper) {
+            const helper = document.createElement("span");
+            helper.className = "reload-helper-text";
+            // Insert AFTER the button group (the parent of buttons is .full-lineage-actions)
+            // Actually elements.reloadFullBtn is inside .full-lineage-actions.
+            // Let's append to that container.
+            this.elements.reloadFullBtn.parentElement.appendChild(helper);
+            this.elements.reloadHelper = helper;
+        }
+
+        this.elements.reloadHelper.innerHTML = `Focus <span style="color:#9aa0a6;">→</span> <span class="focus-target-label">${label}</span>`;
+        this.elements.reloadHelper.hidden = false;
+
+        this.elements.reloadFullBtn.classList.add("btn-pulse");
+    }
+
+    clearReloadSuggestion() {
+        this.elements.reloadFullBtn.title = "Reload Full Lineage"; // Restore default title
+        this.elements.reloadFullBtn.classList.remove("btn-pulse");
+    }
+
+    /**
+     * Deprecated: Old method mixed with selection. 
+     * Kept internal logic split now.
+     */
     async loadFullLineage() {
         const selected = selectionState.selectedNode;
         if (!selected) return;
 
-        this.elements.fullTreeContainer.innerHTML = '<div class="loading-state">Loading hierarchy...</div>';
+        // Visual Effect: If we have content, blur it. If empty, show loading text.
+        const hasContent = this.elements.fullTreeContainer.childElementCount > 0;
+        if (hasContent) {
+            this.elements.fullTreeContainer.classList.add("blur-loading");
+        } else {
+            this.elements.fullTreeContainer.innerHTML = '<div class="loading-state">Loading hierarchy...</div>';
+        }
+
         this.elements.fullNotice.hidden = true; // Hide notice while loading content
 
         try {
@@ -223,6 +311,7 @@ class ListView {
             }
 
             if (type !== "table") {
+                this.elements.fullTreeContainer.classList.remove("blur-loading"); // Reset if error/invalid
                 this.elements.fullTreeContainer.innerHTML = '<div class="empty-state">Select a <strong>Table</strong> to view full lineage.</div>';
                 return;
             }
@@ -237,6 +326,7 @@ class ListView {
 
         } catch (err) {
             console.error("Full lineage load failed", err);
+            this.elements.fullTreeContainer.classList.remove("blur-loading");
             this.elements.fullTreeContainer.innerHTML = `<div class="error-state">Failed to load hierarchy: ${err.message}</div>`;
         }
     }
@@ -296,11 +386,23 @@ class ListView {
 
     renderFullLineage(data) {
         this.lastFullLineageData = data;
+
+        // Determine Root Node Name (depth === 0)
+        let rootName = null;
+        const findRoot = (list) => list ? list.find(item => item.depth === 0) : null;
+        const rootItem = findRoot(data.upstream) || findRoot(data.downstream);
+        if (rootItem) {
+            rootName = rootItem.id; // Correct fully qualified name
+        }
+
+        // Update Title based on loaded data, not selection
+        this.updateFullLineageTitle(rootName);
+
         const container = this.elements.fullTreeContainer;
         container.innerHTML = "";
 
         // Helper to create Card Section aka "APA Table Container"
-        const createApaTable = (directionLabel, items, tableIndex) => {
+        const createApaTable = (directionLabel, jobColHeader, items, tableIndex) => {
             const card = document.createElement("div");
             card.className = "lineage-card";
 
@@ -334,12 +436,12 @@ class ListView {
             const table = document.createElement("table");
             table.className = "apa-table";
 
-            // Columns: Table Name | Via Job | Depth | Owner | Info
+            // Columns: Table Name | Via Job (Dynamic) | Depth | Owner | Info
             const thead = document.createElement("thead");
             thead.innerHTML = `
                 <tr>
                     <th>Table Name</th>
-                    <th>Via Job</th>
+                    <th>${jobColHeader}</th>
                     <th style="width: 60px;">Depth</th>
                     <th>Owner</th>
                     <th>Info</th>
@@ -378,7 +480,7 @@ class ListView {
 
                 if (item.parent) {
                     const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
-                    if (parentNode && parentNode.type === "JOB") {
+                    if (parentNode && parentNode.type && parentNode.type.toLowerCase() === "job") {
                         jobCount++;
                         jobName = parentNode.name;
                         const jProps = parentNode.properties || {};
@@ -398,10 +500,11 @@ class ListView {
                 // User asked for "small circle icon or table icon".
                 // Reverted icon as per user request.
                 // Highlight Root Table Name with a distinct badge/capsule style.
-                let nameHtml = `<span class="node-label-text">${item.name}</span>`;
+                // User requested FULL table name. item.id contains the full_name.
+                let nameHtml = `<span class="node-label-text">${item.id}</span>`;
 
                 if (item.depth === 0) {
-                    nameHtml = `<span class="root-table-badge">${item.name}</span>`;
+                    nameHtml = `<span class="root-table-badge">${item.id}</span>`;
                 }
 
                 // Strict Left Align for Root Row (No inline padding overrides, use CSS default)
@@ -450,12 +553,12 @@ class ListView {
         // Use LineageTreeUtils for counting
         if (data.upstream && data.upstream.length > 0) {
             const c = LineageTreeUtils.getCounts(data.upstream);
-            container.appendChild(createApaTable(`Upstream (${c.t} tables / ${c.j} jobs)`, data.upstream, 1));
+            container.appendChild(createApaTable(`Upstream (${c.t} tables / ${c.j} jobs)`, "Created By Job", data.upstream, 1));
         }
 
         if (data.downstream && data.downstream.length > 0) {
             const c = LineageTreeUtils.getCounts(data.downstream);
-            container.appendChild(createApaTable(`Downstream (${c.t} tables / ${c.j} jobs)`, data.downstream, 2));
+            container.appendChild(createApaTable(`Downstream (${c.t} tables / ${c.j} jobs)`, "Used By Job", data.downstream, 2));
         }
 
         // If no data, show empty state
@@ -472,6 +575,13 @@ class ListView {
             <span>Note: Generated from analysis at ${dateStr}.</span>
         `;
         container.appendChild(footer);
+
+        // Remove blur with a slight delay to trigger transition
+        if (container.classList.contains("blur-loading")) {
+            setTimeout(() => {
+                container.classList.remove("blur-loading");
+            }, 200);
+        }
     }
 
     downloadCSV(mode) {

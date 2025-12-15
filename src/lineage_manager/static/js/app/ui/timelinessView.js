@@ -151,8 +151,12 @@ export class TableTimelinessView {
       return;
     }
     this.hideDailyPlaceholder();
-    // Force resize in case it was hidden
-    chart.resize();
+    // Only resize if we are just showing it? 
+    // Usually ResizeObserver handles it, or explicit resize call on tab switch.
+    // chart.resize(); 
+
+    // Safety: Hide tooltip before updating to prevent "setContent of null"
+    chart.dispatchAction({ type: 'hideTip' });
 
     this.selectedDay = selectedDay || null;
     const categories = this.dailyData.map((item) => item.date);
@@ -232,7 +236,9 @@ export class TableTimelinessView {
           },
         ],
       },
-      true
+      false // merge = false -> true: previously was true (notMerge). Now using false (merge) to be safer.
+      // Actually, if we use merge=true (default), we might keep old series if not careful.
+      // But here we replace the data array, so it should be fine.
     );
   }
 
@@ -408,6 +414,16 @@ export class TableTimelinessView {
       this.showHourlyPlaceholder("Charts unavailable.");
       return;
     }
+    const STATE_COLORS = {
+      loaded: "#188038", // GCP Green (status-success)
+      success: "#188038",
+      missing: "#C5221F", // GCP Red (User requested missing to be RED)
+      failed: "#C5221F", // GCP Red (status-error)
+      warning: "#E37400", // GCP Orange/Warning
+      unknown: "#F1F3F4",
+      default: "#9CA3AF",
+    };
+
     // Force resize ensures correct width calculation
     chart.resize();
 
@@ -416,10 +432,9 @@ export class TableTimelinessView {
 
     // Prepare bar data
     const seriesData = normalized.map(item => {
-      let color = STATE_COLORS.missing;
-      if (item.state === 'loaded') color = STATE_COLORS.loaded;
-      else if (item.state === 'failed') color = STATE_COLORS.failed;
-      else if (item.state === 'missing') color = STATE_COLORS.missing;
+      // Use direct lookup or fallback to default
+      // This supports 'warning' and other states automatically via STATE_COLORS
+      let color = STATE_COLORS[item.state] || STATE_COLORS.default;
 
       return {
         value: 1,
