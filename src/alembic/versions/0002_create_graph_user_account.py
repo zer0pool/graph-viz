@@ -24,11 +24,13 @@ def upgrade() -> None:
     op.create_table(
         'graph_user_account',
         sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
+        sa.Column('sub', sa.String(length=255), nullable=True),
         sa.Column('loginId', sa.String(length=255), nullable=True),
         sa.Column('email', sa.String(length=255), nullable=True),
         sa.Column('name', sa.String(length=255), nullable=True),
         sa.Column('roles', sa.JSON(), nullable=True),
         sa.Column('dept', sa.String(length=255), nullable=True),
+
         sa.Column('last_login_at', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),

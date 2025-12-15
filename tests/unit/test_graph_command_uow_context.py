@@ -1,0 +1,132 @@
+
+import pytest
+from unittest.mock import MagicMock, patch
+from lineage_manager.services.graph_command_service import GraphCommandService
+from lineage_manager.core.uow import GraphUnitOfWork
+from lineage_manager.api.v1.schemas import JobRegister, JobUpdateRequest
+
+class TestGraphCommandServiceUoW:
+
+    @pytest.fixture
+    def mock_uow(self):
+        uow = MagicMock(spec=GraphUnitOfWork)
+        # Configure instance attributes
+        uow.jobs = MagicMock()
+        uow.tables = MagicMock()
+        uow.job_table_links = MagicMock()
+        uow.edges = MagicMock()
+        uow.closures = MagicMock()
+        
+        # Mock context manager behavior
+        uow.__enter__.return_value = uow
+        uow.__exit__.return_value = None  # Don't suppress exceptions
+        return uow
+
+    @pytest.fixture
+    def mock_job_manager(self):
+        return MagicMock()
+
+    @pytest.fixture
+    def service(self, mock_uow, mock_job_manager):
+        return GraphCommandService(uow=mock_uow, job_manager=mock_job_manager)
+
+    def test_register_job_uses_uow_context(self, service, mock_uow):
+        job_data = MagicMock(spec=JobRegister)
+        job_data.job_id = "test_job"
+        job_data.reference_tables = []
+        job_data.trigger_tables = []
+        job_data.destination_table = None
+        
+        # Mock internal methods to avoid complex logic
+        with patch.object(service, '_create_job_node') as mock_create, \
+             patch.object(service, '_process_reference_tables'), \
+             patch.object(service, '_process_destination_table'), \
+             patch.object(service, '_create_upstream_relationships'):
+            
+            mock_create.return_value.job_id = "test_job"
+            mock_create.return_value.id = "123"
+            
+            service.register_job(job_data)
+
+            # Verification
+            mock_uow.__enter__.assert_called_once()
+            mock_uow.__exit__.assert_called_once()
+
+    def test_toggle_job_enabled_uses_uow_context(self, service, mock_uow):
+        job_id = "job-1"
+        mock_job = MagicMock()
+        mock_job.job_metadata = {"enabled": True}
+        mock_uow.jobs.get.return_value = mock_job
+        
+        service.toggle_job_enabled(job_id)
+        
+        mock_uow.__enter__.assert_called_once()
+        mock_uow.__exit__.assert_called_once()
+
+    def test_update_job_uses_uow_context_on_update(self, service, mock_uow):
+        job_id = "job-1"
+        mock_job = MagicMock()
+        mock_job.job_metadata = {}
+        mock_uow.jobs.get.return_value = mock_job
+        
+        payload = JobUpdateRequest(enabled=False)
+        
+        service.update_job(job_id, payload)
+        
+        mock_uow.__enter__.assert_called_once()
+        mock_uow.__exit__.assert_called_once()
+
+    def test_reset_graph_uses_uow_context(self, service, mock_uow):
+        service.reset_graph()
+        
+        mock_uow.__enter__.assert_called_once()
+        mock_uow.__exit__.assert_called_once()
+        
+        mock_uow.closures.clear_all.assert_called()
+        mock_uow.edges.clear_all.assert_called()
+
+    def test_set_table_trigger_uses_uow_context(self, service, mock_uow):
+        table_name = "t1"
+        job_id = "j1"
+        
+        mock_uow.tables.get_by_full_name.return_value = MagicMock(id=1)
+        mock_job = MagicMock()
+        mock_job.id = 2
+        mock_job.trigger_tables = []
+        mock_uow.jobs.get.return_value = mock_job
+        
+        with patch.object(service, '_invalidate_trigger_cache'):
+            service.set_table_trigger(table_name, job_id, True)
+
+            mock_uow.__enter__.assert_called_once()
+            mock_uow.__exit__.assert_called_once()
+
+    def test_bulk_set_table_triggers_uses_uow_context(self, service, mock_uow):
+        table_name = "t1"
+        
+        mock_uow.tables.get_by_full_name.return_value = MagicMock(id=1)
+        mock_job = MagicMock(job_id="j1")
+        mock_job.trigger_tables = []
+        mock_uow.job_table_links.get_jobs_by_table_and_io_type.return_value = [mock_job]
+        
+        with patch.object(service, '_invalidate_trigger_cache'):
+            service.bulk_set_table_triggers(table_name, True)
+            
+            mock_uow.__enter__.assert_called_once()
+            mock_uow.__exit__.assert_called_once()
+
+    def test_uow_exception_propagates_or_handled(self, service, mock_uow):
+        # Scenario: register_job raises Exception inside with block
+        job_data = MagicMock(spec=JobRegister)
+        job_data.job_id = "test_job"
+        
+        mock_uow.__enter__.return_value = mock_uow
+        # When exception happens, __exit__ is called with exc info.
+        # BaseUnitOfWork.rollback calls db.rollback()
+        
+        with patch.object(service, '_create_job_node', side_effect=Exception("DB Error")):
+             with pytest.raises(Exception, match="DB Error"):
+                 service.register_job(job_data)
+        
+        mock_uow.__enter__.assert_called_once()
+        mock_uow.__exit__.assert_called_once()
