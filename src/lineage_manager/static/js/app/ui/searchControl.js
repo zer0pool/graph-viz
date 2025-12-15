@@ -41,6 +41,11 @@ export class SearchControl {
                 const data = await this.api.fetchSuggestions(q);
                 this.renderSuggestions(data);
             } catch (err) {
+                if (err.message === "AUTH_REQUIRED") {
+                    // Suppress auth errors during typeahead
+                    this.hideSuggestions();
+                    return;
+                }
                 console.error("Suggestion fetch failed:", err);
                 this.renderNoResults();
             }

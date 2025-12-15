@@ -556,7 +556,10 @@ export class TableTimelinessView {
       this.dailyChart.on("click", (params) => {
         const date = params.data?.data?.date;
         if (date && typeof this.daySelectHandler === "function") {
-          this.daySelectHandler(date);
+          // Defer to next frame to avoid ECharts re-entrancy issues (tooltips, etc.)
+          requestAnimationFrame(() => {
+            this.daySelectHandler(date);
+          });
         }
       });
     }

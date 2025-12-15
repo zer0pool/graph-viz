@@ -16,7 +16,7 @@ from lineage_manager.api.v1.schemas import TableLineageSummaryResponse
 
 logger = logging.getLogger(__name__)
 
-AUTH_DEPS = [Depends(require_authenticated_user)] if is_auth_enabled() else []
+AUTH_DEPS = [Depends(require_authenticated_user)]
 
 router = APIRouter(
     prefix="/api/v1/tables",
@@ -185,7 +185,7 @@ async def get_table_load_history(
     from lineage_manager.core.config import get_settings
     settings = get_settings()
 
-    if settings.enable_bigquery:
+    if settings.feature_flags.enable_bigquery:
         try:
             timeline = bigquery_svc.get_table_load_history(table_name)
             return {
@@ -257,7 +257,7 @@ async def get_table_timeliness(
     settings = get_settings()
     
     # Try to get real timelines via BigQuery helper if enabled
-    if settings.enable_bigquery:
+    if settings.feature_flags.enable_bigquery:
         try:
             payload = bigquery_svc.get_table_timelines_for_table(table_name, days)
             return {"status": "success", "input": {"table": table_name, "days": days}, "result": payload}
@@ -342,7 +342,7 @@ async def get_table_schema(
     fixed_full_name = "gizmopool.austin_bikeshare.bikeshare_stations"
 
     # If enable_bigquery is set, try to fetch real schema from BigQuery when possible.
-    use_bq = settings.enable_bigquery
+    use_bq = settings.feature_flags.enable_bigquery
 
     # 50% chance to return hacker_news sample schema to exercise RECORD columns
     pick_hacker = random.random() < 0.5
@@ -470,7 +470,7 @@ async def get_table_detail(
     fixed_full_name = "gizmopool.austin_bikeshare.bikeshare_stations"
 
     # If BigQuery is enabled, attempt to fetch real detail; otherwise return static fixture
-    use_bq = settings.enable_bigquery
+    use_bq = settings.feature_flags.enable_bigquery
     if use_bq:
         try:
             info = bigquery_svc.get_table_detail(fixed_full_name)

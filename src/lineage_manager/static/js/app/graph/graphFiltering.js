@@ -12,7 +12,7 @@ export class GraphFiltering {
      * Apply filters to visible nodes
      * @param {object} filterState - Filter state with type, status, etc.
      */
-    applyFilters(filterState) {
+    applyFilters(filterState = {}) {
         const cy = this.view.getCy();
         if (!cy) return;
 

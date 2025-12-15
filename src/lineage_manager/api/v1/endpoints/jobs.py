@@ -13,12 +13,12 @@ from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.job_service import JobService
 from lineage_manager.api.v1.schemas import JobUpdateRequest
 
-AUTH_DEPS = [Depends(require_authenticated_user)] if 1==0 else []
+AUTH_DEPS = [Depends(require_authenticated_user)]
 
 router = APIRouter(
     prefix="/api/v1/jobs",
     tags=["Jobs"],
-    # dependencies=AUTH_DEPS,
+    dependencies=AUTH_DEPS,
 )
 
 
@@ -31,19 +31,58 @@ def get_job_detail(
     job = svc.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+    # Extract upstreams and downstreams from metadata
+    meta = job.job_metadata or {}
+    upstreams = meta.get("upstreams", [])
+    downstreams = meta.get("downstreams", [])
+
+    # Implement fallback mapping if metadata lists are empty
+    if not upstreams:
+        # Check both top-level properties and metadata for triggers/references
+        triggers = set(job.trigger_tables or meta.get("trigger_tables") or [])
+        ref_tables = job.reference_tables or meta.get("reference_tables") or []
+        
+        upstreams = [
+            {"type": "table", "name": t, "trigger": t in triggers}
+            for t in ref_tables
+        ]
+        
+    if not downstreams:
+        dest_tables = job.destination_tables or meta.get("destination_tables") or []
+        # Fallback to singular destination_table if list is empty
+        if not dest_tables:
+             dt = job.destination_table or meta.get("destination_table")
+             if dt:
+                 dest_tables = [dt]
+
+        downstreams = [
+            {"type": "table", "name": t}
+            for t in dest_tables
+        ]
+
+    # Construct properties from model fields and remaining metadata
+    # Default properties from the model columns
+    properties = {
+        "owner": job.owner,
+        "labels": job.labels,
+        "write_mode": job.write_mode,
+        "destination_types": job.destination_types,
+        "destination_tables": job.destination_tables,
+        "trigger_tables": job.trigger_tables,
+        "reference_tables": job.reference_tables,
+        "status": getattr(job, "status", None),
+        "enabled": getattr(job, "enabled", None),
+    }
+    # update with metadata (metadata values take precedence or add extra info)
+    properties.update(meta)
+    
     return {
         "job_id": job.job_id,
         "name": job.name,
-        "labels": job.labels,
-        "status": getattr(job, "status", None),
-        "enabled": getattr(job, "enabled", None),
-        "owner": job.owner,
-        "write_mode": job.write_mode,
-        "destination_type": job.destination_type,
-        "destination_table": job.destination_table,
-        "trigger_tables": job.trigger_tables,
-        "reference_tables": job.reference_tables,
-        "metadata": job.job_metadata,
+        "type": meta.get("type", "job"),
+        "upstreams": upstreams,
+        "downstreams": downstreams,
+        "properties": properties,
     }
 
 

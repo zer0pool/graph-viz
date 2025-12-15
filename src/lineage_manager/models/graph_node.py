@@ -69,20 +69,20 @@ class GraphNode(Base):
         self._set_prop("write_mode", value)
 
     @property
-    def destination_type(self):
-        return self._get_prop("destination_type")
+    def destination_types(self):
+        return self._get_prop("destination_types", [])
 
-    @destination_type.setter
-    def destination_type(self, value) -> None:
-        self._set_prop("destination_type", value)
+    @destination_types.setter
+    def destination_types(self, value) -> None:
+        self._set_prop("destination_types", value)
 
     @property
-    def destination_table(self):
-        return self._get_prop("destination_table")
+    def destination_tables(self):
+        return self._get_prop("destination_tables", [])
 
-    @destination_table.setter
-    def destination_table(self, value) -> None:
-        self._set_prop("destination_table", value)
+    @destination_tables.setter
+    def destination_tables(self, value) -> None:
+        self._set_prop("destination_tables", value)
 
     @property
     def trigger_tables(self):

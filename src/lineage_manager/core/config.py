@@ -80,7 +80,9 @@ class FeatureFlags(BaseSettings):
     """Feature flags for enabling/disabling functionality"""
     enable_swagger: bool = True
     enable_metrics: bool = False
-    require_authentication: bool = False
+    enable_metrics: bool = False
+    require_signin: bool = False
+    enable_bigquery: bool = False
     enable_bigquery: bool = False
     enable_audit_logging: bool = True
     enable_rate_limiting: bool = True
@@ -217,8 +219,13 @@ class Settings(BaseSettings):
     
     @property
     def require_authentication(self) -> bool:
-        """Check if authentication is required"""
-        return self.feature_flags.require_authentication
+        """Check if authentication is required (legacy name, maps to require_signin)"""
+        return self.feature_flags.require_signin
+    
+    @property
+    def require_signin(self) -> bool:
+        """Check if sign-in is required"""
+        return self.feature_flags.require_signin
     
     # ─────────────────────────────────────────────────────────────────────
     # String Representations
@@ -236,7 +243,7 @@ class Settings(BaseSettings):
             f"  # Redis\n"
             f"    redis_enabled={self.redis.enabled}, host={self.redis.host}:{self.redis.port},\n"
             f"  # OIDC\n"
-            f"    require_auth={self.feature_flags.require_authentication},\n"
+            f"    require_signin={self.feature_flags.require_signin},\n"
             f"    oidc_issuer={self.oidc.issuer_url!r},\n"
             f"  # Features\n"
             f"    swagger={self.feature_flags.enable_swagger},\n"

@@ -17,17 +17,10 @@ import GraphExpansion from "./graphExpansion.js";
 import { selectionState, lineageState } from "../state.js";
 
 export class GraphController {
-    constructor({ panel, filterState, selectionState, relationState, api, searchState }) {
+    constructor({ panel, filterState, relationState, api, searchState }) {
         this.panel = panel;
         this.filterState = filterState;
-        this.selectionStateStore = selectionState; // Old legacy state object passed in main.js, we should migrate
-        // Ideally we use the imported singleton 'selectionState' from state.js now.
-        // But main.js passes 'selectionState' (which is the old legacy one from state.js if main.js is not updated?)
-        // Wait, main.js imports { SelectionState } from "./state.js" and instantiates `new SelectionState()`. 
-        // My new `state.js` exports CONST `selectionState`.
-        // I need to be careful. The new design says Use Singleton.
-        // Let's rely on the imported singleton for new features, but basic wiring might need clean up in main.js later.
-        // For now, let's use the imported `selectionState` for pub/sub.
+        this.selectionState = selectionState; // Use imported singleton
 
         this.relations = relationState;
         this.api = api;
@@ -140,7 +133,17 @@ export class GraphController {
 
             // Handle aggregate node clicks
             if (target.data("type") === "aggregate") {
-                this.handleAggregateClick(target);
+                this.expansion.handleAggregateClick(
+                    target,
+                    this.positioning,
+                    this.persistence,
+                    () => {
+                        this.applyFilters();
+                        this.updateToolbarVisibility();
+                    },
+                    this.lineageState,
+                    this.selectionState
+                );
                 return;
             }
 
@@ -182,91 +185,19 @@ export class GraphController {
     /**
      * Handle aggregate node click with heartbeat animation
      */
-    async handleAggregateClick(aggregateNode) {
-        // ... (Existing implementation unchanged) ...
-        const cy = this.view.getCy();
-        if (!cy) return;
-
-        const data = aggregateNode.data();
-        const hiddenNodes = data.hiddenNodes || [];
-        const hiddenEdges = data.hiddenEdges || [];
-        const parentId = data.parentId;
-        const direction = data.direction;
-        const batchNumber = data.batchNumber || 0;
-
-        const pulseCount = 4;
-        const pulseDuration = 500;
-
-        for (let i = 0; i < pulseCount; i++) {
-            aggregateNode.addClass("heartbeat");
-            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
-            aggregateNode.removeClass("heartbeat");
-            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
-        }
-
-        const BATCH_SIZE = 3;
-        const nextBatch = hiddenNodes.slice(0, BATCH_SIZE);
-        const remaining = hiddenNodes.slice(BATCH_SIZE);
-
-        const newNodeIds = [];
-        nextBatch.forEach((node) => {
-            if (!cy.$(`#${node.id}`).length) {
-                const added = cy.add(GraphNodeSerializer.serialize(node));
-                added.addClass("just-added");
-                newNodeIds.push(node.id);
-                setTimeout(() => added.removeClass("just-added"), 600);
-            }
-        });
-
-        const newNodeIdSet = new Set(newNodeIds);
-        const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
-
-        hiddenEdges.forEach((edge) => {
-            if (existingNodeIds.has(edge.source) && existingNodeIds.has(edge.target)) {
-                const edgeId = `${edge.source}__${edge.target}__${edge.io || ""}`;
-                if (!cy.$(`#${edgeId}`).length) {
-                    cy.add({
-                        data: {
-                            id: edgeId,
-                            source: edge.source,
-                            target: edge.target,
-                            io: edge.io || "",
-                        },
-                    });
-                }
-            }
-        });
-
-        cy.remove(aggregateNode);
-
-        if (remaining.length > 0) {
-            const remainingEdges = hiddenEdges.filter((e) => {
-                const remainingIds = new Set(remaining.map(n => n.id));
-                return remainingIds.has(e.source) || remainingIds.has(e.target);
-            });
-
-            const newAggregate = this.expansion.createAggregateNode(
-                parentId,
-                remaining,
-                remainingEdges,
-                direction,
-                batchNumber + 1
-            );
-
-            if (newAggregate) {
-                cy.add(GraphNodeSerializer.serialize(newAggregate));
-            }
-        }
-
-        const layoutDirection = this.persistence.getLastLayoutDirection() || "horizontal";
-        this.positioning.forceLayout(layoutDirection, true);
-
-        this.applyFilters();
-        // this.listView.updateListView(); <-- Legacy, remove?
-        // Update shared lineage state with new graph data
-        this.publishGraphState();
-
-        this.updateToolbarVisibility();
+    handleAggregateClick(aggregateNode) {
+        // Delegated to GraphExpansion
+        this.expansion.handleAggregateClick(
+            aggregateNode,
+            this.positioning,
+            this.persistence,
+            () => {
+                this.applyFilters();
+                this.updateToolbarVisibility();
+            },
+            this.lineageState,
+            this.selectionState
+        );
     }
 
     publishGraphState() {
@@ -298,452 +229,41 @@ export class GraphController {
      * Render graph from payload
      */
     renderGraph(payload, options = {}) {
-        if (selectionState.selectedNode) {
+        if (this.selectionState.selectedNode) {
             this.clearSelection();
         }
 
-        if (options.resetViewport) {
-            this.persistence.clearViewport();
+        if (this.zoomControls) {
+            this.zoomControls.unbindControls();
         }
 
-        if (options.rememberInitial) {
-            this.persistence.setBaseGraph(payload, options.centerLabel);
-            if (options.rememberInitialSearch) {
-                this.initialSearchSnapshot = JSON.parse(JSON.stringify(payload));
-                this.initialSearchCenterLabel = options.centerLabel;
-            }
+        const helpers = {
+            expansion: this.expansion,
+            persistence: this.persistence,
+            positioning: this.positioning,
+            zoomControls: this.zoomControls,
+            panel: this.panel,
+            filtering: this.filtering,
+            resetTableTabs: this.resetTableTabs.bind(this),
+            lineageState: this.lineageState,
+            selectionState: this.selectionState
+        };
+
+        this.view.renderGraph(payload, options, helpers);
+
+        // Re-bind events to new Cytoscape instance
+        this.bindGraphEvents();
+        this.bindPositionEvents();
+        this.bindViewportEvents();
+        if (this.zoomControls) {
+            this.zoomControls.bindControls();
         }
 
-        // Re-init view
-        this.view.destroy();
-        this.init(document.getElementById("cy"));
-
-        // Apply progressive expansion if center node is specified
-        let nodesToRender = payload.nodes || [];
-        let edgesToRender = payload.edges || [];
-
-        if (options.centerLabel && nodesToRender.length > 1) {
-            // Find center node
-            const centerNode = nodesToRender.find(n =>
-                n.full_name === options.centerLabel ||
-                n.name === options.centerLabel ||
-                n.job_id === options.centerLabel
-            );
-
-            if (centerNode) {
-                // Apply progressive expansion
-                const result = this.expansion.classifyNodesByDirection(
-                    centerNode.id,
-                    nodesToRender,
-                    edgesToRender
-                );
-
-                const INITIAL_VISIBLE = 4;
-                const aggregateNodes = [];
-                let visibleNodes = [centerNode];
-                let visibleEdges = [];
-
-                // Process upstream
-                if (result.upstream.length > INITIAL_VISIBLE) {
-                    const visible = result.upstream.slice(0, INITIAL_VISIBLE);
-                    const hidden = result.upstream.slice(INITIAL_VISIBLE);
-
-                    visibleNodes.push(...visible);
-
-                    // Get edges for hidden nodes
-                    const hiddenIds = new Set(hidden.map(n => n.id));
-                    const hiddenEdges = edgesToRender.filter(e =>
-                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
-                    );
-
-                    const aggregate = this.expansion.createAggregateNode(
-                        centerNode.id,
-                        hidden,
-                        hiddenEdges,
-                        "upstream",
-                        0
-                    );
-                    if (aggregate) aggregateNodes.push(aggregate);
-                } else {
-                    visibleNodes.push(...result.upstream);
-                }
-
-                // Process downstream
-                if (result.downstream.length > INITIAL_VISIBLE) {
-                    const visible = result.downstream.slice(0, INITIAL_VISIBLE);
-                    const hidden = result.downstream.slice(INITIAL_VISIBLE);
-
-                    visibleNodes.push(...visible);
-
-                    const hiddenIds = new Set(hidden.map(n => n.id));
-                    const hiddenEdges = edgesToRender.filter(e =>
-                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
-                    );
-
-                    const aggregate = this.expansion.createAggregateNode(
-                        centerNode.id,
-                        hidden,
-                        hiddenEdges,
-                        "downstream",
-                        0
-                    );
-                    if (aggregate) aggregateNodes.push(aggregate);
-                } else {
-                    visibleNodes.push(...result.downstream);
-                }
-
-                // Add aggregate nodes to visible nodes
-                visibleNodes.push(...aggregateNodes);
-
-                // Filter edges to only visible nodes
-                const visibleIds = new Set(visibleNodes.map(n => n.id));
-                visibleEdges = edgesToRender.filter(e =>
-                    visibleIds.has(e.source) && visibleIds.has(e.target)
-                );
-
-                nodesToRender = visibleNodes;
-                edgesToRender = visibleEdges;
-            }
-        }
-
-        // Serialize nodes
-        const hiddenNodes = this.persistence.getHiddenNodes();
-        const visibleNodes = nodesToRender.filter((n) => !hiddenNodes.has(n.id));
-        const nodes = visibleNodes.map((n) => GraphNodeSerializer.serialize(n));
-
-        // Filter edges to visible nodes
-        const allowedNodeIds = new Set(visibleNodes.map((n) => n.id));
-        const edges = edgesToRender
-            .filter((e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target))
-            .map((e) => ({
-                data: {
-                    id: e.id || `${e.source}_${e.target}`,
-                    source: e.source,
-                    target: e.target,
-                    io: e.io || "",
-                },
-            }));
-
-        // Render
-        this.view.render(nodes, edges);
-
-        // Position nodes
-        const shouldForceLayout = !this.persistence.nodePositions.size || options.forceLayoutDirection;
-        if (shouldForceLayout) {
-            const direction = options.forceLayoutDirection || this.persistence.getLastLayoutDirection();
-            this.positioning.forceLayout(direction, false);
-        } else {
-            this.persistence.applyCachedPositions();
-            this.positioning.positionNodes(options.centerLabel);
-            this.persistence.applyViewport();
-        }
-
-        // Setup minimap
-        this.zoomControls.setupMinimap();
-
-        // Final updates
-        this.panel.setPlaceholder();
-        this.applyFilters();
+        // After render updates
         this.updateToolbarVisibility();
-        this.resetTableTabs();
-
-
-        // Push state
-        this.publishGraphState();
     }
 
-    /**
-     * Handle aggregate node click with heartbeat animation
-     */
-    async handleAggregateClick(aggregateNode) {
-        const cy = this.view.getCy();
-        if (!cy) return;
 
-        const data = aggregateNode.data();
-        const hiddenNodes = data.hiddenNodes || [];
-        const hiddenEdges = data.hiddenEdges || [];
-        const parentId = data.parentId;
-        const direction = data.direction;
-        const batchNumber = data.batchNumber || 0;
-
-        // Heartbeat animation (2 seconds, 4 pulses)
-        const pulseCount = 4;
-        const pulseDuration = 500; // 500ms per pulse
-
-        for (let i = 0; i < pulseCount; i++) {
-            aggregateNode.addClass("heartbeat");
-            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
-            aggregateNode.removeClass("heartbeat");
-            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
-        }
-
-        // Get next batch (3 nodes at a time)
-        const BATCH_SIZE = 3;
-        const nextBatch = hiddenNodes.slice(0, BATCH_SIZE);
-        const remaining = hiddenNodes.slice(BATCH_SIZE);
-
-        // Add next batch nodes to graph
-        const newNodeIds = [];
-        nextBatch.forEach((node) => {
-            if (!cy.$(`#${node.id}`).length) {
-                const added = cy.add(GraphNodeSerializer.serialize(node));
-                added.addClass("just-added");
-                newNodeIds.push(node.id);
-                setTimeout(() => added.removeClass("just-added"), 600);
-            }
-        });
-
-        // Add edges for new nodes
-        const newNodeIdSet = new Set(newNodeIds);
-        const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
-
-        hiddenEdges.forEach((edge) => {
-            // Only add edge if both nodes are now visible
-            if (existingNodeIds.has(edge.source) && existingNodeIds.has(edge.target)) {
-                const edgeId = `${edge.source}__${edge.target}__${edge.io || ""}`;
-                if (!cy.$(`#${edgeId}`).length) {
-                    cy.add({
-                        data: {
-                            id: edgeId,
-                            source: edge.source,
-                            target: edge.target,
-                            io: edge.io || "",
-                        },
-                    });
-                }
-            }
-        });
-
-        // Remove old aggregate node
-        cy.remove(aggregateNode);
-
-        // Create new aggregate if more nodes remain
-        if (remaining.length > 0) {
-            const remainingEdges = hiddenEdges.filter((e) => {
-                const remainingIds = new Set(remaining.map(n => n.id));
-                return remainingIds.has(e.source) || remainingIds.has(e.target);
-            });
-
-            const newAggregate = this.expansion.createAggregateNode(
-                parentId,
-                remaining,
-                remainingEdges,
-                direction,
-                batchNumber + 1
-            );
-
-            if (newAggregate) {
-                cy.add(GraphNodeSerializer.serialize(newAggregate));
-            }
-        }
-
-        // Relayout graph
-        const layoutDirection = this.persistence.getLastLayoutDirection() || "horizontal";
-        this.positioning.forceLayout(layoutDirection, true);
-
-        // Update state
-        this.applyFilters();
-        // this.listView.updateListView(); // Removed
-
-        // Publish new state
-        const currentNodes = cy.nodes().map(n => ({ id: n.id(), data: n.data() }));
-        const currentEdges = cy.edges().map(e => ({ id: e.id(), data: e.data() }));
-        this.lineageState.setGraphData(currentNodes, currentEdges);
-
-        this.updateToolbarVisibility();
-
-        // Refresh detail panel if parent node is currently selected
-        if (this.selectionState.node && this.selectionState.node.id() === parentId) {
-            this.selectNode(this.selectionState.node);
-        }
-    }
-
-    /**
-     * Bind position tracking events
-     */
-    bindPositionEvents() {
-        const cy = this.view.getCy();
-        if (!cy) return;
-
-        cy.on("dragfree", "node", (evt) => {
-            const pos = evt.target.position();
-            this.persistence.setPosition(evt.target.id(), { x: pos.x, y: pos.y });
-        });
-    }
-
-    /**
-     * Bind viewport tracking events
-     */
-    bindViewportEvents() {
-        const cy = this.view.getCy();
-        if (!cy) return;
-
-        cy.on("zoom", () => this.persistence.cacheViewport());
-        cy.on("pan", () => this.persistence.cacheViewport());
-    }
-
-    /**
-     * Render graph from payload
-     */
-    renderGraph(payload, options = {}) {
-        if (this.selectionState?.node) {
-            this.clearSelection();
-        }
-
-        if (options.resetViewport) {
-            this.persistence.clearViewport();
-        }
-
-        if (options.rememberInitial) {
-            this.persistence.setBaseGraph(payload, options.centerLabel);
-            if (options.rememberInitialSearch) {
-                this.initialSearchSnapshot = JSON.parse(JSON.stringify(payload));
-                this.initialSearchCenterLabel = options.centerLabel;
-            }
-        }
-
-        // Re-init view
-        this.view.destroy();
-        this.init(document.getElementById("cy"));
-
-        // Apply progressive expansion if center node is specified
-        let nodesToRender = payload.nodes || [];
-        let edgesToRender = payload.edges || [];
-
-        if (options.centerLabel && nodesToRender.length > 1) {
-            // Find center node
-            const centerNode = nodesToRender.find(n =>
-                n.full_name === options.centerLabel ||
-                n.name === options.centerLabel ||
-                n.job_id === options.centerLabel
-            );
-
-            if (centerNode) {
-                // Apply progressive expansion
-                const result = this.expansion.classifyNodesByDirection(
-                    centerNode.id,
-                    nodesToRender,
-                    edgesToRender
-                );
-
-                const INITIAL_VISIBLE = 4;
-                const aggregateNodes = [];
-                let visibleNodes = [centerNode];
-                let visibleEdges = [];
-
-                // Process upstream
-                if (result.upstream.length > INITIAL_VISIBLE) {
-                    const visible = result.upstream.slice(0, INITIAL_VISIBLE);
-                    const hidden = result.upstream.slice(INITIAL_VISIBLE);
-
-                    visibleNodes.push(...visible);
-
-                    // Get edges for hidden nodes
-                    const hiddenIds = new Set(hidden.map(n => n.id));
-                    const hiddenEdges = edgesToRender.filter(e =>
-                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
-                    );
-
-                    const aggregate = this.expansion.createAggregateNode(
-                        centerNode.id,
-                        hidden,
-                        hiddenEdges,
-                        "upstream",
-                        0
-                    );
-                    if (aggregate) aggregateNodes.push(aggregate);
-                } else {
-                    visibleNodes.push(...result.upstream);
-                }
-
-                // Process downstream
-                if (result.downstream.length > INITIAL_VISIBLE) {
-                    const visible = result.downstream.slice(0, INITIAL_VISIBLE);
-                    const hidden = result.downstream.slice(INITIAL_VISIBLE);
-
-                    visibleNodes.push(...visible);
-
-                    const hiddenIds = new Set(hidden.map(n => n.id));
-                    const hiddenEdges = edgesToRender.filter(e =>
-                        hiddenIds.has(e.source) || hiddenIds.has(e.target)
-                    );
-
-                    const aggregate = this.expansion.createAggregateNode(
-                        centerNode.id,
-                        hidden,
-                        hiddenEdges,
-                        "downstream",
-                        0
-                    );
-                    if (aggregate) aggregateNodes.push(aggregate);
-                } else {
-                    visibleNodes.push(...result.downstream);
-                }
-
-                // Add aggregate nodes to visible nodes
-                visibleNodes.push(...aggregateNodes);
-
-                // Filter edges to only visible nodes
-                const visibleIds = new Set(visibleNodes.map(n => n.id));
-                visibleEdges = edgesToRender.filter(e =>
-                    visibleIds.has(e.source) && visibleIds.has(e.target)
-                );
-
-                nodesToRender = visibleNodes;
-                edgesToRender = visibleEdges;
-            }
-        }
-
-        // Serialize nodes
-        const hiddenNodes = this.persistence.getHiddenNodes();
-        const visibleNodes = nodesToRender.filter((n) => !hiddenNodes.has(n.id));
-        const nodes = visibleNodes.map((n) => GraphNodeSerializer.serialize(n));
-
-        // Filter edges to visible nodes
-        const allowedNodeIds = new Set(visibleNodes.map((n) => n.id));
-        const edges = edgesToRender
-            .filter((e) => allowedNodeIds.has(e.source) && allowedNodeIds.has(e.target))
-            .map((e) => ({
-                data: {
-                    id: e.id || `${e.source}_${e.target}`,
-                    source: e.source,
-                    target: e.target,
-                    io: e.io || "",
-                },
-            }));
-
-        // Render
-        this.view.render(nodes, edges);
-
-        // Position nodes
-        const shouldForceLayout = !this.persistence.nodePositions.size || options.forceLayoutDirection;
-        if (shouldForceLayout) {
-            const direction = options.forceLayoutDirection || this.persistence.getLastLayoutDirection();
-            this.positioning.forceLayout(direction, false);
-        } else {
-            this.persistence.applyCachedPositions();
-            this.positioning.positionNodes(options.centerLabel);
-            this.persistence.applyViewport();
-        }
-
-        // Setup minimap
-        this.zoomControls.setupMinimap();
-
-        // Final updates
-        this.panel.setPlaceholder();
-        this.applyFilters();
-        // this.listView.updateListView(); // Removed
-
-        // Update Lineage State
-        this.lineageState.setGraphData(
-            nodes.map(n => ({ id: n.data.id, data: n.data })),
-            edges.map(e => ({ id: e.data.id, data: e.data }))
-        );
-
-        this.updateToolbarVisibility();
-        this.resetTableTabs();
-        // this.listView.setViewMode(this.listView.getViewMode()); // Removed
-    }
 
     /**
      * Select a node

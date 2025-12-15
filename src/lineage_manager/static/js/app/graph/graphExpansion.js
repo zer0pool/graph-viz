@@ -221,6 +221,115 @@ export class GraphExpansion {
             downstreamAdded,
         };
     }
+
+    /**
+     * Handle aggregate node click with heartbeat animation
+     * @param {object} aggregateNode - Cytoscape node
+     * @param {GraphPositioning} positioning - Positioning module
+     * @param {GraphPersistence} persistence - Persistence module
+     * @param {Function} updateUiCallback - Callback to update UI (filters, toolbar, etc.)
+     * @param {LineageState} lineageState - Lineage state to update
+     * @param {SelectionState} selectionState - Selection state (for refresh)
+     */
+    async handleAggregateClick(aggregateNode, positioning, persistence, updateUiCallback, lineageState, selectionState) {
+        const cy = this.view.getCy();
+        if (!cy) return;
+
+        const data = aggregateNode.data();
+        const hiddenNodes = data.hiddenNodes || [];
+        const hiddenEdges = data.hiddenEdges || [];
+        const parentId = data.parentId;
+        const direction = data.direction;
+        const batchNumber = data.batchNumber || 0;
+
+        // Heartbeat animation (2 seconds, 4 pulses)
+        const pulseCount = 4;
+        const pulseDuration = 500; // 500ms per pulse
+
+        for (let i = 0; i < pulseCount; i++) {
+            aggregateNode.addClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+            aggregateNode.removeClass("heartbeat");
+            await new Promise(resolve => setTimeout(resolve, pulseDuration / 2));
+        }
+
+        // Get next batch (3 nodes at a time)
+        const BATCH_SIZE = 3;
+        const nextBatch = hiddenNodes.slice(0, BATCH_SIZE);
+        const remaining = hiddenNodes.slice(BATCH_SIZE);
+
+        // Add next batch nodes to graph
+        const newNodeIds = [];
+        nextBatch.forEach((node) => {
+            if (!cy.$(`#${node.id}`).length) {
+                const added = cy.add(this.nodeSerializer.serialize(node));
+                added.addClass("just-added");
+                newNodeIds.push(node.id);
+                setTimeout(() => added.removeClass("just-added"), 600);
+            }
+        });
+
+        // Add edges for new nodes
+        const existingNodeIds = new Set(cy.nodes().map(n => n.id()));
+
+        hiddenEdges.forEach((edge) => {
+            // Only add edge if both nodes are now visible
+            if (existingNodeIds.has(edge.source) && existingNodeIds.has(edge.target)) {
+                const edgeId = `${edge.source}__${edge.target}__${edge.io || ""}`;
+                if (!cy.$(`#${edgeId}`).length) {
+                    cy.add({
+                        data: {
+                            id: edgeId,
+                            source: edge.source,
+                            target: edge.target,
+                            io: edge.io || "",
+                        },
+                    });
+                }
+            }
+        });
+
+        // Remove old aggregate node
+        cy.remove(aggregateNode);
+
+        // Create new aggregate if more nodes remain
+        if (remaining.length > 0) {
+            const remainingEdges = hiddenEdges.filter((e) => {
+                const remainingIds = new Set(remaining.map(n => n.id));
+                return remainingIds.has(e.source) || remainingIds.has(e.target);
+            });
+
+            const newAggregate = this.createAggregateNode(
+                parentId,
+                remaining,
+                remainingEdges,
+                direction,
+                batchNumber + 1
+            );
+
+            if (newAggregate) {
+                cy.add(this.nodeSerializer.serialize(newAggregate));
+            }
+        }
+
+        // Relayout graph
+        const layoutDirection = persistence.getLastLayoutDirection() || "horizontal";
+        positioning.forceLayout(layoutDirection, true);
+
+        // Update UI via callback (applyFilters, updateToolbarVisibility)
+        if (updateUiCallback) updateUiCallback();
+
+        // Publish new state
+        const currentNodes = cy.nodes().map(n => ({ id: n.id(), data: n.data() }));
+        const currentEdges = cy.edges().map(e => ({ id: e.id(), data: e.data() }));
+        lineageState.setGraphData(currentNodes, currentEdges);
+
+        // Refresh detail panel if parent node is currently selected
+        if (selectionState && selectionState.selectedNode && selectionState.selectedNode.id === parentId) {
+            // We need to re-notify selection to refresh panel
+            selectionState.notify();
+        }
+    }
 }
 
 export default GraphExpansion;
