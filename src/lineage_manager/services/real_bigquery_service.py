@@ -1,4 +1,10 @@
-import os
+"""
+Real BigQuery Service - Production implementation using google-cloud-bigquery SDK.
+
+This service connects to actual Google Cloud BigQuery and fetches real metadata,
+schema, and load history data. It requires valid GCP credentials (ADC or GOOGLE_APPLICATION_CREDENTIALS).
+"""
+
 import logging
 from typing import List, Dict, Any
 
@@ -10,34 +16,70 @@ except Exception:  # pragma: no cover - allow module import even without google 
     bigquery = None
 
 
-
-
-
-class BigQueryService:
-    """Service for fetching BigQuery metadata and simple timeliness summaries.
-
-    Uses `google-cloud-bigquery` when available and when `ENABLE_BIGQUERY` is set in
-    environment or via configuration. Otherwise callers can rely on fallback data.
+class RealBigQueryService:
+    """Production BigQuery service using google-cloud-bigquery SDK.
+    
+    Responsibilities:
+    - Connect to real GCP BigQuery
+    - Fetch actual metadata, schema, and load history
+    - Use environment credentials (GOOGLE_APPLICATION_CREDENTIALS or ADC)
+    
+    Prohibited:
+    - NO dummy data
+    - NO debug redirects
+    - NO try/except fallback to dummy data
+    - Raise exceptions on errors (let caller handle)
     """
 
-    def __init__(self, history_table:str ):
-        # No-op init; client is created on demand. Keep constructor lightweight for DI.
+    def __init__(self, history_table: str):
+        """Initialize service with history table configuration.
+        
+        Args:
+            history_table: Name of the table containing load history data
+        """
         self.history_table = history_table
-        pass
 
     def _ensure_client(self):
+        """Create BigQuery client using environment credentials.
+        
+        Returns:
+            bigquery.Client instance
+            
+        Raises:
+            RuntimeError: If google-cloud-bigquery is not installed
+        """
         if bigquery is None:
             raise RuntimeError("google-cloud-bigquery is not installed")
-        # Client uses environment credentials (GOOGLE_APPLICATION_CREDENTIALS) or default ADC.
+        # Client uses environment credentials (GOOGLE_APPLICATION_CREDENTIALS) or default ADC
         return bigquery.Client()
 
     def get_table_schema(self, full_name: str) -> List[Dict[str, Any]]:
+        """Fetch the schema (columns) for a BigQuery table.
+        
+        Args:
+            full_name: Fully qualified table name (project.dataset.table)
+            
+        Returns:
+            List of column definitions with name, type, mode, description, etc.
+            
+        Raises:
+            RuntimeError: If BigQuery SDK is not installed
+            google.cloud.exceptions.NotFound: If table doesn't exist
+        """
         client = self._ensure_client()
         table = client.get_table(full_name)
         schema = getattr(table, "schema", [])
         return [self._field_to_dict(f) for f in schema]
 
-    def _field_to_dict(self,field: "bigquery.schema.SchemaField") -> Dict[str, Any]:
+    def _field_to_dict(self, field: "bigquery.schema.SchemaField") -> Dict[str, Any]:
+        """Convert BigQuery SchemaField to dictionary.
+        
+        Args:
+            field: BigQuery SchemaField object
+            
+        Returns:
+            Dict representation of the field
+        """
         base = {
             "name": field.name,
             "type": field.field_type,
@@ -52,6 +94,18 @@ class BigQueryService:
         return base
 
     def get_table_detail(self, full_name: str) -> Dict[str, Any]:
+        """Fetch detailed metadata for a BigQuery table.
+        
+        Args:
+            full_name: Fully qualified table name (project.dataset.table)
+            
+        Returns:
+            Dict containing table metadata including storage, partitioning, clustering, etc.
+            
+        Raises:
+            RuntimeError: If BigQuery SDK is not installed
+            google.cloud.exceptions.NotFound: If table doesn't exist
+        """
         client = self._ensure_client()
         table = client.get_table(full_name)
 
@@ -84,6 +138,18 @@ class BigQueryService:
         return info
 
     def get_table_timelines_for_table(self, table_name: str, days: int = 7) -> Dict[str, Any]:
+        """Fetch timeliness data showing load success/failure patterns over time.
+        
+        Args:
+            table_name: Table name to query (project.dataset.table)
+            days: Number of days to look back (default: 7)
+            
+        Returns:
+            Dict with daily_summary, hourly_detail, and time_range
+            
+        Raises:
+            RuntimeError: If BigQuery SDK is not installed
+        """
         if bigquery is None:
             raise RuntimeError("google-cloud-bigquery is not installed")
         client = self._ensure_client()
@@ -96,22 +162,6 @@ class BigQueryService:
             project_id, dataset_id, table_id = ("unknown", "unknown", table_name)
             if len(parts) == 2:
                 project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
-
-        # --- DEBUG: FORCE DUMMY DATA ---
-        # Randomly choose between DAILY and HOURLY dummy tables for demonstration
-        # This block simulates real data by redirecting all queries to our test tables.
-        # To disable, simply remove or comment out this block.
-        import random
-        is_hourly_demo = True # random.choice([True, False])
-        if is_hourly_demo:
-             # Hourly dummy table
-             project_id, dataset_id, table_id = ("demo", "analytics", "hourly_stats")
-        else:
-             # Daily dummy table
-             project_id, dataset_id, table_id = ("demo", "analytics", "daily_report")
-        
-        logger.info(f"[DEBUG] Redirecting timeline query to dummy table: {project_id}.{dataset_id}.{table_id} (Input was: {table_name})")
-        # -------------------------------
 
         logger.info(f"Fetching timelines for {project_id}.{dataset_id}.{table_id} (days={days})")
 
@@ -160,8 +210,6 @@ class BigQueryService:
                 periods.add(str(p).upper())
 
         # Heuristic for hourly vs daily based on 'period' column
-        # If 'HOURLY' is in period, treat as hourly.
-        # Fallback: check if we see many hours per day?
         is_hourly = "HOURLY" in periods
 
         from datetime import date, timedelta
@@ -178,12 +226,10 @@ class BigQueryService:
                 success = len(hours)
             else:
                 expected = 1
-                # If we have any row for the day, success=1, else 0
                 success = 1 if date_rows.get(d) else 0
 
             fail = max(0, expected - success)
             rate = round(success / expected, 3) if expected else 0
-            # Simple traffic light logic
             status = "good" if rate >= 0.99 else ("warning" if rate >= 0.5 else "bad")
 
             daily_summary.append(
@@ -201,7 +247,6 @@ class BigQueryService:
                 rows_for_date = []
                 for hour in range(24):
                     state = "loaded" if hour in hours else "missing"
-                    # Construct rough timestamp for visualization
                     interval_start = f"{d}T{hour:02d}:00:00Z"
                     interval_end = f"{d}T{hour:02d}:59:59Z"
                     rows_for_date.append({
@@ -222,6 +267,18 @@ class BigQueryService:
         }
 
     def get_table_load_history(self, table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Fetch recent load history records for a table.
+        
+        Args:
+            table_name: Table name to query (project.dataset.table)
+            limit: Maximum number of records to return (default: 50)
+            
+        Returns:
+            List of load history records with run_id, status, duration, etc.
+            
+        Raises:
+            RuntimeError: If BigQuery SDK is not installed
+        """
         client = self._ensure_client()
         
         # Parse standard BigQuery id: project.dataset.table
@@ -229,9 +286,6 @@ class BigQueryService:
         if len(parts) == 3:
             project_id, dataset_id, table_id = parts
         else:
-            # Fallback or error handling; usually assume last part is table, previous is dataset
-            # But query requires all 3. If invalid format, return empty or try partial match.
-            # Here we assume valid input or handle strictly.
             project_id, dataset_id, table_id = ("unknown", "unknown", table_name)
             if len(parts) == 2:
                 project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
@@ -270,11 +324,9 @@ class BigQueryService:
             
             # Map run_id if not present (UI key)
             if "run_id" not in item:
-                # Use data_interval_start or start_time Aas run_id fallback
                 item["run_id"] = item.get("data_interval_start") or item.get("start_time")
                 
             results.append(item)
             
         logger.info(f"Retrieved {len(results)} load history records for {table_name}")
         return results
- 
