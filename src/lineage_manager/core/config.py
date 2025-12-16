@@ -80,9 +80,7 @@ class FeatureFlags(BaseSettings):
     """Feature flags for enabling/disabling functionality"""
     enable_swagger: bool = True
     enable_metrics: bool = False
-    enable_metrics: bool = False
     require_signin: bool = False
-    enable_bigquery: bool = False
     enable_bigquery: bool = False
     enable_audit_logging: bool = True
     enable_rate_limiting: bool = True
