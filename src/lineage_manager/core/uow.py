@@ -11,10 +11,29 @@ from lineage_manager.repositories.user_repository import UserRepository
 
 
 class BaseUnitOfWork:
-    """Base Unit of Work with common transaction methods."""
+    """
+    Base Unit of Work with common transaction methods.
+    
+    Transaction Policy:
+    - Orchestrator services use `with uow.transactional():` 
+    - Command services must NOT use context manager (will raise RuntimeError)
+    - Query services use ReadOnlyUnitOfWork
+    """
     
     def __init__(self, db: Session):
         self.db = db
+        self._allow_context = True  # Default: allow context manager
+    
+    def transactional(self):
+        """
+        Explicitly mark this UoW as transactional context.
+        Only Orchestrator services should call this.
+        
+        Usage:
+            with uow.transactional():
+                # operations that will be committed
+        """
+        return self
     
     def commit(self):
         """Commit the current transaction."""
@@ -29,7 +48,13 @@ class BaseUnitOfWork:
         self.db.close()
     
     def __enter__(self):
-        """Context manager entry."""
+        """Context manager entry - checks if allowed."""
+        if not getattr(self, '_allow_context', True):
+            raise RuntimeError(
+                f"{self.__class__.__name__} context manager is disabled. "
+                "This service must not manage transactions. "
+                "Use Orchestrator service instead."
+            )
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
