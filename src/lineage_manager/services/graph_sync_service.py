@@ -15,8 +15,13 @@ logger = logging.getLogger(__name__)
 
 class GraphSyncService:
     """
-    Service responsible for synchronizing graph data from external sources 
-    (Job Manager, Lineage Payloads).
+    Orchestrator Service for syncing jobs from Job Manager.
+    
+    ✅ TRANSACTION POLICY:
+    - This service OWNS transactions.
+    - Uses `with self.uow.transactional():` to manage commits.
+    - Delegates mutations to GraphCommandService.
+    - Supports partial success (individual transactions per job).
     """
     
     _last_sync_result: Dict[str, Any] | None = None
@@ -160,7 +165,7 @@ class GraphSyncService:
         lineage: SchedulingLineage,
         dry_run: bool = False
     ) -> dict:
-        """Sync a single job lineage."""
+        """Sync a single job lineage with transaction management."""
         if dry_run:
             changes = self.command_service.preview_lineage_job(lineage)
             return {
@@ -168,9 +173,10 @@ class GraphSyncService:
                 "job_id": lineage.job_id,
                 "changes": changes
             }
-        else:
+        
+        # Orchestrator owns transaction
+        with self.uow.transactional():
             self.sync_from_lineage(lineage)
-            self.uow.commit()
             return {
                 "status": "success",
                 "job_id": lineage.job_id,
@@ -182,7 +188,7 @@ class GraphSyncService:
         job_requests: List[Dict[str, str]],
         dry_run: bool = False
     ) -> dict:
-        """Sync multiple jobs by fetching lineages from Job Manager."""
+        """Sync multiple jobs with partial success support."""
         lineages = await self.job_manager.fetch_lineages_by_ids(job_requests)
         
         if dry_run:
@@ -199,46 +205,37 @@ class GraphSyncService:
                 "total_jobs": len(results),
                 "results": results
             }
-        else:
-            results = []
-            for lineage in lineages:
-                try:
-                    # Reuse the standard command service registration logic
+        
+        # Partial success: each job gets its own transaction
+        results = []
+        for lineage in lineages:
+            try:
+                with self.uow.transactional():  # Individual transaction per job
                     self.command_service.register_lineage_job(lineage)
                     results.append({
                         "job_id": lineage.job_id,
                         "status": "success"
                     })
-                except Exception as e:
-                    logger.error(f"Failed to sync job {lineage.job_id}: {e}")
-                    results.append({
-                        "job_id": lineage.job_id,
-                        "status": "error",
-                        "message": str(e)
-                    })
-            
-            self.uow.commit() # Commit handled by command service usually? 
-            # command_service.register_lineage_job commits internally in register_job?
-            # register_job does commit uow.commit().
-            # So if we call it in a loop, we are committing N times.
-            # Ideally we want batch commit. 
-            # But GraphCommandService.register_job has `uow.commit()` at line 30.
-            
-            return {
-                "status": "success",
-                "results": results,
-                "total": len(results),
-                "succeeded": sum(1 for r in results if r["status"] == "success"),
-                "failed": sum(1 for r in results if r["status"] == "error")
-            }
+            except Exception as e:
+                logger.error(f"Failed to sync job {lineage.job_id}: {e}")
+                results.append({
+                    "job_id": lineage.job_id,
+                    "status": "error",
+                    "message": str(e)
+                })
+        
+        success_count = sum(1 for r in results if r["status"] == "success")
+        return {
+            "status": "completed",
+            "total": len(results),
+            "successful": success_count,
+            "failed": len(results) - success_count,
+            "results": results
+        }
 
     def sync_from_lineage(self, lineage: SchedulingLineage) -> None:
         """Sync a single SchedulingLineage to the graph."""
         # This was duplicating logic. Now delegating to CommandService.
         self.command_service.register_lineage_job(lineage)
-
-    # ========================================================================
-    # Helpers
-    # ========================================================================
 
 

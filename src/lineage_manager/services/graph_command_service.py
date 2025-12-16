@@ -11,29 +11,64 @@ logger = logging.getLogger(__name__)
 
 
 class GraphCommandService:
+    """
+    Command Service (WRITE)
+
+    ⚠️ IMPORTANT - TRANSACTION POLICY:
+    - This service MUST NOT manage transactions.
+    - Do NOT use `with self.uow:` in this class (will raise RuntimeError).
+    - Commit/rollback is owned by Orchestrator services
+      (GraphSyncService, GraphInitializerService).
+    
+    This class only stages graph mutations.
+    Orchestrator services wrap calls with `with uow.transactional():`.
+    
+    Example:
+        # ❌ WRONG (will raise RuntimeError):
+        with self.uow:
+            self.register_job(...)
+        
+        # ✅ CORRECT (in Orchestrator):
+        with command_service.uow.transactional():
+            command_service.register_job(...)
+    """
+    
     def __init__(self, uow: GraphUnitOfWork, job_manager: JobManagerAdapter):
         self.uow = uow
         self.job_manager = job_manager
+        
+        # Disable context manager usage in this service
+        self.uow._allow_context = False
 
     def register_job(self, job_data: JobRegister) -> str:
         """
-        Register a new job in the system using Unit of Work pattern.
+        Register a new job in the system.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        
+        Example (in Orchestrator):
+            with command_service.uow.transactional():
+                job_id = command_service.register_job(job_data)
         """
         logger.info(f"Starting job registration for job_id: {job_data.job_id}")
         uow = self.uow
-        with uow:
-            job = self._create_job_node(job_data)
-            in_ids = self._process_reference_tables(job, job_data)
-            self._process_destination_tables(job, job_data)
-            self._create_upstream_relationships(job, in_ids)
-            
-            logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
-            return job.id
+        
+        job = self._create_job_node(job_data)
+        in_ids = self._process_reference_tables(job, job_data)
+        self._process_destination_tables(job, job_data)
+        self._create_upstream_relationships(job, in_ids)
+        
+        logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
+        return job.id
 
 
 
     def toggle_job_enabled(self, job_id: str):
-        """Flip enabled flag stored in job.job_metadata and expose attribute."""
+        """
+        Flip enabled flag stored in job.job_metadata and expose attribute.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        """
         job = self.uow.jobs.get(job_id)
         if not job:
             return None
@@ -44,14 +79,17 @@ class GraphCommandService:
         meta.setdefault("status", "pending")
         job.job_metadata = meta
         
-        with self.uow:
-            # Attach for response convenience
-            setattr(job, "enabled", meta["enabled"])
-            setattr(job, "status", meta.get("status"))
-            return job
+        # Attach for response convenience
+        setattr(job, "enabled", meta["enabled"])
+        setattr(job, "status", meta.get("status"))
+        return job
             
     def update_job(self, job_id: str, payload: JobUpdateRequest) -> Optional[Dict[str, Any]]:
-        """Update job mutable fields."""
+        """
+        Update job mutable fields.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        """
         uow = self.uow
         job = uow.jobs.get(job_id)
         if not job:
@@ -77,10 +115,6 @@ class GraphCommandService:
 
         if "status" in updates or "enabled" in updates:
             job.job_metadata = meta
-        
-        if updates:
-             with uow:
-                 pass
 
         return {
             "job_id": job_id,
@@ -88,21 +122,24 @@ class GraphCommandService:
             "message": f"Job '{job_id}' updated successfully.",
         }
     def reset_graph(self):
-        """Delete all graph-related table data"""
+        """
+        Delete all graph-related table data.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        """
         uow = self.uow
-        with uow:
-            logger.info("Starting graph reset - clearing all graph data")
-            # Order matters: closure → edge → job_table_link → job → table
-            uow.closures.clear_all()
-            uow.edges.clear_all()
-            uow.job_table_links.clear_all()
-            uow.jobs.clear_all()
-            uow.tables.clear_all()
-            logger.info("✅ Graph reset complete: all graph data cleared.")
-            return {
-                "status": "success",
-                "message": "Graph reset complete: all graph data cleared.",
-            }
+        logger.info("Starting graph reset - clearing all graph data")
+        # Order matters: closure → edge → job_table_link → job → table
+        uow.closures.clear_all()
+        uow.edges.clear_all()
+        uow.job_table_links.clear_all()
+        uow.jobs.clear_all()
+        uow.tables.clear_all()
+        logger.info("Graph reset completed: all graph data cleared.")
+        return {
+            "status": "success",
+            "message": "Graph reset complete: all graph data cleared.",
+        }
 
     def set_table_trigger(self, table_name: str, job_id: str, trigger: bool):
         """Set trigger ON/OFF for a specific job consuming a given table."""
@@ -334,57 +371,56 @@ class GraphCommandService:
     def register_lineage_job(self, lineage: SchedulingLineage) -> str:
         """
         Register a job described via SchedulingLineage payload directly to graph.
-        Does NOT commit transaction; caller must commit.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        
+        Example (in Orchestrator):
+            with self.uow.transactional():
+                job_id = command_service.register_lineage_job(lineage)
         """
         uow = self.uow
         props = lineage.properties or lineage.metadata or {}
-        
-        # 1. Create/Update Job Node
-        job_properties = self._extract_job_properties(props, lineage)
-        
-        job = uow.jobs.get_or_create(
-            job_id=lineage.job_id,
-            job_metadata=job_properties
-        )
-        
-        # 2. Create Upstream Nodes & Edges (Job <- Input Table)
+
+        # 1. Create or Update Job Node
+        job = uow.jobs.get(lineage.job_id)
+        if job:
+            # Update existing job properties
+            job_props = self._extract_job_properties(props, lineage)
+            job.job_metadata = job_props
+        else:
+            # Create new job
+            job_props = self._extract_job_properties(props, lineage)
+            job = uow.jobs.create(
+                job_id=lineage.job_id,
+                job_name=lineage.job_name,
+                job_metadata=job_props,
+            )
+
+        # 2. Process Upstream Nodes (Inputs)
         input_table_ids = []
         seen_upstreams = set()
         for upstream in lineage.upstreams:
             if upstream.name in seen_upstreams:
                 continue
             seen_upstreams.add(upstream.name)
-            
-            upstream_node = self._create_or_update_node(
-                item=upstream,
-                metadata_prefix="table",
-                lineage_props=props
-            )
+
+            upstream_node = uow.tables.get_or_create(upstream.name)
             input_table_ids.append(upstream_node.id)
-            
-            # Link check
+
             uow.job_table_links.link_job_table(job.id, upstream_node.id, "input")
-            
-            # Edge creation
-            # Check if this table is a trigger
-            is_trigger = getattr(upstream, "trigger", False)
             uow.edges.create_job_table_edge(
-               job.id, upstream_node.id, "input", is_trigger_on=is_trigger
+                job.id, upstream_node.id, "input"
             )
 
-        # 3. Create Downstream Nodes & Edges (Job -> Output Table)
+        # 3. Process Downstream Nodes (Outputs)
         seen_downstreams = set()
         for downstream in lineage.downstreams:
             if downstream.name in seen_downstreams:
                 continue
             seen_downstreams.add(downstream.name)
-            
-            downstream_node = self._create_or_update_node(
-                item=downstream,
-                metadata_prefix="table",
-                lineage_props=props
-            )
-            
+
+            downstream_node = uow.tables.get_or_create(downstream.name)
+
             uow.job_table_links.link_job_table(job.id, downstream_node.id, "output")
             uow.edges.create_job_table_edge(
                 job.id, downstream_node.id, "output"
@@ -394,7 +430,7 @@ class GraphCommandService:
         # We reuse the logic that finds jobs producing our input tables
         self._create_upstream_relationships(job, input_table_ids)
         
-        uow.commit()
+        # No commit - orchestrator handles it
         
         return job.id
 

@@ -10,7 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class GraphInitializerService:
-    """Service responsible for initializing the graph with data from Job Manager."""
+    """
+    Orchestrator Service for initializing graph from Job Manager.
+    
+    ✅ TRANSACTION POLICY:
+    - This service OWNS transactions.
+    - Uses `with uow.transactional():` for each job (partial success).
+    - Delegates mutations to GraphCommandService.
+    """
 
     def __init__(
         self,
@@ -24,20 +31,21 @@ class GraphInitializerService:
         self.logger = logging.getLogger(__name__)
 
     async def initialize(self) -> Dict[str, Any]:
-        """Initialize graph by fetching all jobs from Job Manager API."""
+        """Initialize graph with partial success support."""
         try:
             self.logger.info("Starting graph initialization")
 
-            # Clear existing graph data
-            self.command_service.reset_graph()
+            # Step 1: Clear existing graph (single transaction)
+            with self.command_service.uow.transactional():
+                self.command_service.reset_graph()
 
-            # Fetch all jobs from Job Manager API
+            # Step 2: Fetch jobs
             jobs_data = await self._fetch_jobs()
 
-            # Process each job
-            result = await self._process_jobs(jobs_data)
+            # Step 3: Register jobs with partial success
+            result = await self._process_jobs_with_partial_success(jobs_data)
 
-            # Get final statistics
+            # Step 4: Get final statistics
             stats = self.query_service.get_health_stats()
 
             return self._build_result(result, stats)
@@ -63,27 +71,31 @@ class GraphInitializerService:
             self.logger.exception("API call exception details:")
             raise
 
-    async def _process_jobs(self, jobs_data: List[SchedulingLineage]) -> Dict[str, int]:
-        """Process jobs and register them in the graph."""
-        successful_registrations = 0
-        failed_registrations = 0
+    async def _process_jobs_with_partial_success(
+        self, jobs_data: List[SchedulingLineage]
+    ) -> Dict[str, int]:
+        """Process jobs with individual transactions (partial success)."""
+        successful = 0
+        failed = 0
 
         for job_data in jobs_data:
             try:
-                job_id = self.command_service.register_lineage_job(job_data)
-                self.logger.debug(f"Successfully registered job: {job_id}")
-                successful_registrations += 1
+                # Each job gets its own transaction
+                with self.command_service.uow.transactional():
+                    job_id = self.command_service.register_lineage_job(job_data)
+                    self.logger.debug(f"Successfully registered job: {job_id}")
+                    successful += 1
 
             except Exception as e:
                 self.logger.error(
                     f"Failed to register job {getattr(job_data, 'job_id', 'unknown')}: {e}"
                 )
-                failed_registrations += 1
+                failed += 1
                 continue
 
         return {
-            "successful_registrations": successful_registrations,
-            "failed_registrations": failed_registrations,
+            "successful_registrations": successful,
+            "failed_registrations": failed,
             "jobs_fetched": len(jobs_data),
         }
 
