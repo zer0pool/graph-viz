@@ -390,9 +390,9 @@ class GraphCommandService:
         else:
             # Create new job
             job_props = self._extract_job_properties(props, lineage)
-            job = uow.jobs.create(
+            job = uow.jobs.get_or_create(
                 job_id=lineage.job_id,
-                job_name=lineage.job_name,
+                name=lineage.name,
                 job_metadata=job_props,
             )
 
