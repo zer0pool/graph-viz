@@ -74,30 +74,68 @@ class GraphInitializerService:
     async def _process_jobs_with_partial_success(
         self, jobs_data: List[SchedulingLineage]
     ) -> Dict[str, int]:
-        """Process jobs with individual transactions (partial success)."""
+        """Process jobs in batches with fallback to individual transactions."""
         successful = 0
         failed = 0
+        batch_size = 200
 
-        for job_data in jobs_data:
-            try:
-                # Each job gets its own transaction
-                with self.command_service.uow.transactional():
-                    job_id = self.command_service.register_lineage_job(job_data)
-                    self.logger.debug(f"Successfully registered job: {job_id}")
-                    successful += 1
+        # Create batches
+        batches = [
+            jobs_data[i : i + batch_size] for i in range(0, len(jobs_data), batch_size)
+        ]
+        
+        self.logger.info(f"Processing {len(jobs_data)} jobs in {len(batches)} batches (size {batch_size})")
 
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to register job {getattr(job_data, 'job_id', 'unknown')}: {e}"
-                )
-                failed += 1
-                continue
+        for idx, batch in enumerate(batches):
+            s, f = await self._process_batch_with_fallback(batch, idx)
+            successful += s
+            failed += f
 
         return {
             "successful_registrations": successful,
             "failed_registrations": failed,
             "jobs_fetched": len(jobs_data),
         }
+
+    async def _process_batch_with_fallback(
+        self, batch: List[SchedulingLineage], batch_idx: int
+    ) -> tuple[int, int]:
+        """Try to commit batch; fallback to individual if fails."""
+        try:
+            # Optimistic batch commit
+            with self.command_service.uow.transactional():
+                for job_data in batch:
+                    self.command_service.register_lineage_job(job_data)
+            
+            # If we get here, batch succeeded
+            self.logger.info(f"Batch {batch_idx + 1} succeeded ({len(batch)} jobs)")
+            return len(batch), 0
+            
+        except Exception as e:
+            self.logger.warning(
+                f"Batch {batch_idx + 1} failed ({str(e)}). Falling back to individual processing."
+            )
+            return await self._process_items_individually(batch)
+
+    async def _process_items_individually(
+        self, batch: List[SchedulingLineage]
+    ) -> tuple[int, int]:
+        """Process items one by one (fallback mode)."""
+        success_count = 0
+        fail_count = 0
+        
+        for job_data in batch:
+            try:
+                with self.command_service.uow.transactional():
+                    self.command_service.register_lineage_job(job_data)
+                success_count += 1
+            except Exception as inner_e:
+                self.logger.error(
+                    f"Failed to register job {getattr(job_data, 'job_id', 'unknown')}: {inner_e}"
+                )
+                fail_count += 1
+        
+        return success_count, fail_count
 
     def _build_result(
         self, process_result: Dict[str, int], stats: Dict[str, Any]

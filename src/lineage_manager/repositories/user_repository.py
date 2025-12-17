@@ -24,12 +24,9 @@ class UserRepository(BaseRepository):
         payload = {
             "email": claims.get("email"),
             "name": claims.get("name") or claims.get("given_name"),
-            "picture": claims.get("picture"),
-            "preferred_username": claims.get("preferred_username")
-            or claims.get("email"),
+            "loginId": claims.get("preferred_username") or claims.get("email"),
             "roles": claims.get("roles") or claims.get("role"),
             "dept": claims.get("dept"),
-            "locale": claims.get("locale"),
         }
 
         if user:

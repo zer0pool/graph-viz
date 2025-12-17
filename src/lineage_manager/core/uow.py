@@ -33,7 +33,25 @@ class BaseUnitOfWork:
             with uow.transactional():
                 # operations that will be committed
         """
-        return self
+        # Temporarily re-enable context manager for orchestrators
+        class TransactionalContext:
+            def __init__(self, uow):
+                self.uow = uow
+                self._original_allow_context = None
+            
+            def __enter__(self):
+                # Save original state and enable context manager
+                self._original_allow_context = getattr(self.uow, '_allow_context', True)
+                self.uow._allow_context = True
+                return self.uow.__enter__()
+            
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                result = self.uow.__exit__(exc_type, exc_val, exc_tb)
+                # Restore original state
+                self.uow._allow_context = self._original_allow_context
+                return result
+        
+        return TransactionalContext(self)
     
     def commit(self):
         """Commit the current transaction."""

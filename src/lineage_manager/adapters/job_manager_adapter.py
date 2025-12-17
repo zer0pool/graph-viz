@@ -231,13 +231,19 @@ class JobManagerAdapter(JobManagerPort):
 
     async def get_job_run_history(self, job_id: str) -> List[Dict[str, Any]]:
         """Fetch run history for a specific job from Job Manager API."""
-        url = f"{self.base_url}/job/{job_id}/run-history"
+        # url = f"{self.base_url}/job/{job_id}/run-history"
+        url = f"{self.base_url}/api/job/job-run-history/"
+        params = {
+            "job_id": job_id,
+            "limit": 100,  # Optional: adjust the limit as needed
+            "offset": 0,  # Optional: adjust the offset as needed
+        }
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(url)
+                response = await client.get(url, params=params)
                 logger.debug(f"Run history response status: {response.status_code}")
-                response.raise_for_status()
-                return response.json()
+            response.raise_for_status()
+            return response.json()
         except httpx.HTTPError as e:
             logger.error(f"HTTP error fetching run history for {job_id}: {e}")
             if hasattr(e, "response") and e.response:
