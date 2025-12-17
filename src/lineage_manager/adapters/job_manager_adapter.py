@@ -242,8 +242,8 @@ class JobManagerAdapter(JobManagerPort):
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url, params=params)
                 logger.debug(f"Run history response status: {response.status_code}")
-            response.raise_for_status()
-            return response.json()
+                response.raise_for_status()
+                return response.json()
         except httpx.HTTPError as e:
             logger.error(f"HTTP error fetching run history for {job_id}: {e}")
             if hasattr(e, "response") and e.response:
