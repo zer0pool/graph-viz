@@ -198,5 +198,16 @@ export function getGraphStyles() {
       },
     },
     { selector: "edge.dimmed", style: { opacity: 0.3 } },
+    {
+      selector: ".aggregate-edge",
+      style: {
+        "line-style": "dashed",
+        "line-color": "#d1d5db",
+        "width": 1.5,
+        "target-arrow-shape": "none",
+        "opacity": 0.6,
+        "curve-style": "straight" // Ensure it's straight like others or 'bezier' if needed
+      },
+    },
   ];
 }

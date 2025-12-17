@@ -135,7 +135,19 @@ export class GraphExpansion {
                 "upstream",
                 0
             );
-            if (aggregate) nodesToAdd.push(aggregate);
+            if (aggregate) {
+                nodesToAdd.push(aggregate);
+                // Edge: Aggregate -> Anchor
+                edgesToAdd.push({
+                    data: {
+                        id: `${aggregate.id}_to_${anchorId}`,
+                        source: aggregate.id,
+                        target: anchorId,
+                        io: "virtual"
+                    },
+                    classes: "aggregate-edge"
+                });
+            }
         } else {
             nodesToAdd.push(...upstream);
         }
@@ -159,7 +171,19 @@ export class GraphExpansion {
                 "downstream",
                 0
             );
-            if (aggregate) nodesToAdd.push(aggregate);
+            if (aggregate) {
+                nodesToAdd.push(aggregate);
+                // Edge: Anchor -> Aggregate
+                edgesToAdd.push({
+                    data: {
+                        id: `${anchorId}_to_${aggregate.id}`,
+                        source: anchorId,
+                        target: aggregate.id,
+                        io: "virtual"
+                    },
+                    classes: "aggregate-edge"
+                });
+            }
         } else {
             nodesToAdd.push(...downstream);
         }
@@ -181,6 +205,13 @@ export class GraphExpansion {
                 if (downstream.some((n) => n.id === raw.id)) {
                     downstreamAdded.push(raw.id);
                 }
+            }
+        });
+
+        // Add virtual edges
+        edgesToAdd.forEach(edge => {
+            if (!cy.getElementById(edge.data.id).nonempty()) {
+                cy.add(edge);
             }
         });
 
@@ -309,6 +340,24 @@ export class GraphExpansion {
 
             if (newAggregate) {
                 cy.add(this.nodeSerializer.serialize(newAggregate));
+
+                // Add virtual edge for layout alignment
+                const edgeData = direction === "upstream"
+                    ? { source: newAggregate.id, target: parentId }
+                    : { source: parentId, target: newAggregate.id };
+
+                const edgeId = `${edgeData.source}_to_${edgeData.target}`;
+                if (!cy.getElementById(edgeId).nonempty()) {
+                    cy.add({
+                        data: {
+                            id: edgeId,
+                            source: edgeData.source,
+                            target: edgeData.target,
+                            io: "virtual"
+                        },
+                        classes: "aggregate-edge"
+                    });
+                }
             }
         }
 
