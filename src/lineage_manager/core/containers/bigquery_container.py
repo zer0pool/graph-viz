@@ -26,7 +26,7 @@ class BigQueryContainer(containers.DeclarativeContainer):
     # Selector chooses implementation based on enable_bigquery flag
     # This is the ONLY place where enable_bigquery should be checked
     bigquery_service = providers.Selector(
-        lambda s: "real" if s.feature_flags.enable_bigquery else "dummy",
+        lambda: "real" if get_settings().feature_flags.enable_bigquery else "dummy",
         real=providers.Factory(
             RealBigQueryService,
             history_table=get_settings().feature_flags.history_table

@@ -58,10 +58,11 @@ export const ExcelExportService = {
                 // Logical depth for Tables (matches UI)
                 const logicalDepth = Math.floor(item.depth / 2);
 
-                // Indentation (Excel friendly usage of clean spaces/indent)
-                let indent = "";
-                for (let i = 0; i < logicalDepth; i++) indent += "    ";
-                if (logicalDepth > 0) indent += "└ ";
+                // Indentation: Use padding-left (Excel respects this better than spaces)
+                const paddingLeft = logicalDepth * 20; // 20px per level
+
+                // Prefix symbol (optional, can be kept or removed)
+                const prefix = logicalDepth > 0 ? "└ " : "";
 
                 let jobName = "-";
                 let jobStatus = "-";
@@ -88,7 +89,7 @@ export const ExcelExportService = {
 
                 html += `
                     <tr ${rowStyle}>
-                        <td>${indent}${displayName}</td>
+                        <td style="padding-left: ${paddingLeft}px;">${prefix}${displayName}</td>
                         <td>${jobName} (${jobStatus})</td>
                         <td>${logicalDepth}</td>
                         <td>${owner}</td>

@@ -47,6 +47,7 @@ class GraphContainer(containers.DeclarativeContainer):
         GraphCommandService,
         uow=write_uow,
         job_manager=job.job_manager_adapter,
+        query_service=query_service,
     )
     
     # Initializer Service

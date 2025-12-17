@@ -55,11 +55,13 @@ class GraphQueryService:
         except Exception:
             return None
 
-    def _cache_set(self, key: str, value: Dict[str, Any]) -> None:
+    def _cache_set(self, key: str, value: Dict[str, Any], ttl: Optional[int] = None) -> None:
         if not self.redis_enabled or not self._r:
             return
         try:
-            self._r.setex(key, self.redis_ttl, json.dumps(value))
+            if ttl is None:
+                ttl = 5 if key == "health_stats" else self.redis_ttl
+            self._r.setex(key, ttl, json.dumps(value))
         except Exception:
             pass
 
@@ -418,6 +420,93 @@ class GraphQueryService:
             "leaf_nodes": leaves
         }
 
+    MAX_SNAPSHOT_TTL = 3600  # 1 hour
+    SNAPSHOT_KEY_V1 = "graph_snapshot_v1"
+
+    def invalidate_graph_snapshot(self):
+        """Invalidate the graph snapshot cache to force a rebuild on next read."""
+        if not self.redis_enabled or not self._r:
+            return
+        try:
+            self._r.delete(self.SNAPSHOT_KEY_V1)
+            logger.info("Invalidated graph snapshot cache")
+        except Exception as e:
+            logger.warning(f"Failed to invalidate graph snapshot: {e}")
+
+    def _get_graph_snapshot(self):
+        """
+        Builds or retrieves a lightweight graph snapshot (adjacency list).
+        Returns:
+            {
+                "nodes": {id: {id, full_name, type, ...}},
+                "edges": {source_id: {target_id: {edge_type, ...}}},
+                "reverse_edges": {target_id: {source_id: {edge_type, ...}}},
+                "full_name_map": {full_name: id}
+            }
+        """
+        key = self.SNAPSHOT_KEY_V1
+        cached = self._cache_get(key)
+        if cached:
+            return cached
+
+        # 1. Fetch all nodes
+        # We need ID, type, full_name/job_id to map things
+        # This might be heavy if > 100k nodes, but acceptable for < 10k
+        uow = self.uow
+        # Raw SQL might be faster for bulk fetch
+        nodes_query = text("SELECT id, node_type, name FROM graph_node")
+        nodes = uow.db.execute(nodes_query).mappings().all()
+        
+        node_map = {}
+        name_map = {}
+        
+        for n in nodes:
+            nid = n["id"]
+            name = n["name"]
+            ntype = n["node_type"]
+            # job_id is name for jobs
+            jid = name if ntype == "job" else None
+            
+            node_map[str(nid)] = {
+                "id": nid,
+                "type": ntype,
+                "name": name,
+                "job_id": jid
+            }
+            if name:
+                 name_map[name] = nid
+
+        # 2. Fetch all edges
+        edges_query = text("SELECT source_node_id, target_node_id, edge_type, is_trigger_on FROM graph_edge")
+        edges_rows = uow.db.execute(edges_query).mappings().all()
+
+        adj = {}
+        rev_adj = {}
+
+        for e in edges_rows:
+            src = str(e["source_node_id"])
+            dst = str(e["target_node_id"])
+            etype = e["edge_type"]
+            
+            # Forward
+            if src not in adj: adj[src] = {}
+            adj[src][dst] = {"type": etype}
+            
+            # Reverse
+            if dst not in rev_adj: rev_adj[dst] = {}
+            rev_adj[dst][src] = {"type": etype}
+
+        snapshot = {
+            "nodes": node_map,
+            "edges": adj,
+            "reverse_edges": rev_adj,
+            "full_name_map": name_map
+        }
+        
+        # Cache for short duration
+        self._cache_set(key, snapshot, ttl=self.MAX_SNAPSHOT_TTL)
+        return snapshot
+
     def get_table_lineage_summary(
         self,
         table_name: str,
@@ -426,144 +515,179 @@ class GraphQueryService:
         max_preview_paths: int = 4,
         max_full_paths: int = 25,
     ):
-        key = f"lineage_summary:{table_name}:{max_roots}:{max_leaves}"
-        cached = self._cache_get(key)
-        if cached:
-            cached["cache"] = {
-                "cached": True,
-                "expires_in_sec": self.redis_ttl if self.redis_enabled else None,
-            }
-            return cached
+        # Use Snapshot Strategy
+        snapshot = self._get_graph_snapshot()
+        nodes = snapshot["nodes"]
+        edges = snapshot["edges"]
+        rev_edges = snapshot["reverse_edges"]
+        name_map = snapshot["full_name_map"]
 
-        uow = self.uow
-        try:
-            table = uow.tables.get_by_full_name(table_name)
-            if not table:
-                return {
-                    "status": "error",
-                    "error_code": "TABLE_NOT_FOUND",
-                    "message": f"Table '{table_name}' not found",
-                }
-
-            link_repo = uow.job_table_links
-
-            upstream_tables, upstream_jobs = set(), set()
-            downstream_tables, downstream_jobs = set(), set()
-            upstream_roots, downstream_leaves = [], []
-            upstream_paths, downstream_paths = [], []
-            upstream_depth = 0
-            downstream_depth = 0
-
-            # Upstream traversal
-            queue = deque([(table, 0, [table.full_name])])
-            visited_jobs = set()
-            while queue:
-                current, depth, path = queue.popleft()
-                producers = link_repo.get_jobs_by_table_and_io_type(current.id, "output")
-                if not producers and current.id != table.id:
-                    if current.full_name not in upstream_roots:
-                        upstream_roots.append(current.full_name)
-                    upstream_paths.append(list(path))
-                    continue
-
-                for job in producers:
-                    job_key = job.job_id or getattr(job, "display_name", None) or job.name or f"job:{job.id}"
-                    if job_key:
-                        upstream_jobs.add(job_key)
-                    if job.id not in visited_jobs:
-                        visited_jobs.add(job.id)
-                    inputs = link_repo.get_tables_by_job_and_io_type(job.id, "input")
-                    for tbl in inputs:
-                        if tbl.full_name in path:
-                            continue
-                        upstream_tables.add(tbl.full_name)
-                        next_path = [tbl.full_name] + path
-                        queue.append((tbl, depth + 1, next_path))
-                        upstream_depth = max(upstream_depth, depth + 1)
-
-            # Downstream traversal
-            queue = deque([(table, 0, [table.full_name])])
-            visited_jobs = set()
-            while queue:
-                current, depth, path = queue.popleft()
-                consumers = link_repo.get_jobs_by_table_and_io_type(current.id, "input")
-                if not consumers and current.id != table.id:
-                    if current.full_name not in downstream_leaves:
-                        downstream_leaves.append(current.full_name)
-                    downstream_paths.append(list(path))
-                    continue
-
-                for job in consumers:
-                    job_key = job.job_id or getattr(job, "display_name", None) or job.name or f"job:{job.id}"
-                    if job_key:
-                        downstream_jobs.add(job_key)
-                    if job.id not in visited_jobs:
-                        visited_jobs.add(job.id)
-                    outputs = link_repo.get_tables_by_job_and_io_type(job.id, "output")
-                    for tbl in outputs:
-                        if tbl.full_name in path:
-                            continue
-                        downstream_tables.add(tbl.full_name)
-                        next_path = path + [tbl.full_name]
-                        queue.append((tbl, depth + 1, next_path))
-                        downstream_depth = max(downstream_depth, depth + 1)
-
-            def uniq_list(values):
-                seen = set()
-                ordered = []
-                for val in values:
-                    if val not in seen:
-                        seen.add(val)
-                        ordered.append(val)
-                return ordered
-
-            preview_paths = (upstream_paths + downstream_paths)[:max_preview_paths]
-            full_paths = (upstream_paths + downstream_paths)[:max_full_paths]
-
-            res = {
-                "status": "success",
-                "table": table.full_name,
-                "metrics": {
-                    "root_count": len(upstream_roots),
-                    "leaf_count": len(downstream_leaves),
-                    "upstream_table_count": len(upstream_tables),
-                    "downstream_table_count": len(downstream_tables),
-                    "upstream_job_count": len(upstream_jobs),
-                    "downstream_job_count": len(downstream_jobs),
-                    "depth": {
-                        "upstream": upstream_depth,
-                        "downstream": downstream_depth,
-                    },
-                },
-                "upstream": {
-                    "root_tables": uniq_list(upstream_roots)[:max_roots],
-                    "tables": sorted(upstream_tables),
-                    "jobs": sorted(upstream_jobs),
-                },
-                "downstream": {
-                    "leaf_tables": uniq_list(downstream_leaves)[:max_leaves],
-                    "tables": sorted(downstream_tables),
-                    "jobs": sorted(downstream_jobs),
-                },
-                "paths": {
-                    "preview": [list(path) for path in preview_paths],
-                    "full": [list(path) for path in full_paths],
-                },
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        except Exception as exc:
-            logger.error(f"Failed to compute lineage summary for {table_name}: {exc}")
-            return {
+        # Resolve Center ID
+        center_id = name_map.get(table_name)
+        if not center_id:
+             return {
                 "status": "error",
-                "message": str(exc),
+                "message": f"Table '{table_name}' not found",
             }
+        center_id = str(center_id)
+
+        # In-Memory BFS Traversal
+        upstream_tables, upstream_jobs = set(), set()
+        downstream_tables, downstream_jobs = set(), set()
+        upstream_roots, downstream_leaves = [], []
+        upstream_paths, downstream_paths = [], []
+        upstream_depth = 0
+        downstream_depth = 0
+
+        # --- Upstream (Reverse Edges) ---
+        # Queue: (current_id, depth, path_of_names)
+        queue = deque([(center_id, 0, [table_name])])
+        visited = set() # track visited nodes to avoid cycles
+        
+        while queue:
+            curr_id, depth, path = queue.popleft()
+            if curr_id in visited: continue
+            visited.add(curr_id)
+
+            # Get parents (incoming edges)
+            parents = rev_edges.get(curr_id, {})
+            # Filter for Job nodes that WRITE to current node (output)
+            # wait, architecture is: Job --read--> Table OR Job --write--> Table
+            # Actually, standard flow: Table A -> Job 1 -> Table B
+            # Edges: (A -> Job1 type=read), (Job1 -> B type=write)
+            
+            # Implementation detail: 'rev_edges' of Table B are (Job1 -> B). Source is Job1.
+            # So parents of Table B are likely Jobs.
+            
+            has_upstream = False
+            for pid, meta in parents.items():
+                pnode = nodes.get(pid)
+                if not pnode: continue
+                
+                # If current is Table, parent must be Job (Writer)
+                if pnode["type"] == "job":
+                    # Capture Job Writer
+                    job_key = pnode.get("job_id") or pnode.get("name")
+                    upstream_jobs.add(job_key)
+                    
+                    # Traverse further up from Job
+                    # Job inputs are 'read' edges. (Table -> Job)
+                    # So look at 'rev_edges' of Job
+                    grandparents = rev_edges.get(pid, {})
+                    for gpid, gmeta in grandparents.items():
+                        gpnode = nodes.get(gpid)
+                        if gpnode and gpnode["type"] == "table":
+                            has_upstream = True
+                            if gpnode["name"] in path: continue # cycle check
+                            
+                            upstream_tables.add(gpnode["name"])
+                            next_path = [gpnode["name"]] + path
+                            queue.append((gpid, depth + 1, next_path))
+                            upstream_depth = max(upstream_depth, depth + 1)
+
+            if not has_upstream and curr_id != center_id:
+                 # It's a root (or stopped at job)
+                 curr_node = nodes[curr_id]
+                 if curr_node["type"] == "table":
+                     if curr_node["name"] not in upstream_roots:
+                        upstream_roots.append(curr_node["name"])
+                     upstream_paths.append(list(path))
+
+        # --- Downstream (Forward Edges) ---
+        queue = deque([(center_id, 0, [table_name])])
+        visited = set()
+        
+        while queue:
+            curr_id, depth, path = queue.popleft()
+            if curr_id in visited: continue
+            visited.add(curr_id)
+
+            # Children (outgoing edges)
+            # Table -> (read) -> Job
+            children = edges.get(curr_id, {})
+            
+            has_downstream = False
+            for cid, meta in children.items():
+                cnode = nodes.get(cid)
+                if not cnode: continue
+                
+                if cnode["type"] == "job":
+                    # Capture Job Reader
+                    job_key = cnode.get("job_id") or cnode.get("name")
+                    downstream_jobs.add(job_key)
+                    
+                    # Traverse further down from Job
+                    # Job outputs (write) -> Table
+                    grandchildren = edges.get(cid, {})
+                    for gcid, gmeta in grandchildren.items():
+                         gcnode = nodes.get(gcid)
+                         if gcnode and gcnode["type"] == "table":
+                             has_downstream = True
+                             if gcnode["name"] in path: continue
+                             
+                             downstream_tables.add(gcnode["name"])
+                             next_path = path + [gcnode["name"]]
+                             queue.append((gcid, depth + 1, next_path))
+                             downstream_depth = max(downstream_depth, depth + 1)
+            
+            if not has_downstream and curr_id != center_id:
+                 curr_node = nodes[curr_id]
+                 if curr_node["type"] == "table":
+                     if curr_node["name"] not in downstream_leaves:
+                        downstream_leaves.append(curr_node["name"])
+                     downstream_paths.append(list(path))
+
+        def uniq_list(values):
+            seen = set()
+            ordered = []
+            for val in values:
+                if val not in seen:
+                    seen.add(val)
+                    ordered.append(val)
+            return ordered
+
+        preview_paths = (upstream_paths + downstream_paths)[:max_preview_paths]
+        full_paths = (upstream_paths + downstream_paths)[:max_full_paths]
+
+        res = {
+            "status": "success",
+            "table": table_name,
+            "metrics": {
+                "root_count": len(upstream_roots),
+                "leaf_count": len(downstream_leaves),
+                "upstream_table_count": len(upstream_tables),
+                "downstream_table_count": len(downstream_tables),
+                "upstream_job_count": len(upstream_jobs),
+                "downstream_job_count": len(downstream_jobs),
+                "depth": {
+                    "upstream": upstream_depth,
+                    "downstream": downstream_depth,
+                },
+            },
+            "upstream": {
+                "root_tables": uniq_list(upstream_roots)[:max_roots],
+                "tables": sorted(list(upstream_tables)),
+                "jobs": sorted(list(upstream_jobs)),
+            },
+            "downstream": {
+                "downstream_tables": uniq_list(downstream_leaves)[:max_leaves], # fix key name mismatch
+                "leaf_tables": uniq_list(downstream_leaves)[:max_leaves],
+                "tables": sorted(list(downstream_tables)),
+                "jobs": sorted(list(downstream_jobs)),
+            },
+            "paths": {
+                "preview": [list(path) for path in preview_paths],
+                "full": [list(path) for path in full_paths],
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
         if res.get("status") == "success":
-            res["cache"] = {
-                "cached": False,
-                "expires_in_sec": self.redis_ttl if self.redis_enabled else None,
-            }
-            self._cache_set(key, res)
+             # Indicate that we used the snapshot cache (effectively)
+             res["cache"] = {
+                 "cached": True, # Always "cached" in the sense that graph is from snapshot
+                 "expires_in_sec": self.MAX_SNAPSHOT_TTL,
+             }
         return res
 
     def get_job(self, job_id: str):

@@ -141,6 +141,8 @@ class GraphSyncService:
             "database_stats": stats.get("database") if isinstance(stats, dict) else {},
         }
         GraphSyncService._last_sync_result = result
+        # Invalidate cache after bulk sync
+        self.query_service.invalidate_graph_snapshot()
         return result
 
     async def sync_from_job_manager(self, reset: bool = False) -> Dict[str, Any]:
@@ -149,6 +151,8 @@ class GraphSyncService:
             self.command_service.reset_graph()
         result = await self.initializer_service.initialize()
         GraphSyncService._last_sync_result = result
+        # Invalidate cache after full sync
+        self.query_service.invalidate_graph_snapshot()
         return result
 
     @classmethod
@@ -177,6 +181,8 @@ class GraphSyncService:
         # Orchestrator owns transaction
         with self.uow.transactional():
             self.sync_from_lineage(lineage)
+            # Invalidate cache after single job sync
+            self.query_service.invalidate_graph_snapshot()
             return {
                 "status": "success",
                 "job_id": lineage.job_id,
@@ -225,6 +231,10 @@ class GraphSyncService:
                 })
         
         success_count = sum(1 for r in results if r["status"] == "success")
+
+        if success_count > 0:
+            self.query_service.invalidate_graph_snapshot()
+            
         return {
             "status": "completed",
             "total": len(results),

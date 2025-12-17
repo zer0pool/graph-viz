@@ -22,12 +22,12 @@ export const LineageTreeUtils = {
 
         // Initialize map
         items.forEach(item => {
-            idMap.set(item.name, { ...item, children: [] });
+            idMap.set(item.id, { ...item, children: [] });
         });
 
         // Build Tree Connections
         items.forEach(item => {
-            const node = idMap.get(item.name);
+            const node = idMap.get(item.id);
             if (item.depth === 0) {
                 roots.push(node);
             } else if (item.parent) {
@@ -42,30 +42,51 @@ export const LineageTreeUtils = {
         const flatList = [];
 
         // Recursive helper
-        const traverseLogical = (nodes, prefix) => {
-            nodes.forEach((node, index) => {
-                // node is typically a JOB (child of a Table)
-
-                const isLast = index === nodes.length - 1;
-                const marker = isLast ? "└─ " : "├─ ";
-                const nextPrefix = prefix + (isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;");
-
-                // For each Job, get its children (Tables)
-                if (node.children && node.children.length > 0) {
-                    node.children.forEach(childTable => {
-                        // This childTable is the "Logical Child" of the previous Table
-                        flatList.push({
-                            ...childTable,
-                            treePrefix: prefix + marker,
-                            // Embellish with Job info if needed for the view
-                            viaJob: node
-                        });
-
-                        // Recurse: This table might have its own Jobs...
-                        if (childTable.children && childTable.children.length > 0) {
-                            traverseLogical(childTable.children, nextPrefix);
-                        }
+        const traverseLogical = (jobs, prefix) => {
+            // 1. Flatten all "next tables" from all "jobs" into a single sibling list
+            const siblings = [];
+            jobs.forEach(job => {
+                if (job.children && job.children.length > 0) {
+                    job.children.forEach(table => {
+                        siblings.push({ table, viaJob: job });
                     });
+                }
+            });
+
+            // 2. Iterate matches standard tree logic
+            siblings.forEach((item, index) => {
+                const { table, viaJob } = item;
+                const isLast = index === siblings.length - 1;
+
+                // Standard Tree Characters
+                // ├── for item
+                // └── for last item
+                const marker = isLast ? "└── " : "├── ";
+
+                // Child prefix:
+                // │   for item
+                //     for last item
+                // (using &nbsp; for HTML rendering safety if needed, or raw chars if <pre>)
+                // Using raw chars usually looks better if font is mono, but let's stick to user request "Linux tree command" which implies chars.
+                // The current code used &nbsp;. Let's ensure alignment.
+                // Linux tree:
+                // │   (4 spaces equiv)
+                //     (4 spaces)
+                // The previous code used &nbsp;&nbsp;&nbsp; (3 spaces).
+                // Let's stick to standard chars but maybe use span/pre in UI.
+                // Assuming UI handles string 
+                const nextPrefix = prefix + (isLast ? "    " : "│   ");
+
+                flatList.push({
+                    ...table,
+                    treePrefix: prefix + marker,
+                    viaJob: viaJob
+                });
+
+                // Recurse
+                // table.children are Jobs
+                if (table.children && table.children.length > 0) {
+                    traverseLogical(table.children, nextPrefix);
                 }
             });
         };
@@ -73,10 +94,9 @@ export const LineageTreeUtils = {
         // Start Traversal from Root(s)
         if (roots.length > 0) {
             // Add Root First
-            // Root has no prefix
             flatList.push({ ...roots[0], treePrefix: "" });
 
-            // Traverse its children (Jobs) to find next tables
+            // Root's children are Jobs
             if (roots[0].children) {
                 traverseLogical(roots[0].children, "");
             }

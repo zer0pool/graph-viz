@@ -298,33 +298,138 @@ for i in range(1, 26):
 # =====================================================================
 # Combine Jobs → 200 jobs (strict table names)
 # =====================================================================
-ALL_JOBS = L1 + L2 + L3 + L4 + L5
 
-# Add extra jobs to reach 200, enforcing strict naming
-while len(ALL_JOBS) < 200:
-    index = len(ALL_JOBS) + 1
-    src = SOURCE_TABLES[index % 50]
-    out_table = validate_table_name(f"demo.analytics.EXTRA_OUT_{index:03d}")
+# =====================================================================
+# UNIFIED DATASET GENERATION
+# =====================================================================
+def generate_progressive_dataset():
+    """Generates the full 1200+ job dataset used for progressive tests."""
+    dataset = []
+    
+    # helper
+    def create_job(job_id, upstreams, downstream_table_name, layer_name):
+        return {
+            "type": "SELF-TYPE",
+            "job_id": job_id,
+            "name": job_id,
+            "reads": [u["name"] for u in upstreams], # Adapter for legacy format
+            "writes": [downstream_table_name],       # Adapter for legacy format
+            # New fields for lineage object builder
+            "upstreams": upstreams,
+            "downstreams": [{"type": "table", "name": downstream_table_name}],
+            "destination_type": "table",
+            "schedule": {"cron": "@daily"},
+            "meta": {
+                "owner": "test_user",
+                "labels": {"layer": layer_name, "test": "progressive_expansion_large"},
+                "write_mode": "append",
+                "run_status": "RUN",
+            },
+            "create_datetime": "2024-12-01T02:00:00Z",
+            "update_datetime": "2024-12-01T03:15:00Z",
+            "successful_dag_runs_count": 10,
+        }
 
-    ALL_JOBS.append({
-        "job_id": f"EXTRA_JOB_{index:03d}",
-        "reads": [src],
-        "writes": [out_table],
-    })
+    # 1. Upstream Layer 3 (1000 jobs)
+    for i in range(1, 1001):
+        job_id = f"UP_L3_JOB_{i:04d}"
+        dataset.append(create_job(
+            job_id,
+            [{"type": "table", "name": f"test.source.table_{i:04d}", "trigger": True}],
+            f"test.up_l3.out_{i:04d}",
+            "upstream_l3"
+        ))
 
+    # 2. Upstream Layer 2 (100 jobs)
+    for i in range(1, 101):
+        job_id = f"UP_L2_JOB_{i:03d}"
+        my_upstreams = []
+        start_idx = (i - 1) * 10 + 1
+        for k in range(start_idx, start_idx + 10):
+            my_upstreams.append(
+                {"type": "table", "name": f"test.up_l3.out_{k:04d}", "trigger": True}
+            )
+        dataset.append(create_job(
+            job_id,
+            my_upstreams,
+            f"test.up_l2.out_{i:03d}",
+            "upstream_l2"
+        ))
 
-assert len(ALL_JOBS) == 200
+    # 3. Upstream Layer 1 (10 jobs)
+    for i in range(1, 11):
+        job_id = f"UP_L1_JOB_{i:03d}"
+        my_upstreams = []
+        start_idx = (i - 1) * 10 + 1
+        for k in range(start_idx, start_idx + 10):
+            my_upstreams.append(
+                {"type": "table", "name": f"test.up_l2.out_{k:03d}", "trigger": True}
+            )
+        dataset.append(create_job(
+            job_id,
+            my_upstreams,
+            f"test.up_l1.out_{i:03d}",
+            "upstream_l1"
+        ))
+
+    # 4. CENTER JOB (1 job)
+    # Connects to all 10 L1 jobs
+    center_upstreams = []
+    for k in range(1, 11):
+        center_upstreams.append(
+            {"type": "table", "name": f"test.up_l1.out_{k:03d}", "trigger": True}
+        )
+    dataset.append(create_job(
+        "CENTER_JOB",
+        center_upstreams,
+        "test.center.out",
+        "center"
+    ))
+
+    # 5. Downstream Layer 1 (10 jobs)
+    for i in range(1, 11):
+        dataset.append(create_job(
+            f"DOWN_L1_JOB_{i:03d}",
+            [{"type": "table", "name": "test.center.out", "trigger": True}],
+            f"test.down_l1.out_{i:03d}",
+            "downstream_l1"
+        ))
+
+    # 6. Downstream Layer 2 (100 jobs)
+    for i in range(1, 101):
+        parent_idx = (i - 1) // 10 + 1
+        dataset.append(create_job(
+            f"DOWN_L2_JOB_{i:03d}",
+            [{"type": "table", "name": f"test.down_l1.out_{parent_idx:03d}", "trigger": True}],
+            f"test.down_l2.out_{i:03d}",
+            "downstream_l2"
+        ))
+
+    return dataset
+
+# Generate the massive dataset
+ALL_JOBS_RAW = generate_progressive_dataset()
+
+# Adapter to match legacy build_lineage expectations if needed, 
+# but create_job already returns full objects.
+ALL_JOBS = ALL_JOBS_RAW # No need to append legacy L1..L5
 
 
 # =====================================================================
 # Assign types
 # =====================================================================
-SELF_JOBS = ALL_JOBS[:100]
-REQUEST_JOBS = ALL_JOBS[100:200]
+# Split dataset roughly in half for testing types
+midpoint = len(ALL_JOBS) // 2
+SELF_JOBS = ALL_JOBS[:midpoint]
+REQUEST_JOBS = ALL_JOBS[midpoint:]
 
-SELF_DATA = [build_lineage(job, "SELF-TYPE") for job in SELF_JOBS]
-REQ_DATA = [build_lineage(job, "REQUEST-TYPE") for job in REQUEST_JOBS]
-ALL_DATA = SELF_DATA + REQ_DATA
+# Since create_job in generate_progressive_dataset returns the full structure,
+# we don't need build_lineage anymore OR we should update build_lineage.
+# Actually, let's just use the objects as is because they are already formatted.
+
+SELF_DATA = SELF_JOBS
+REQ_DATA = REQUEST_JOBS
+ALL_DATA = ALL_JOBS
 
 
 # =====================================================================
@@ -483,134 +588,33 @@ def get_scheduling_lineage_by_ids(payload: JobSelectorRequest):
     }
 
 
+
+
+
 @app.post("/api/v1/jobs/scheduling-lineage/progressive_test")
 def get_progressive_expansion_test_data(payload: JobSelectorRequest):
     """
-    Progressive Expansion 테스트용 API:
-    - 41개의 계층적 job 데이터 생성
-    - Level 0: 20 jobs (각 Level 1 job의 upstream)
-    - Level 1: 10 jobs (CENTER_JOB의 upstream)
-    - Level 2: 1 CENTER_JOB
-    - Level 3: 10 jobs (CENTER_JOB의 downstream)
+    Progressive Expansion 테스트용 API (Large Scale):
+    - Center Job: 1개
+    - Upstream Layer 1: 10개 (Input for Center)
+    - Upstream Layer 2: 100개 (10 per L1)
+    - Upstream Layer 3: 1000개 (10 per L2)
+    - Downstream Layer 1: 10개 (Output from Center)
+    - Downstream Layer 2: 100개 (10 per L1)
     
-    요청된 job_id에 따라 적절한 upstream/downstream 반환
+    Total Jobs: 1 + 10 + 100 + 1000 + 10 + 100 = 1221
     """
     
-    results = []
+    return_all = (len(payload.jobs) == 0)
     requested_job_ids = {item.job_id for item in payload.jobs}
     
-    # Level 0 jobs (20 jobs) - 각각 1개의 input, 1개의 output
-    for i in range(1, 21):
-        job_id = f"LEVEL0_JOB_{i:03d}"
-        if job_id in requested_job_ids:
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": f"test.level0.input_{i:03d}", "trigger": True}
-                ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level0.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "0", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
-    
-    # Level 1 jobs (10 jobs) - 각각 2개의 Level 0 output을 읽음
-    for i in range(1, 11):
-        job_id = f"LEVEL1_JOB_{i:03d}"
-        if job_id in requested_job_ids:
-            upstream_idx1 = (i - 1) * 2 + 1
-            upstream_idx2 = (i - 1) * 2 + 2
+    # Reuse valid global dataset
+    filtered = []
+    for job in ALL_JOBS:
+        if return_all or job["job_id"] in requested_job_ids:
+            filtered.append(job)
             
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": f"test.level0.output_{upstream_idx1:03d}", "trigger": True},
-                    {"type": "table", "name": f"test.level0.output_{upstream_idx2:03d}", "trigger": True},
-                ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level1.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "1", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
-    
-    # CENTER_JOB - 10개의 Level 1 output을 읽음
-    if "CENTER_JOB" in requested_job_ids:
-        upstreams = [
-            {"type": "table", "name": f"test.level1.output_{i:03d}", "trigger": True}
-            for i in range(1, 11)
-        ]
-        
-        results.append({
-            "type": "SELF-TYPE",
-            "job_id": "CENTER_JOB",
-            "name": "CENTER_JOB",
-            "upstreams": upstreams,
-            "downstreams": [
-                {"type": "table", "name": "test.center.main_output"}
-            ],
-            "destination_type": "table",
-            "schedule": {"cron": "@daily"},
-            "meta": {
-                "owner": "test_user",
-                "labels": {"level": "2", "test": "progressive_expansion", "center": "true"},
-                "write_mode": "append",
-                "run_status": "RUN",
-            },
-            "create_datetime": "2024-12-01T02:00:00Z",
-            "update_datetime": "2024-12-01T03:15:00Z",
-            "successful_dag_runs_count": 10,
-        })
-    
-    # Level 3 jobs (10 jobs) - CENTER output을 읽음
-    for i in range(1, 11):
-        job_id = f"LEVEL3_JOB_{i:03d}"
-        if job_id in requested_job_ids:
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": "test.center.main_output", "trigger": True}
-                ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level3.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "3", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
+    results = filtered # Assign filtered jobs to results
     
     total = len(results)
     

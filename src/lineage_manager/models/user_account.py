@@ -14,7 +14,7 @@ class GraphUserAccount(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     sub = Column(String(255), nullable=False, unique=True, index=True)
-    loginId = Column(String(255), nullable=True, unique=True, index=True)
+    login_id = Column(String(255), nullable=True, unique=True, index=True)
     email = Column(String(255), nullable=True, index=True)
     name = Column(String(255), nullable=True)
     roles = Column(JSON, nullable=True)

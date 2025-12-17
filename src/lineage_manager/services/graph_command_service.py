@@ -6,6 +6,7 @@ from lineage_manager.api.v1.schemas import JobRegister, JobUpdateRequest
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.models.job_data_transformer import JobDataTransformer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
+from lineage_manager.services.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,15 @@ class GraphCommandService:
             command_service.register_job(...)
     """
     
-    def __init__(self, uow: GraphUnitOfWork, job_manager: JobManagerAdapter):
+    def __init__(
+        self,
+        uow: GraphUnitOfWork,
+        job_manager: JobManagerAdapter,
+        query_service: Optional[GraphQueryService] = None
+    ):
         self.uow = uow
         self.job_manager = job_manager
+        self.query_service = query_service
         
         # Disable context manager usage in this service
         self.uow._allow_context = False
@@ -136,6 +143,10 @@ class GraphCommandService:
         uow.jobs.clear_all()
         uow.tables.clear_all()
         logger.info("Graph reset completed: all graph data cleared.")
+        
+        if self.query_service:
+            self.query_service.invalidate_graph_snapshot()
+
         return {
             "status": "success",
             "message": "Graph reset complete: all graph data cleared.",
@@ -170,7 +181,8 @@ class GraphCommandService:
             with uow:
                 pass
             
-            self._invalidate_trigger_cache(table_name)
+            if self.query_service:
+                self.query_service.invalidate_graph_snapshot()
 
             return {
                 "status": "success",
@@ -211,8 +223,9 @@ class GraphCommandService:
                         uow.edges.set_input_trigger(j.id, table.id, trigger)
                     except Exception:
                         pass
-
-            self._invalidate_trigger_cache(table_name)
+            
+            if self.query_service:
+                self.query_service.invalidate_graph_snapshot()
 
             return {
                 "status": "success",
@@ -532,19 +545,3 @@ class GraphCommandService:
             if item.type == "table"
         ]
 
-    def _invalidate_trigger_cache(self, table_name: str):
-        try:
-            from lineage_manager.core.config import get_settings
-            settings = get_settings()
-            if settings.redis.enabled:
-                import redis
-                r = redis.Redis(
-                    host=settings.redis.host,
-                    port=settings.redis.port,
-                    db=settings.redis.db,
-                    decode_responses=True,
-                )
-                cache_key = f"triggers:{table_name}"
-                r.delete(cache_key)
-        except Exception:
-            pass
