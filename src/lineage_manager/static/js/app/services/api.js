@@ -3,9 +3,9 @@ import { EVENT_ID_STORAGE_KEY, BASE_URL } from "../config.js";
 
 
 export class ApiClient {
-  constructor(authClient) {
+  constructor(authClient, baseUrl = null) {
     this.authClient = authClient;
-    this.baseUrl = BASE_URL;
+    this.baseUrl = baseUrl || BASE_URL;
   }
 
   async request(url, options = {}) {

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <base href="/lineage-manager/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Table Detail Widget</title>
+    <link rel="stylesheet" href="static/css/modern-console.css">
+    <link rel="icon" href="static/images/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        /* Widget specific layout to make the panel occupy full screen */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #widget-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        /* Override side-panel styles for standalone use */
+        .side-panel.detail {
+            position: relative;
+            width: 100% !important;
+            height: 100%;
+            right: 0;
+            box-shadow: none;
+            border-left: none;
+            z-index: 1;
+            transform: none !important;
+        }
+
+        .side-panel.detail .panel-body {
+            padding: 0;
+        }
+
+        .detail-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .detail-card {
+            padding: 0 24px 24px 24px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Hide components that aren't needed in the widget */
+        .panel-handle,
+        .view-graph-btn {
+            display: none !important;
+        }
+
+        /* Ensure tab panels are visible and scrollable */
+        .detail-tab-panels {
+            margin-top: 12px;
+        }
+
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="widget-container">
+        <!-- Reusing the exact structure from index.html for compatibility with PanelController -->
+        <aside id="detail-panel" class="side-panel detail">
+            <div class="panel-body detail-body">
+                <div class="detail-header">
+                    <div class="detail-header-top">
+                        <div class="detail-heading">Table Detail</div>
+                        <button id="detail-view-graph" class="view-graph-btn" type="button" disabled hidden></button>
+                    </div>
+                    <div class="detail-header-bottom">
+                        <div id="node-title" class="detail-title">Loading...</div>
+                        <span id="node-type-badge" class="detail-pill muted">-</span>
+                    </div>
+                </div>
+
+                <!-- We only care about Table Details in this widget -->
+                <div id="table-details" class="detail-card">
+                    <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist">
+                        <button class="detail-tab active" type="button" role="tab" data-tab="overview">Overview</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="lineage">Lineage</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="schema">Schema</button>
+                        <button class="detail-tab" type="button" role="tab" data-tab="activity">Activity</button>
+                    </div>
+                    <div class="detail-tab-panels" data-tab-group="table">
+                        <!-- Overview Tab -->
+                        <div id="table-overview-pane" class="detail-pane active" data-tab-panel="overview">
+                            <div class="table-head">
+                                <div class="detail-subheading">Fully qualified name</div>
+                                <div id="table-full-name" class="detail-value">-</div>
+                                <p id="table-description" class="detail-description" hidden></p>
+                            </div>
+                            <div class="overview-grid">
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Owner</div>
+                                    <div id="table-owner" class="detail-value">-</div>
+                                </div>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Storage</div>
+                                    <div id="table-storage" class="detail-value">-</div>
+                                </div>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Partition</div>
+                                    <div id="table-partition" class="detail-value">-</div>
+                                </div>
+                                <div class="overview-field">
+                                    <div class="detail-subheading">Last updated</div>
+                                    <div id="table-updated" class="detail-value">-</div>
+                                </div>
+                            </div>
+                            <div class="storage-card">
+                                <div class="card-header">
+                                    <div class="detail-subheading">Storage details</div>
+                                </div>
+                                <dl class="storage-meta">
+                                    <div>
+                                        <dt>Type</dt>
+                                        <dd id="table-storage-type">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Partition column</dt>
+                                        <dd id="table-partition-field">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Partition type</dt>
+                                        <dd id="table-partition-type">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Cluster columns</dt>
+                                        <dd id="table-cluster-columns">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Location</dt>
+                                        <dd id="table-storage-location">-</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stat-item">
+                                    <div class="stat-label">Row count</div>
+                                    <div id="table-stat-rows" class="stat-value">-</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Size</div>
+                                    <div id="table-stat-size" class="stat-value">-</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Cost</div>
+                                    <div id="table-stat-cost" class="stat-value">-</div>
+                                </div>
+                            </div>
+                            <div id="table-tags" class="tags-card" hidden>
+                                <div class="detail-subheading">Tags</div>
+                                <div id="table-tags-list" class="pill-row"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lineage Tab -->
+                        <div id="table-lineage-pane" class="detail-pane" data-tab-panel="lineage">
+                            <div class="insight-card">
+                                <div class="insight-header">
+                                    <div>
+                                        <div class="detail-subheading">Path to root</div>
+                                        <div id="lineage-path-preview" class="path-preview">Computing path...</div>
+                                    </div>
+                                    <button id="lineage-path-expand" class="btn-tertiary" type="button">Show full
+                                        path</button>
+                                </div>
+                            </div>
+                            <div class="insight-grid">
+                                <div class="insight-card">
+                                    <div class="insight-title">Root tables</div>
+                                    <div id="lineage-root-summary" class="insight-value">0</div>
+                                    <button id="lineage-root-expand" class="link-btn" type="button">View all</button>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Leaf tables</div>
+                                    <div id="lineage-leaf-summary" class="insight-value">0</div>
+                                    <button id="lineage-leaf-expand" class="link-btn" type="button">View all</button>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Upstream</div>
+                                    <div id="lineage-upstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0</div>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Downstream</div>
+                                    <div id="lineage-downstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0
+                                    </div>
+                                </div>
+                                <div class="insight-card">
+                                    <div class="insight-title">Depth</div>
+                                    <div id="lineage-depth-summary" class="insight-metric">Upstream: 0<br>Downstream: 0
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Schema Tab -->
+                        <div id="schema-pane" class="detail-pane" data-tab-panel="schema">
+                            <div class="schema-toolbar">
+                                <div class="detail-subheading">Columns</div>
+                                <span id="schema-column-count" class="schema-count">0</span>
+                            </div>
+                            <div class="schema-table-shell">
+                                <table class="schema-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Mode</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-schema-body"></tbody>
+                                </table>
+                                <div id="table-schema-empty" class="detail-placeholder">No schema information.</div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Tab -->
+                        <div id="activity-pane" class="detail-pane" data-tab-panel="activity">
+                            <div class="timeliness-section">
+                                <div class="timeliness-header">
+                                    <div class="detail-subheading">Daily summary</div>
+                                    <div style="margin-left: auto;">
+                                        <select id="timeliness-range-selector" class="simple-select">
+                                            <option value="7" selected>Last 7 days</option>
+                                            <option value="14">Last 14 days</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="timeliness-legend">
+                                    <span class="legend-item"><span
+                                            class="legend-swatch legend-swatch--success"></span>Loaded</span>
+                                    <span class="legend-item"><span
+                                            class="legend-swatch legend-swatch--danger"></span>Missing</span>
+                                </div>
+                                <div id="timeliness-daily-placeholder" class="timeliness-placeholder">Loading timeliness
+                                    data...</div>
+                                <div id="timeliness-daily-chart" class="timeliness-chart" hidden></div>
+                            </div>
+                            <div class="timeliness-section">
+                                <div class="timeliness-header">
+                                    <div class="detail-subheading">Hourly breakdown</div>
+                                    <span id="timeliness-hourly-label" class="timeliness-subtext">Select a day to view
+                                        hourly detail.</span>
+                                </div>
+                                <div id="timeliness-hourly-placeholder" class="timeliness-placeholder">Select a day to
+                                    view hourly detail.</div>
+                                <div id="timeliness-hourly-chart" class="timeliness-chart timeliness-chart--compact"
+                                    hidden></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Details (Hidden in this widget, but defined for compatibility) -->
+                <div id="job-details" hidden></div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hidden global status for PanelController -->
+    <div id="graph-status" hidden><span id="graph-status-text"></span></div>
+
+    <!-- Lineage Drawer (Popup for "View All") -->
+    <div id="lineage-drawer" class="lineage-drawer" hidden>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div>
+                    <div id="lineage-drawer-title" class="drawer-title">Lineage details</div>
+                    <div id="lineage-drawer-subtitle" class="drawer-subtitle"></div>
+                </div>
+                <button id="lineage-drawer-close" class="drawer-close" type="button">&times;</button>
+            </div>
+            <div id="lineage-drawer-body" class="drawer-body"></div>
+        </div>
+    </div>
+
+    <script type="module" src="static/js/app/embed_table_detail.js"></script>
+</body>
+
+</html>

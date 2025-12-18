@@ -41,11 +41,13 @@ class ListView {
 
     bindEvents() {
         // Tab toggle
-        this.elements.tabs.forEach(tab => {
-            tab.addEventListener("click", () => {
-                this.setMode(tab.dataset.listMode);
+        if (this.elements.tabs) {
+            this.elements.tabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    this.setMode(tab.dataset.listMode);
+                });
             });
-        });
+        }
 
         // ACTION: Reload Full Lineage
         if (this.elements.reloadFullBtn) {
@@ -55,35 +57,40 @@ class ListView {
         }
 
         // Download buttons
-        this.elements.downloadCurrentBtn.addEventListener("click", () => this.downloadCSV("current"));
+        if (this.elements.downloadCurrentBtn) {
+            this.elements.downloadCurrentBtn.addEventListener("click", () => this.downloadCSV("current"));
+        }
         if (this.elements.downloadFullBtn) {
             this.elements.downloadFullBtn.addEventListener("click", () => this.downloadCSV("full"));
         }
 
         // Row Click Delegation (Current)
-        this.elements.currentTableBody.addEventListener("click", (e) => {
-            const row = e.target.closest("tr");
-            if (row && row.dataset.id) {
-                const data = this.nodeDataMap?.get(row.dataset.id) || {};
-                this.selectNode(row.dataset.id, row.dataset.type, data);
-            }
-        });
+        if (this.elements.currentTableBody) {
+            this.elements.currentTableBody.addEventListener("click", (e) => {
+                const row = e.target.closest("tr");
+                if (row && row.dataset.id) {
+                    const data = this.nodeDataMap?.get(row.dataset.id) || {};
+                    this.selectNode(row.dataset.id, row.dataset.type, data);
+                }
+            });
+        }
 
         // Tree Click Delegation (Full)
-        // Card layout might change structure, but we rely on bubbling.
-        this.elements.fullTreeContainer.addEventListener("click", (e) => {
-            const row = e.target.closest("tr"); // Now rows in tables
-            if (row && row.dataset.id) {
-                const props = JSON.parse(decodeURIComponent(row.dataset.props || "{}"));
-                this.selectNode(row.dataset.id, row.dataset.type, {
-                    id: row.dataset.id,
-                    type: row.dataset.type,
-                    label: row.dataset.label,
-                    full_name: row.dataset.id,
-                    ...props
-                });
-            }
-        });
+        if (this.elements.fullTreeContainer) {
+            this.elements.fullTreeContainer.addEventListener("click", (e) => {
+                const row = e.target.closest("tr"); // Now rows in tables
+                if (row && row.dataset.id) {
+                    const props = JSON.parse(decodeURIComponent(row.dataset.props || "{}"));
+                    this.selectNode(row.dataset.id, row.dataset.type, {
+                        id: row.dataset.id,
+                        type: row.dataset.type,
+                        label: row.dataset.label,
+                        full_name: row.dataset.id,
+                        ...props
+                    });
+                }
+            });
+        }
     }
 
     subscribeState() {
@@ -92,13 +99,17 @@ class ListView {
             if (nodeData) {
                 this.highlightNode(nodeData.id);
                 // Enable reload but DO NOT change title
-                this.elements.reloadFullBtn.disabled = false;
+                if (this.elements.reloadFullBtn) {
+                    this.elements.reloadFullBtn.disabled = false;
+                }
 
                 // UX: Check if we need to suggest Reload
                 this.checkReloadSuggestion(nodeData);
             } else {
                 this.clearHighlight();
-                this.elements.reloadFullBtn.disabled = true;
+                if (this.elements.reloadFullBtn) {
+                    this.elements.reloadFullBtn.disabled = true;
+                }
                 this.clearReloadSuggestion();
             }
         });
@@ -175,45 +186,53 @@ class ListView {
 
     highlightNode(id) {
         // Highlight in Current Table
-        const currentRows = this.elements.currentTableBody.querySelectorAll("tr");
-        currentRows.forEach(row => {
-            if (row.dataset.id === id) {
-                row.classList.add("selected");
-                // Reset animation
-                row.classList.remove("flash-highlight");
-                void row.offsetWidth; // trigger reflow
-                row.classList.add("flash-highlight");
-            } else {
-                row.classList.remove("selected");
-                row.classList.remove("flash-highlight");
-            }
-        });
+        if (this.elements.currentTableBody) {
+            const currentRows = this.elements.currentTableBody.querySelectorAll("tr");
+            currentRows.forEach(row => {
+                if (row.dataset.id === id) {
+                    row.classList.add("selected");
+                    // Reset animation
+                    row.classList.remove("flash-highlight");
+                    void row.offsetWidth; // trigger reflow
+                    row.classList.add("flash-highlight");
+                } else {
+                    row.classList.remove("selected");
+                    row.classList.remove("flash-highlight");
+                }
+            });
+        }
 
         // Highlight in Full Lineage Tables
-        const fullRows = this.elements.fullTreeContainer.querySelectorAll("tr");
-        fullRows.forEach(row => {
-            if (row.dataset.id === id) {
-                row.classList.add("selected");
-                // Reset animation
-                row.classList.remove("flash-highlight");
-                void row.offsetWidth; // trigger reflow
-                row.classList.add("flash-highlight");
-            } else {
-                row.classList.remove("selected");
-                row.classList.remove("flash-highlight");
-            }
-        });
+        if (this.elements.fullTreeContainer) {
+            const fullRows = this.elements.fullTreeContainer.querySelectorAll("tr");
+            fullRows.forEach(row => {
+                if (row.dataset.id === id) {
+                    row.classList.add("selected");
+                    // Reset animation
+                    row.classList.remove("flash-highlight");
+                    void row.offsetWidth; // trigger reflow
+                    row.classList.add("flash-highlight");
+                } else {
+                    row.classList.remove("selected");
+                    row.classList.remove("flash-highlight");
+                }
+            });
+        }
     }
 
     clearHighlight() {
-        this.elements.currentTableBody.querySelectorAll(".selected").forEach(el => {
-            el.classList.remove("selected");
-            el.classList.remove("flash-highlight");
-        });
-        this.elements.fullTreeContainer.querySelectorAll(".selected").forEach(el => {
-            el.classList.remove("selected");
-            el.classList.remove("flash-highlight");
-        });
+        if (this.elements.currentTableBody) {
+            this.elements.currentTableBody.querySelectorAll(".selected").forEach(el => {
+                el.classList.remove("selected");
+                el.classList.remove("flash-highlight");
+            });
+        }
+        if (this.elements.fullTreeContainer) {
+            this.elements.fullTreeContainer.querySelectorAll(".selected").forEach(el => {
+                el.classList.remove("selected");
+                el.classList.remove("flash-highlight");
+            });
+        }
     }
 
     /**
@@ -252,6 +271,8 @@ class ListView {
     }
 
     showReloadSuggestion(label) {
+        if (!this.elements.reloadFullBtn) return;
+
         // Update button tooltip
         this.elements.reloadFullBtn.title = `Reload and set focus to ${label}`;
 
@@ -262,19 +283,29 @@ class ListView {
             // Insert AFTER the button group (the parent of buttons is .full-lineage-actions)
             // Actually elements.reloadFullBtn is inside .full-lineage-actions.
             // Let's append to that container.
-            this.elements.reloadFullBtn.parentElement.appendChild(helper);
+            if (this.elements.reloadFullBtn.parentElement) {
+                this.elements.reloadFullBtn.parentElement.appendChild(helper);
+            }
             this.elements.reloadHelper = helper;
         }
 
-        this.elements.reloadHelper.innerHTML = `Focus <span style="color:#9aa0a6;">→</span> <span class="focus-target-label">${label}</span>`;
-        this.elements.reloadHelper.hidden = false;
+        if (this.elements.reloadHelper) {
+            this.elements.reloadHelper.innerHTML = `Focus <span style="color:#9aa0a6;">→</span> <span class="focus-target-label">${label}</span>`;
+            this.elements.reloadHelper.hidden = false;
+        }
 
         this.elements.reloadFullBtn.classList.add("btn-pulse");
     }
 
     clearReloadSuggestion() {
+        if (!this.elements.reloadFullBtn) return;
+
         this.elements.reloadFullBtn.title = "Reload Full Lineage"; // Restore default title
         this.elements.reloadFullBtn.classList.remove("btn-pulse");
+
+        if (this.elements.reloadHelper) {
+            this.elements.reloadHelper.hidden = true;
+        }
     }
 
     /**
