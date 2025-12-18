@@ -156,7 +156,7 @@ def validate_table_name(name: str) -> str:
 
 # 1) Request body models
 class JobSelector(BaseModel):
-    scheduling_type: str
+    type: str
     job_id: str
 
 class JobSelectorRequest(BaseModel):
@@ -418,36 +418,38 @@ def get_scheduling_lineage_by_ids(payload: JobSelectorRequest):
     """
     테스트용 API:
     - Body로 { jobs: [ { scheduling_type, job_id }, ... ] } 를 받는다.
-    - 각 job에 대해 GET /api/v1/jobs/scheduling-lineage/ 와 동일한 형태의
-      scheduling-lineage 객체를 생성해서 반환한다.
-    - upstreams / downstreams 는 각각 5개씩 더미로 생성.
+    - 만약 job_id가 LEVEL... 이나 CENTER_JOB 이면 progressive_test 데이터 반환.
+    - 그 외에는 더미 데이터 반환.
     """
+    # 1. 퀘리 대상 중 progressive test용 ID가 있는지 확인
+    test_ids = {"CENTER_JOB"} | {f"LEVEL{lvl}_JOB_{i:03d}" for lvl in range(4) for i in range(1, 21)}
+    deep_test_ids = {"DEEP_CENTER_JOB"} | {f"UP_L{lvl}_JOB_{i:03d}" for lvl in range(1, 6) for i in range(1, 11)} | {f"DOWN_L{lvl}_JOB_{i:03d}" for lvl in range(1, 6) for i in range(1, 11)}
+    massive_test_ids = {"MASSIVE_CENTER_JOB"} | {f"MA_UP_L{lvl}_JOB_{i:03d}" for lvl in range(1, 11) for i in range(1, 11)} | {f"MA_DOWN_L{lvl}_JOB_{i:03d}" for lvl in range(1, 11) for i in range(1, 11)}
+    
+    # 2. 요청된 ID들 중 테스트 ID가 하나라도 있으면 적절한 로직으로 처리
+    requested_ids = {j.job_id for j in payload.jobs}
+    if requested_ids & test_ids:
+        return get_progressive_expansion_test_data(payload)
+    if requested_ids & deep_test_ids:
+        return get_deep_lineage_test_data(payload)
+    if requested_ids & massive_test_ids:
+        return get_massive_lineage_test_data(payload)
 
     results = []
-
     for idx, item in enumerate(payload.jobs, start=1):
-        # 5개 upstream (모두 table 타입, trigger=True)
+        # (Existing dummy logic for other jobs...)
         upstreams = [
-            {
-                "type": "table",
-                "name": f"demo.analytics.BYIDS_UP_{idx}_{i:03d}",
-                "trigger": True,
-            }
+            {"type": "table", "name": f"demo.analytics.BYIDS_UP_{idx}_{i:03d}", "trigger": True}
             for i in range(1, 6)
         ]
-
-        # 5개 downstream (모두 table 타입)
         downstreams = [
-            {
-                "type": "table",
-                "name": f"demo.analytics.BYIDS_DOWN_{idx}_{i:03d}",
-            }
+            {"type": "table", "name": f"demo.analytics.BYIDS_DOWN_{idx}_{i:03d}"}
             for i in range(1, 6)
         ]
 
-        lineage = {
-            "type": item.scheduling_type,          # 요청 그대로
-            "job_id": item.job_id,                 # 요청 그대로
+        results.append({
+            "type": item.type,
+            "job_id": item.job_id,
             "name": item.job_id,
             "upstreams": upstreams,
             "downstreams": downstreams,
@@ -462,24 +464,12 @@ def get_scheduling_lineage_by_ids(payload: JobSelectorRequest):
             "create_datetime": "2024-12-01T02:00:00Z",
             "update_datetime": "2024-12-01T03:15:00Z",
             "successful_dag_runs_count": 10,
-        }
-
-        results.append(lineage)
-
-    total = len(results)
-    offset = 0
-    limit = total
-    next_offset = None
+        })
 
     return {
         "status": "success",
         "result": results,
-        "pagination": {
-            "limit": limit,
-            "offset": offset,
-            "next_offset": next_offset,
-            "total": total,
-        },
+        "pagination": {"limit": len(results), "offset": 0, "next_offset": None, "total": len(results)},
     }
 
 
@@ -623,5 +613,168 @@ def get_progressive_expansion_test_data(payload: JobSelectorRequest):
             "next_offset": None,
             "total": total,
         },
+    }
+
+
+@app.post("/api/v1/jobs/scheduling-lineage/deep_test")
+def get_deep_lineage_test_data(payload: JobSelectorRequest):
+    """
+    5단계 계층 구조 테스트 데이터 생성:
+    - Center Job: DEEP_CENTER_JOB
+    - Upstream: UP_L1 ~ UP_L5 (각 10개)
+    - Downstream: DOWN_L1 ~ DOWN_L5 (각 10개)
+    """
+    results = []
+    requested_job_ids = {item.job_id for item in payload.jobs}
+    
+    def build_job(job_id, level_name, upstreams, downstreams):
+        return {
+            "type": "SELF-TYPE",
+            "job_id": job_id,
+            "name": job_id,
+            "upstreams": upstreams,
+            "downstreams": downstreams,
+            "destination_type": "table",
+            "schedule": {"cron": "@daily"},
+            "meta": {
+                "owner": "test_user",
+                "labels": {"level": level_name, "test": "deep_lineage"},
+                "write_mode": "append",
+                "run_status": "RUN",
+            },
+            "create_datetime": "2024-12-01T02:00:00Z",
+            "update_datetime": "2024-12-01T03:15:00Z",
+            "successful_dag_runs_count": 10,
+        }
+
+    # Center Job
+    if "DEEP_CENTER_JOB" in requested_job_ids:
+        ups = [{"type": "table", "name": f"test.deep.up_l1.out_{i:03d}", "trigger": True} for i in range(1, 11)]
+        downs = [{"type": "table", "name": f"test.deep.down_l1.in_{i:03d}"} for i in range(1, 11)]
+        results.append(build_job("DEEP_CENTER_JOB", "center", ups, downs))
+
+    # Upstream Levels 1-5
+    for lvl in range(1, 6):
+        for i in range(1, 11):
+            job_id = f"UP_L{lvl}_JOB_{i:03d}"
+            if job_id in requested_job_ids:
+                if lvl < 5:
+                    # L1-L4 read from next level
+                    ups = [{"type": "table", "name": f"test.deep.up_l{lvl+1}.out_{j:03d}", "trigger": True} for j in range(1, 11)]
+                else:
+                    # L5 is root
+                    ups = [{"type": "table", "name": f"test.deep.root.in_{i:03d}", "trigger": True}]
+                
+                # Output table name matches what the level below it expects
+                out_table = f"test.deep.up_l{lvl}.out_{i:03d}"
+                results.append(build_job(job_id, f"up_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+
+    # Downstream Levels 1-5
+    for lvl in range(1, 6):
+        for i in range(1, 11):
+            job_id = f"DOWN_L{lvl}_JOB_{i:03d}"
+            if job_id in requested_job_ids:
+                if lvl == 1:
+                    # L1 reads from center output
+                    # Note: Original requirements says "10 up, down stream and then 5 levels further"
+                    # We'll make all 10 L1 jobs read the same center output table (or one of them)
+                    # To keep it simple, they all read the first center output table
+                    ups = [{"type": "table", "name": f"test.deep.down_l1.in_{i:03d}", "trigger": True}]
+                else:
+                    # L2-L5 read from level above
+                    ups = [{"type": "table", "name": f"test.deep.down_l{lvl-1}.out_{i:03d}", "trigger": True}]
+                
+                out_table = f"test.deep.down_l{lvl}.out_{i:03d}"
+                results.append(build_job(job_id, f"down_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+
+    total = len(results)
+    return {
+        "status": "success",
+        "result": results,
+        "pagination": {"limit": total, "offset": 0, "next_offset": None, "total": total},
+    }
+
+
+@app.post("/api/v1/jobs/scheduling-lineage/massive_test")
+def get_massive_lineage_test_data(payload: JobSelectorRequest):
+    """
+    10단계 계층 구조, 4-way branching 테스트 데이터 생성:
+    - Center Job: MASSIVE_CENTER_JOB
+    - Upstream: MA_UP_L1 ~ MA_UP_L10 (각 10개)
+    - Downstream: MA_DOWN_L1 ~ MA_DOWN_L10 (각 10개)
+    - 각 노드는 다음 레벨의 4개 노드와 연결됨.
+    """
+    results = []
+    requested_job_ids = {item.job_id for item in payload.jobs}
+    
+    def build_job(job_id, level_name, upstreams, downstreams):
+        return {
+            "type": "SELF-TYPE",
+            "job_id": job_id,
+            "name": job_id,
+            "upstreams": upstreams,
+            "downstreams": downstreams,
+            "destination_type": "table",
+            "schedule": {"cron": "@daily"},
+            "meta": {
+                "owner": "massive_user",
+                "labels": {"level": level_name, "test": "massive_lineage"},
+                "write_mode": "append",
+                "run_status": "RUN",
+            },
+            "create_datetime": "2024-12-01T02:00:00Z",
+            "update_datetime": "2024-12-01T03:15:00Z",
+            "successful_dag_runs_count": 100,
+        }
+
+    # Center Job
+    if "MASSIVE_CENTER_JOB" in requested_job_ids:
+        # Connects to 4 L1 upstreams and produces 4 L1 downstream inputs
+        ups = [{"type": "table", "name": f"test.massive.up_l1.out_{i:03d}", "trigger": True} for i in range(1, 5)]
+        downs = [{"type": "table", "name": f"test.massive.down_l1.in_{i:03d}"} for i in range(1, 5)]
+        results.append(build_job("MASSIVE_CENTER_JOB", "center", ups, downs))
+
+    # Upstream Levels 1-10
+    for lvl in range(1, 11):
+        for i in range(1, 11):
+            job_id = f"MA_UP_L{lvl}_JOB_{i:03d}"
+            if job_id in requested_job_ids:
+                # Upstreams: 4 nodes from the NEXT level
+                if lvl < 10:
+                    # Each node i connects to nodes [i, i+1, i+2, i+3] (modulo 10) in lvl+1
+                    up_indices = [( (i-1+j) % 10 ) + 1 for j in range(4)]
+                    ups = [{"type": "table", "name": f"test.massive.up_l{lvl+1}.out_{idx:03d}", "trigger": True} for idx in up_indices]
+                else:
+                    # Level 10 is root level
+                    ups = [{"type": "table", "name": f"test.massive.root.in_{i:03d}", "trigger": True}]
+                
+                # Downstreams: The table this level produces
+                out_table = f"test.massive.up_l{lvl}.out_{i:03d}"
+                results.append(build_job(job_id, f"up_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+
+    # Downstream Levels 1-10
+    for lvl in range(1, 11):
+        for i in range(1, 11):
+            job_id = f"MA_DOWN_L{lvl}_JOB_{i:03d}"
+            if job_id in requested_job_ids:
+                # Upstreams: The table(s) from the PREVIOUS level
+                if lvl == 1:
+                    # Level 1 reads from center output (4 tables total, let's distribute)
+                    # node 1-3 -> center.out_001, 4-6 -> 002, 7-9 -> 003, 10 -> 004
+                    center_idx = min((i-1)//3 + 1, 4)
+                    ups = [{"type": "table", "name": f"test.massive.down_l1.in_{center_idx:03d}", "trigger": True}]
+                else:
+                    # Each node i reads from 4 nodes in lvl-1
+                    prev_indices = [( (i-1+j) % 10 ) + 1 for j in range(4)]
+                    ups = [{"type": "table", "name": f"test.massive.down_l{lvl-1}.out_{idx:03d}", "trigger": True} for idx in prev_indices]
+                
+                out_table = f"test.massive.down_l{lvl}.out_{i:03d}"
+                results.append(build_job(job_id, f"down_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+
+    total = len(results)
+    return {
+        "status": "success",
+        "result": results,
+        "pagination": {"limit": total, "offset": 0, "next_offset": None, "total": total},
     }
 

@@ -206,23 +206,31 @@ class GraphSyncService:
                 "results": results
             }
         
-        # Partial success: each job gets its own transaction
+        # Batch processing: group jobs into transactional batches to improve performance
+        # Reduced batch_size to 20 to prevent OOM during complex closure updates
+        batch_size = 20
         results = []
-        for lineage in lineages:
+        
+        for i in range(0, len(lineages), batch_size):
+            batch = lineages[i : i + batch_size]
             try:
-                with self.uow.transactional():  # Individual transaction per job
-                    self.command_service.register_lineage_job(lineage)
+                with self.uow.transactional():
+                    for lineage in batch:
+                        self.command_service.register_lineage_job(lineage)
+                        results.append({
+                            "job_id": lineage.job_id,
+                            "status": "success"
+                        })
+            except Exception as e:
+                logger.error(f"Batch sync failed for {len(batch)} jobs starting at index {i}: {e}")
+                # Anything already in results for this batch is invalid due to rollback.
+                results = results[:i] 
+                for lineage in batch:
                     results.append({
                         "job_id": lineage.job_id,
-                        "status": "success"
+                        "status": "error",
+                        "message": f"Batch failure: {str(e)}"
                     })
-            except Exception as e:
-                logger.error(f"Failed to sync job {lineage.job_id}: {e}")
-                results.append({
-                    "job_id": lineage.job_id,
-                    "status": "error",
-                    "message": str(e)
-                })
         
         success_count = sum(1 for r in results if r["status"] == "success")
         return {

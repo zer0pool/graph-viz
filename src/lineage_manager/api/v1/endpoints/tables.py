@@ -103,7 +103,9 @@ async def set_table_trigger(
 ):
     """Set trigger ON/OFF for a job that consumes the table, and emit SSE."""
     trigger = bool(body.get("trigger", True))
-    result = svc.set_table_trigger(table_name, job_id, trigger)
+    with svc.uow.transactional():
+        result = svc.set_table_trigger(table_name, job_id, trigger)
+    
     if result.get("status") == "success":
         await broker.publish("trigger_update", result)
     return result
@@ -155,7 +157,9 @@ async def bulk_set_table_trigger(
     Body: { "trigger": true|false }
     """
     want = bool(body.get("trigger", False))
-    result = svc.bulk_set_table_triggers(table_name, want)
+    with svc.uow.transactional():
+        result = svc.bulk_set_table_triggers(table_name, want)
+    
     # Emit SSE for each changed job for live UIs
     if result.get("status") == "success":
         for jid in result.get("changed", []):
