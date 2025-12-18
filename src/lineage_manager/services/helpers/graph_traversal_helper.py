@@ -81,8 +81,15 @@ class GraphTraversalHelper:
                         target = nkey if edge_info["io"] == "output" else jkey
                     else:  # table
                         tkey = f"t{nid}"
-                        source = edge_info.get("source_key", tkey)
-                        target = edge_info.get("target_key", nkey)
+                        # Correct orientation: 
+                        # - If IO is 'output', Job produced Table: Job -> Table
+                        # - If IO is 'input', Table is consumed by Job: Table -> Job
+                        if edge_info["io"] == "output":
+                            source = nkey # Job
+                            target = tkey # Table
+                        else:
+                            source = tkey # Table
+                            target = nkey # Job
                     
                     e = {"source": source, "target": target, "io": edge_info["io"]}
                     if e not in edges:

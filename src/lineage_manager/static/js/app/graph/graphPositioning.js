@@ -299,7 +299,17 @@ export class GraphPositioning {
             animate: false,
         };
 
-        cy.layout(layout).run();
+        try {
+            cy.layout(layout).run();
+        } catch (err) {
+            console.warn("Dagre layout failed (missing dependency?), falling back to grid", err);
+            // Fallback layout
+            cy.layout({
+                name: "grid",
+                animate: false,
+                padding: 50
+            }).run();
+        }
 
         if (previousViewport) {
             cy.zoom(previousViewport.zoom);
