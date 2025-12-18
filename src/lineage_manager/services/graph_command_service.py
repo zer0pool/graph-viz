@@ -45,18 +45,37 @@ class GraphCommandService:
         Register a new job in the system.
         
         ⚠️ Does NOT commit - caller must wrap with transaction.
-        
-        Example (in Orchestrator):
-            with command_service.uow.transactional():
-                job_id = command_service.register_job(job_data)
         """
+        if not job_data.job_id.strip():
+            raise ValueError("job_id cannot be empty")
+        if not job_data.name.strip():
+            raise ValueError("job name cannot be empty")
+
         logger.info(f"Starting job registration for job_id: {job_data.job_id}")
         uow = self.uow
         
         job = self._create_job_node(job_data)
-        in_ids = self._process_reference_tables(job, job_data)
-        self._process_destination_tables(job, job_data)
+        
+        # Combine trigger and reference tables for input processing, filtering empty names
+        all_inputs = set()
+        trigger_tables = [t.strip() for t in (job_data.trigger_tables or []) if t.strip()]
+        all_inputs.update(trigger_tables)
+        
+        reference_tables = [t.strip() for t in (job_data.reference_tables or []) if t.strip()]
+        all_inputs.update(reference_tables)
+        
+        destination_tables = [t.strip() for t in (job_data.destination_tables or []) if t.strip()]
+        
+        # Update job data with cleaned lists for consistency
+        job_data.trigger_tables = trigger_tables
+        job_data.reference_tables = reference_tables
+        job_data.destination_tables = destination_tables
+
+        in_ids = self._process_input_tables(job, list(all_inputs), trigger_tables)
+        out_ids = self._process_destination_tables(job, job_data)
+        
         self._create_upstream_relationships(job, in_ids)
+        self._create_downstream_relationships(job, out_ids)
         
         logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
         return job.id
@@ -135,6 +154,10 @@ class GraphCommandService:
         uow.job_table_links.clear_all()
         uow.jobs.clear_all()
         uow.tables.clear_all()
+        
+        # Clear health stats and other caches
+        self._invalidate_all_caches()
+        
         logger.info("Graph reset completed: all graph data cleared.")
         return {
             "status": "success",
@@ -167,9 +190,6 @@ class GraphCommandService:
             except Exception:
                 pass
 
-            with uow:
-                pass
-            
             self._invalidate_trigger_cache(table_name)
 
             return {
@@ -187,30 +207,29 @@ class GraphCommandService:
         """Set trigger ON/OFF for all jobs that consume the table."""
         uow = self.uow
         try:
-            with uow:
-                table = uow.tables.get_by_full_name(table_name)
-                if not table:
-                    return {"status": "error", "message": f"Table '{table_name}' not found"}
+            table = uow.tables.get_by_full_name(table_name)
+            if not table:
+                return {"status": "error", "message": f"Table '{table_name}' not found"}
 
-                jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
-                changed, unchanged = [], []
-                for j in jobs:
-                    trig_list = list(j.trigger_tables or [])
-                    has = table_name in trig_list
-                    if trigger and not has:
-                        trig_list.append(table_name)
-                        j.trigger_tables = trig_list
-                        changed.append(j.job_id)
-                    elif not trigger and has:
-                        j.trigger_tables = [t for t in trig_list if t != table_name]
-                        changed.append(j.job_id)
-                    else:
-                        unchanged.append(j.job_id)
-                    # Edge flag best-effort
-                    try:
-                        uow.edges.set_input_trigger(j.id, table.id, trigger)
-                    except Exception:
-                        pass
+            jobs = uow.job_table_links.get_jobs_by_table_and_io_type(table.id, "input")
+            changed, unchanged = [], []
+            for j in jobs:
+                trig_list = list(j.trigger_tables or [])
+                has = table_name in trig_list
+                if trigger and not has:
+                    trig_list.append(table_name)
+                    j.trigger_tables = trig_list
+                    changed.append(j.job_id)
+                elif not trigger and has:
+                    j.trigger_tables = [t for t in trig_list if t != table_name]
+                    changed.append(j.job_id)
+                else:
+                    unchanged.append(j.job_id)
+                # Edge flag best-effort
+                try:
+                    uow.edges.set_input_trigger(j.id, table.id, trigger)
+                except Exception:
+                    pass
 
             self._invalidate_trigger_cache(table_name)
 
@@ -242,31 +261,34 @@ class GraphCommandService:
             job_metadata=job_data.metadata or {},
         )
 
-    def _process_reference_tables(self, job, job_data: JobRegister) -> List[int]:
+    def _process_input_tables(self, job, input_tables: List[str], trigger_tables: List[str]) -> List[int]:
         in_ids = []
-        if not job_data.reference_tables:
+        if not input_tables:
             return in_ids
 
-        logger.debug(f"Processing {len(job_data.reference_tables)} reference tables")
-        for t in job_data.reference_tables:
+        logger.debug(f"Processing {len(input_tables)} input tables")
+        for t in input_tables:
             tbl = self.uow.tables.get_or_create(t)
             in_ids.append(tbl.id)
             self.uow.job_table_links.link_job_table(job.id, tbl.id, "input")
-            is_trigger_on = t in (job_data.trigger_tables or [])
+            is_trigger_on = t in trigger_tables
             self.uow.edges.create_job_table_edge(
                 job.id, tbl.id, "input", is_trigger_on=is_trigger_on
             )
         return in_ids
 
-    def _process_destination_tables(self, job, job_data: JobRegister):
+    def _process_destination_tables(self, job, job_data: JobRegister) -> List[int]:
+        out_ids = []
         if not job_data.destination_tables:
-            return
+            return out_ids
         
         logger.debug(f"Processing destination tables: {job_data.destination_tables}")
         for t in job_data.destination_tables:
             tbl = self.uow.tables.get_or_create(t)
+            out_ids.append(tbl.id)
             self.uow.job_table_links.link_job_table(job.id, tbl.id, "output")
             self.uow.edges.create_job_table_edge(job.id, tbl.id, "output")
+        return out_ids
 
     def preview_lineage_job(self, lineage: SchedulingLineage) -> dict:
         """
@@ -367,6 +389,25 @@ class GraphCommandService:
         except Exception as e:
             logger.error(f"Error querying/creating upstream jobs: {e}")
 
+    def _create_downstream_relationships(self, job, out_ids: List[int]):
+        logger.debug("Calculating downstream relationships (forward dependencies)")
+        if not out_ids:
+            return
+
+        try:
+            for out_id in out_ids:
+                # Find jobs that consume this table
+                consumer_jobs = self.uow.job_table_links.get_jobs_by_table_and_io_type(out_id, "input")
+                for consumer in consumer_jobs:
+                    if consumer.id == job.id:
+                        continue
+                    logger.debug(f"Creating forward dependency edge: {job.id} -> {consumer.id}")
+                    self.uow.edges.add(job.id, consumer.id, "job", "job", "dependency")
+                    self.uow.closures.add_direct(job.id, consumer.id)
+                    self.uow.closures.expand_closure(job.id, consumer.id)
+        except Exception as e:
+            logger.error(f"Error querying/creating downstream jobs: {e}")
+
     # --- Changed: register_lineage_job implementation ---
     def register_lineage_job(self, lineage: SchedulingLineage) -> str:
         """
@@ -397,14 +438,18 @@ class GraphCommandService:
             )
 
         # 2. Process Upstream Nodes (Inputs)
+        # 2. Process Upstream Nodes (Inputs), filtering empty names
         input_table_ids = []
         seen_upstreams = set()
         for upstream in lineage.upstreams:
-            if upstream.name in seen_upstreams:
+            if not upstream.name.strip():
                 continue
-            seen_upstreams.add(upstream.name)
+            name = upstream.name.strip()
+            if name in seen_upstreams:
+                continue
+            seen_upstreams.add(name)
 
-            upstream_node = uow.tables.get_or_create(upstream.name)
+            upstream_node = uow.tables.get_or_create(name)
             input_table_ids.append(upstream_node.id)
 
             uow.job_table_links.link_job_table(job.id, upstream_node.id, "input")
@@ -412,23 +457,28 @@ class GraphCommandService:
                 job.id, upstream_node.id, "input"
             )
 
-        # 3. Process Downstream Nodes (Outputs)
+        # 3. Process Downstream Nodes (Outputs), filtering empty names
+        output_table_ids = []
         seen_downstreams = set()
         for downstream in lineage.downstreams:
-            if downstream.name in seen_downstreams:
+            if not downstream.name.strip():
                 continue
-            seen_downstreams.add(downstream.name)
+            name = downstream.name.strip()
+            if name in seen_downstreams:
+                continue
+            seen_downstreams.add(name)
 
-            downstream_node = uow.tables.get_or_create(downstream.name)
+            downstream_node = uow.tables.get_or_create(name)
+            output_table_ids.append(downstream_node.id)
 
             uow.job_table_links.link_job_table(job.id, downstream_node.id, "output")
             uow.edges.create_job_table_edge(
                 job.id, downstream_node.id, "output"
             )
 
-        # 4. Create Job-to-Job Dependencies (Upstream Job -> This Job)
-        # We reuse the logic that finds jobs producing our input tables
+        # 4. Create Job-to-Job Dependencies
         self._create_upstream_relationships(job, input_table_ids)
+        self._create_downstream_relationships(job, output_table_ids)
         
         # No commit - orchestrator handles it
         
@@ -531,6 +581,35 @@ class GraphCommandService:
             for item in upstreams
             if item.type == "table"
         ]
+
+    def _invalidate_all_caches(self):
+        """Best effort to clear graph-related caches in Redis."""
+        try:
+            from lineage_manager.core.config import get_settings
+            settings = get_settings()
+            if settings.redis.enabled:
+                import redis
+                r = redis.Redis(
+                    host=settings.redis.host,
+                    port=settings.redis.port,
+                    db=settings.redis.db,
+                    decode_responses=True,
+                )
+                # Clear health stats
+                r.delete("health_stats")
+                r.delete("health_stats_v2") # Just in case
+
+                # Clear neighbors caches (keys starting with neighbors:)
+                keys = r.keys("neighbors:*")
+                if keys:
+                    r.delete(*keys)
+                # Clear DAG caches
+                keys = r.keys("dag:*")
+                if keys:
+                    r.delete(*keys)
+                logger.info(f"Redis caches cleared during reset.")
+        except Exception as e:
+            logger.warning(f"Failed to clear Redis caches: {e}")
 
     def _invalidate_trigger_cache(self, table_name: str):
         try:

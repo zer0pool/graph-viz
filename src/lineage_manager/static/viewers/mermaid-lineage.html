@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <base href="/lineage-manager/">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Lineage Viewer</title>
+    <!-- Mermaid.js from CDN for portability and zero-setup -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="static/css/viewers/mermaid-viewer.css">
+</head>
+
+<body>
+    <div id="viewer-root">
+        <div id="loading" class="status-overlay">
+            <div class="spinner"></div>
+            <p>Fetching lineage data...</p>
+        </div>
+        <div id="error" class="status-overlay" style="display: none;">
+            <p class="error-message"></p>
+        </div>
+        <div id="graph-container">
+            <pre id="mermaid-graph" class="mermaid"></pre>
+        </div>
+    </div>
+
+    <script type="module" src="static/js/viewers/mermaid-viewer.js"></script>
+</body>
+
+</html>

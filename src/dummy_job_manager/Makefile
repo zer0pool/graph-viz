@@ -12,16 +12,13 @@ run:
 	@bash -c "source $(VENV_ACTIVATE) && $(UVICORN) $(APP) --host $(HOST) --port $(PORT) --reload & echo $$! > $(PID_FILE)"
 	@echo "Started with PID: $$(cat $(PID_FILE))"
 
-stop:
-	@if [ -f $(PID_FILE) ]; then \
-		echo "Stopping Dummy Job Manager (PID: $$(cat $(PID_FILE)))"; \
-		kill -9 $$(cat $(PID_FILE)) || true; \
-		rm -f $(PID_FILE); \
-	else \
-		echo 'Dummy Job Manager is not running (no PID file).'; \
-	fi
+ 
+kill:
+	@echo "Killing process on port $(PORT)..."
+	-fuser -k -9 $(PORT)/tcp || true
+	@sleep 1
 
-restart: stop run
+restart: kill run
 
 status:
 	@if [ -f $(PID_FILE) ]; then \

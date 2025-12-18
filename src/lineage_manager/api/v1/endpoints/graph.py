@@ -68,8 +68,9 @@ def reset_graph(
     """
     logger.info("Received graph reset request")
     try:
-        result = svc.reset_graph()
-        logger.info("Graph reset completed successfully")
+        with svc.uow.transactional():
+            result = svc.reset_graph()
+        logger.info("Graph reset completed successfully and committed")
         return result
     except Exception as e:
         logger.error(f"Graph reset failed: {e}")
