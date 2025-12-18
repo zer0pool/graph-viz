@@ -406,15 +406,6 @@ class ListView {
             const card = document.createElement("div");
             card.className = "lineage-card";
 
-            // Use existing card structure but inner content will be APA style
-            const count = items ? items.length : 0;
-            // Removed standard card header to focus on APA title style inside body? 
-            // Or keep card for container/border? User wants "Table 1..."
-            // Let's keep the card container for layout but maybe simplify the header.
-            // Actually, APA tables usually stand alone. But fitting into our UI (Card), let's put the title inside the card body.
-            // We can remove the "lineage-card-header" or make it minimal.
-            // Let's keep it consistent with previous step for container, but satisfy the Title requirement.
-
             const body = document.createElement("div");
             body.className = "lineage-card-body apa-container";
 
@@ -450,38 +441,34 @@ class ListView {
             table.appendChild(thead);
 
             const tbody = document.createElement("tbody");
+            table.appendChild(tbody);
+            body.appendChild(table);
+            card.appendChild(body);
 
-            let tableCount = 0;
-            let jobCount = 0;
+            // PAGINATION / TRUNCATION LOGIC
+            const MAX_VISIBLE_ITEMS = 50;
 
-            tableItems.forEach(item => {
-                tableCount++;
+            // Helper function to create a single table row
+            const createRowElement = (item) => {
                 const tr = document.createElement("tr");
                 tr.dataset.id = item.id;
                 tr.dataset.type = item.type.toLowerCase();
                 tr.dataset.label = item.name;
 
-                // Keep props in dataset 
                 const tProps = item.properties || {};
                 const owner = tProps.owner || "-";
                 const info = tProps.description || tProps.table_type || "-";
                 tr.dataset.props = encodeURIComponent(JSON.stringify(tProps));
 
-                // Calculate Logical Table Depth
-                // Backend returns graph depth (Table->Job->Table = 2 hops)
-                // We want Table->Table = 1 "Depth"
                 const logicalDepth = Math.floor(item.depth / 2);
 
-                const indentPadding = logicalDepth * 20;
-
-                // Find Connected Job
                 let jobName = "-";
                 let jobStatusPill = "";
 
+                // Find Connected Job
                 if (item.parent) {
                     const parentNode = items.find(p => p.id === item.parent || p.name === item.parent);
-                    if (parentNode && parentNode.type && parentNode.type.toLowerCase() === "job") {
-                        jobCount++;
+                    if (parentNode && parentNode.type === "job") {
                         jobName = parentNode.name;
                         const jProps = parentNode.properties || {};
                         const status = jProps.status || jProps.run_status || "unknown";
@@ -492,25 +479,12 @@ class ListView {
                 if (selectionState.selectedNode && selectionState.selectedNode.id === item.id) {
                     tr.classList.add("selected");
                 }
-
                 if (item.depth === 0) tr.classList.add("depth-root-row");
 
-                // Icon selection
-                // Simple Circle: &#9679; (Black Circle) or CSS shape
-                // User asked for "small circle icon or table icon".
-                // Reverted icon as per user request.
-                // Highlight Root Table Name with a distinct badge/capsule style.
-                // User requested FULL table name. item.id contains the full_name.
                 let nameHtml = `<span class="node-label-text">${item.id}</span>`;
-
                 if (item.depth === 0) {
                     nameHtml = `<span class="root-table-badge">${item.id}</span>`;
                 }
-
-                // Strict Left Align for Root Row (No inline padding overrides, use CSS default)
-                // For children, apply indentation. 
-                // Strict Left Align for Root Row
-                const cellStyle = (item.depth === 0) ? '' : 'style="font-family: monospace;"'; // Monospace for alignment
 
                 const prefixHtml = item.depth === 0 ? '' : `<span style="color: #94a3b8; font-family: monospace; font-size: 14px; white-space: pre; margin-right: 2px;">${item.treePrefix}</span>`;
 
@@ -531,22 +505,68 @@ class ListView {
                     <td>${owner}</td>
                     <td>${info}</td>
                 `;
-                tbody.appendChild(tr);
-            });
+                return tr;
+            };
 
-            // TOTAL ROW (Simplified & Right Aligned)
-            const totalTr = document.createElement("tr");
-            totalTr.className = "apa-total-row";
-            totalTr.innerHTML = `
-                <td colspan="5" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
-                    Total — Tables: ${tableCount} • Jobs: ${jobCount}
-                </td>
-            `;
-            tbody.appendChild(totalTr);
+            // Helper to render a batch of items
+            const renderItemsBatch = (itemsToRender) => {
+                const fragment = document.createDocumentFragment();
+                itemsToRender.forEach(item => {
+                    fragment.appendChild(createRowElement(item));
+                });
+                tbody.appendChild(fragment);
+            };
 
-            table.appendChild(tbody);
-            body.appendChild(table);
-            card.appendChild(body);
+            // Initial render of visible items
+            const itemsToShow = tableItems.slice(0, MAX_VISIBLE_ITEMS);
+            renderItemsBatch(itemsToShow);
+
+            // Final Footer Logic
+            const appendFooter = (isTruncated = false) => {
+                const c = LineageTreeUtils.getCounts(items); // Total counts from original items
+                const countText = isTruncated
+                    ? `Showing ${MAX_VISIBLE_ITEMS} of ${c.t} tables • Total Jobs: ${c.j}`
+                    : `Total — Tables: ${c.t} • Jobs: ${c.j}`;
+
+                const totalTr = document.createElement("tr");
+                totalTr.className = "apa-total-row";
+                totalTr.innerHTML = `
+                    <td colspan="5" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
+                        ${countText}
+                    </td>
+                `;
+                tbody.appendChild(totalTr);
+            };
+
+            // Handle Truncation Omission
+            if (tableItems.length > MAX_VISIBLE_ITEMS) {
+                const omissionTr = document.createElement("tr");
+                omissionTr.className = "omission-row";
+                omissionTr.innerHTML = `
+                    <td colspan="5" style="text-align: center; padding: 16px; color: #64748b; background-color: #f8fafc; border-top: 1px dashed #cbd5e1; border-bottom: 1px dashed #cbd5e1;">
+                        <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px;">• • •</span>
+                        <div style="font-size: 12px; margin-top: 4px;">Middle items omitted for readability</div>
+                        <button class="btn-text" style="font-size: 12px; margin-top: 4px; color: #2563eb; text-decoration: underline;">Show All (+${tableItems.length - MAX_VISIBLE_ITEMS})</button>
+                    </td>
+                `;
+
+                // Allow expanding on demand
+                omissionTr.querySelector("button").addEventListener("click", () => {
+                    omissionTr.remove(); // Remove the omission row
+                    const currentFooter = tbody.querySelector(".apa-total-row");
+                    if (currentFooter) currentFooter.remove(); // Remove existing footer
+
+                    const restItems = tableItems.slice(MAX_VISIBLE_ITEMS);
+                    renderItemsBatch(restItems); // Render the remaining items
+                    appendFooter(false); // Append new footer, not truncated
+                });
+
+                tbody.appendChild(omissionTr);
+                appendFooter(true); // Append footer indicating truncation
+            } else {
+                appendFooter(false); // Append footer for full list
+            }
+
             return card;
         };
 
