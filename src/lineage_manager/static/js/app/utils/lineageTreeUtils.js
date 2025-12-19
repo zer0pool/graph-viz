@@ -22,12 +22,12 @@ export const LineageTreeUtils = {
 
         // Initialize map
         items.forEach(item => {
-            idMap.set(item.name, { ...item, children: [] });
+            idMap.set(item.id, { ...item, children: [] });
         });
 
         // Build Tree Connections
         items.forEach(item => {
-            const node = idMap.get(item.name);
+            const node = idMap.get(item.id);
             if (item.depth === 0) {
                 roots.push(node);
             } else if (item.parent) {
@@ -43,29 +43,33 @@ export const LineageTreeUtils = {
 
         // Recursive helper
         const traverseLogical = (nodes, prefix) => {
-            nodes.forEach((node, index) => {
-                // node is typically a JOB (child of a Table)
+            // Flatten: Table -> [Jobs] -> [Tables]. We want Table -> [Tables]
+            // Collect all "Grandchild Tables" from the "Child Jobs"
+            let visibleChildren = [];
+            nodes.forEach(job => {
+                if (job.children && job.children.length > 0) {
+                    job.children.forEach(table => {
+                        visibleChildren.push({ ...table, viaJob: job });
+                    });
+                }
+            });
 
-                const isLast = index === nodes.length - 1;
+            // Sort by name for consistent tree
+            visibleChildren.sort((a, b) => a.name.localeCompare(b.name));
+
+            visibleChildren.forEach((table, index) => {
+                const isLast = index === visibleChildren.length - 1;
                 const marker = isLast ? "└─ " : "├─ ";
                 const nextPrefix = prefix + (isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;");
 
-                // For each Job, get its children (Tables)
-                if (node.children && node.children.length > 0) {
-                    node.children.forEach(childTable => {
-                        // This childTable is the "Logical Child" of the previous Table
-                        flatList.push({
-                            ...childTable,
-                            treePrefix: prefix + marker,
-                            // Embellish with Job info if needed for the view
-                            viaJob: node
-                        });
+                flatList.push({
+                    ...table,
+                    treePrefix: prefix + marker
+                });
 
-                        // Recurse: This table might have its own Jobs...
-                        if (childTable.children && childTable.children.length > 0) {
-                            traverseLogical(childTable.children, nextPrefix);
-                        }
-                    });
+                // Recurse: If this table has jobs, traverse them
+                if (table.children && table.children.length > 0) {
+                    traverseLogical(table.children, nextPrefix);
                 }
             });
         };

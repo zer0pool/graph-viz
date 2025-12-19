@@ -477,7 +477,7 @@ class ListView {
             card.appendChild(body);
 
             // PAGINATION / TRUNCATION LOGIC
-            const MAX_VISIBLE_ITEMS = 50;
+            const MAX_VISIBLE_ITEMS = 20;
 
             // Helper function to create a single table row
             const createRowElement = (item) => {
@@ -517,7 +517,7 @@ class ListView {
                     nameHtml = `<span class="root-table-badge">${item.id}</span>`;
                 }
 
-                const prefixHtml = item.depth === 0 ? '' : `<span style="color: #94a3b8; font-family: monospace; font-size: 14px; white-space: pre; margin-right: 2px;">${item.treePrefix}</span>`;
+                const prefixHtml = item.depth === 0 ? '' : `<span style="white-space: pre; margin-right: 0;">${item.treePrefix}</span>`;
 
                 tr.innerHTML = `
                     <td title="${item.name}">
@@ -574,10 +574,12 @@ class ListView {
                 const omissionTr = document.createElement("tr");
                 omissionTr.className = "omission-row";
                 omissionTr.innerHTML = `
-                    <td colspan="5" style="text-align: center; padding: 16px; color: #64748b; background-color: #f8fafc; border-top: 1px dashed #cbd5e1; border-bottom: 1px dashed #cbd5e1;">
-                        <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px;">• • •</span>
-                        <div style="font-size: 12px; margin-top: 4px;">Middle items omitted for readability</div>
-                        <button class="btn-text" style="font-size: 12px; margin-top: 4px; color: #2563eb; text-decoration: underline;">Show All (+${tableItems.length - MAX_VISIBLE_ITEMS})</button>
+                    <td colspan="5" class="omission-cell">
+                        <div class="omission-content">
+                            <div class="omission-dots">• • •</div>
+                            <div class="omission-label">Middle items hidden</div>
+                            <button class="omission-btn">Show all (+${tableItems.length - MAX_VISIBLE_ITEMS})</button>
+                        </div>
                     </td>
                 `;
 
