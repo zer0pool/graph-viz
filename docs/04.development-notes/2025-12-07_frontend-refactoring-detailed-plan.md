@@ -7,7 +7,7 @@ Target state: modular, testable architecture with single-responsibility modules
 
 ### Current Problems
 1. **GraphController** (799 lines): Contains Cytoscape init, rendering, events, selections, filtering, persistence, list view
-2. **PanelController** (747 lines): Mixes job details, table details, timeliness, triggers, lineage
+2. **PanelController** (747 lines): Mixes job details, table details, timelines, triggers, lineage
 3. **main.js**: Handles auth, DI, layout setup, event binding (247 lines)
 4. **ApiClient**: Single monolithic client without domain separation
 5. **Circular dependencies**: UI ↔ Graph ↔ Panel ↔ Events
@@ -130,7 +130,7 @@ static/js/api/
   ├── graph.js         # GraphApi (neighbors, DAG, expand)
   ├── job.js           # JobApi (detail, runs history)
   ├── table.js         # TableApi (metadata, schema, storage)
-  ├── timeliness.js    # TimelinessApi (daily/hourly charts)
+  ├── timelines.js    # TimelinessApi (daily/hourly charts)
   ├── triggers.js      # TriggersApi (get/set table triggers)
   ├── search.js        # SearchApi (suggestions)
   └── index.js         # Export factory
@@ -171,7 +171,7 @@ export function createApiClients(authClient) {
     graph: new GraphApi(base),
     job: new JobApi(base),
     table: new TableApi(base),
-    timeliness: new TimelinessApi(base),
+    timelines: new TimelinessApi(base),
     triggers: new TriggersApi(base),
     search: new SearchApi(base),
   };
@@ -399,7 +399,7 @@ static/js/panels/
   ├── panelController.js     # Orchestrator: show which view
   ├── jobDetailView.js       # Job-only rendering
   ├── tableDetailView.js     # Table-only rendering
-  ├── timelinessView.js      # (moved, unchanged)
+  ├── timelinesView.js      # (moved, unchanged)
   └── triggerManager.js      # (extracted from panel)
 ```
 
@@ -453,10 +453,10 @@ export class TableDetailView {
 ```javascript
 // panels/panelController.js
 export class PanelController {
-  constructor({ api, layoutShell, timelinessView, triggerManager }) {
+  constructor({ api, layoutShell, timelinesView, triggerManager }) {
     this.api = api;
     this.layout = layoutShell;
-    this.timeliness = timelinessView;
+    this.timelines = timelinesView;
     this.triggers = triggerManager;
     
     this.jobView = new JobDetailView(qs(".job-details"));
@@ -634,7 +634,7 @@ export class LayoutShell {
   }
   
   showTab(tabName) {
-    // Switch between job/table/timeliness tabs
+    // Switch between job/table/timelines tabs
     qsa(".tab-panel").forEach(p => hide(p));
     show(qs(`.tab-panel[data-tab="${tabName}"]`));
   }
@@ -679,7 +679,7 @@ async function bootstrap() {
   const panel = new PanelController({
     api,
     layoutShell: layout,
-    timelinessView: new TimelinessView(...),
+    timelinesView: new TimelinessView(...),
     triggerManager: new TriggerManager(api, eventBus),
   });
   
@@ -727,7 +727,7 @@ document.addEventListener("DOMContentLoaded", bootstrap);
 ☐ Load app, no console errors
 ☐ Search for job/table, suggestions work
 ☐ Click on node, detail panel shows
-☐ Tab switching works (job/table/timeliness)
+☐ Tab switching works (job/table/timelines)
 ☐ Filter by layer/type works
 ☐ Expand node in context menu
 ☐ Panel collapse/expand works

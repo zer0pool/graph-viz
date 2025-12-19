@@ -45,7 +45,7 @@ Phase 9: Documentation ✅ (2개 문서 작성)
 ✅ api/graph.js (65줄)
 ✅ api/job.js (50줄)
 ✅ api/table.js (60줄)
-✅ api/timeliness.js (55줄)
+✅ api/timelines.js (55줄)
 ✅ api/triggers.js (50줄)
 ✅ api/search.js (45줄)
 ✅ api/events.js (40줄)
@@ -73,7 +73,7 @@ Phase 9: Documentation ✅ (2개 문서 작성)
 ```
 ✅ ui/jobDetailView.js (60줄)
 ✅ ui/tableDetailView.js (200줄)
-✅ ui/timelinessView.js (393줄) [기존 유지]
+✅ ui/timelinesView.js (393줄) [기존 유지]
 ✅ ui/triggerManager.js (80줄)
 ✅ ui/lineageInsightProvider.js (280줄)
 ✅ ui/panelControllerNew.js (150줄)
@@ -117,7 +117,7 @@ src/lineage_manager/static/js/app/
 │   ├── graph.js
 │   ├── job.js
 │   ├── table.js
-│   ├── timeliness.js
+│   ├── timelines.js
 │   ├── triggers.js
 │   ├── search.js
 │   ├── events.js
@@ -153,7 +153,7 @@ src/lineage_manager/static/js/app/
 │   ├── panel.js (기존, deprecated)
 │   ├── controls.js (기존, deprecated)
 │   ├── detailView.js (기존, deprecated)
-│   └── timelinessView.js
+│   └── timelinesView.js
 │
 ├── setup/ ✅
 │   └── layoutSetup.js (NEW)

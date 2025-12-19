@@ -1,12 +1,12 @@
 /**
  * PanelController (New) - Orchestrator for all detail panel operations
- * Coordinates between job view, table view, triggers, timeliness, lineage
+ * Coordinates between job view, table view, triggers, timelines, lineage
  * Refactored from 747 lines into modular architecture (~150 lines)
  */
 
 import JobDetailView from "./jobDetailView.js";
 import TableDetailView from "./tableDetailView.js";
-import { TableTimelinessView } from "./timelinessView.js";
+import { TableTimelinessView } from "./timelinesView.js";
 import TriggerManager from "./triggerManager.js";
 import LineageInsightProvider from "./lineageInsightProvider.js";
 import { RelationState, selectionState } from "../state.js";
@@ -92,13 +92,13 @@ export class PanelController {
             schemaEmpty: document.getElementById("table-schema-empty"),
         });
 
-        this.timelinessView = new TableTimelinessView({
+        this.timelinesView = new TableTimelinessView({
             pane: document.getElementById("activity-pane"),
-            dailyChart: document.getElementById("timeliness-daily-chart"),
-            hourlyChart: document.getElementById("timeliness-hourly-chart"),
-            dailyPlaceholder: document.getElementById("timeliness-daily-placeholder"),
-            hourlyPlaceholder: document.getElementById("timeliness-hourly-placeholder"),
-            hourlyLabel: document.getElementById("timeliness-hourly-label"),
+            dailyChart: document.getElementById("timelines-daily-chart"),
+            hourlyChart: document.getElementById("timelines-hourly-chart"),
+            dailyPlaceholder: document.getElementById("timelines-daily-placeholder"),
+            hourlyPlaceholder: document.getElementById("timelines-hourly-placeholder"),
+            hourlyLabel: document.getElementById("timelines-hourly-label"),
         });
 
         this.triggerManager = new TriggerManager(this.api);
@@ -116,7 +116,7 @@ export class PanelController {
         this.isJobRunLoading = false;
         this.isTimelinessLoading = false;
         this.selectedTimelinessDay = null;
-        this.timelinessCache = null;
+        this.timelinesCache = null;
         this.lineageSummaryCache = new Map();
         this.lineageSummaryRequestId = 0;
         this.isLineageSummaryLoading = false;
@@ -340,7 +340,7 @@ export class PanelController {
         this.currentTableNode = node;
         this.lineageSummaryRequestId += 1;
 
-        this.resetTimelinessState('Select "Activity" tab to load timeliness data.');
+        this.resetTimelinessState('Select "Activity" tab to load timelines data.');
         this.resetLineageSummaryState('Select "Lineage" tab to load lineage summary.');
 
         // Populate table metadata immediately from node data (fast UX)
@@ -403,7 +403,7 @@ export class PanelController {
             }
         }
 
-        // Fetch timeliness if activity tab is active
+        // Fetch timelines if activity tab is active
         if (this.activeTabs.table === "activity" && this.currentTable) {
             this.ensureActivityData(true);
         }
@@ -565,10 +565,10 @@ export class PanelController {
             if (group === "table" && tab === "overview" && this.currentTable) {
                 this.fetchTableOverview(this.currentTable);
             } else if (group === "table" && tab === "activity") {
-                this.timelinessView.resize();
+                this.timelinesView.resize();
                 if (this.currentTable) this.ensureActivityData();
                 else {
-                    this.timelinessView.setIdle('Select "Activity" tab to load timeliness data.');
+                    this.timelinesView.setIdle('Select "Activity" tab to load timelines data.');
                 }
             } else if (group === "table" && tab === "lineage") {
                 if (this.currentTable) this.ensureLineageSummary();
@@ -609,23 +609,23 @@ export class PanelController {
     }
 
     /**
-     * Bind timeliness events
+     * Bind timelines events
      */
     bindTimelinessEvents() {
-        this.timelinessView.onDaySelected((date) => this.handleTimelinessDay(date));
-        this.timelinessView.onRangeChanged((days) => this.fetchTimeliness(true, days));
-        document.addEventListener("detail-panel:resized", () => this.timelinessView.resize());
+        this.timelinesView.onDaySelected((date) => this.handleTimelinessDay(date));
+        this.timelinesView.onRangeChanged((days) => this.fetchTimeliness(true, days));
+        document.addEventListener("detail-panel:resized", () => this.timelinesView.resize());
     }
 
     /**
-     * Reset timeliness state
+     * Reset timelines state
      */
     resetTimelinessState(message) {
         this.isTimelinessLoading = false;
         this.selectedTimelinessDay = null;
 
-        if (this.timelinessView) {
-            this.timelinessView.reset(message || 'Select "Activity" tab to load timeliness data.');
+        if (this.timelinesView) {
+            this.timelinesView.reset(message || 'Select "Activity" tab to load timelines data.');
         }
     }
 
@@ -640,11 +640,11 @@ export class PanelController {
 
 
     async fetchTimeliness(force = false, days = 7) {
-        if (!this.currentTable || !this.timelinessView) return;
+        if (!this.currentTable || !this.timelinesView) return;
         if (this.isTimelinessLoading && !force) return;
 
         this.isTimelinessLoading = true;
-        this.timelinessView.setLoading("Loading timeliness…");
+        this.timelinesView.setLoading("Loading timelines…");
 
         const started = Date.now();
         try {
@@ -656,20 +656,20 @@ export class PanelController {
                 await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
             }
 
-            if (payload.status !== "success") throw new Error("timeliness failed");
+            if (payload.status !== "success") throw new Error("timelines failed");
 
             const result = payload.result || {};
             const daily = Array.isArray(result.daily_summary) ? result.daily_summary : [];
             // Cache hourly detail for later per-day lookups
-            this.timelinessCache = result || null;
+            this.timelinesCache = result || null;
 
             this.selectedTimelinessDay = null;
             // Pass time_range to renderDaily so it can align charts to server time
-            this.timelinessView.renderDaily(daily, this.selectedTimelinessDay, result.time_range);
-            this.timelinessView.clearHourly();
+            this.timelinesView.renderDaily(daily, this.selectedTimelinessDay, result.time_range);
+            this.timelinesView.clearHourly();
         } catch (err) {
             console.error("Timeliness fetch failed", err);
-            this.timelinessView.setError("Failed to load timeliness.");
+            this.timelinesView.setError("Failed to load timelines.");
         } finally {
             this.isTimelinessLoading = false;
         }
@@ -710,29 +710,29 @@ export class PanelController {
     }
 
     /**
-     * Handle timeliness day selection
+     * Handle timelines day selection
      */
     async handleTimelinessDay(date) {
         if (!date) return;
         this.selectedTimelinessDay = date;
 
-        // Try to use cached hourly_detail from previous timeliness fetch
+        // Try to use cached hourly_detail from previous timelines fetch
         let rows = null;
-        if (this.timelinessCache && this.timelinessCache.hourly_detail) {
-            rows = this.timelinessCache.hourly_detail[date] || null;
+        if (this.timelinesCache && this.timelinesCache.hourly_detail) {
+            rows = this.timelinesCache.hourly_detail[date] || null;
         }
 
         if (!rows) {
-            // Fetch fresh timeliness payload and update cache
+            // Fetch fresh timelines payload and update cache
             try {
                 const payload = await this.api.fetchTableTimeliness(this.currentTable);
                 if (payload && payload.status === "success") {
                     const result = payload.result || {};
-                    this.timelinessCache = result;
+                    this.timelinesCache = result;
                     rows = result.hourly_detail ? result.hourly_detail[date] || null : null;
                 }
             } catch (err) {
-                console.warn("Failed to fetch hourly timeliness", err);
+                console.warn("Failed to fetch hourly timelines", err);
             }
         }
 
@@ -740,19 +740,19 @@ export class PanelController {
     }
 
     /**
-     * Render hourly timeliness
+     * Render hourly timelines
      */
     renderTimelinessHourly(date, rows = null) {
-        if (!this.timelinessView) return;
+        if (!this.timelinesView) return;
 
         if (!date) {
-            this.timelinessView.clearHourly();
+            this.timelinesView.clearHourly();
             return;
         }
 
-        this.timelinessView.setSelectedDate(date);
+        this.timelinesView.setSelectedDate(date);
         // Render hourly rows (may be null which will clear the hourly chart)
-        this.timelinessView.renderHourly(date, rows);
+        this.timelinesView.renderHourly(date, rows);
     }
 
     /**

@@ -1,7 +1,7 @@
 """
 BigQuery Integration Domain Container.
 
-Provides services for BigQuery metadata and timeliness queries.
+Provides services for BigQuery metadata and timelines queries.
 Uses Selector pattern to choose between Real (production) and Dummy (test/dev) implementations
 based on the enable_bigquery feature flag.
 """

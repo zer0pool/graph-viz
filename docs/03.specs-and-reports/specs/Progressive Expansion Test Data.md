@@ -776,7 +776,7 @@ A 24-cell bar/heatmap chart aligned left-to-right on the x-axis.
 
 *Searched filesystem*
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
 *Edited relevant file*
 
@@ -995,11 +995,11 @@ x 축은 날짜고 y 축에 일정한 높이의 바를 그리는 거야. 초록�
 
 *Edited relevant file*
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
 *Edited relevant file*
 
@@ -1007,20 +1007,20 @@ x 축은 날짜고 y 축에 일정한 높이의 바를 그리는 거야. 초록�
 
 ### User Input
 
-timelinessView.js:49 
+timelinesView.js:49 
 
 ﻿
-timelinessView.js:49 Uncaught SyntaxError: Invalid destructuring assignment target (at timelinessView.js:49:5)
+timelinesView.js:49 Uncaught SyntaxError: Invalid destructuring assignment target (at timelinesView.js:49:5)
 
 error on browser console. 
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
 *Edited relevant file*
 
 ### User Input
 
-Uncaught (in promise) TypeError: this.timelinessView.onRangeChanged is not a function
+Uncaught (in promise) TypeError: this.timelinesView.onRangeChanged is not a function
     at PanelController.bindTimelinessEvents (panelControllerNew.js:530:29)
     at new PanelController (panelControllerNew.js:130:14)
     at App.init (main.js:44:19)
@@ -1030,7 +1030,7 @@ PanelController @ panelControllerNew.js:130
 init @ main.js:44
 (anonymous) @ main.js:22Understand this error
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
 *Edited relevant file*
 
@@ -1046,9 +1046,9 @@ hourly breakdown chart is not displayed..
 if  click day bar.. 
 24 dots or.. squares need to be displayed to show its houlyr status. 
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
-*Viewed [timelinessView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinessView.js) *
+*Viewed [timelinesView.js](file:///home/darkwing/src/lineage_manager/src/lineage_manager/static/js/app/ui/timelinesView.js) *
 
 *Edited relevant file*
 
@@ -1106,11 +1106,15 @@ no matter what table id is given..
 
 and it will display. 
 
-Table ID  : gizmopool.austin_bikeshare.bikeshare_stations
-Created : Nov 10, 2025, 7:07:12 PM UTC+9
-Last modified
+Table ID  : 
+gizmopool.austin_bikeshare.bikeshare_stations
+Created
+ : Nov 10, 2025, 7:07:12 PM UTC+9
+Last modified
+
 Table expiration
-Data location
+
+Data location
 
 and .. storage info.. 
 Number of rows

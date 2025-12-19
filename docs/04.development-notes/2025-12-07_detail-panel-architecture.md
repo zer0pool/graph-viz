@@ -32,7 +32,7 @@ stats
 tags
 
 동적 정보 (Timeline)
-GET /api/v1/tables/{full_name}/timeliness?days=7
+GET /api/v1/tables/{full_name}/timelines?days=7
 
 ✔ Job Detail API
 GET /api/v1/jobs/{job_id}/detail
@@ -205,7 +205,7 @@ Execution Info (future)
 # 6. 패널 로딩 흐름 (전체 요청 시퀀스)
 ▼ Table Node 클릭
 GET /api/v1/tables/{table_id}/detail
-GET /api/v1/tables/{full_name}/timeliness?days=7
+GET /api/v1/tables/{full_name}/timelines?days=7
 
 
 두 응답을 merge → Table Detail Panel 렌더링
@@ -247,7 +247,7 @@ DataHub-like glossary 연결
 Table Panel API
 
 GET /api/v1/tables/{table_id}/detail
-GET /api/v1/tables/{full_name}/timeliness
+GET /api/v1/tables/{full_name}/timelines
 
 
 Job Panel API

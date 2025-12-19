@@ -9,9 +9,9 @@ index.html	전체 레이아웃 + 스크립트 로딩 + 패널 영역 선언
 auth.js	Google OAuth / 토큰 갱신 / window.authClient 관리
 main.js(app/main.js)	앱 초기 진입점. GraphController/PanelController 초기화와 auth 준비
 graph.js	Cytoscape 초기화, 렌더링, 이벤트 처리(클릭/하이라이트), 필터링, 패널 호출까지 담당 (God Object)
-panel.js	Table/Job 패널 UI 제어, run history 요청, timeliness graph 렌더 등 복합 기능
+panel.js	Table/Job 패널 UI 제어, run history 요청, timelines graph 렌더 등 복합 기능
 controls.js	검색/필터 select UI, graph.applyFilters 호출, 패널 제어
-timelinessView.js	ECharts 기반 테이블 적재 타임라인 렌더링
+timelinesView.js	ECharts 기반 테이블 적재 타임라인 렌더링
 state.js	SelectionState, FilterState, RelationState, SearchState 등 전역 상태 객체
 1.2 현 구조의 문제점
 
@@ -92,7 +92,7 @@ static/js/
     jobApi.js
     tableApi.js
     eventApi.js
-    timelinessApi.js
+    timelinesApi.js
   
   auth/
     auth.js
@@ -108,7 +108,7 @@ static/js/
     panelController.js
     jobDetailView.js
     tableDetailView.js
-    timelinessView.js
+    timelinesView.js
   
   controls/
     controlBar.js
@@ -208,7 +208,7 @@ tab 전환은 layoutShell에서 위임
 
 apiClient.js 공통 fetch 정의
 
-jobApi / tableApi / eventApi / timelinessApi 로 기능 분리
+jobApi / tableApi / eventApi / timelinesApi 로 기능 분리
 
 6. 개발 인프라/빌드 구조
 6.1 ESM 구조 정비

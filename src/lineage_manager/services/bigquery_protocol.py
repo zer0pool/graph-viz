@@ -40,7 +40,7 @@ class BigQueryServiceProtocol(Protocol):
     def get_table_timelines_for_table(
         self, table_name: str, days: int = 7
     ) -> Dict[str, Any]:
-        """Fetch timeliness data showing load success/failure patterns over time.
+        """Fetch timelines data showing load success/failure patterns over time.
         
         Args:
             table_name: Table name to query

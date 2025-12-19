@@ -49,7 +49,7 @@ curl -sS http://localhost:8000/lineage-manager/api/v1/tables/anything/detail | j
 - Frontend behaviour:
   - Overview tab: shows node-derived metadata immediately, then is replaced by authoritative backend detail when fetched.
   - Schema tab: fetches `/schema` when the tab is first opened and renders column rows.
-  - Lineage and Activity tabs: existing logic remains; Activity uses `/timeliness` (already implemented) and Lineage uses `lineageInsightProvider`.
+  - Lineage and Activity tabs: existing logic remains; Activity uses `/timelines` (already implemented) and Lineage uses `lineageInsightProvider`.
 
 Change log:
 - [2025-12-08] v0.1 Initial implementation (backend endpoints + frontend wiring)

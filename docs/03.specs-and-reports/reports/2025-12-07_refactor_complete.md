@@ -41,7 +41,7 @@ After (모듈식):
 
 ### ✅ Phase 2: API Layer Decomposition (완료)
 **파일**: 11개 API 클라이언트 (`api/*.js`)  
-**설명**: 도메인별 API 클라이언트 (graph, job, table, timeliness, etc)  
+**설명**: 도메인별 API 클라이언트 (graph, job, table, timelines, etc)  
 **크기**: 520줄 (11개 모듈)  
 **패턴**: BaseApiClient 확장, 팩토리 패턴 사용
 
@@ -69,7 +69,7 @@ graphControllerNew.js (150줄) - 오케스트레이터
 ```
 jobDetailView.js (60줄) - Job 실행 이력
 tableDetailView.js (200줄) - 테이블 메타/스키마
-timelinessView.js (393줄) - 데이터 신선도 [기존]
+timelinesView.js (393줄) - 데이터 신선도 [기존]
 triggerManager.js (80줄) - 트리거 UI
 lineageInsightProvider.js (280줄) - 계보 분석
 panelControllerNew.js (150줄) - 패널 오케스트레이터
@@ -200,7 +200,7 @@ Before (모놀리식):
   controls.js: 364
   main.js: 247
   detailView.js: 313
-  timelinessView.js: 393
+  timelinesView.js: 393
   ────────────────
   합계: 2,863줄
 
@@ -225,11 +225,11 @@ After 분포:
   60-120줄:   15개 (30%)
   120-200줄:  14개 (28%)
   200-300줄:   8개 (16%)
-  > 300줄:     4개 (8%) [기존 timelinessView 포함]
+  > 300줄:     4개 (8%) [기존 timelinesView 포함]
 
 평균: 95줄/모듈
 중앙값: 105줄
-최대: 393줄 (timelinessView - 기존 유지)
+최대: 393줄 (timelinesView - 기존 유지)
 ```
 
 ---
@@ -259,7 +259,7 @@ graph.js (799줄) → graphControllerNew.js + 10개 모듈
 panel.js (747줄) → panelControllerNew.js + 5개 모듈
 ├─ Job UI → jobDetailView.js (60줄)
 ├─ Table UI → tableDetailView.js (200줄)
-├─ Timeliness → timelinessView.js (393줄) [유지]
+├─ Timeliness → timelinesView.js (393줄) [유지]
 ├─ Triggers → triggerManager.js (80줄)
 ├─ Lineage → lineageInsightProvider.js (280줄)
 └─ 오케스트레이션 → panelControllerNew.js (150줄)

@@ -121,7 +121,7 @@ class DummyBigQueryService:
         }
 
     def get_table_timelines_for_table(self, table_name: str, days: int = 7) -> Dict[str, Any]:
-        """Return realistic dummy timeliness data with HOURLY pattern.
+        """Return realistic dummy timelines data with HOURLY pattern.
         
         Args:
             table_name: Table name (ignored, returns fixed pattern)

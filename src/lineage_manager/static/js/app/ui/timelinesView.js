@@ -16,7 +16,7 @@ const STATE_COLORS = {
 };
 
 const HOUR_LABEL = "Select a day to view hourly detail.";
-const DAILY_LOAD_HINT = 'Select "Activity" tab to load timeliness data.';
+const DAILY_LOAD_HINT = 'Select "Activity" tab to load timelines data.';
 
 const formatState = (value) => {
   if (!value) return "Unknown";
@@ -60,7 +60,7 @@ export class TableTimelinessView {
     this.hourlyLabel = hourlyLabel;
 
     // Bind range selector
-    this.rangeSelector = document.getElementById("timeliness-range-selector");
+    this.rangeSelector = document.getElementById("timelines-range-selector");
     if (this.rangeSelector) {
       this.rangeSelector.addEventListener("change", (e) => {
         const days = parseInt(e.target.value, 10) || 7;
@@ -119,12 +119,12 @@ export class TableTimelinessView {
     this.reset(message);
   }
 
-  setLoading(message = "Loading timeliness…") {
+  setLoading(message = "Loading timelines…") {
     this.showDailyPlaceholder(`<span class="spinner"></span>${message}`, { html: true });
     this.clearHourly();
   }
 
-  setError(message = "Failed to load timeliness.") {
+  setError(message = "Failed to load timelines.") {
     this.showDailyPlaceholder(message);
     this.showHourlyPlaceholder("No hourly data available.");
   }
@@ -142,7 +142,7 @@ export class TableTimelinessView {
     }
     // Even if normalized is empty (shouldn't happen if we fill dates), handle check
     if (!Array.isArray(this.dailyData) || !this.dailyData.length) {
-      this.showDailyPlaceholder("No timeliness information for this table.");
+      this.showDailyPlaceholder("No timelines information for this table.");
       return;
     }
     const chart = this.ensureDailyChart();

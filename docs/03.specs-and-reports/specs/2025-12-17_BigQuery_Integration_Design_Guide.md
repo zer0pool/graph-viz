@@ -229,7 +229,7 @@ BigQueryServiceProtocol
 
 Remove `enable_bigquery` conditionals from:
 - `/tables/{table_name}/load-history`
-- `/tables/{table_name}/timeliness`
+- `/tables/{table_name}/timelines`
 - `/tables/{table_name}/schema`
 - `/tables/{table_name}/detail`
 

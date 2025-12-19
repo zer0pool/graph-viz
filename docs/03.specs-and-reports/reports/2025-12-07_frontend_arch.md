@@ -56,7 +56,7 @@
 | `api/graph.js` | 65 줄 | 그래프 API | `/api/v1/graph/*` |
 | `api/job.js` | 50 줄 | Job 조회 | `/api/v1/jobs/*` |
 | `api/table.js` | 60 줄 | 테이블 메타 | `/api/v1/tables/*` |
-| `api/timeliness.js` | 55 줄 | 데이터 신선도 | `/api/v1/timeliness/*` |
+| `api/timelines.js` | 55 줄 | 데이터 신선도 | `/api/v1/timelines/*` |
 | `api/triggers.js` | 50 줄 | 트리거 설정 | `/api/v1/triggers/*` |
 | `api/search.js` | 45 줄 | 검색 자동완성 | `/api/v1/search/*` |
 | `api/events.js` | 40 줄 | SSE 이벤트 | `/api/v1/events/*` |
@@ -94,7 +94,7 @@
 |------|------|------|
 | `ui/jobDetailView.js` | 60 줄 | Job 실행 이력 렌더링 |
 | `ui/tableDetailView.js` | 200 줄 | 테이블 메타/스키마 렌더링 |
-| `ui/timelinessView.js` | 393 줄 | 데이터 신선도 차트 |
+| `ui/timelinesView.js` | 393 줄 | 데이터 신선도 차트 |
 | `ui/triggerManager.js` | 80 줄 | 트리거 UI & 토글 |
 | `ui/lineageInsightProvider.js` | 280 줄 | 계보 분석 & 드로어 |
 | `ui/panelControllerNew.js` | 150 줄 | 패널 오케스트레이터 |
@@ -194,7 +194,7 @@ panel.js             747 줄
 controls.js          364 줄
 main.js              247 줄
 detailView.js        313 줄
-timelinessView.js    393 줄
+timelinesView.js    393 줄
 ────────────────────────
 합계           2,863 줄 (모듈화 안 됨)
 ```

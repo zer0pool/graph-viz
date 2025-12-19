@@ -96,7 +96,7 @@ If pip is missing inside `.venv`, run `python -m ensurepip --upgrade` before `py
 
 ## 6. Frontend Guardrails
 - **Graph canvas**: `graphControllerNew` orchestrates Cytoscape; respect its division of responsibilities (view, selection, filtering, zoom, expansion).
-- **Panel system**: Right-panel logic lives in `panelControllerNew` plus views (`jobDetailView`, `tableDetailView`, `timelinessView`). Each view handles DOM binding; controllers dispatch events.
+- **Panel system**: Right-panel logic lives in `panelControllerNew` plus views (`jobDetailView`, `tableDetailView`, `timelinesView`). Each view handles DOM binding; controllers dispatch events.
 - **Events**: prefer `CustomEvent`s over global variables when coordinating modules.
 - **Styling**: Use existing CSS tokens/classes (e.g., badges, pills, button variants). Keep colors consistent with table/job themes (#1A73E8 for tables, #FB8C00 for jobs).
 - **Build artifacts**: Keep JS modular, ES module syntax with `type="module"`.

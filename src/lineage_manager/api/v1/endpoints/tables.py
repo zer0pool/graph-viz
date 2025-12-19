@@ -196,14 +196,14 @@ async def get_table_load_history(
 
 
 
-@router.get("/{table_name:path}/timeliness")
+@router.get("/{table_name:path}/timelines")
 @inject
-async def get_table_timeliness(
+async def get_table_timelines(
     table_name: str,
     days: int = 7,
     bigquery_svc: BigQueryServiceProtocol = Depends(Provide[GraphContainer.bigquery.bigquery_service]),
 ) -> dict:
-    """Return timeliness data from BigQuery service.
+    """Return timelines data from BigQuery service.
     
     The service implementation (Real or Dummy) is selected by the DI container
     based on the enable_bigquery feature flag.
