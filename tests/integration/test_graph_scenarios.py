@@ -21,15 +21,40 @@ def reset_db():
     time.sleep(0.1)
 
 def register_job(job_id, name, inputs=None, outputs=None):
+    # Use the new /sync endpoint which takes the complete lineage payload
     payload = {
         "job_id": job_id,
+        "type": "SELF",
         "name": name,
-        "trigger_tables": inputs or [],
-        "destination_tables": outputs or [],
-        "labels": {},
-        "metadata": {}
+        "status": "RUNNING",
+        "upstreams": [
+            {
+                "type": "table",
+                "name": t,
+                "storage": "bigquery",
+                "dependency_type": "HARD"
+            } for t in (inputs or [])
+        ],
+        "downstreams": [
+            {
+                "type": "table",
+                "name": t,
+                "storage": "bigquery",
+                "write_mode": "APPEND"
+            } for t in (outputs or [])
+        ],
+        "schedule": {
+            "cron_expression": "@daily",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31"
+        },
+        "governance": {"include_pii": False},
+        "metadata": {
+            "owner": "test-runner",
+            "labels": {"env": "test"}
+        }
     }
-    resp = requests.post(f"{BASE_URL}/jobs", json=payload)
+    resp = requests.post(f"{BASE_URL}/jobs/sync", json=payload)
     return resp
 
 def test_scenario_01_sequential_chain():

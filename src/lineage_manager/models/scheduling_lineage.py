@@ -3,17 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SchedulingLineageDependency(BaseModel):
     """Represents an upstream or downstream entity coming from Job Manager."""
 
-    type: str = Field(..., description="Entity type. Tables are reported as 'table'.")
-    name: str = Field(..., description="Fully qualified identifier (e.g., project.dataset.table).")
-    trigger: Optional[bool] = Field(
-        None, description="True when the upstream table is configured as a trigger."
-    )
+    type: str = Field(..., description="Entity type. Typically 'table'.")
+    name: str = Field(..., description="Fully qualified identifier.")
+    storage: str = Field(..., description="Storage type (bigquery, s3, gcs, etc.)")
+    dependency_type: Optional[str] = Field(None, description="HARD or SOFT (for upstreams)")
+    write_mode: Optional[str] = Field(None, description="APPEND or OVERWRITE (for downstreams)")
 
     model_config = ConfigDict(extra="allow")
 
@@ -21,130 +21,50 @@ class SchedulingLineageDependency(BaseModel):
 class SchedulingLineageSchedule(BaseModel):
     """Scheduling information block."""
 
-    interval: Optional[str] = Field(
-        None, description="Primary scheduling interval (e.g., '@daily')."
-    )
-    cron: Optional[str] = Field(None, description="Cron expression if provided separately.")
-    timezone: Optional[str] = Field(None, description="Timezone for the schedule.")
-    start_at: Optional[datetime] = Field(None, description="Schedule start timestamp.")
-    end_at: Optional[datetime] = Field(None, description="Schedule end timestamp.")
+    cron_expression: Optional[str] = Field(None)
+    start_date: Optional[str] = Field(None)
+    end_date: Optional[str] = Field(None)
 
     model_config = ConfigDict(extra="allow")
 
 
 class SchedulingLineage(BaseModel):
     """
-    Canonical job payload returned by the Job Manager /api/v1/jobs/scheduling-lineage API.
+    Canonical job payload returned by the Job Manager API.
     """
 
-    type: Optional[str] = Field(
-        None, description="Scheduling type identifier (SELF-TYPE, REQUEST-TYPE, etc.)."
-    )
     job_id: str = Field(..., description="Unique job identifier.")
+    type: str = Field(..., description="Job type (SELF-TYPE, REQUEST-TYPE, etc.)")
     name: str = Field(..., description="Display name for the job.")
-   
+    status: str = Field(..., description="Running status (e.g. RUNNING)")
     
-    schedule: Optional[SchedulingLineageSchedule] = Field(
-        None, description="Scheduling configuration block."
-    )
-    upstreams: List[SchedulingLineageDependency] = Field(
-        default_factory=list, description="Upstream dependencies emitted by Job Manager."
-    )
-    downstreams: List[SchedulingLineageDependency] = Field(
-        default_factory=list, description="Downstream dependents emitted by Job Manager."
-    )
-    create_datetime: Optional[datetime] = Field(None, description="Creation timestamp.")
-    update_datetime: Optional[datetime] = Field(None, description="Last update timestamp.")
-    successful_dag_runs_count: Optional[int] = Field(
-        None, description="Count of successful DAG runs as reported by Job Manager."
-    )
+    schedule: Optional[SchedulingLineageSchedule] = Field(None)
+    upstreams: List[SchedulingLineageDependency] = Field(default_factory=list)
+    downstreams: List[SchedulingLineageDependency] = Field(default_factory=list)
     
-    # Support both 'metadata' and 'properties' for backward compatibility
-    properties: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Job and table properties (preferred over 'metadata')"
-    )
-    metadata: Optional[Dict[str, Any]] = Field(
-        None,
-        description="DEPRECATED: Use 'properties' instead. Kept for backward compatibility."
-    )
+    governance: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="allow")
-
-    @model_validator(mode="before")
-    @classmethod
-    def handle_metadata_and_properties(cls, data: Any) -> Any:
-        """
-        Support both 'metadata' and 'properties' names with backward compatibility.
-        
-        Logic:
-        1. Collect non-lineage fields into a temp dict
-        2. Merge existing metadata and properties
-        3. Set both fields for compatibility
-        """
-        if not isinstance(data, dict):
-            return data
-
-        # Fields to pack into metadata/properties
-        to_pack = (
-            "owner",
-            "labels",
-            "run_status",
-            "write_mode",
-            "trigger_tables",
-            "reference_tables",
-            "destinations",
-            "reference_service",
-            "configurations",
-            "scheduling_type",
-            "revision_ids",
-            "status",
-            "draft_status",
-            "destination",
-        )
-        
-        # Start with existing metadata and properties
-        metadata = dict(data.get("metadata") or {})
-        properties = dict(data.get("properties") or {})
-        
-        # Pack non-lineage fields
-        for key in to_pack:
-            if key in data:
-                val = data.pop(key)
-                metadata.setdefault(key, val)
-                properties.setdefault(key, val)
-        
-        # Merge: properties takes precedence over metadata
-        merged = {**metadata, **properties}
-        
-        # Set both for backward compatibility
-        data["properties"] = merged
-        data["metadata"] = merged
-        
-        return data
 
 
 class SchedulingLineagePagination(BaseModel):
     """Pagination block returned alongside the job list."""
 
-    limit: Optional[int] = Field(None, description="Page size used by the Job Manager API.")
-    offset: Optional[int] = Field(None, description="Current page offset.")
-    next_offset: Optional[int] = Field(None, description="Offset to request the next page, if any.")
-    total: Optional[int] = Field(None, description="Total number of items available on the server.")
+    limit: Optional[int] = Field(None)
+    offset: Optional[int] = Field(None)
+    next_offset: Optional[int] = Field(None)
+    total: Optional[int] = Field(None)
 
     model_config = ConfigDict(extra="allow")
 
 
 class SchedulingLineageResponse(BaseModel):
-    """Top-level wrapper returned by /api/v1/jobs/scheduling-lineage/."""
+    """Top-level wrapper returned by Job Manager API."""
 
-    status: Optional[str] = Field(None, description="Request status string supplied by Job Manager.")
-    result: List[SchedulingLineage] = Field(
-        default_factory=list, description="List of job payloads."
-    )
-    pagination: Optional[SchedulingLineagePagination] = Field(
-        None, description="Pagination metadata for the result set."
-    )
-    message: Optional[str] = Field(None, description="Optional message supplied by the API.")
+    status: Optional[str] = Field(None)
+    result: List[SchedulingLineage] = Field(default_factory=list)
+    pagination: Optional[SchedulingLineagePagination] = Field(None)
+    message: Optional[str] = Field(None)
 
     model_config = ConfigDict(extra="allow")

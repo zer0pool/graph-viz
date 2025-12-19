@@ -43,14 +43,14 @@ def get_table_impact(
 
 @router.get("/{table_name:path}/triggers")
 @inject
-def get_table_triggers(
+def get_table_dependencies(
     table_name: str,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """Get trigger ON/OFF status per job that consumes the table."""
     if _is_external_storage(table_name):
         return {"status": "success", "table": table_name, "count": 0, "jobs": []}
-    return svc.get_table_triggers(table_name)
+    return svc.get_table_dependencies(table_name)
 
 
 @router.get("/{table_name:path}/hierarchy")
@@ -95,7 +95,7 @@ def get_table_lineage_summary(
 
 @router.patch("/{table_name:path}/triggers/{job_id}")
 @inject
-async def set_table_trigger(
+async def set_table_dependency(
     table_name: str,
     job_id: str,
     body: dict = Body(..., example={"trigger": True}),
@@ -104,7 +104,7 @@ async def set_table_trigger(
     """Set trigger ON/OFF for a job that consumes the table, and emit SSE."""
     trigger = bool(body.get("trigger", True))
     with svc.uow.transactional():
-        result = svc.set_table_trigger(table_name, job_id, trigger)
+        result = svc.set_table_dependency(table_name, job_id, trigger)
     
     if result.get("status") == "success":
         await broker.publish("trigger_update", result)
@@ -147,7 +147,7 @@ def get_table_details(
 
 @router.patch("/{table_name:path}/triggers")
 @inject
-async def bulk_set_table_trigger(
+async def bulk_set_table_dependency(
     table_name: str,
     body: dict = Body(..., example={"trigger": False}),
     svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
@@ -158,7 +158,7 @@ async def bulk_set_table_trigger(
     """
     want = bool(body.get("trigger", False))
     with svc.uow.transactional():
-        result = svc.bulk_set_table_triggers(table_name, want)
+        result = svc.bulk_set_table_dependencies(table_name, want)
     
     # Emit SSE for each changed job for live UIs
     if result.get("status") == "success":

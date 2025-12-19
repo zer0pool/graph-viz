@@ -2325,7 +2325,26 @@ body {
     padding: 8px 12px;
     font-weight: 600;
     background: transparent;
-    /* APA tables usually don't have grey headers */
+}
+
+/* Two-Level Header Styling */
+.apa-header-group th {
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    border-bottom: 2px solid #333 !important;
+}
+
+.group-identity { color: #475569; border-top: 2px solid #475569; }
+.group-table { color: #0891b2; border-top: 2px solid #0891b2; background: rgba(8, 145, 178, 0.03); }
+.group-job { color: #ea580c; border-top: 2px solid #ea580c; background: rgba(234, 88, 12, 0.03); }
+
+.apa-header-detail th {
+    font-size: 12px;
+    color: #1e293b;
+    border-bottom: 1px solid #333;
 }
 
 .apa-table tbody td {
@@ -3652,4 +3671,80 @@ body {
     width: 0.8em;
     height: 1px;
     background-color: #cbd5e1;
+}
+/* --- Lineage Table Enhancements --- */
+
+.loading-placeholder {
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-text {
+    display: inline-block;
+    height: 14px;
+    width: 80%;
+    min-width: 40px;
+    background: linear-gradient(90deg, #edf2f7 25%, #f7fafc 50%, #edf2f7 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.status-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.status-pill.status-success, .status-pill.status-healthy {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.status-pill.status-failed, .status-pill.status-error {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+
+.status-pill.status-running, .status-pill.status-processing {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    animation: status-pulse 2s infinite;
+}
+
+.status-pill.status-pending, .status-pill.status-queued {
+    background: #fefce8;
+    color: #a16207;
+    border-color: #fef08a;
+}
+
+@keyframes status-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.apa-table td.loading-placeholder {
+    vertical-align: middle;
 }

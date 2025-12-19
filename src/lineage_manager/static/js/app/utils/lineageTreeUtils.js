@@ -28,7 +28,8 @@ export const LineageTreeUtils = {
         // Build Tree Connections
         items.forEach(item => {
             const node = idMap.get(item.id);
-            if (item.depth === 0) {
+            // Use loose equality (==) in case depth comes as a string from some sources
+            if (item.depth == 0) {
                 roots.push(node);
             } else if (item.parent) {
                 const parent = idMap.get(item.parent);
@@ -55,7 +56,7 @@ export const LineageTreeUtils = {
             });
 
             // Sort by name for consistent tree
-            visibleChildren.sort((a, b) => a.name.localeCompare(b.name));
+            visibleChildren.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
 
             visibleChildren.forEach((table, index) => {
                 const isLast = index === visibleChildren.length - 1;
@@ -79,16 +80,12 @@ export const LineageTreeUtils = {
         };
 
         // Start Traversal from Root(s)
-        if (roots.length > 0) {
-            // Add Root First
-            // Root has no prefix
-            flatList.push({ ...roots[0], treePrefix: "" });
-
-            // Traverse its children (Jobs) to find next tables
-            if (roots[0].children) {
-                traverseLogical(roots[0].children, "");
+        roots.forEach(rootNode => {
+            flatList.push({ ...rootNode, treePrefix: "" });
+            if (rootNode.children && rootNode.children.length > 0) {
+                traverseLogical(rootNode.children, "");
             }
-        }
+        });
 
         return flatList;
     },

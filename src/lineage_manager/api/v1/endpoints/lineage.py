@@ -8,10 +8,12 @@ import logging
 from typing import Optional
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.core.uow import GraphUnitOfWork
+from lineage_manager.services.graph_query_service import GraphQueryService
+from lineage_manager.api.v1.schemas import BatchNodeDetailsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -166,3 +168,19 @@ async def get_job_downstream(
     except Exception as e:
         logger.error(f"Error getting downstream for job {job_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/batch-details", response_model=BatchNodeDetailsResponse)
+@inject
+async def get_lineage_batch_details(
+    payload: dict = Body(..., example={"node_ids": ["table1", "job1"]}),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Get details (owner, status, etc) for a batch of nodes.
+    Useful for List View to fetch additional columns asynchronously.
+    """
+    node_ids = payload.get("node_ids", [])
+    if not node_ids:
+        return {"status": "success", "results": {}}
+    
+    return svc.get_nodes_batch_details(node_ids)

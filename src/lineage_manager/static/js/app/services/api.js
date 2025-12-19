@@ -116,6 +116,16 @@ export class ApiClient {
     return res.json();
   }
 
+  async fetchBatchDetails(nodeIds) {
+    const res = await this.request(`/api/v1/lineage/batch-details`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ node_ids: nodeIds }),
+    });
+    if (!res.ok) throw new Error(`Batch details failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchJobDetail(jobId) {
     console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
