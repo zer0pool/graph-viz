@@ -3589,3 +3589,67 @@ body {
     color: #174ea6;
     box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
 }
+/* --- Modern Continuous Tree Lines --- */
+.apa-container .tree-line-container {
+    display: flex;
+    align-self: stretch; /* Fill height of flex container */
+    margin-right: 6px;
+    height: 100%;
+}
+
+/* Ensure table cells allow full-height children */
+.apa-table tbody td {
+    padding: 0 12px !important; /* Remove vertical padding */
+    height: 32px; /* Fixed height for line alignment */
+    vertical-align: middle;
+}
+
+.apa-table .node-label-container {
+    display: flex;
+    align-items: center;
+    height: 32px; /* Match td height */
+}
+
+.tree-line-cell {
+    display: inline-block;
+    width: 1.4em; /* Adjust to match your font's visual width */
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Base vertical line style */
+.tree-line-v::before, 
+.tree-line-t::before, 
+.tree-line-l::before {
+    content: "";
+    position: absolute;
+    left: 0.5em;
+    width: 1px;
+    background-color: #cbd5e1; /* slate-300 */
+}
+
+/* Vertical line stays full height for │ and ├ */
+.tree-line-v::before,
+.tree-line-t::before {
+    top: 0;
+    bottom: 0;
+}
+
+/* Elbow line only goes from top to middle */
+.tree-line-l::before {
+    top: 0;
+    height: 50%;
+}
+
+/* Horizontal line for ├ and └ */
+.tree-line-t::after,
+.tree-line-l::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.5em;
+    width: 0.8em;
+    height: 1px;
+    background-color: #cbd5e1;
+}
