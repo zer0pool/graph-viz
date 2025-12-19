@@ -59,9 +59,13 @@ export const LineageTreeUtils = {
 
             visibleChildren.forEach((table, index) => {
                 const isLast = index === visibleChildren.length - 1;
-                const marker = isLast ? "└─ " : "├─ ";
-                const nextPrefix = prefix + (isLast ? "&nbsp;&nbsp;&nbsp;" : "│&nbsp;&nbsp;");
+                // const marker = isLast ? "└─ " : "├─ ";
+                // const nextPrefix = prefix + (isLast ? "   " : "│  ");
 
+
+                // marker를 2글자로 단축
+                const marker = isLast ? "└ " : "├ ";
+                const nextPrefix = prefix + (isLast ? "  " : "│ ");
                 flatList.push({
                     ...table,
                     treePrefix: prefix + marker
