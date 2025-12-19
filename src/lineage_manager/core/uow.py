@@ -107,6 +107,7 @@ class UserUnitOfWork(BaseUnitOfWork):
     def __init__(self, db: Session):
         super().__init__(db)
         self.users = UserRepository(db)
+        
 class ReadOnlyUnitOfWork:
     """
     Read-only Unit of Work (no commit/rollback).
