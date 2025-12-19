@@ -4,7 +4,7 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 try:
     import redis  # type: ignore
@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover
 
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.uow import GraphUnitOfWork
+from lineage_manager.models import GraphEdge, GraphNode
 
 from lineage_manager.services.helpers.graph_traversal_helper import GraphTraversalHelper
 
@@ -341,8 +342,8 @@ class GraphQueryService:
             "owners": owners,
         }
 
-    def get_table_triggers(self, table_name: str):
-        key = f"triggers:{table_name}"
+    def get_table_dependencies(self, table_name: str):
+        key = f"dependencies:{table_name}"
         cached = self._cache_get(key)
         if cached:
             return cached
@@ -362,7 +363,7 @@ class GraphQueryService:
                 {
                     "job_id": job_id,
                     "name": job_name,
-                    "trigger": bool(is_on),
+                    "trigger": bool(is_on), # Keep field name in response for API compatibility if needed, but I'll change it if user wants "Backend everything"
                 }
             )
 
@@ -577,6 +578,115 @@ class GraphQueryService:
         enabled = bool(meta.get("enabled", True))
         # attach for response usage
         setattr(job, "status", status)
-        options = {}
         setattr(job, "enabled", enabled)
         return job
+
+    def get_nodes_batch_details(self, node_ids: list[str]):
+        """Fetch details for multiple nodes (tables/jobs) in one query, returning nested Table/Job info."""
+        if not node_ids:
+            return {"status": "success", "results": {}}
+
+        uow = self.uow
+        # 1. Fetch all requested nodes
+        stmt = select(GraphNode).where(GraphNode.name.in_(node_ids))
+        nodes = uow.db.execute(stmt).scalars().all()
+        
+        # Mapping to keep track of nodes
+        node_map = {n.name: n for n in nodes}
+        
+        # 2. Identify table nodes and find their producers
+        table_nodes = [n for n in nodes if n.node_type == "table"]
+        table_node_ids = [n.id for n in table_nodes]
+        producer_map = {} # table_node_id -> JobNode
+        
+        if table_node_ids:
+            # Query edges where target is one of our tables and edge_type is 'write'
+            # Then join with GraphNode to get the job information
+            producer_stmt = (
+                select(GraphEdge.target_node_id, GraphNode)
+                .join(GraphNode, GraphEdge.source_node_id == GraphNode.id)
+                .where(
+                    GraphEdge.target_node_id.in_(table_node_ids),
+                    GraphEdge.edge_type == "write"
+                )
+            )
+            producer_results = uow.db.execute(producer_stmt).all()
+            for t_id, job_node in producer_results:
+                if t_id not in producer_map:
+                    producer_map[t_id] = job_node
+
+        results = {}
+        for nid in node_ids:
+            node = node_map.get(nid)
+            if not node:
+                results[nid] = self._make_empty_node_details(nid)
+                continue
+
+            meta = node.job_metadata or {}
+            
+            # Table Info Section
+            table_info = {
+                "id": node.name,
+                "type": node.node_type,
+                "write_mode": node.write_mode or meta.get("write_mode") or "-",
+                "storage_type": node.storage_type or meta.get("storage_type") or "-",
+            }
+
+            # Job Info Section
+            job_node = None
+            if node.node_type == "job":
+                job_node = node
+            else:
+                job_node = producer_map.get(node.id)
+
+            if job_node:
+                j_meta = job_node.job_metadata or {}
+                j_sched = j_meta.get("schedule") or {}
+                job_info = {
+                    "job_id": job_node.name,
+                    "owner": job_node.owner or j_meta.get("owner") or "-",
+                    "status": j_meta.get("status") or "-",
+                    "run_status": j_meta.get("run_status") or "-",
+                    "cron": j_sched.get("cron") or j_sched.get("interval") or "-",
+                    "start_date": j_sched.get("start_date") or j_meta.get("start_date") or "-",
+                    "end_date": j_sched.get("end_date") or j_meta.get("end_date") or "-",
+                    "lifecycle_status": j_meta.get("lifecycle_status") or "-",
+                }
+            else:
+                job_info = {
+                    "job_id": "-",
+                    "owner": "-",
+                    "status": "-",
+                    "run_status": "-",
+                    "cron": "-",
+                    "start_date": "-",
+                    "end_date": "-",
+                    "lifecycle_status": "-",
+                }
+
+            results[nid] = {
+                "table_info": table_info,
+                "job_info": job_info
+            }
+
+        return {"status": "success", "results": results}
+
+    def _make_empty_node_details(self, nid: str):
+        return {
+            "table_info": {
+                "id": nid,
+                "type": "unknown",
+                "write_mode": "-",
+                "storage_type": "-",
+            },
+            "job_info": {
+                "job_id": "-",
+                "owner": "-",
+                "status": "not_found",
+                "run_status": "-",
+                "cron": "-",
+                "start_date": "-",
+                "end_date": "-",
+                "lifecycle_status": "-",
+            }
+        }

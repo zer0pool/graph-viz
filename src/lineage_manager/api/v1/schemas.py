@@ -162,3 +162,29 @@ class JobUpdateRequest(BaseModel):
     status: Optional[str] = None
     enabled: Optional[bool] = None
     trigger_tables: Optional[List[str]] = None
+
+
+# New schemas for grouped node details
+class NodeTableInfo(BaseModel):
+    id: str
+    type: str
+    write_mode: Optional[str] = None
+    storage_type: Optional[str] = None
+
+class NodeJobInfo(BaseModel):
+    job_id: Optional[str] = None
+    owner: Optional[str] = None
+    status: Optional[str] = None
+    run_status: Optional[str] = None
+    cron: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    lifecycle_status: Optional[str] = None
+
+class NodeDetails(BaseModel):
+    table_info: NodeTableInfo
+    job_info: NodeJobInfo
+
+class BatchNodeDetailsResponse(BaseModel):
+    status: str
+    results: dict[str, NodeDetails]

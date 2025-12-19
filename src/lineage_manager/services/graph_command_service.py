@@ -164,10 +164,10 @@ class GraphCommandService:
             "message": "Graph reset complete: all graph data cleared.",
         }
 
-    def set_table_trigger(self, table_name: str, job_id: str, trigger: bool):
-        """Set trigger ON/OFF for a specific job consuming a given table."""
+    def set_table_dependency(self, table_name: str, job_id: str, trigger: bool):
+        """Set dependency type (HARD/SOFT) for a specific job consuming a given table."""
         uow = self.uow
-        logger.info(f"set_table_trigger {job_id}/{table_name}: trigger: {trigger} ")
+        logger.info(f"set_table_dependency {job_id}/{table_name}: trigger: {trigger} ")
         try:
             table = uow.tables.get_by_full_name(table_name)
             if not table:
@@ -186,11 +186,12 @@ class GraphCommandService:
 
             # Update edge flag for readability/status
             try:
-                uow.edges.set_input_trigger(job.id, table.id, trigger)
+                dep_type = "HARD" if trigger else "SOFT"
+                uow.edges.update_dependency_type(table.id, job.id, dep_type)
             except Exception:
                 pass
 
-            self._invalidate_trigger_cache(table_name)
+            self._invalidate_dependency_cache(table_name)
 
             return {
                 "status": "success",
@@ -203,8 +204,8 @@ class GraphCommandService:
             logger.error(f"Failed to set trigger for {job_id}/{table_name}: {e}")
             return {"status": "error", "message": str(e)}
 
-    def bulk_set_table_triggers(self, table_name: str, trigger: bool):
-        """Set trigger ON/OFF for all jobs that consume the table."""
+    def bulk_set_table_dependencies(self, table_name: str, trigger: bool):
+        """Set dependency type (HARD/SOFT) for all jobs that consume the table."""
         uow = self.uow
         try:
             table = uow.tables.get_by_full_name(table_name)
@@ -227,11 +228,12 @@ class GraphCommandService:
                     unchanged.append(j.job_id)
                 # Edge flag best-effort
                 try:
-                    uow.edges.set_input_trigger(j.id, table.id, trigger)
+                    dep_type = "HARD" if trigger else "SOFT"
+                    uow.edges.update_dependency_type(table.id, j.id, dep_type)
                 except Exception:
                     pass
 
-            self._invalidate_trigger_cache(table_name)
+            self._invalidate_dependency_cache(table_name)
 
             return {
                 "status": "success",
@@ -243,7 +245,7 @@ class GraphCommandService:
                 "total": len(jobs),
             }
         except Exception as e:
-            logger.error(f"bulk_set_table_triggers failed for {table_name}: {e}")
+            logger.error(f"bulk_set_table_dependencies failed for {table_name}: {e}")
             return {"status": "error", "message": str(e)}
 
     # --- Helpers ---
@@ -271,9 +273,9 @@ class GraphCommandService:
             tbl = self.uow.tables.get_or_create(t)
             in_ids.append(tbl.id)
             self.uow.job_table_links.link_job_table(job.id, tbl.id, "input")
-            is_trigger_on = t in trigger_tables
+            dep_type = "HARD" if t in trigger_tables else "SOFT"
             self.uow.edges.create_job_table_edge(
-                job.id, tbl.id, "input", is_trigger_on=is_trigger_on
+                job.id, tbl.id, "input", dependency_type=dep_type
             )
         return in_ids
 
@@ -287,7 +289,7 @@ class GraphCommandService:
             tbl = self.uow.tables.get_or_create(t)
             out_ids.append(tbl.id)
             self.uow.job_table_links.link_job_table(job.id, tbl.id, "output")
-            self.uow.edges.create_job_table_edge(job.id, tbl.id, "output")
+            self.uow.edges.create_job_table_edge(job.id, tbl.id, "output", dependency_type="SOFT")
         return out_ids
 
     def preview_lineage_job(self, lineage: SchedulingLineage) -> dict:
@@ -414,61 +416,74 @@ class GraphCommandService:
         Register a job described via SchedulingLineage payload directly to graph.
         
         ⚠️ Does NOT commit - caller must wrap with transaction.
-        
-        Example (in Orchestrator):
-            with self.uow.transactional():
-                job_id = command_service.register_lineage_job(lineage)
         """
+        if not lineage.job_id.strip():
+            raise ValueError("job_id cannot be empty")
+        if not lineage.name.strip():
+            raise ValueError("job name cannot be empty")
+
         uow = self.uow
-        props = lineage.properties or lineage.metadata or {}
+        job_props = self._extract_job_properties(lineage)
 
         # 1. Create or Update Job Node
         job = uow.jobs.get(lineage.job_id)
         if job:
-            # Update existing job properties
-            job_props = self._extract_job_properties(props, lineage)
             job.job_metadata = job_props
+            # Also update direct attributes for convenience
+            job.owner = job_props.get("owner")
+            job.labels = job_props.get("labels")
         else:
-            # Create new job
-            job_props = self._extract_job_properties(props, lineage)
             job = uow.jobs.get_or_create(
                 job_id=lineage.job_id,
                 name=lineage.name,
                 job_metadata=job_props,
+                owner=job_props.get("owner"),
+                labels=job_props.get("labels")
             )
 
         # 2. Process Upstream Nodes (Inputs)
-        # 2. Process Upstream Nodes (Inputs), filtering empty names
         input_table_ids = []
         seen_upstreams = set()
+        common_owner = lineage.metadata.get("owner")
+
         for upstream in lineage.upstreams:
-            if not upstream.name.strip():
-                continue
+            if not upstream.name.strip(): continue
             name = upstream.name.strip()
-            if name in seen_upstreams:
-                continue
+            if name in seen_upstreams: continue
             seen_upstreams.add(name)
 
-            upstream_node = uow.tables.get_or_create(name)
+            # Table properties: storage, owner
+            table_props = {
+                "storage": upstream.storage,
+                "owner": common_owner
+            }
+            upstream_node = uow.tables.get_or_create(name, table_metadata=table_props)
             input_table_ids.append(upstream_node.id)
 
             uow.job_table_links.link_job_table(job.id, upstream_node.id, "input")
+            
+            # TRIGGER logic: HARD -> dependency_type='HARD'
+            dep_type = upstream.dependency_type or "SOFT"
             uow.edges.create_job_table_edge(
-                job.id, upstream_node.id, "input"
+                job.id, upstream_node.id, "input", dependency_type=dep_type
             )
 
-        # 3. Process Downstream Nodes (Outputs), filtering empty names
+        # 3. Process Downstream Nodes (Outputs)
         output_table_ids = []
         seen_downstreams = set()
         for downstream in lineage.downstreams:
-            if not downstream.name.strip():
-                continue
+            if not downstream.name.strip(): continue
             name = downstream.name.strip()
-            if name in seen_downstreams:
-                continue
+            if name in seen_downstreams: continue
             seen_downstreams.add(name)
 
-            downstream_node = uow.tables.get_or_create(name)
+            # Table properties: storage, write_mode, owner
+            table_props = {
+                "storage": downstream.storage,
+                "write_mode": downstream.write_mode,
+                "owner": common_owner
+            }
+            downstream_node = uow.tables.get_or_create(name, table_metadata=table_props)
             output_table_ids.append(downstream_node.id)
 
             uow.job_table_links.link_job_table(job.id, downstream_node.id, "output")
@@ -480,107 +495,36 @@ class GraphCommandService:
         self._create_upstream_relationships(job, input_table_ids)
         self._create_downstream_relationships(job, output_table_ids)
         
-        # No commit - orchestrator handles it
-        
         return job.id
 
     # --- Helpers moved from GraphSyncService ---
 
-    def _extract_job_properties(
-        self,
-        props: dict,
-        lineage: SchedulingLineage
-    ) -> dict:
-        ALLOWED_KEYS = {
-            "owner", "schedule", "write_mode", "scheduling_type",
-            "configurations", "revision_ids", "status", "draft_status",
-            "destination", "labels", "run_status",
-            "create_datetime", "update_datetime"
+    def _extract_job_properties(self, lineage: SchedulingLineage) -> dict:
+        meta = lineage.metadata or {}
+        
+        job_props = {
+            "status": lineage.status,
+            "scheduling_type": lineage.type,
+            "governance": lineage.governance,
+            "owner": meta.get("owner"),
+            "labels": meta.get("labels", {}),
+            "lifecycle_status": meta.get("lifecycle_status"),
+            "is_active": meta.get("is_active", True),
         }
         
-        job_props = {}
-        for key in ALLOWED_KEYS:
-            if key in props:
-                job_props[key] = props[key]
-        
         if lineage.schedule:
-            job_props["schedule"] = lineage.schedule.dict()
+            job_props["schedule"] = {
+                "cron": lineage.schedule.cron_expression,
+                "start_date": lineage.schedule.start_date,
+                "end_date": lineage.schedule.end_date
+            }
         
-        if lineage.create_datetime:
-            job_props["create_datetime"] = lineage.create_datetime.isoformat()
-        if lineage.update_datetime:
-            job_props["update_datetime"] = lineage.update_datetime.isoformat()
-        
-        job_props["trigger_tables"] = self._extract_triggers(lineage.upstreams)
-        job_props["reference_tables"] = self._extract_references(lineage.upstreams)
-        job_props["destination_tables"] = self._extract_destinations(lineage.downstreams)
+        # Track tables for easier lookup
+        job_props["trigger_tables"] = [u.name for u in lineage.upstreams if u.dependency_type == "HARD"]
+        job_props["reference_tables"] = [u.name for u in lineage.upstreams if u.dependency_type != "HARD"]
+        job_props["destination_tables"] = [d.name for d in lineage.downstreams]
         
         return job_props
-
-    def _create_or_update_node(
-        self,
-        item,
-        metadata_prefix: str,
-        lineage_props: dict
-    ):
-        node_type = item.type
-        node_name = item.name
-        node_metadata = self._extract_node_metadata(item, metadata_prefix, lineage_props)
-        
-        if node_type == "table":
-            node = self.uow.tables.get_or_create(    
-                full_name=node_name,
-                table_metadata=node_metadata
-            )
-        else:
-            node = self.uow.tables.get_or_create(        
-                full_name=node_name,
-                table_metadata={**node_metadata, "node_type": node_type}
-            )
-        return node
-
-    def _extract_node_metadata(
-        self,
-        item,
-        prefix: str,
-        lineage_props: dict
-    ) -> dict:
-        node_metadata = {}
-        prefix_key = f"{prefix}."
-        
-        for key, value in lineage_props.items():
-            if key.startswith(prefix_key):
-                clean_key = key[len(prefix_key):]
-                node_metadata[clean_key] = value
-        
-        if "owner" in lineage_props:
-            node_metadata["owner"] = lineage_props["owner"]
-        
-        if hasattr(item, 'trigger') and item.trigger:
-            node_metadata['trigger'] = True
-        
-        return node_metadata
-
-    def _extract_destinations(self, downstreams: list) -> List[str]:
-        return [
-            item.name
-            for item in downstreams
-            if item.type == "table"
-        ]
-
-    def _extract_triggers(self, upstreams: list) -> list:
-        return [
-            item.name
-            for item in upstreams
-            if item.type == "table" and getattr(item, "trigger", False)
-        ]
-
-    def _extract_references(self, upstreams: list) -> list:
-        return [
-            item.name
-            for item in upstreams
-            if item.type == "table"
-        ]
 
     def _invalidate_all_caches(self):
         """Best effort to clear graph-related caches in Redis."""
@@ -611,7 +555,7 @@ class GraphCommandService:
         except Exception as e:
             logger.warning(f"Failed to clear Redis caches: {e}")
 
-    def _invalidate_trigger_cache(self, table_name: str):
+    def _invalidate_dependency_cache(self, table_name: str):
         try:
             from lineage_manager.core.config import get_settings
             settings = get_settings()

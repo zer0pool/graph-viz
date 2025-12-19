@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column("source_node_id", sa.Integer(), nullable=False),
         sa.Column("target_node_id", sa.Integer(), nullable=False),
         sa.Column("edge_type", sa.String(length=20), nullable=False),
-        sa.Column("is_trigger_on", sa.Boolean(), server_default=sa.text("true"), nullable=False),
+        sa.Column("dependency_type", sa.String(length=50), nullable=True),
         sa.Column("properties", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),

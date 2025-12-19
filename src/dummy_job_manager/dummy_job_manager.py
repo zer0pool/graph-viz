@@ -116,6 +116,7 @@ from fastapi import FastAPI, Query
 from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 import re
+import random
 
 
 
@@ -165,6 +166,67 @@ class JobSelectorRequest(BaseModel):
 def is_s3(name: str) -> bool:
     return name.startswith("s3://")
 
+def get_storage(name: str) -> str:
+    if name.startswith("s3://"): return "s3"
+    if name.startswith("gs://"): return "gcs"
+    return "bigquery"
+
+def format_dependency(name, is_upstream=True):
+    storage = get_storage(name)
+    dep = {
+        "type": "table",
+        "name": name,
+        "storage": storage
+    }
+    if is_upstream:
+        dep["dependency_type"] = "SOFT" if storage != "bigquery" else "HARD"
+    else:
+        dep["write_mode"] = "OVERWRITE" if storage != "bigquery" else "APPEND"
+    return dep
+
+def format_lineage_object(job_id, lineage_type, upstreams, downstreams, owner="tester", labels=None):
+    if labels is None:
+        # Generate some random variety for labels
+        service_names = ["\"tv\" sales", "data_pipeline", "user_analytics", "revenue_tracking", "customer_360"]
+        priorities = [1, 2, 3, 4]
+        emails = ["123@aa.com", "dev-team@company.io", "ops@monitoring.net"]
+        envs = ["test", "prod", "staging", "dev"]
+        
+        labels = {
+            "env": random.choice(envs),
+            "service_name": random.choice(service_names),
+            "priority": random.choice(priorities),
+            "email": random.choice(emails),
+            "is_active": random.choice([True, False]),
+            "version": f"v1.{random.randint(0, 9)}",
+        }
+        
+        # Occasionally add extra noise
+        if random.random() > 0.5:
+            labels["tag"] = random.choice(["critical", "internal", "legacy", "external"])
+    
+    return {
+        "job_id": job_id,
+        "type": lineage_type.replace("-TYPE", ""),
+        "name": job_id,
+        "status": "RUNNING",
+        "upstreams": upstreams,
+        "downstreams": downstreams,
+        "schedule": {
+            "cron_expression": "@daily",
+            "start_date": "2025-10-03",
+            "end_date": "2025-12-01"
+        },
+        "governance": {
+            "include_pii": True
+        },
+        "metadata": {
+            "owner": owner,
+            "labels": labels,
+            "lifecycle_status": "DEPLOYED"
+        }
+    }
+
 
 # =====================================================================
 # Lineage Object Builder
@@ -174,32 +236,15 @@ def build_lineage(job, lineage_type):
 
     upstreams = []
     for src in job["reads"]:
-        if is_s3(src):
-            upstreams.append({"type": "s3", "name": src, "trigger": False})
-        else:
-            validate_table_name(src)
-            upstreams.append({"type": "table", "name": src, "trigger": True})
+        if get_storage(src) == "bigquery": validate_table_name(src)
+        upstreams.append(format_dependency(src, is_upstream=True))
 
-    downstream_table = validate_table_name(job["writes"][0])
+    downstreams = []
+    for out in job["writes"]:
+        if get_storage(out) == "bigquery": validate_table_name(out)
+        downstreams.append(format_dependency(out, is_upstream=False))
 
-    return {
-        "type": lineage_type,
-        "job_id": job["job_id"],
-        "name": job["job_id"],
-        "upstreams": upstreams,
-        "downstreams": [{"type": "table", "name": downstream_table}],
-        "destination_type": "table",
-        "schedule": {"cron": "@daily"},
-        "meta": {
-            "owner": "tester",
-            "labels": {"env": "test"},
-            "write_mode": "append",
-            "run_status": "RUN",
-        },
-        "create_datetime": "2024-12-01T02:00:00Z",
-        "update_datetime": "2024-12-01T03:15:00Z",
-        "successful_dag_runs_count": 10,
-    }
+    return format_lineage_object(job["job_id"], lineage_type, upstreams, downstreams)
 
 
 # =====================================================================
@@ -437,34 +482,19 @@ def get_scheduling_lineage_by_ids(payload: JobSelectorRequest):
 
     results = []
     for idx, item in enumerate(payload.jobs, start=1):
-        # (Existing dummy logic for other jobs...)
         upstreams = [
-            {"type": "table", "name": f"demo.analytics.BYIDS_UP_{idx}_{i:03d}", "trigger": True}
+            format_dependency(f"demo.analytics.BYIDS_UP_{idx}_{i:03d}", is_upstream=True)
             for i in range(1, 6)
         ]
         downstreams = [
-            {"type": "table", "name": f"demo.analytics.BYIDS_DOWN_{idx}_{i:03d}"}
+            format_dependency(f"demo.analytics.BYIDS_DOWN_{idx}_{i:03d}", is_upstream=False)
             for i in range(1, 6)
         ]
 
-        results.append({
-            "type": item.type,
-            "job_id": item.job_id,
-            "name": item.job_id,
-            "upstreams": upstreams,
-            "downstreams": downstreams,
-            "destination_type": "table",
-            "schedule": {"cron": "@daily"},
-            "meta": {
-                "owner": "tester",
-                "labels": {"env": "test", "source": "by_ids"},
-                "write_mode": "append",
-                "run_status": "RUN",
-            },
-            "create_datetime": "2024-12-01T02:00:00Z",
-            "update_datetime": "2024-12-01T03:15:00Z",
-            "successful_dag_runs_count": 10,
-        })
+        results.append(format_lineage_object(
+            item.job_id, item.type, upstreams, downstreams, 
+            labels={"env": "test", "source": "by_ids"}
+        ))
 
     return {
         "status": "success",
@@ -493,28 +523,13 @@ def get_progressive_expansion_test_data(payload: JobSelectorRequest):
     for i in range(1, 21):
         job_id = f"LEVEL0_JOB_{i:03d}"
         if job_id in requested_job_ids:
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": f"test.level0.input_{i:03d}", "trigger": True}
-                ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level0.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "0", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
+            results.append(format_lineage_object(
+                job_id, "SELF-TYPE",
+                [format_dependency(f"test.level0.input_{i:03d}", is_upstream=True)],
+                [format_dependency(f"test.level0.output_{i:03d}", is_upstream=False)],
+                owner="test_user",
+                labels={"level": "0", "test": "progressive_expansion"}
+            ))
     
     # Level 1 jobs (10 jobs) - 각각 2개의 Level 0 output을 읽음
     for i in range(1, 11):
@@ -523,84 +538,43 @@ def get_progressive_expansion_test_data(payload: JobSelectorRequest):
             upstream_idx1 = (i - 1) * 2 + 1
             upstream_idx2 = (i - 1) * 2 + 2
             
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": f"test.level0.output_{upstream_idx1:03d}", "trigger": True},
-                    {"type": "table", "name": f"test.level0.output_{upstream_idx2:03d}", "trigger": True},
+            results.append(format_lineage_object(
+                job_id, "SELF-TYPE",
+                [
+                    format_dependency(f"test.level0.output_{upstream_idx1:03d}", is_upstream=True),
+                    format_dependency(f"test.level0.output_{upstream_idx2:03d}", is_upstream=True),
                 ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level1.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "1", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
+                [format_dependency(f"test.level1.output_{i:03d}", is_upstream=False)],
+                owner="test_user",
+                labels={"level": "1", "test": "progressive_expansion"}
+            ))
     
     # CENTER_JOB - 10개의 Level 1 output을 읽음
     if "CENTER_JOB" in requested_job_ids:
         upstreams = [
-            {"type": "table", "name": f"test.level1.output_{i:03d}", "trigger": True}
+            format_dependency(f"test.level1.output_{i:03d}", is_upstream=True)
             for i in range(1, 11)
         ]
         
-        results.append({
-            "type": "SELF-TYPE",
-            "job_id": "CENTER_JOB",
-            "name": "CENTER_JOB",
-            "upstreams": upstreams,
-            "downstreams": [
-                {"type": "table", "name": "test.center.main_output"}
-            ],
-            "destination_type": "table",
-            "schedule": {"cron": "@daily"},
-            "meta": {
-                "owner": "test_user",
-                "labels": {"level": "2", "test": "progressive_expansion", "center": "true"},
-                "write_mode": "append",
-                "run_status": "RUN",
-            },
-            "create_datetime": "2024-12-01T02:00:00Z",
-            "update_datetime": "2024-12-01T03:15:00Z",
-            "successful_dag_runs_count": 10,
-        })
+        results.append(format_lineage_object(
+            "CENTER_JOB", "SELF-TYPE",
+            upstreams,
+            [format_dependency("test.center.main_output", is_upstream=False)],
+            owner="test_user",
+            labels={"level": "2", "test": "progressive_expansion", "center": "true"}
+        ))
     
     # Level 3 jobs (10 jobs) - CENTER output을 읽음
     for i in range(1, 11):
         job_id = f"LEVEL3_JOB_{i:03d}"
         if job_id in requested_job_ids:
-            results.append({
-                "type": "SELF-TYPE",
-                "job_id": job_id,
-                "name": job_id,
-                "upstreams": [
-                    {"type": "table", "name": "test.center.main_output", "trigger": True}
-                ],
-                "downstreams": [
-                    {"type": "table", "name": f"test.level3.output_{i:03d}"}
-                ],
-                "destination_type": "table",
-                "schedule": {"cron": "@daily"},
-                "meta": {
-                    "owner": "test_user",
-                    "labels": {"level": "3", "test": "progressive_expansion"},
-                    "write_mode": "append",
-                    "run_status": "RUN",
-                },
-                "create_datetime": "2024-12-01T02:00:00Z",
-                "update_datetime": "2024-12-01T03:15:00Z",
-                "successful_dag_runs_count": 10,
-            })
+            results.append(format_lineage_object(
+                job_id, "SELF-TYPE",
+                [format_dependency("test.center.main_output", is_upstream=True)],
+                [format_dependency(f"test.level3.output_{i:03d}", is_upstream=False)],
+                owner="test_user",
+                labels={"level": "3", "test": "progressive_expansion"}
+            ))
     
     total = len(results)
     
@@ -628,29 +602,18 @@ def get_deep_lineage_test_data(payload: JobSelectorRequest):
     requested_job_ids = {item.job_id for item in payload.jobs}
     
     def build_job(job_id, level_name, upstreams, downstreams):
-        return {
-            "type": "SELF-TYPE",
-            "job_id": job_id,
-            "name": job_id,
-            "upstreams": upstreams,
-            "downstreams": downstreams,
-            "destination_type": "table",
-            "schedule": {"cron": "@daily"},
-            "meta": {
-                "owner": "test_user",
-                "labels": {"level": level_name, "test": "deep_lineage"},
-                "write_mode": "append",
-                "run_status": "RUN",
-            },
-            "create_datetime": "2024-12-01T02:00:00Z",
-            "update_datetime": "2024-12-01T03:15:00Z",
-            "successful_dag_runs_count": 10,
-        }
+        return format_lineage_object(
+            job_id, "SELF-TYPE",
+            upstreams,
+            downstreams,
+            owner="test_user",
+            labels={"level": level_name, "test": "deep_lineage"}
+        )
 
     # Center Job
     if "DEEP_CENTER_JOB" in requested_job_ids:
-        ups = [{"type": "table", "name": f"test.deep.up_l1.out_{i:03d}", "trigger": True} for i in range(1, 11)]
-        downs = [{"type": "table", "name": f"test.deep.down_l1.in_{i:03d}"} for i in range(1, 11)]
+        ups = [format_dependency(f"test.deep.up_l1.out_{i:03d}", is_upstream=True) for i in range(1, 11)]
+        downs = [format_dependency(f"test.deep.down_l1.in_{i:03d}", is_upstream=False) for i in range(1, 11)]
         results.append(build_job("DEEP_CENTER_JOB", "center", ups, downs))
 
     # Upstream Levels 1-5
@@ -660,14 +623,14 @@ def get_deep_lineage_test_data(payload: JobSelectorRequest):
             if job_id in requested_job_ids:
                 if lvl < 5:
                     # L1-L4 read from next level
-                    ups = [{"type": "table", "name": f"test.deep.up_l{lvl+1}.out_{j:03d}", "trigger": True} for j in range(1, 11)]
+                    ups = [format_dependency(f"test.deep.up_l{lvl+1}.out_{j:03d}", is_upstream=True) for j in range(1, 11)]
                 else:
                     # L5 is root
-                    ups = [{"type": "table", "name": f"test.deep.root.in_{i:03d}", "trigger": True}]
+                    ups = [format_dependency(f"test.deep.root.in_{i:03d}", is_upstream=True)]
                 
                 # Output table name matches what the level below it expects
                 out_table = f"test.deep.up_l{lvl}.out_{i:03d}"
-                results.append(build_job(job_id, f"up_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+                results.append(build_job(job_id, f"up_l{lvl}", ups, [format_dependency(out_table, is_upstream=False)]))
 
     # Downstream Levels 1-5
     for lvl in range(1, 6):
@@ -679,13 +642,13 @@ def get_deep_lineage_test_data(payload: JobSelectorRequest):
                     # Note: Original requirements says "10 up, down stream and then 5 levels further"
                     # We'll make all 10 L1 jobs read the same center output table (or one of them)
                     # To keep it simple, they all read the first center output table
-                    ups = [{"type": "table", "name": f"test.deep.down_l1.in_{i:03d}", "trigger": True}]
+                    ups = [format_dependency(f"test.deep.down_l1.in_{i:03d}", is_upstream=True)]
                 else:
                     # L2-L5 read from level above
-                    ups = [{"type": "table", "name": f"test.deep.down_l{lvl-1}.out_{i:03d}", "trigger": True}]
+                    ups = [format_dependency(f"test.deep.down_l{lvl-1}.out_{i:03d}", is_upstream=True)]
                 
                 out_table = f"test.deep.down_l{lvl}.out_{i:03d}"
-                results.append(build_job(job_id, f"down_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+                results.append(build_job(job_id, f"down_l{lvl}", ups, [format_dependency(out_table, is_upstream=False)]))
 
     total = len(results)
     return {
@@ -708,30 +671,19 @@ def get_massive_lineage_test_data(payload: JobSelectorRequest):
     requested_job_ids = {item.job_id for item in payload.jobs}
     
     def build_job(job_id, level_name, upstreams, downstreams):
-        return {
-            "type": "SELF-TYPE",
-            "job_id": job_id,
-            "name": job_id,
-            "upstreams": upstreams,
-            "downstreams": downstreams,
-            "destination_type": "table",
-            "schedule": {"cron": "@daily"},
-            "meta": {
-                "owner": "massive_user",
-                "labels": {"level": level_name, "test": "massive_lineage"},
-                "write_mode": "append",
-                "run_status": "RUN",
-            },
-            "create_datetime": "2024-12-01T02:00:00Z",
-            "update_datetime": "2024-12-01T03:15:00Z",
-            "successful_dag_runs_count": 100,
-        }
+        return format_lineage_object(
+            job_id, "SELF-TYPE",
+            upstreams,
+            downstreams,
+            owner="massive_user",
+            labels={"level": level_name, "test": "massive_lineage"}
+        )
 
     # Center Job
     if "MASSIVE_CENTER_JOB" in requested_job_ids:
         # Connects to 4 L1 upstreams and produces 4 L1 downstream inputs
-        ups = [{"type": "table", "name": f"test.massive.up_l1.out_{i:03d}", "trigger": True} for i in range(1, 5)]
-        downs = [{"type": "table", "name": f"test.massive.down_l1.in_{i:03d}"} for i in range(1, 5)]
+        ups = [format_dependency(f"test.massive.up_l1.out_{i:03d}", is_upstream=True) for i in range(1, 5)]
+        downs = [format_dependency(f"test.massive.down_l1.in_{i:03d}", is_upstream=False) for i in range(1, 5)]
         results.append(build_job("MASSIVE_CENTER_JOB", "center", ups, downs))
 
     # Upstream Levels 1-10
@@ -743,14 +695,14 @@ def get_massive_lineage_test_data(payload: JobSelectorRequest):
                 if lvl < 10:
                     # Each node i connects to nodes [i, i+1, i+2, i+3] (modulo 10) in lvl+1
                     up_indices = [( (i-1+j) % 10 ) + 1 for j in range(4)]
-                    ups = [{"type": "table", "name": f"test.massive.up_l{lvl+1}.out_{idx:03d}", "trigger": True} for idx in up_indices]
+                    ups = [format_dependency(f"test.massive.up_l{lvl+1}.out_{idx:03d}", is_upstream=True) for idx in up_indices]
                 else:
                     # Level 10 is root level
-                    ups = [{"type": "table", "name": f"test.massive.root.in_{i:03d}", "trigger": True}]
+                    ups = [format_dependency(f"test.massive.root.in_{i:03d}", is_upstream=True)]
                 
                 # Downstreams: The table this level produces
                 out_table = f"test.massive.up_l{lvl}.out_{i:03d}"
-                results.append(build_job(job_id, f"up_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+                results.append(build_job(job_id, f"up_l{lvl}", ups, [format_dependency(out_table, is_upstream=False)]))
 
     # Downstream Levels 1-10
     for lvl in range(1, 11):
@@ -762,14 +714,14 @@ def get_massive_lineage_test_data(payload: JobSelectorRequest):
                     # Level 1 reads from center output (4 tables total, let's distribute)
                     # node 1-3 -> center.out_001, 4-6 -> 002, 7-9 -> 003, 10 -> 004
                     center_idx = min((i-1)//3 + 1, 4)
-                    ups = [{"type": "table", "name": f"test.massive.down_l1.in_{center_idx:03d}", "trigger": True}]
+                    ups = [format_dependency(f"test.massive.down_l1.in_{center_idx:03d}", is_upstream=True)]
                 else:
                     # Each node i reads from 4 nodes in lvl-1
                     prev_indices = [( (i-1+j) % 10 ) + 1 for j in range(4)]
-                    ups = [{"type": "table", "name": f"test.massive.down_l{lvl-1}.out_{idx:03d}", "trigger": True} for idx in prev_indices]
+                    ups = [format_dependency(f"test.massive.down_l{lvl-1}.out_{idx:03d}", is_upstream=True) for idx in prev_indices]
                 
                 out_table = f"test.massive.down_l{lvl}.out_{i:03d}"
-                results.append(build_job(job_id, f"down_l{lvl}", ups, [{"type": "table", "name": out_table}]))
+                results.append(build_job(job_id, f"down_l{lvl}", ups, [format_dependency(out_table, is_upstream=False)]))
 
     total = len(results)
     return {
