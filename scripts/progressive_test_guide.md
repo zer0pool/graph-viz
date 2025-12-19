@@ -18,7 +18,7 @@
 
 ```bash
 # 1. Job Manager에서 데이터 가져와서 Lineage Manager에 sync
-curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/job/sync \
+curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/jobs/sync/by_ids \
   -H "Content-Type: application/json" \
   -d @/home/darkwing/src/lineage_manager/scripts/progressive_test_payload.json
 ```
@@ -26,51 +26,51 @@ curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/job/sync \
 ### 방법 2: 인라인 JSON
 
 ```bash
-curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/job/sync \
+curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/jobs/sync/by_ids \
   -H "Content-Type: application/json" \
   -d '{
   "jobs": [
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_001"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_002"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_003"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_004"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_005"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_006"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_007"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_008"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_009"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_010"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_011"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_012"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_013"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_014"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_015"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_016"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_017"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_018"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_019"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL0_JOB_020"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_001"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_002"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_003"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_004"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_005"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_006"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_007"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_008"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_009"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL1_JOB_010"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "CENTER_JOB"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_001"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_002"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_003"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_004"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_005"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_006"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_007"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_008"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_009"},
-    {"scheduling_type": "SELF-TYPE", "job_id": "LEVEL3_JOB_010"}
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_001"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_002"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_003"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_004"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_005"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_006"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_007"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_008"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_009"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_010"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_011"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_012"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_013"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_014"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_015"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_016"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_017"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_018"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_019"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL0_JOB_020"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_001"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_002"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_003"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_004"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_005"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_006"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_007"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_008"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_009"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL1_JOB_010"},
+    {"type": "SELF-TYPE", "job_id": "CENTER_JOB"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_001"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_002"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_003"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_004"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_005"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_006"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_007"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_008"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_009"},
+    {"type": "SELF-TYPE", "job_id": "LEVEL3_JOB_010"}
   ]
 }'
 ```
@@ -81,7 +81,7 @@ curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/job/sync \
 
 ### Step 1: 데이터 로드
 ```bash
-curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/job/sync \
+curl -X POST http://localhost:5003/lineage-manager/api/v1/graph/jobs/sync/by_ids \
   -H "Content-Type: application/json" \
   -d @/home/darkwing/src/lineage_manager/scripts/progressive_test_payload.json
 ```

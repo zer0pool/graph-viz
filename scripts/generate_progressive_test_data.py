@@ -11,11 +11,32 @@ import json
 BASE_URL = "http://localhost:5003/lineage-manager"
 
 def register_job(job_data):
-    """Register a job via API"""
-    url = f"{BASE_URL}/api/v1/jobs/register"
-    response = requests.post(url, json=job_data)
+    """Register a job via the direct sync API"""
+    url = f"{BASE_URL}/api/v1/graph/jobs/sync"
+    
+    # Transform to SchedulingLineage format
+    lineage = {
+        "type": "SELF-TYPE",
+        "job_id": job_data["job_id"],
+        "name": job_data["name"],
+        "upstreams": [
+            {"type": "table", "name": t, "trigger": True} 
+            for t in job_data.get("trigger_tables", [])
+        ],
+        "downstreams": [
+            {"type": "table", "name": job_data["destination_table"]}
+        ] if job_data.get("destination_table") else [],
+        "properties": {
+            "owner": job_data.get("owner"),
+            "labels": job_data.get("labels", {}),
+            "write_mode": job_data.get("write_mode"),
+            "metadata": job_data.get("metadata", {})
+        }
+    }
+    
+    response = requests.post(url, json=lineage)
     if response.status_code == 200:
-        print(f"✅ Registered: {job_data['job_id']}")
+        print(f"✅ Synced: {job_data['job_id']}")
     else:
         print(f"❌ Failed: {job_data['job_id']} - {response.text}")
     return response
@@ -32,10 +53,8 @@ def create_test_data():
             "labels": {"level": "0", "test": "progressive_expansion"},
             "owner": "test_user",
             "write_mode": "append",
-            "destination_type": "table",
             "destination_table": f"test.level0.output_{i:03d}",
             "trigger_tables": [f"test.level0.input_{i:03d}"],
-            "reference_tables": [f"test.level0.input_{i:03d}"],
             "metadata": {"description": "Level 0 upstream job"}
         }
         register_job(job_data)
@@ -43,11 +62,10 @@ def create_test_data():
     # Level 1: 10 upstream jobs (each reads from 2 level-0 jobs)
     print("\n=== Creating Level 1 (10 upstream jobs) ===")
     for i in range(1, 11):
-        # Each level-1 job reads from 2 level-0 jobs
         upstream_idx1 = (i - 1) * 2 + 1
         upstream_idx2 = (i - 1) * 2 + 2
         
-        reference_tables = [
+        trigger_tables = [
             f"test.level0.output_{upstream_idx1:03d}",
             f"test.level0.output_{upstream_idx2:03d}"
         ]
@@ -58,17 +76,15 @@ def create_test_data():
             "labels": {"level": "1", "test": "progressive_expansion"},
             "owner": "test_user",
             "write_mode": "append",
-            "destination_type": "table",
             "destination_table": f"test.level1.output_{i:03d}",
-            "trigger_tables": reference_tables,
-            "reference_tables": reference_tables,
+            "trigger_tables": trigger_tables,
             "metadata": {"description": "Level 1 upstream job"}
         }
         register_job(job_data)
     
     # Level 2: CENTER JOB (reads from all 10 level-1 jobs)
     print("\n=== Creating Level 2 (CENTER JOB) ===")
-    reference_tables = [f"test.level1.output_{i:03d}" for i in range(1, 11)]
+    trigger_tables = [f"test.level1.output_{i:03d}" for i in range(1, 11)]
     
     center_job = {
         "job_id": "CENTER_JOB",
@@ -76,10 +92,8 @@ def create_test_data():
         "labels": {"level": "2", "test": "progressive_expansion", "center": "true"},
         "owner": "test_user",
         "write_mode": "append",
-        "destination_type": "table",
         "destination_table": "test.center.main_output",
-        "trigger_tables": reference_tables,
-        "reference_tables": reference_tables,
+        "trigger_tables": trigger_tables,
         "metadata": {"description": "Center job with 10 upstream jobs"}
     }
     register_job(center_job)
@@ -93,10 +107,8 @@ def create_test_data():
             "labels": {"level": "3", "test": "progressive_expansion"},
             "owner": "test_user",
             "write_mode": "append",
-            "destination_type": "table",
             "destination_table": f"test.level3.output_{i:03d}",
             "trigger_tables": ["test.center.main_output"],
-            "reference_tables": ["test.center.main_output"],
             "metadata": {"description": "Level 3 downstream job"}
         }
         register_job(job_data)

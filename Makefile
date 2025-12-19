@@ -37,13 +37,13 @@ run-prod:
 	. .venv/bin/activate && uvicorn $(APP) --host 0.0.0.0 --port $(PORT) --workers 4
 
 test:
-	. .venv/bin/activate && pytest tests/ -v --cov=app
+	. .venv/bin/activate && PYTHONPATH=src pytest tests/ -v
 
 lint:
-	. .venv/bin/activate && flake8 app/ tests/
+	. .venv/bin/activate && flake8 src/ tests/
 
 format:
-	. .venv/bin/activate && black app/ tests/
+	. .venv/bin/activate && black src/ tests/
 
  
 clean:

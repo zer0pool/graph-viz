@@ -30,29 +30,32 @@ class TestGraphCommandServiceUoW:
     def service(self, mock_uow, mock_job_manager):
         return GraphCommandService(uow=mock_uow, job_manager=mock_job_manager)
 
-    def test_register_job_uses_uow_context(self, service, mock_uow):
+    def test_register_job_does_not_use_uow_context(self, service, mock_uow):
+        """Verifies that GraphCommandService does NOT manage its own transactions."""
         job_data = MagicMock(spec=JobRegister)
         job_data.job_id = "test_job"
+        job_data.name = "Test Job"
         job_data.reference_tables = []
         job_data.trigger_tables = []
-        job_data.destination_table = None
+        job_data.destination_tables = []
         
         # Mock internal methods to avoid complex logic
         with patch.object(service, '_create_job_node') as mock_create, \
-             patch.object(service, '_process_reference_tables'), \
-             patch.object(service, '_process_destination_table'), \
-             patch.object(service, '_create_upstream_relationships'):
+             patch.object(service, '_process_input_tables'), \
+             patch.object(service, '_process_destination_tables'), \
+             patch.object(service, '_create_upstream_relationships'), \
+             patch.object(service, '_create_downstream_relationships'):
             
             mock_create.return_value.job_id = "test_job"
             mock_create.return_value.id = "123"
             
             service.register_job(job_data)
 
-            # Verification
-            mock_uow.__enter__.assert_called_once()
-            mock_uow.__exit__.assert_called_once()
+            # Verification: MUST NOT use context manager internally
+            mock_uow.__enter__.assert_not_called()
+            mock_uow.__exit__.assert_not_called()
 
-    def test_toggle_job_enabled_uses_uow_context(self, service, mock_uow):
+    def test_toggle_job_enabled_does_not_use_uow_context(self, service, mock_uow):
         job_id = "job-1"
         mock_job = MagicMock()
         mock_job.job_metadata = {"enabled": True}
@@ -60,10 +63,10 @@ class TestGraphCommandServiceUoW:
         
         service.toggle_job_enabled(job_id)
         
-        mock_uow.__enter__.assert_called_once()
-        mock_uow.__exit__.assert_called_once()
+        mock_uow.__enter__.assert_not_called()
+        mock_uow.__exit__.assert_not_called()
 
-    def test_update_job_uses_uow_context_on_update(self, service, mock_uow):
+    def test_update_job_does_not_use_uow_context_on_update(self, service, mock_uow):
         job_id = "job-1"
         mock_job = MagicMock()
         mock_job.job_metadata = {}
@@ -73,19 +76,20 @@ class TestGraphCommandServiceUoW:
         
         service.update_job(job_id, payload)
         
-        mock_uow.__enter__.assert_called_once()
-        mock_uow.__exit__.assert_called_once()
+        mock_uow.__enter__.assert_not_called()
+        mock_uow.__exit__.assert_not_called()
 
-    def test_reset_graph_uses_uow_context(self, service, mock_uow):
-        service.reset_graph()
-        
-        mock_uow.__enter__.assert_called_once()
-        mock_uow.__exit__.assert_called_once()
-        
-        mock_uow.closures.clear_all.assert_called()
-        mock_uow.edges.clear_all.assert_called()
+    def test_reset_graph_does_not_use_uow_context(self, service, mock_uow):
+        with patch.object(service, '_invalidate_all_caches'):
+            service.reset_graph()
+            
+            mock_uow.__enter__.assert_not_called()
+            mock_uow.__exit__.assert_not_called()
+            
+            mock_uow.closures.clear_all.assert_called()
+            mock_uow.edges.clear_all.assert_called()
 
-    def test_set_table_trigger_uses_uow_context(self, service, mock_uow):
+    def test_set_table_trigger_does_not_use_uow_context(self, service, mock_uow):
         table_name = "t1"
         job_id = "j1"
         
@@ -98,10 +102,10 @@ class TestGraphCommandServiceUoW:
         with patch.object(service, '_invalidate_trigger_cache'):
             service.set_table_trigger(table_name, job_id, True)
 
-            mock_uow.__enter__.assert_called_once()
-            mock_uow.__exit__.assert_called_once()
+            mock_uow.__enter__.assert_not_called()
+            mock_uow.__exit__.assert_not_called()
 
-    def test_bulk_set_table_triggers_uses_uow_context(self, service, mock_uow):
+    def test_bulk_set_table_triggers_does_not_use_uow_context(self, service, mock_uow):
         table_name = "t1"
         
         mock_uow.tables.get_by_full_name.return_value = MagicMock(id=1)
@@ -112,21 +116,21 @@ class TestGraphCommandServiceUoW:
         with patch.object(service, '_invalidate_trigger_cache'):
             service.bulk_set_table_triggers(table_name, True)
             
-            mock_uow.__enter__.assert_called_once()
-            mock_uow.__exit__.assert_called_once()
+            mock_uow.__enter__.assert_not_called()
+            mock_uow.__exit__.assert_not_called()
 
-    def test_uow_exception_propagates_or_handled(self, service, mock_uow):
-        # Scenario: register_job raises Exception inside with block
+    def test_validation_rejects_empty_job_id(self, service):
         job_data = MagicMock(spec=JobRegister)
-        job_data.job_id = "test_job"
+        job_data.job_id = ""
+        job_data.name = "Valid Name"
         
-        mock_uow.__enter__.return_value = mock_uow
-        # When exception happens, __exit__ is called with exc info.
-        # BaseUnitOfWork.rollback calls db.rollback()
+        with pytest.raises(ValueError, match="job_id cannot be empty"):
+            service.register_job(job_data)
+
+    def test_validation_rejects_empty_job_name(self, service):
+        job_data = MagicMock(spec=JobRegister)
+        job_data.job_id = "valid_id"
+        job_data.name = "   "
         
-        with patch.object(service, '_create_job_node', side_effect=Exception("DB Error")):
-             with pytest.raises(Exception, match="DB Error"):
-                 service.register_job(job_data)
-        
-        mock_uow.__enter__.assert_called_once()
-        mock_uow.__exit__.assert_called_once()
+        with pytest.raises(ValueError, match="job name cannot be empty"):
+            service.register_job(job_data)

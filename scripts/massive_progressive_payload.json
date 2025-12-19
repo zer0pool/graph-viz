@@ -1,0 +1,808 @@
+{
+    "jobs": [
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MASSIVE_CENTER_JOB"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L1_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L2_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L3_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L4_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L5_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L6_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L7_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L8_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L9_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_UP_L10_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L1_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L2_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L3_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L4_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L5_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L6_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L7_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L8_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L9_JOB_010"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_001"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_002"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_003"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_004"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_005"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_006"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_007"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_008"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_009"
+        },
+        {
+            "type": "SELF-TYPE",
+            "job_id": "MA_DOWN_L10_JOB_010"
+        }
+    ]
+}
