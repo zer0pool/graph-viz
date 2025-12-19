@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SchedulingLineageDependency(BaseModel):
@@ -15,8 +15,7 @@ class SchedulingLineageDependency(BaseModel):
         None, description="True when the upstream table is configured as a trigger."
     )
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class SchedulingLineageSchedule(BaseModel):
@@ -30,8 +29,7 @@ class SchedulingLineageSchedule(BaseModel):
     start_at: Optional[datetime] = Field(None, description="Schedule start timestamp.")
     end_at: Optional[datetime] = Field(None, description="Schedule end timestamp.")
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class SchedulingLineage(BaseModel):
@@ -71,11 +69,11 @@ class SchedulingLineage(BaseModel):
         description="DEPRECATED: Use 'properties' instead. Kept for backward compatibility."
     )
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
-    @root_validator(pre=True)
-    def handle_metadata_and_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def handle_metadata_and_properties(cls, data: Any) -> Any:
         """
         Support both 'metadata' and 'properties' names with backward compatibility.
         
@@ -84,6 +82,9 @@ class SchedulingLineage(BaseModel):
         2. Merge existing metadata and properties
         3. Set both fields for compatibility
         """
+        if not isinstance(data, dict):
+            return data
+
         # Fields to pack into metadata/properties
         to_pack = (
             "owner",
@@ -103,13 +104,13 @@ class SchedulingLineage(BaseModel):
         )
         
         # Start with existing metadata and properties
-        metadata = dict(values.get("metadata") or {})
-        properties = dict(values.get("properties") or {})
+        metadata = dict(data.get("metadata") or {})
+        properties = dict(data.get("properties") or {})
         
         # Pack non-lineage fields
         for key in to_pack:
-            if key in values:
-                val = values.pop(key)
+            if key in data:
+                val = data.pop(key)
                 metadata.setdefault(key, val)
                 properties.setdefault(key, val)
         
@@ -117,10 +118,10 @@ class SchedulingLineage(BaseModel):
         merged = {**metadata, **properties}
         
         # Set both for backward compatibility
-        values["properties"] = merged
-        values["metadata"] = merged
+        data["properties"] = merged
+        data["metadata"] = merged
         
-        return values
+        return data
 
 
 class SchedulingLineagePagination(BaseModel):
@@ -131,8 +132,7 @@ class SchedulingLineagePagination(BaseModel):
     next_offset: Optional[int] = Field(None, description="Offset to request the next page, if any.")
     total: Optional[int] = Field(None, description="Total number of items available on the server.")
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class SchedulingLineageResponse(BaseModel):
@@ -147,5 +147,4 @@ class SchedulingLineageResponse(BaseModel):
     )
     message: Optional[str] = Field(None, description="Optional message supplied by the API.")
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
