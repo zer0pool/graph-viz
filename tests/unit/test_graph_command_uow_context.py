@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.api.v1.schemas import JobRegister, JobUpdateRequest
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 
 class TestGraphCommandServiceUoW:
 
@@ -50,6 +51,27 @@ class TestGraphCommandServiceUoW:
             mock_create.return_value.id = "123"
             
             service.register_job(job_data)
+
+            # Verification: MUST NOT use context manager internally
+            mock_uow.__enter__.assert_not_called()
+            mock_uow.__exit__.assert_not_called()
+
+    def test_register_lineage_job_does_not_use_uow_context(self, service, mock_uow):
+        """Verifies that register_lineage_job does NOT manage its own transactions."""
+        lineage = SchedulingLineage(
+            job_id="test_job",
+            type="SELF",
+            name="Test Job",
+            status="RUNNING"
+        )
+        
+        # Mock internal methods
+        with patch.object(service, '_extract_job_properties') as mock_extract:
+            mock_extract.return_value = {"owner": "test"}
+            mock_uow.jobs.get.return_value = None
+            mock_uow.jobs.get_or_create.return_value = MagicMock(id=1, job_id="test_job")
+            
+            service.register_lineage_job(lineage)
 
             # Verification: MUST NOT use context manager internally
             mock_uow.__enter__.assert_not_called()
@@ -134,3 +156,14 @@ class TestGraphCommandServiceUoW:
         
         with pytest.raises(ValueError, match="job name cannot be empty"):
             service.register_job(job_data)
+
+    def test_register_lineage_job_validation_rejects_empty_ids(self, service):
+        # Empty ID
+        l1 = SchedulingLineage(job_id="", type="SELF", name="Valid", status="RUN")
+        with pytest.raises(ValueError, match="job_id cannot be empty"):
+            service.register_lineage_job(l1)
+            
+        # Empty Name
+        l2 = SchedulingLineage(job_id="valid", type="SELF", name="  ", status="RUN")
+        with pytest.raises(ValueError, match="job name cannot be empty"):
+            service.register_lineage_job(l2)

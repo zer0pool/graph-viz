@@ -23,11 +23,22 @@ class TableRepository(BaseRepository):
         if row:
             return row
         
+        # Merge properties from kwargs
         properties = {            
             "labels": kwargs.get("labels", {}),
             "owner": kwargs.get("owner"),
-            "write_mode": kwargs.get("write_mode")            
+            "write_mode": kwargs.get("write_mode"),
+            "storage_type": kwargs.get("storage") or kwargs.get("storage_type"),
         }
+        
+        # Merge any extra metadata passed
+        meta = kwargs.get("table_metadata") or kwargs.get("node_metadata") or {}
+        if isinstance(meta, dict):
+            properties.update(meta)
+            # Ensure special fields are set if in meta
+            if "storage" in meta: properties["storage_type"] = meta["storage"]
+            if "owner" in meta: properties["owner"] = meta["owner"]
+
         row = GraphNode(node_type="table", name=full_name, properties=properties)
         self.db.add(row)
         self.db.flush()

@@ -21,7 +21,7 @@ class GraphEdgeRepository(BaseRepository):
         source_type: str,
         target_type: str,
         edge_type: str,
-        is_trigger_on: bool = False,
+        dependency_type: str | None = None,
         properties: dict | None = None,
     ):
         logger.debug(
@@ -38,7 +38,7 @@ class GraphEdgeRepository(BaseRepository):
                 source_node_id=source_id,
                 target_node_id=target_id,
                 edge_type=edge_type,
-                is_trigger_on=is_trigger_on,
+                dependency_type=dependency_type,
                 properties=properties or {},
             )
             .prefix_with("IGNORE")
@@ -49,7 +49,7 @@ class GraphEdgeRepository(BaseRepository):
         job_id: int,
         table_id: int,
         io_type: str,
-        is_trigger_on: bool = False,
+        dependency_type: str | None = None,
     ):
         """Create a read/write edge between job and table nodes."""
         if io_type == "input":
@@ -59,7 +59,7 @@ class GraphEdgeRepository(BaseRepository):
                 source_type="table",
                 target_type="job",
                 edge_type="read",
-                is_trigger_on=is_trigger_on,
+                dependency_type=dependency_type,
                 properties={"io_type": "input"},
             )
         else:
@@ -69,18 +69,17 @@ class GraphEdgeRepository(BaseRepository):
                 source_type="job",
                 target_type="table",
                 edge_type="write",
-                is_trigger_on=is_trigger_on,
+                dependency_type=dependency_type,
                 properties={"io_type": "output"},
             )
 
-    def set_input_trigger(self, job_id: int, table_id: int, is_on: bool) -> None:
-        """Update is_trigger_on for the table->job read edge."""
+    def update_dependency_type(self, source_id: int, target_id: int, dep_type: str) -> None:
+        """Update dependency_type for a specific edge."""
         self.db.execute(
             update(GraphEdge)
             .where(
-                GraphEdge.edge_type == "read",
-                GraphEdge.source_node_id == table_id,
-                GraphEdge.target_node_id == job_id,
+                GraphEdge.source_node_id == source_id,
+                GraphEdge.target_node_id == target_id,
             )
-            .values(is_trigger_on=is_on)
+            .values(dependency_type=dep_type)
         )

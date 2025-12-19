@@ -2,6 +2,7 @@ import { selectionState, lineageState } from "../state.js";
 import { ExcelExportService } from "../services/excelExportService.js";
 import { NodeListRenderer } from "./renderers/nodeListRenderer.js";
 import { ExpandedLineageRenderer } from "./renderers/expandedLineageRenderer.js";
+import { LineageDetailService } from "../services/lineageDetailService.js";
 
 class ListView {
     constructor(api, graphController) {
@@ -33,8 +34,11 @@ class ListView {
             downloadFullBtn: document.getElementById("btn-download-full-lineage"),
         };
 
+        this.lineageDetailService = new LineageDetailService(this.api);
         this.nodeListRenderer = new NodeListRenderer();
-        this.fullLineageRenderer = new ExpandedLineageRenderer();
+        this.fullLineageRenderer = new ExpandedLineageRenderer({
+            detailService: this.lineageDetailService
+        });
 
         this.currentMode = "current";
         this.expandedNodes = new Set(); // For tree folding if implemented later
@@ -373,12 +377,36 @@ class ListView {
     }
 
     downloadExcel() {
-        if (!this.lastFullLineageData) return;
+        console.debug("[ListView] downloadExcel triggered");
+        if (!this.lastFullLineageData) {
+            console.warn("[ListView] No lineage data available to download");
+            return;
+        }
 
         const rootNode = selectionState.selectedNode;
-        const rootName = rootNode ? (rootNode.label || rootNode.id) : "Unknown";
+        let rootName = "Unknown";
 
-        ExcelExportService.downloadLineageExcel(this.lastFullLineageData, rootName);
+        if (rootNode) {
+            // Handle both plain objects and Cytoscape/function-based objects
+            if (typeof rootNode.id === 'function') {
+                rootName = rootNode.data('label') || rootNode.id();
+            } else {
+                rootName = rootNode.label || rootNode.id || "Unknown";
+            }
+        }
+
+        console.debug(`[ListView] Downloading Excel for root: ${rootName}`);
+
+        try {
+            ExcelExportService.downloadLineageExcel(
+                this.lastFullLineageData,
+                rootName,
+                this.lineageDetailService.cache
+            );
+            console.debug("[ListView] Excel export service called successfully");
+        } catch (e) {
+            console.error("[ListView] Excel export failed", e);
+        }
     }
 }
 

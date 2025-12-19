@@ -119,13 +119,15 @@ class JobTableLinkRepository(BaseRepository):
         return self.db.execute(stmt).scalars().all()
 
     def get_job_inputs_with_trigger_flag(self, table_id: int):
-        """Return (job_node, is_trigger_on) tuples for table -> job read edges."""
+        """Return (job_node, is_trigger_on_flag) tuples for table -> job read edges, mapped from dependency_type."""
         stmt = (
-            select(GraphNode, GraphEdge.is_trigger_on)
+            select(GraphNode, GraphEdge.dependency_type)
             .join(GraphEdge, GraphNode.id == GraphEdge.target_node_id)
             .where(
                 GraphEdge.edge_type == "read",
                 GraphEdge.source_node_id == table_id,
             )
         )
-        return self.db.execute(stmt).all()
+        results = self.db.execute(stmt).all()
+        # Map dependency_type to boolean for caller compatibility
+        return [(node, dep == "HARD") for node, dep in results]

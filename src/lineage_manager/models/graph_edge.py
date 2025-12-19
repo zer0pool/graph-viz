@@ -13,10 +13,15 @@ class GraphEdge(Base):
     source_node_id = Column(Integer, nullable=False)
     target_node_id = Column(Integer, nullable=False)
     edge_type = Column(String(20), nullable=False)
-    is_trigger_on = Column(Boolean, server_default=func.true(), nullable=False)
+    dependency_type = Column(String(50), nullable=True)
     properties = Column(MutableDict.as_mutable(JSON), nullable=True, default=dict)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    @property
+    def is_trigger(self) -> bool:
+        """Compatibility property for trigger checks."""
+        return self.dependency_type == "HARD"
 
     __table_args__ = (
         UniqueConstraint(

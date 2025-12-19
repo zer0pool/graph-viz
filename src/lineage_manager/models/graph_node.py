@@ -84,21 +84,8 @@ class GraphNode(Base):
     def destination_tables(self, value) -> None:
         self._set_prop("destination_tables", value)
 
-    @property
-    def trigger_tables(self):
-        return self._get_prop("trigger_tables", [])
-
-    @trigger_tables.setter
-    def trigger_tables(self, value) -> None:
-        self._set_prop("trigger_tables", value)
-
-    @property
-    def reference_tables(self):
-        return self._get_prop("reference_tables", [])
-
-    @reference_tables.setter
-    def reference_tables(self, value) -> None:
-        self._set_prop("reference_tables", value)
+ 
+ 
 
     @property
     def job_metadata(self):

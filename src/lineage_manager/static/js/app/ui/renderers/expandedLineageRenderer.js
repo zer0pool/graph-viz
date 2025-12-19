@@ -7,6 +7,7 @@ import { LineageTreeUtils } from "../../utils/lineageTreeUtils.js";
 export class ExpandedLineageRenderer {
     constructor(callbacks = {}) {
         this.onSelectNode = callbacks.onSelectNode || (() => { });
+        this.detailService = callbacks.detailService; // Optional, for async enrichment
         this.currentRootName = null;
     }
 
@@ -57,8 +58,20 @@ export class ExpandedLineageRenderer {
         if (container.classList.contains("blur-loading")) {
             setTimeout(() => {
                 container.classList.remove("blur-loading");
+                // Trigger detail enrichment after UI is ready
+                this._triggerEnrichment(container);
             }, 200);
+        } else {
+            this._triggerEnrichment(container);
         }
+    }
+
+    _triggerEnrichment(container) {
+        if (!this.detailService) return;
+        const tbodies = container.querySelectorAll("tbody");
+        tbodies.forEach(tbody => {
+            this.detailService.enrichTableRows(tbody);
+        });
     }
 
     _createApaTable(directionLabel, jobColHeader, items, selectedNode) {
@@ -69,7 +82,9 @@ export class ExpandedLineageRenderer {
         body.className = "lineage-card-body apa-container";
 
         // Use LineageTreeUtils to build the tree structure
+        console.debug(`[ExpandedLineageRenderer] Creating table for ${directionLabel}. Input items:`, items.length);
         const tableItems = LineageTreeUtils.buildFlatTree(items);
+        console.debug(`[ExpandedLineageRenderer] Built flat tree with ${tableItems.length} rows.`);
 
         const titleDiv = document.createElement("div");
         titleDiv.className = "apa-table-label";
@@ -81,12 +96,21 @@ export class ExpandedLineageRenderer {
 
         const thead = document.createElement("thead");
         thead.innerHTML = `
-            <tr>
-                <th>Table Name</th>
-                <th>${jobColHeader}</th>
-                <th style="width: 60px;">Depth</th>
-                <th>Owner</th>
-                <th>Info</th>
+            <tr class="apa-header-group">
+                <th colspan="2" class="group-identity">Identity</th>
+                <th colspan="2" class="group-table">Table Section</th>
+                <th colspan="5" class="group-job">Job Section</th>
+            </tr>
+            <tr class="apa-header-detail">
+                <th style="width: 250px;">Table Name</th>
+                <th style="width: 50px;">Depth</th>
+                <th style="width: 100px;">Storage</th>
+                <th style="width: 100px;">Write Mode</th>
+                <th style="width: 150px;">Job ID</th>
+                <th style="width: 100px;">Owner</th>
+                <th style="width: 150px;">Schedule</th>
+                <th style="width: 150px;">Status</th>
+                <th style="width: 100px;">Lifecycle</th>
             </tr>
         `;
         table.appendChild(thead);
@@ -115,7 +139,7 @@ export class ExpandedLineageRenderer {
             const totalTr = document.createElement("tr");
             totalTr.className = "apa-total-row";
             totalTr.innerHTML = `
-                <td colspan="5" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
+                <td colspan="9" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
                     ${countText}
                 </td>
             `;
@@ -129,7 +153,7 @@ export class ExpandedLineageRenderer {
             const omissionTr = document.createElement("tr");
             omissionTr.className = "omission-row";
             omissionTr.innerHTML = `
-                <td colspan="5" class="omission-cell">
+                <td colspan="9" class="omission-cell">
                     <div class="omission-content">
                         <div class="omission-dots">• • •</div>
                         <div class="omission-label">Middle items hidden</div>
@@ -160,8 +184,8 @@ export class ExpandedLineageRenderer {
     _createRow(item, originalItems, selectedNode) {
         const tr = document.createElement("tr");
         tr.dataset.id = item.id;
-        tr.dataset.type = item.type.toLowerCase();
-        tr.dataset.label = item.name;
+        tr.dataset.type = (item.type || "table").toLowerCase();
+        tr.dataset.label = item.name || item.id;
 
         const tProps = item.properties || {};
         const owner = tProps.owner || "-";
@@ -174,7 +198,7 @@ export class ExpandedLineageRenderer {
 
         if (item.parent) {
             const parentNode = originalItems.find(p => p.id === item.parent || p.name === item.parent);
-            if (parentNode && parentNode.type === "job") {
+            if (parentNode && (parentNode.type || "").toLowerCase() === "job") {
                 jobName = parentNode.name;
                 const jProps = parentNode.properties || {};
                 const status = jProps.status || jProps.run_status || "unknown";
@@ -223,15 +247,14 @@ export class ExpandedLineageRenderer {
                     ${nameHtml}
                 </div>
             </td>
-            <td>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span>${jobName}</span>
-                    ${jobStatusPill}
-                </div>
-            </td>
-            <td>${logicalDepth}</td>
-            <td>${owner}</td>
-            <td>${info}</td>
+            <td style="text-align: center;">${logicalDepth}</td>
+            <td class="cell-storage loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-write-mode loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-job-id loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-owner loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-schedule loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-status loading-placeholder"><span class="skeleton-text"></span></td>
+            <td class="cell-lifecycle loading-placeholder"><span class="skeleton-text"></span></td>
         `;
 
         return tr;
