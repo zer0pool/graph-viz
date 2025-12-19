@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
 from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.uow import GraphUnitOfWork
-from lineage_manager.models.job_data_transformer import JobDataTransformer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
 from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.graph_query_service import GraphQueryService
@@ -54,32 +53,17 @@ class GraphSyncService:
                     "message": f"Job '{job_id}' not found in manager",
                 }
 
-            # Use the JobDataTransformer to transform the job data
-            transformed_data = JobDataTransformer.transform_job_to_graph_node(jd)
+            # Parse dict into SchedulingLineage
+            # Note: We assume the dictionary from get_job is compatible with SchedulingLineage model.
+            try:
+                lineage = SchedulingLineage.model_validate(jd)
+            except Exception as e:
+                return {"status": "error", "message": f"Invalid job data format for {job_id}: {e}"}
 
-            # Extract destination tables from transformed data
-            destination_tables = transformed_data.get("destination_tables", [])
-            # destination_type is singular in source job dict but plural in schema
-            dt = jd.get("destination_type")
-            destination_types = [dt] if dt else []
-
-            jr = JobRegister(
-                job_id=jd.get("job_id", job_id),
-                name=jd.get("name", job_id),
-                labels=jd.get("labels", {}),
-                owner=jd.get("owner"),
-                write_mode=jd.get("write_mode"),
-                destination_types=destination_types,
-                destination_tables=destination_tables,
-                trigger_tables=transformed_data.get("trigger_tables", []),
-                reference_tables=transformed_data.get("reference_tables", []),
-                run_status=jd.get("run_status", "RUN"),
-                schedule=jd.get("schedule"),
-                destinations=jd.get("destinations"),
-                metadata=transformed_data.get("job_metadata", {}),
-            )
-            # Delegate to CommandService
-            self.command_service.register_job(jr)
+            # Orchestrator owns transaction
+            with self.uow.transactional():
+                self.command_service.register_lineage_job(lineage)
+            
             return {"status": "success", "job_id": job_id}
         except Exception as e:
             logger.error(f"sync_job_from_manager failed: {e}")

@@ -111,7 +111,7 @@ class TestGraphCommandServiceUoW:
             mock_uow.closures.clear_all.assert_called()
             mock_uow.edges.clear_all.assert_called()
 
-    def test_set_table_trigger_does_not_use_uow_context(self, service, mock_uow):
+    def test_set_table_dependency_does_not_use_uow_context(self, service, mock_uow):
         table_name = "t1"
         job_id = "j1"
         
@@ -121,13 +121,13 @@ class TestGraphCommandServiceUoW:
         mock_job.trigger_tables = []
         mock_uow.jobs.get.return_value = mock_job
         
-        with patch.object(service, '_invalidate_trigger_cache'):
-            service.set_table_trigger(table_name, job_id, True)
+        with patch.object(service, '_invalidate_dependency_cache'):
+            service.set_table_dependency(table_name, job_id, True)
 
             mock_uow.__enter__.assert_not_called()
             mock_uow.__exit__.assert_not_called()
 
-    def test_bulk_set_table_triggers_does_not_use_uow_context(self, service, mock_uow):
+    def test_bulk_set_table_dependencies_does_not_use_uow_context(self, service, mock_uow):
         table_name = "t1"
         
         mock_uow.tables.get_by_full_name.return_value = MagicMock(id=1)
@@ -135,8 +135,8 @@ class TestGraphCommandServiceUoW:
         mock_job.trigger_tables = []
         mock_uow.job_table_links.get_jobs_by_table_and_io_type.return_value = [mock_job]
         
-        with patch.object(service, '_invalidate_trigger_cache'):
-            service.bulk_set_table_triggers(table_name, True)
+        with patch.object(service, '_invalidate_dependency_cache'):
+            service.bulk_set_table_dependencies(table_name, True)
             
             mock_uow.__enter__.assert_not_called()
             mock_uow.__exit__.assert_not_called()

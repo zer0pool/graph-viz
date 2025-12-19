@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
 from lineage_manager.api.v1.schemas import JobRegister, JobUpdateRequest
 from lineage_manager.core.uow import GraphUnitOfWork
-from lineage_manager.models.job_data_transformer import JobDataTransformer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
 
 logger = logging.getLogger(__name__)
