@@ -31,7 +31,7 @@ export function initializeMermaid() {
                 primaryColor: '#e3f2fd',
                 primaryBorderColor: '#1a73e8',
                 primaryTextColor: '#202124',
-                lineColor: '#dadce0',
+                lineColor: '#666666',
                 secondaryColor: '#e8f5e9',
                 secondaryBorderColor: '#34a853'
             },

@@ -117,7 +117,7 @@ export function generateMermaidDSL(graphData, selectedNodeId = null) {
         lines.push(`  class ${selectedMermaidId} selected`);
     }
 
-    lines.push('  linkStyle default stroke:#dadce0,stroke-width:1px');
+    lines.push('  linkStyle default stroke:#666666,stroke-width:2px');
 
     return lines.join('\n');
 }
