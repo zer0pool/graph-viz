@@ -351,6 +351,10 @@ class GraphQueryService:
         uow = self.uow
         table = uow.tables.get_by_full_name(table_name)
         if not table:
+            # If it's an external storage path but not found, return empty success instead of error
+            # to be consistent with how TableService handled it previously, but now we attempt query first.
+            if table_name.startswith(("s3://", "gs://", "gcs://")) or "/" in table_name:
+                return {"status": "success", "table": table_name, "count": 0, "jobs": []}
             return {"status": "error", "message": f"Table '{table_name}' not found"}
 
         rows = uow.job_table_links.get_job_inputs_with_trigger_flag(table.id)
@@ -371,9 +375,10 @@ class GraphQueryService:
 
         res = {
             "status": "success",
+            "table": table_name,
+            "count": len(items),
             "jobs": items,
         }
-        
         self._cache_set(key, res)
         return res
 
@@ -442,6 +447,26 @@ class GraphQueryService:
         try:
             table = uow.tables.get_by_full_name(table_name)
             if not table:
+                # Leniency for external storage paths (S3/GCS)
+                if table_name.startswith(("s3://", "gs://", "gcs://")) or "/" in table_name:
+                    return {
+                        "status": "success",
+                        "table": table_name,
+                        "metrics": {
+                            "root_count": 0,
+                            "leaf_count": 0,
+                            "upstream_table_count": 0,
+                            "downstream_table_count": 0,
+                            "upstream_job_count": 0,
+                            "downstream_job_count": 0,
+                            "depth": {"upstream": 0, "downstream": 0},
+                        },
+                        "upstream": {"root_tables": [], "tables": [], "jobs": []},
+                        "downstream": {"leaf_tables": [], "tables": [], "jobs": []},
+                        "paths": {"preview": [], "full": []},
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+
                 return {
                     "status": "error",
                     "error_code": "TABLE_NOT_FOUND",

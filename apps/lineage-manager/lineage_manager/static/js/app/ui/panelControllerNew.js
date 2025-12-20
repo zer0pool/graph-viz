@@ -86,6 +86,9 @@ export class PanelController {
             // Initialize TriggerManager after HTML is loaded
             this.triggerManager = new TriggerManager(this.api);
 
+            // Re-initialize Lineage provider to bind to new elements
+            this.lineageProvider.init();
+
             this.setPlaceholder();
             this.bindTabEvents();
             this.bindTimelinessEvents();

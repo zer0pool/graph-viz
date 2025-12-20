@@ -11,6 +11,17 @@ const PATH_FLOW_STYLE =
 export class LineageInsightProvider {
     constructor() {
         this.lineageState = this.createEmptyState();
+        this.lineageUI = {};
+        this.pathCollapseState = new Map();
+        this.connectorCounter = 0;
+        this.init();
+    }
+
+    /**
+     * Bind UI elements from the DOM. 
+     * Necessary if HTML is injected after Provider creation.
+     */
+    init() {
         this.lineageUI = {
             pathPreview: document.getElementById("lineage-path-preview"),
             pathButton: document.getElementById("lineage-path-expand"),
@@ -28,8 +39,6 @@ export class LineageInsightProvider {
             drawerClose: document.getElementById("lineage-drawer-close"),
         };
 
-        this.pathCollapseState = new Map();
-        this.connectorCounter = 0;
         this.bindDrawerEvents();
     }
 

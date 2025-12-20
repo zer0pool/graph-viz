@@ -30,8 +30,6 @@ class TableService:
 
     def get_table_dependencies(self, table_name: str) -> Dict[str, Any]:
         """Get trigger ON/OFF status per job that consumes the table."""
-        if self._is_external_storage(table_name):
-            return {"status": "success", "table": table_name, "count": 0, "jobs": []}
         return self.query_service.get_table_dependencies(table_name)
 
     def get_table_hierarchy(self, table_name: str) -> Dict[str, Any]:
