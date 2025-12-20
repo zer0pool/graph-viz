@@ -187,8 +187,8 @@ export class JobDetailView {
     }
 
     renderIOLinks(inputs = [], outputs = []) {
-        this.renderList(this.inputList, inputs, "No input tables detected.", "overview_inputs");
-        this.renderList(this.outputList, outputs, "No output tables detected.", "overview_outputs");
+        this.renderList(this.inputList, inputs, "No input tables detected.", "overview_inputs", true);
+        this.renderList(this.outputList, outputs, "No output tables detected.", "overview_outputs", true);
     }
 
     setLineagePlaceholder(message) {
@@ -246,10 +246,13 @@ export class JobDetailView {
             return;
         }
 
-        const threshold = 3;
-        const isCollapsible = collapsible && items.length > threshold;
-        const expanded = this.collapseState[key] || false;
-        const visibleItems = !isCollapsible || expanded ? items : items.slice(0, threshold);
+        const initialThreshold = 3;
+        const expandIncrement = 4;
+        const isCollapsible = collapsible && items.length > initialThreshold;
+
+        // Track how many items to show (starts at 3, increases by 4 each time)
+        const currentLimit = this.collapseState[key] || initialThreshold;
+        const visibleItems = !isCollapsible ? items : items.slice(0, currentLimit);
 
         target.innerHTML = visibleItems
             .map((entry) => {
@@ -264,14 +267,25 @@ export class JobDetailView {
             })
             .join("");
 
-        if (isCollapsible) {
-            const remaining = items.length - threshold;
-            const label = expanded ? "Hide tables" : `+ ${remaining} more tables…`;
+        if (isCollapsible && currentLimit < items.length) {
+            const remaining = items.length - currentLimit;
+            const nextIncrement = Math.min(expandIncrement, remaining);
+            const label = `+ ${remaining} more ${remaining === 1 ? 'item' : 'items'}…`;
             const toggle = document.createElement("li");
             toggle.className = "io-toggle";
             toggle.innerHTML = `<button type="button">${label}</button>`;
             toggle.querySelector("button").addEventListener("click", () => {
-                this.collapseState[key] = !expanded;
+                this.collapseState[key] = currentLimit + expandIncrement;
+                this.renderList(target, items, emptyText, key, collapsible);
+            });
+            target.appendChild(toggle);
+        } else if (isCollapsible && currentLimit >= items.length && currentLimit > initialThreshold) {
+            // Show "Hide" button if expanded
+            const toggle = document.createElement("li");
+            toggle.className = "io-toggle";
+            toggle.innerHTML = `<button type="button">Hide items</button>`;
+            toggle.querySelector("button").addEventListener("click", () => {
+                this.collapseState[key] = initialThreshold;
                 this.renderList(target, items, emptyText, key, collapsible);
             });
             target.appendChild(toggle);

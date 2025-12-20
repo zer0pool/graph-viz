@@ -39,7 +39,10 @@ export function toMermaidId(nodeId) {
     }
 
     const [type, ...rest] = nodeId.split(':');
-    const prefix = type === 'job' ? 'J' : 'T';
+    let prefix = 'T';
+    if (type === 'job') prefix = 'J';
+    if (type === 'placeholder') prefix = 'P';
+
     const sanitized = rest.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
     return `${prefix}_${sanitized}`;
 }
@@ -78,9 +81,15 @@ export function generateMermaidDSL(graphData, selectedNodeId = null) {
         }
 
         const mermaidId = toMermaidId(node.id);
-        const nodeClass = node.type === 'job' ? 'job' : 'table';
+        const nodeClass = node.type === 'placeholder' ? 'placeholder' : (node.type === 'job' ? 'job' : 'table');
         const label = escapeLabel(node.label || node.id);
-        nodeLines.add(`  ${mermaidId}["${label}"]:::${nodeClass}`);
+
+        // Use different bracket for placeholder if desired, e.g., ([label])
+        if (node.type === 'placeholder') {
+            nodeLines.add(`  ${mermaidId}(["${label}"]):::${nodeClass}`);
+        } else {
+            nodeLines.add(`  ${mermaidId}["${label}"]:::${nodeClass}`);
+        }
     });
 
     // Generate edges
@@ -106,6 +115,7 @@ export function generateMermaidDSL(graphData, selectedNodeId = null) {
         'graph LR',
         '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
         '  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6',
+        '  classDef placeholder fill:#f5f5f5,stroke:#999,rx:20,ry:20',
         '  classDef selected stroke:#1a73e8,stroke-width:3.5px',
         ...Array.from(nodeLines),
         ...edgeLines

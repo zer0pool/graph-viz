@@ -14,7 +14,14 @@ class MermaidGraphManager {
         this.nodes = [];
         this.edges = [];
         this.selectedNodeId = null;
+        this.focusNodeId = null; // Node that is the pivot for folding
         this.container = document.getElementById('mermaid-graph');
+
+        // Expansion state for folding (maps direction -> current limit)
+        this.expansionLimits = {
+            upstream: 3,
+            downstream: 3
+        };
 
         // History Management
         this.history = [];
@@ -23,6 +30,10 @@ class MermaidGraphManager {
 
     async loadGraph(nodeId) {
         try {
+            // Reset expansion limits and focus on new graph load
+            this.expansionLimits = { upstream: 3, downstream: 3 };
+            this.focusNodeId = nodeId;
+            this.selectedNodeId = nodeId;
             const url = `/api/v1/lineage/graph?node_id=${encodeURIComponent(nodeId)}&depth=1`;
             console.log('Loading graph with URL:', url);
 
@@ -77,9 +88,13 @@ class MermaidGraphManager {
         this.setExpandButtonsState(false);
 
         try {
+            // Update focus when expanding
+            this.focusNodeId = this.selectedNodeId;
+            this.expansionLimits = { upstream: 3, downstream: 3 };
+
             const url = `/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${direction}&depth=1`;
             console.log('Expanding with URL:', url);
-
+            // ... cleanup later
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -102,6 +117,10 @@ class MermaidGraphManager {
         if (!this.selectedNodeId) return;
 
         console.log('Smart expanding for:', this.selectedNodeId);
+
+        // Update focus when expanding
+        this.focusNodeId = this.selectedNodeId;
+        this.expansionLimits = { upstream: 3, downstream: 3 };
 
         // 1. Analyze current connectivity
         // Check if there are ANY incoming edges to this node in the current graph
@@ -186,8 +205,11 @@ class MermaidGraphManager {
         }
 
         try {
+            // Apply folding logic before generating DSL
+            const { visibleNodes, visibleEdges } = this.getFoldedGraph();
+
             const dsl = generateMermaidDSL(
-                { nodes: this.nodes, edges: this.edges },
+                { nodes: visibleNodes, edges: visibleEdges },
                 this.selectedNodeId
             );
 
@@ -209,6 +231,126 @@ class MermaidGraphManager {
             console.error('Render error:', err);
             this.showError(`Render failed: ${err.message}`);
         }
+    }
+
+    /**
+     * Group neighbors by direction and apply folding limits
+     */
+    getFoldedGraph() {
+        // Pivot folding around focusNodeId, or selectedNodeId if focus is missing
+        const pivotId = this.focusNodeId || this.selectedNodeId;
+        if (!pivotId) return { visibleNodes: this.nodes, visibleEdges: this.edges };
+
+        const upstreamNodes = [];
+        const downstreamNodes = [];
+        const otherNodes = []; // Nodes not directly connected to pivot
+
+        const visibleNodeIds = new Set();
+
+        // Always include center node/pivot
+        const pivotNode = this.nodes.find(n => n.id === pivotId);
+        if (pivotNode) {
+            otherNodes.push(pivotNode);
+            visibleNodeIds.add(pivotId);
+        }
+
+        // 2. We don't manually add selectedNodeId to otherNodes here anymore if it's a neighbor
+        // because we want to preserve its directional categorization for layout.
+        // We will just ensure it's ALWAYS visible later when slicing neighbors.
+
+        // Sort nodes by their relationship to the PIVOT
+        this.nodes.forEach(node => {
+            if (node.id === pivotId) return;
+
+            const isUpstream = this.edges.some(e => e.source === node.id && e.target === pivotId);
+            const isDownstream = this.edges.some(e => e.source === pivotId && e.target === node.id);
+
+            if (isUpstream) upstreamNodes.push(node);
+            else if (isDownstream) downstreamNodes.push(node);
+            else {
+                otherNodes.push(node);
+                visibleNodeIds.add(node.id);
+            }
+        });
+
+        const foldedNodes = [...otherNodes];
+
+        // Apply upstream limits to PIVOT neighbors
+        const upLimit = this.expansionLimits.upstream;
+
+        // Ensure selectedNode is included in visible set if it's an upstream neighbor
+        let upVisible = upstreamNodes.slice(0, upLimit);
+        if (this.selectedNodeId && upstreamNodes.some(n => n.id === this.selectedNodeId)) {
+            if (!upVisible.some(n => n.id === this.selectedNodeId)) {
+                // It's hidden but selected! Add it to the visible list
+                const selNode = upstreamNodes.find(n => n.id === this.selectedNodeId);
+                upVisible.push(selNode);
+            }
+        }
+
+        foldedNodes.push(...upVisible);
+        upVisible.forEach(n => visibleNodeIds.add(n.id));
+
+        if (upstreamNodes.length > upLimit) {
+            const moreCount = upstreamNodes.length - upVisible.length;
+            if (moreCount > 0) {
+                const phId = 'placeholder:upstream';
+                foldedNodes.push({
+                    id: phId,
+                    type: 'placeholder',
+                    label: `...+${moreCount} more`
+                });
+            }
+        }
+
+        // Apply downstream limits to PIVOT neighbors
+        const downLimit = this.expansionLimits.downstream;
+        let downVisible = downstreamNodes.slice(0, downLimit);
+        if (this.selectedNodeId && downstreamNodes.some(n => n.id === this.selectedNodeId)) {
+            if (!downVisible.some(n => n.id === this.selectedNodeId)) {
+                const selNode = downstreamNodes.find(n => n.id === this.selectedNodeId);
+                downVisible.push(selNode);
+            }
+        }
+
+        foldedNodes.push(...downVisible);
+        downVisible.forEach(n => visibleNodeIds.add(n.id));
+
+        if (downstreamNodes.length > downLimit) {
+            const moreCount = downstreamNodes.length - downVisible.length;
+            if (moreCount > 0) {
+                const phId = 'placeholder:downstream';
+                foldedNodes.push({
+                    id: phId,
+                    type: 'placeholder',
+                    label: `...+${moreCount} more`
+                });
+            }
+        }
+
+        // Filter edges: only keep those where both source and target are visible
+        const foldedEdges = [];
+
+        console.log(`[Folding] Pivot: ${pivotId}, Visible Nodes: ${visibleNodeIds.size}, Hidden Upstream: ${upstreamNodes.length - upLimit}, Hidden Downstream: ${downstreamNodes.length - downLimit}`);
+
+        // 1. Keep original edges between visible nodes
+        this.edges.forEach(edge => {
+            if (visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)) {
+                foldedEdges.push(edge);
+            }
+        });
+
+        // 2. Add specific edges for PIVOT's placeholders
+        if (upstreamNodes.length > upLimit) {
+            foldedEdges.push({ source: 'placeholder:upstream', target: pivotId, type: 'reads' });
+        }
+        if (downstreamNodes.length > downLimit) {
+            foldedEdges.push({ source: pivotId, target: 'placeholder:downstream', type: 'writes' });
+        }
+
+        console.log(`[Folding] Resulting Edges: ${foldedEdges.length}`);
+
+        return { visibleNodes: foldedNodes, visibleEdges: foldedEdges };
     }
 
     initializeZoomControls() {
@@ -314,6 +456,16 @@ class MermaidGraphManager {
                 const nodeIdAttr = newNode.id || '';
                 console.log(`Node clicked: Text="${nodeText}", ID="${nodeIdAttr}"`);
 
+                // 0. Check if placeholder
+                if (nodeIdAttr.includes('P_upstream')) {
+                    this.handlePlaceholderClick('upstream');
+                    return;
+                }
+                if (nodeIdAttr.includes('P_downstream')) {
+                    this.handlePlaceholderClick('downstream');
+                    return;
+                }
+
                 // 1. Try to find match by ID attribute first (most reliable)
                 let matchingNode = null;
 
@@ -374,6 +526,15 @@ class MermaidGraphManager {
                 }
             });
         });
+    }
+
+    /**
+     * Increment expansion limit for a direction and re-render
+     */
+    async handlePlaceholderClick(direction) {
+        console.log(`[Manager] Expanding ${direction} by 4 nodes`);
+        this.expansionLimits[direction] += 4;
+        await this.render();
     }
 
     async selectNode(nodeId) {
