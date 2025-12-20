@@ -568,14 +568,16 @@ class GraphQueryService:
         return res
 
     def get_job(self, job_id: str):
-        """Return a job row enriched with derived fields from job_metadata."""
+        """Return a job row enriched with derived fields from properties."""
         job = self.uow.jobs.get(job_id)
         if not job:
             return None
-        meta = job.job_metadata or {}
+        
         # derive defaults
-        status = meta.get("status", "pending")
-        enabled = bool(meta.get("enabled", True))
+        # 1. Try top-level properties first
+        status = job._get_prop("status")
+        enabled = job._get_prop("enabled")
+            
         # attach for response usage
         setattr(job, "status", status)
         setattr(job, "enabled", enabled)

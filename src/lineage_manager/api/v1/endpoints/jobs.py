@@ -28,58 +28,61 @@ def get_job_detail(
     job_id: str,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
-    job = svc.get_job(job_id)
+    # Ensure job_id is clean (strip job: prefix if it accidentally leaked from frontend)
+    clean_job_id = job_id.replace("job:", "")
+    
+    job = svc.get_job(clean_job_id)
     if not job:
-        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
-    # Extract upstreams and downstreams from metadata
-    meta = job.job_metadata or {}
-    upstreams = meta.get("upstreams", [])
-    downstreams = meta.get("downstreams", [])
-
-    # Implement fallback mapping if metadata lists are empty
-    if not upstreams:
-        # Check both top-level properties and metadata for triggers/references
-        triggers = set(job.trigger_tables or meta.get("trigger_tables") or [])
-        ref_tables = job.reference_tables or meta.get("reference_tables") or []
+        raise HTTPException(status_code=404, detail=f"Job '{clean_job_id}' not found")
         
+    # properties contains both top-level and legacy job_metadata flattened by get_job/GraphNode
+    # Let's extract relations with preference for top-level keys
+    upstreams = job._get_prop("upstreams")
+    downstreams = job._get_prop("downstreams")
+
+    # Define meta for fallback logic
+    meta = getattr(job, "job_metadata", {}) or {}
+  
+    # Implement fallback mapping if direct lists are missing
+    if not upstreams:
+        triggers = set(getattr(job, "trigger_tables", []) or meta.get("trigger_tables") or [])
+        ref_tables = getattr(job, "reference_tables", []) or meta.get("reference_tables") or []
         upstreams = [
             {"type": "table", "name": t, "trigger": t in triggers}
             for t in ref_tables
         ]
         
     if not downstreams:
-        dest_tables = job.destination_tables or meta.get("destination_tables") or []
-        # Fallback to singular destination_table if list is empty
+        dest_tables = getattr(job, "destination_tables", []) or meta.get("destination_tables") or []
         if not dest_tables:
-             dt = job.destination_table or meta.get("destination_table")
+             dt = getattr(job, "destination_table", None) or meta.get("destination_table")
              if dt:
                  dest_tables = [dt]
+        downstreams = [{"type": "table", "name": t} for t in dest_tables]
 
-        downstreams = [
-            {"type": "table", "name": t}
-            for t in dest_tables
-        ]
-
-    # Construct properties from model fields and remaining metadata
-    # Default properties from the model columns
-    properties = {
-        "owner": job.owner,
-        "labels": job.labels,
-        "write_mode": job.write_mode,
-        "destination_types": job.destination_types,
-        "destination_tables": job.destination_tables,
-        "trigger_tables": job.trigger_tables,
-        "reference_tables": job.reference_tables,
-        "status": getattr(job, "status", None),
-        "enabled": getattr(job, "enabled", None),
-    }
-    # update with metadata (metadata values take precedence or add extra info)
-    properties.update(meta)
+    # Construct response properties - prioritized flattened list
+    # We include everything currently in properties, but ensure common fields exist
+    properties = dict(job.properties or {})
+    
+    # Ensure key fields are present even if null
+    properties.setdefault("owner", getattr(job, "owner", "-"))
+    properties.setdefault("labels", getattr(job, "labels", {}))
+    properties.setdefault("status", getattr(job, "status", "unknown"))
+    properties.setdefault("enabled", getattr(job, "enabled", True))
+    
+    # Clean up leftovers: remove job_metadata from properties if it's there
+    if "job_metadata" in properties:
+        # Merge it back in case it has unique fields, then remove it
+        child_meta = properties.pop("job_metadata")
+        if isinstance(child_meta, dict):
+            for k, v in child_meta.items():
+                if k not in properties:
+                    properties[k] = v
     
     return {
         "job_id": job.job_id,
-        "name": job.name,
-        "type": meta.get("type", "job"),
+        "name": job.display_name or job.job_id,
+        "type": properties.get("type") or meta.get("type", "job"),
         "upstreams": upstreams,
         "downstreams": downstreams,
         "properties": properties,

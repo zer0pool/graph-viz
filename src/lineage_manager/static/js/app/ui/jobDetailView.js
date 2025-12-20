@@ -3,79 +3,63 @@
  */
 
 export class JobDetailView {
-    constructor({
-        section,
-        label,
-        tabs,
-        panels,
-        runsBody,
-        runsTimeline,
-        runDrawer,
-        runDrawerFields,
-        runDrawerSubtitle,
-        runDrawerClose,
-        runHistoryPagination,
-        runHistoryPageLabel,
-        runHistoryPrev,
-        runHistoryNext,
-        overviewPlaceholder,
-        overviewContent,
-        overviewFields = {},
-        inputList,
-        outputList,
-        runHistoryRange,
-        lineagePlaceholder,
-        lineageContent,
-        lineageInputs,
-        lineageOutputs,
-    }) {
-        this.section = section;
-        this.label = label;
-        this.tabs = tabs;
-        this.panels = panels;
-        this.runsBody = runsBody;
-        this.runsTimeline = runsTimeline;
-        this.runDrawer = runDrawer;
-        this.runDrawerFields = runDrawerFields;
-        this.runDrawerSubtitle = runDrawerSubtitle;
-        this.runDrawerClose = runDrawerClose;
-        this.sumRunning = null;
-        this.sumSuccess = null;
-        this.sumFailed = null;
-        this.sumSkipped = null;
-        this.sumTotal = null;
+    constructor(container) {
+        if (!container) return;
+        this.container = container;
 
-        // accept optional summary elements from constructor args
-        if (arguments[0]) {
-            this.sumRunning = arguments[0].sumRunning || null;
-            this.sumSuccess = arguments[0].sumSuccess || null;
-            this.sumFailed = arguments[0].sumFailed || null;
-            this.sumSkipped = arguments[0].sumSkipped || null;
-            this.sumTotal = arguments[0].sumTotal || null;
-        }
+        // Root elements
+        this.section = container.querySelector("#job-details");
+        this.label = container.querySelector("#job-label");
+        this.tabs = container.querySelector("#job_tabs");
+        this.panels = container.querySelector('.detail-tab-panels[data-tab-group="job"]');
+
+        // Run history elements
+        this.runsBody = container.querySelector("#job-runs-body");
+        this.runsTimeline = container.querySelector("#job-run-timeline");
+        this.runDrawer = container.querySelector("#run-detail-drawer");
+        this.runDrawerFields = container.querySelector("#run-drawer-fields");
+        this.runDrawerSubtitle = container.querySelector("#run-drawer-subtitle");
+        this.runDrawerClose = container.querySelector("#run-drawer-close");
+        this.runHistoryPagination = container.querySelector("#run-history-pagination");
+        this.runHistoryPageLabel = container.querySelector("#run-history-page-label");
+        this.runHistoryPrev = container.querySelector("#run-history-prev");
+        this.runHistoryNext = container.querySelector("#run-history-next");
+        this.runHistoryRange = container.querySelector("#run-history-range");
+
+        // Summary elements
+        this.sumRunning = container.querySelector("#sum-running");
+        this.sumSuccess = container.querySelector("#sum-success");
+        this.sumFailed = container.querySelector("#sum-failed");
+
+        // Overview elements
+        this.overviewPlaceholder = container.querySelector("#job-overview-placeholder");
+        this.overviewContent = container.querySelector("#job-overview-content");
+        this.overviewFields = {
+            status: container.querySelector("#job-status"),
+            schedule: container.querySelector("#job-schedule"),
+            owner: container.querySelector("#job-owner"),
+            jobType: container.querySelector("#job-type"),
+            lifecycle: container.querySelector("#job-lifecycle"),
+        };
+
+        this.labelsSection = container.querySelector("#job-labels-section");
+        this.labelsContainer = container.querySelector("#job-labels-container");
+        this.inputList = container.querySelector("#job-input-list");
+        this.outputList = container.querySelector("#job-output-list");
+
+        // Lineage elements
+        this.lineagePlaceholder = container.querySelector("#job-lineage-placeholder");
+        this.lineageContent = container.querySelector("#job-lineage-content");
+        this.lineageInputs = container.querySelector("#job-lineage-inputs");
+        this.lineageOutputs = container.querySelector("#job-lineage-outputs");
+
         this.latestRuns = [];
-
-        this.overviewPlaceholder = overviewPlaceholder;
-        this.overviewContent = overviewContent;
-        this.overviewFields = overviewFields;
-        this.inputList = inputList;
-        this.outputList = outputList;
-        this.runHistoryRange = runHistoryRange;
-
-        this.lineagePlaceholder = lineagePlaceholder;
-        this.lineageContent = lineageContent;
-        this.lineageInputs = lineageInputs;
-        this.lineageOutputs = lineageOutputs;
-
         this.collapseState = {};
-        this.runHistoryPagination = runHistoryPagination;
-        this.runHistoryPageLabel = runHistoryPageLabel;
-        this.runHistoryPrev = runHistoryPrev;
-        this.runHistoryNext = runHistoryNext;
         this.runHistoryPage = 0;
         this.runHistoryPageSize = 10;
-        this.initPaginationControls();
 
+        this.bindEvents();
+        this.initPaginationControls();
         this.bindRunDrawer();
     }
 
@@ -134,10 +118,72 @@ export class JobDetailView {
 
         const fields = this.overviewFields || {};
         this.setField(fields.status, detail.status || "-");
-        this.setField(fields.schedule, detail.schedule || "-");
+
+        // Handle schedule formatting
+        const scheduleHtml = this.formatDetailedSchedule(detail.schedule);
+        if (fields.schedule) fields.schedule.innerHTML = scheduleHtml;
+
         this.setField(fields.owner, detail.owner || "-");
-        this.setField(fields.destination, detail.destination || "-");
-        this.setField(fields.mode, detail.write_mode || "-");
+        this.setField(fields.jobType, detail.type || "-");
+        this.setField(fields.lifecycle, detail.lifecycle_status || "-");
+
+        this.renderLabels(detail.labels);
+    }
+
+    renderLabels(labels) {
+        if (!this.labelsSection || !this.labelsContainer) return;
+
+        if (!labels || Object.keys(labels).length === 0) {
+            this.labelsSection.hidden = true;
+            return;
+        }
+
+        this.labelsSection.hidden = false;
+
+        this.labelsContainer.innerHTML = "";
+        for (const [key, value] of Object.entries(labels)) {
+            const pill = document.createElement("span");
+            pill.className = "pill";
+            pill.textContent = (value !== undefined && value !== null) ? `${key}: ${value}` : key;
+            this.labelsContainer.appendChild(pill);
+        }
+    }
+
+    formatDetailedSchedule(schedule) {
+        if (!schedule) return "-";
+
+        // Handle simple string
+        if (typeof schedule === "string") {
+            return `<div class="schedule-container"><span class="cron-badge">${schedule}</span></div>`;
+        }
+
+        if (typeof schedule === "object") {
+            const cron = schedule.cron_expression || schedule.cron || schedule.expression || schedule.rate || null;
+            const start = schedule.start_date;
+            const end = schedule.end_date;
+
+            let html = '<div class="schedule-container">';
+
+            if (cron) {
+                html += `<span class="cron-badge">${cron}</span>`;
+            }
+
+            if (start || end) {
+                html += `
+                    <div class="schedule-range">
+                        <span class="range-value">${start || "?"}</span>
+                        <span class="range-label">~</span>
+                        <span class="range-value">${end || "?"}</span>
+                    </div>
+                `;
+            }
+
+            if (!cron && !start && !end) return "-";
+
+            html += '</div>';
+            return html;
+        }
+        return "-";
     }
 
     setField(node, value) {

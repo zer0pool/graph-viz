@@ -28,17 +28,32 @@ class JobRepository(BaseRepository):
             return row
 
         logger.debug(f"Creating new job node for ID: {job_id}")
-        properties = {
+        
+        # Build properties dynamically - only include provided non-None values
+        # This prevents bloating the JSON with empty lists/defaults
+        properties = {}
+        
+        # Map well-known attributes
+        mapping = {
             "display_name": kwargs.get("name", kwargs.get("label", job_id)),
-            "labels": kwargs.get("labels", {}),
+            "labels": kwargs.get("labels"),
             "owner": kwargs.get("owner"),
             "write_mode": kwargs.get("write_mode"),
-            "destination_types": kwargs.get("destination_types", []),
-            "destination_tables": kwargs.get("destination_tables", []),
-            "trigger_tables": kwargs.get("trigger_tables", []),
-            "reference_tables": kwargs.get("reference_tables", []),
-            "job_metadata": kwargs.get("job_metadata", kwargs.get("node_metadata", {})),
+            "upstreams": kwargs.get("upstreams"),
+            "downstreams": kwargs.get("downstreams"),            
+            "schedule": kwargs.get("schedule"),
+            "lifecycle_status": kwargs.get("lifecycle_status"),
+            "status": kwargs.get("status"),
+            "type": kwargs.get("type"),
         }
+
+        for key, val in mapping.items():
+            if val is not None:
+                # For lists/dicts, only add if not empty to further reduce noise
+                if isinstance(val, (list, dict)) and not val:
+                    continue
+                properties[key] = val
+
         row = GraphNode(node_type="job", name=job_id, properties=properties)
         self.db.add(row)
         self.db.flush()

@@ -4,42 +4,41 @@
  */
 
 export class TableDetailView {
-    constructor({
-        section,
-        tabs,
-        panels,
-        fullName,
-        description,
-        docLink,
-        owner,
-        storageSummary,
-        partitionSummary,
-        updated,
-        storageFields,
-        statsFields,
-        tagsSection,
-        tagsList,
-        schemaCount,
-        schemaBody,
-        schemaEmpty,
-    }) {
-        this.section = section;
-        this.tabs = tabs;
-        this.panels = panels;
-        this.fullName = fullName;
-        this.description = description;
-        this.docLink = docLink;
-        this.owner = owner;
-        this.storageSummary = storageSummary;
-        this.partitionSummary = partitionSummary;
-        this.updated = updated;
-        this.storageFields = storageFields || {};
-        this.statsFields = statsFields || {};
-        this.tagsSection = tagsSection;
-        this.tagsList = tagsList;
-        this.schemaCount = schemaCount;
-        this.schemaBody = schemaBody;
-        this.schemaEmpty = schemaEmpty;
+    constructor(container) {
+        if (!container) return;
+        this.container = container;
+
+        this.section = container.querySelector("#table-details");
+        this.tabs = container.querySelector("#table_tabs");
+        this.panels = container.querySelector('.detail-tab-panels[data-tab-group="table"]');
+
+        this.fullName = container.querySelector("#table-full-name");
+        this.description = container.querySelector("#table-description");
+        this.docLink = container.querySelector("#table-doc-link");
+        this.owner = container.querySelector("#table-owner");
+        this.storageSummary = container.querySelector("#table-storage");
+        this.partitionSummary = container.querySelector("#table-partition");
+        this.updated = container.querySelector("#table-updated");
+
+        this.storageFields = {
+            type: container.querySelector("#table-storage-type"),
+            partitionField: container.querySelector("#table-partition-field"),
+            partitionType: container.querySelector("#table-partition-type"),
+            clusterColumns: container.querySelector("#table-cluster-columns"),
+            location: container.querySelector("#table-storage-location"),
+        };
+
+        this.statsFields = {
+            rows: container.querySelector("#table-stat-rows"),
+            size: container.querySelector("#table-stat-size"),
+            cost: container.querySelector("#table-stat-cost"),
+        };
+
+        this.tagsSection = container.querySelector("#table-tags");
+        this.tagsList = container.querySelector("#table-tags-list");
+        this.schemaCount = container.querySelector("#schema-column-count");
+        this.schemaBody = container.querySelector("#table-schema-body");
+        this.schemaEmpty = container.querySelector("#table-schema-empty");
     }
 
     show() {

@@ -3730,3 +3730,42 @@ body {
 .apa-table td.loading-placeholder {
     vertical-align: middle;
 }
+
+/* Structured Schedule */
+.schedule-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+.cron-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #eef2ff;
+    color: #4f46e5;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #e0e7ff;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.schedule-range {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.schedule-range .range-label {
+    opacity: 0.7;
+}
+
+.schedule-range .range-value {
+    color: #475569;
+}
