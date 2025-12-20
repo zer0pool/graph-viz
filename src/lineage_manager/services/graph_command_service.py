@@ -427,17 +427,19 @@ class GraphCommandService:
         # 1. Create or Update Job Node
         job = uow.jobs.get(lineage.job_id)
         if job:
-            job.job_metadata = job_props
-            # Also update direct attributes for convenience
-            job.owner = job_props.get("owner")
-            job.labels = job_props.get("labels")
+            # Update properties directly
+            for key, value in job_props.items():
+                if hasattr(job, key):
+                    setattr(job, key, value)
+                else:
+                    job._set_prop(key, value)
+
         else:
+            # Create new job node with flat properties
             job = uow.jobs.get_or_create(
                 job_id=lineage.job_id,
                 name=lineage.name,
-                job_metadata=job_props,
-                owner=job_props.get("owner"),
-                labels=job_props.get("labels")
+                **job_props
             )
 
         # 2. Process Upstream Nodes (Inputs)
@@ -502,28 +504,33 @@ class GraphCommandService:
         meta = lineage.metadata or {}
         
         job_props = {
+            "type": lineage.type,
             "status": lineage.status,
             "scheduling_type": lineage.type,
             "governance": lineage.governance,
             "owner": meta.get("owner"),
-            "labels": meta.get("labels", {}),
-            "lifecycle_status": meta.get("lifecycle_status"),
+            "labels": meta.get("labels", {}),            
             "is_active": meta.get("is_active", True),
         }
         
+        # Merge other metadata if not already present
+        for k, v in meta.items():
+            if k not in job_props:
+                job_props[k] = v
+
         if lineage.schedule:
-            job_props["schedule"] = {
-                "cron": lineage.schedule.cron_expression,
-                "start_date": lineage.schedule.start_date,
-                "end_date": lineage.schedule.end_date
-            }
+            # Convert model to dict for serializability, excluding None values
+            job_props["schedule"] = lineage.schedule.model_dump(exclude_none=True)
         
-        # Track tables for easier lookup
-        job_props["trigger_tables"] = [u.name for u in lineage.upstreams if u.dependency_type == "HARD"]
-        job_props["reference_tables"] = [u.name for u in lineage.upstreams if u.dependency_type != "HARD"]
-        job_props["destination_tables"] = [d.name for d in lineage.downstreams]
+        # Store upstreams and downstreams directly as dicts, excluding None values
+        if lineage.upstreams:
+            job_props["upstreams"] = [u.model_dump(exclude_none=True) for u in lineage.upstreams]
+            
+        if lineage.downstreams:
+            job_props["downstreams"] = [d.model_dump(exclude_none=True) for d in lineage.downstreams]
         
-        return job_props
+        # Filter out None or empty values to keep properties clean
+        return {k: v for k, v in job_props.items() if v is not None and (not isinstance(v, (list, dict)) or v)}
 
     def _invalidate_all_caches(self):
         """Best effort to clear graph-related caches in Redis."""

@@ -43,6 +43,7 @@ class App {
 
     // Create main controllers
     const panel = new PanelController(api);
+    await panel.init();
 
     // Inject shared state into GraphController
     const graph = new GraphController({

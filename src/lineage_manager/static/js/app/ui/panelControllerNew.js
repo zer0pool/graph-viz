@@ -16,7 +16,7 @@ export class PanelController {
         this.api = apiClient;
         this.relations = new RelationState();
 
-        // Status elements
+        // Status elements (kept as they are outside the dynamic fragments)
         this.elements = {
             title: document.getElementById("node-title"),
             badge: document.getElementById("node-type-badge"),
@@ -24,83 +24,10 @@ export class PanelController {
             statusText: document.getElementById("graph-status-text"),
         };
 
-        // Delegate modules
-        this.jobView = new JobDetailView({
-            section: document.getElementById("job-details"),
-            label: document.getElementById("job-label"),
-            tabs: document.getElementById("job_tabs"),
-            panels: document.querySelector('.detail-tab-panels[data-tab-group="job"]'),
-            runsBody: document.getElementById("job-runs-body"),
-            runsTimeline: document.getElementById("job-run-timeline"),
-            runDrawer: document.getElementById("run-detail-drawer"),
-            runDrawerFields: document.getElementById("run-drawer-fields"),
-            runDrawerSubtitle: document.getElementById("run-drawer-subtitle"),
-            runDrawerClose: document.getElementById("run-drawer-close"),
-            runHistoryPagination: document.getElementById("run-history-pagination"),
-            runHistoryPageLabel: document.getElementById("run-history-page-label"),
-            runHistoryPrev: document.getElementById("run-history-prev"),
-            runHistoryNext: document.getElementById("run-history-next"),
-            // Summary elements
-            sumRunning: document.getElementById("sum-running"),
-            sumSuccess: document.getElementById("sum-success"),
-            sumFailed: document.getElementById("sum-failed"),
-            runHistoryRange: document.getElementById("run-history-range"),
-            overviewPlaceholder: document.getElementById("job-overview-placeholder"),
-            overviewContent: document.getElementById("job-overview-content"),
-            overviewFields: {
-                status: document.getElementById("job-status"),
-                schedule: document.getElementById("job-schedule"),
-                owner: document.getElementById("job-owner"),
-                destination: document.getElementById("job-destination"),
-                mode: document.getElementById("job-write-mode"),
-            },
-            inputList: document.getElementById("job-input-list"),
-            outputList: document.getElementById("job-output-list"),
-            lineagePlaceholder: document.getElementById("job-lineage-placeholder"),
-            lineageContent: document.getElementById("job-lineage-content"),
-            lineageInputs: document.getElementById("job-lineage-inputs"),
-            lineageOutputs: document.getElementById("job-lineage-outputs"),
-        });
-
-        this.tableView = new TableDetailView({
-            section: document.getElementById("table-details"),
-            tabs: document.getElementById("table_tabs"),
-            panels: document.querySelector('.detail-tab-panels[data-tab-group="table"]'),
-            fullName: document.getElementById("table-full-name"),
-            description: document.getElementById("table-description"),
-            docLink: document.getElementById("table-doc-link"),
-            owner: document.getElementById("table-owner"),
-            storageSummary: document.getElementById("table-storage"),
-            partitionSummary: document.getElementById("table-partition"),
-            updated: document.getElementById("table-updated"),
-            storageFields: {
-                type: document.getElementById("table-storage-type"),
-                partitionField: document.getElementById("table-partition-field"),
-                partitionType: document.getElementById("table-partition-type"),
-                clusterColumns: document.getElementById("table-cluster-columns"),
-                location: document.getElementById("table-storage-location"),
-            },
-            statsFields: {
-                rows: document.getElementById("table-stat-rows"),
-                size: document.getElementById("table-stat-size"),
-                cost: document.getElementById("table-stat-cost"),
-            },
-            tagsSection: document.getElementById("table-tags"),
-            tagsList: document.getElementById("table-tags-list"),
-            schemaCount: document.getElementById("schema-column-count"),
-            schemaBody: document.getElementById("table-schema-body"),
-            schemaEmpty: document.getElementById("table-schema-empty"),
-        });
-
-        this.timelinesView = new TableTimelinessView({
-            pane: document.getElementById("activity-pane"),
-            dailyChart: document.getElementById("timelines-daily-chart"),
-            hourlyChart: document.getElementById("timelines-hourly-chart"),
-            dailyPlaceholder: document.getElementById("timelines-daily-placeholder"),
-            hourlyPlaceholder: document.getElementById("timelines-hourly-placeholder"),
-            hourlyLabel: document.getElementById("timelines-hourly-label"),
-        });
-
+        // Views will be initialized in init()
+        this.jobView = null;
+        this.tableView = null;
+        this.timelinesView = null;
         this.triggerManager = new TriggerManager(this.api);
         this.lineageProvider = new LineageInsightProvider();
 
@@ -125,11 +52,50 @@ export class PanelController {
         this.currentDetailType = null;
         this.bindViewGraphButton();
 
-        this.setPlaceholder();
-        this.bindTabEvents();
-        this.bindTimelinessEvents();
+        // Subscription moves to after init in main.js or handled here?
+        // We'll keep it here but guard it.
+    }
 
-        // Subscribe to shared state
+    async init() {
+        const container = document.getElementById("detail-panel-body");
+        if (!container) return;
+
+        try {
+            // Load HTML fragments
+            const [jobHtml, tableHtml] = await Promise.all([
+                fetch("/static/components/job-detail.html").then(r => r.text()),
+                fetch("/static/components/table-detail.html").then(r => r.text())
+            ]);
+
+            // Inject into container
+            container.innerHTML = jobHtml + tableHtml;
+
+            // Initialize delegate modules
+            this.jobView = new JobDetailView(container);
+            this.tableView = new TableDetailView(container);
+
+            this.timelinesView = new TableTimelinessView({
+                pane: container.querySelector("#activity-pane"),
+                dailyChart: container.querySelector("#timelines-daily-chart"),
+                hourlyChart: container.querySelector("#timelines-hourly-chart"),
+                dailyPlaceholder: container.querySelector("#timelines-daily-placeholder"),
+                hourlyPlaceholder: container.querySelector("#timelines-hourly-placeholder"),
+                hourlyLabel: container.querySelector("#timelines-hourly-label"),
+            });
+
+            this.setPlaceholder();
+            this.bindTabEvents();
+            this.bindTimelinessEvents();
+            this.setupSubscription();
+
+            return this;
+        } catch (err) {
+            console.error("Failed to initialize PanelController components:", err);
+            container.innerHTML = '<div class="detail-placeholder error">Failed to load detail components.</div>';
+        }
+    }
+
+    setupSubscription() {
         selectionState.subscribe((nodeData) => {
             if (!nodeData) {
                 this.setPlaceholder();
