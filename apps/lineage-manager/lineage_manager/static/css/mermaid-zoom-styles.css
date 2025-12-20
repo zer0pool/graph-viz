@@ -1,0 +1,158 @@
+/* Mermaid Zoom Controls Styles */
+
+/* Toolbar Layout */
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Toolbar Button Style - Fix for invisible buttons */
+.simple-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px;
+    color: #5f6368;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+/* Dropdown specific refinements */
+.toolbar-dropdown .toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.toolbar-dropdown .button-group {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    padding: 4px;
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+
+#expand-smart-btn {
+    gap: 0;
+    padding-right: 4px;
+}
+
+#expand-smart-btn .zoom-display {
+    min-width: unset;
+    padding-right: 2px;
+}
+
+.simple-btn:hover:not(:disabled) {
+    background: #f1f3f4;
+    color: #1a73e8;
+}
+
+.simple-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.zoom-display {
+    display: inline-block;
+    min-width: 45px;
+    text-align: center;
+    font-size: 12px;
+    color: #5f6368;
+    font-weight: 500;
+    padding: 0 8px;
+}
+
+/* SVG Icon Styling */
+.icon-svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    color: #5f6368;
+}
+
+.simple-btn:hover .icon-svg {
+    color: #1a73e8;
+}
+
+/* SVG Pan Cursor */
+#mermaid-graph svg {
+    cursor: grab;
+}
+
+#mermaid-graph svg:active {
+    cursor: grabbing;
+}
+
+/* Responsive Toolbar */
+.toolbar-hamburger {
+    display: none;
+    font-weight: bold;
+    font-style: normal;
+}
+
+.toolbar-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.toolbar-dropdown[hidden] {
+    display: none;
+}
+
+.toolbar-dropdown .toolbar-divider {
+    width: 100%;
+    height: 1px;
+    background: #d0d7de;
+    margin: 4px 0;
+}
+
+.toolbar-dropdown .button-group {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+/* Media Queries */
+@media (max-width: 800px) {
+    #zoom-level {
+        display: none;
+    }
+}
+
+@media (max-width: 650px) {
+    #toolbar-main-actions {
+        display: none;
+    }
+
+    .toolbar-hamburger {
+        display: inline-flex;
+    }
+
+    /* When the dropdown is active, it behaves like a flex container */
+    .toolbar-dropdown:not([hidden]) {
+        display: flex;
+    }
+}

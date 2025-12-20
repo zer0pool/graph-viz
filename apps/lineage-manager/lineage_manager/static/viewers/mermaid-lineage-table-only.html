@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <base href="/lineage-manager/">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expandable Table Lineage Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="static/css/viewers/mermaid-viewer.css">
+    <style>
+        /* Extra styles for the expansion UI */
+        #selection-panel {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: white;
+            border: 1px solid var(--gcp-border);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            width: 280px;
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #dadce0;
+            background: white;
+            color: #3c4043;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #f1f3f4;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #1765cc;
+        }
+
+        .selected-node-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--gcp-primary);
+            word-break: break-all;
+            margin-bottom: 4px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewer-root">
+        <div id="info-panel" class="info-panel" style="display: block;">
+            <div class="info-content">
+                <span class="info-icon">🌿</span>
+                <span class="info-label">Current:</span>
+                <span id="root-table-name" class="info-value">Loading...</span>
+            </div>
+        </div>
+
+        <div id="graph-container">
+            <div id="mermaid-graph" class="mermaid"></div>
+        </div>
+
+        <!-- Floating Selection Panel -->
+        <div id="selection-panel">
+            <div class="selected-node-title" id="panel-title">Node Name</div>
+            <div style="font-size: 12px; color: #70757a;" id="panel-type">TABLE</div>
+            <div class="action-buttons">
+                <button id="btn-expand-up" class="btn">Expand Upstream</button>
+                <button id="btn-expand-down" class="btn">Expand Downstream</button>
+                <button id="btn-reset" class="btn">Reset to this Node</button>
+            </div>
+        </div>
+
+        <div id="loading" class="status-overlay">
+            <div class="spinner"></div>
+            <p>Loading graph...</p>
+        </div>
+
+        <div id="error-message" class="error-panel" style="display: none;">
+            <p id="error-text"></p>
+        </div>
+    </div>
+
+    <script type="module" src="static/js/viewers/mermaid-table-viewer.js"></script>
+</body>
+
+</html>

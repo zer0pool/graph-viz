@@ -1,0 +1,182 @@
+<div id="table-details" class="detail-card" hidden>
+    <div class="detail-tabs" id="table_tabs" data-tab-group="table" role="tablist">
+        <button class="detail-tab active" type="button" role="tab" data-tab="overview">Overview</button>
+        <button class="detail-tab" type="button" role="tab" data-tab="lineage">Lineage</button>
+        <button class="detail-tab" type="button" role="tab" data-tab="schema">Schema</button>
+        <button class="detail-tab" type="button" role="tab" data-tab="activity">Activity</button>
+    </div>
+    <div class="detail-tab-panels" data-tab-group="table">
+        <!-- Overview Tab -->
+        <div id="table-overview-pane" class="detail-pane active" data-tab-panel="overview">
+            <div class="table-head">
+                <div class="detail-subheading">Fully qualified name</div>
+                <div id="table-full-name" class="detail-value">-</div>
+                <p id="table-description" class="detail-description" hidden></p>
+            </div>
+            <div class="overview-grid">
+                <div class="overview-field">
+                    <div class="detail-subheading">Owner</div>
+                    <div id="table-owner" class="detail-value">-</div>
+                </div>
+                <div class="overview-field">
+                    <div class="detail-subheading">Storage</div>
+                    <div id="table-storage" class="detail-value">-</div>
+                </div>
+                <div class="overview-field">
+                    <div class="detail-subheading">Partition</div>
+                    <div id="table-partition" class="detail-value">-</div>
+                </div>
+                <div class="overview-field">
+                    <div class="detail-subheading">Last updated</div>
+                    <div id="table-updated" class="detail-value">-</div>
+                </div>
+            </div>
+            <div class="storage-card">
+                <div class="card-header">
+                    <div class="detail-subheading">Storage details</div>
+                </div>
+                <dl class="storage-meta">
+                    <div>
+                        <dt>Type</dt>
+                        <dd id="table-storage-type">-</dd>
+                    </div>
+                    <div>
+                        <dt>Partition column</dt>
+                        <dd id="table-partition-field">-</dd>
+                    </div>
+                    <div>
+                        <dt>Partition type</dt>
+                        <dd id="table-partition-type">-</dd>
+                    </div>
+                    <div>
+                        <dt>Cluster columns</dt>
+                        <dd id="table-cluster-columns">-</dd>
+                    </div>
+                    <div>
+                        <dt>Location</dt>
+                        <dd id="table-storage-location">-</dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="stats-card">
+                <div class="stat-item">
+                    <div class="stat-label">Row count</div>
+                    <div id="table-stat-rows" class="stat-value">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Size</div>
+                    <div id="table-stat-size" class="stat-value">-</div>
+                </div>
+            </div>
+            <div id="table-tags" class="tags-card" hidden>
+                <div class="detail-subheading">Tags</div>
+                <div id="table-tags-list" class="pill-row"></div>
+            </div>
+            <div id="trigger-section" class="detail-trigger" hidden>
+                <div class="detail-subheading">Jobs Waiting on This Table</div>
+                <div class="trigger-description">This table is used by the following jobs. Some jobs wait for data
+                    readiness before execution.</div>
+                <div id="node-triggers" class="trigger-list"></div>
+            </div>
+        </div>
+
+        <!-- Lineage Tab -->
+        <div id="table-lineage-pane" class="detail-pane" data-tab-panel="lineage">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div>
+                        <div class="detail-subheading">Path to root</div>
+                        <div id="lineage-path-preview" class="path-preview">Select a table to compute
+                            path.</div>
+                    </div>
+                    <button id="lineage-path-expand" class="btn-tertiary" type="button">Show full
+                        path</button>
+                </div>
+            </div>
+            <div class="insight-grid">
+                <div class="insight-card">
+                    <div class="insight-title">Root tables</div>
+                    <div id="lineage-root-summary" class="insight-value">0</div>
+                    <button id="lineage-root-expand" class="link-btn" type="button">View all</button>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Leaf tables</div>
+                    <div id="lineage-leaf-summary" class="insight-value">0</div>
+                    <button id="lineage-leaf-expand" class="link-btn" type="button">View all </button>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Upstream</div>
+                    <div id="lineage-upstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Downstream</div>
+                    <div id="lineage-downstream-summary" class="insight-metric">Tables: 0<br>Jobs: 0
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Depth</div>
+                    <div id="lineage-depth-summary" class="insight-metric">Upstream: 0<br>Downstream: 0
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Schema Tab -->
+        <div id="schema-pane" class="detail-pane" data-tab-panel="schema">
+            <div class="schema-toolbar">
+                <div class="detail-subheading">Columns</div>
+                <span id="schema-column-count" class="schema-count">0</span>
+            </div>
+            <div class="schema-table-shell">
+                <table class="schema-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Mode</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-schema-body"></tbody>
+                </table>
+                <div id="table-schema-empty" class="detail-placeholder">No schema information.</div>
+            </div>
+        </div>
+
+        <!-- Activity Tab -->
+        <div id="activity-pane" class="detail-pane" data-tab-panel="activity">
+            <div class="timelines-section">
+                <div class="timelines-header">
+                    <div class="detail-subheading">Daily summary</div>
+                    <div style="margin-left: auto;">
+                        <select id="timelines-range-selector" class="simple-select"
+                            style="font-size: 11px; padding: 2px 4px; border: 1px solid #ddd; border-radius: 4px; background: #fff;">
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="timelines-legend">
+                    <span class="legend-item"><span class="legend-swatch legend-swatch--success"></span>Loaded</span>
+                    <span class="legend-item"><span class="legend-swatch legend-swatch--danger"></span>Missing</span>
+                </div>
+                <div id="timelines-daily-placeholder" class="timelines-placeholder">
+                    Select "Activity" to load timelines data.
+                </div>
+                <div id="timelines-daily-chart" class="timelines-chart" hidden></div>
+            </div>
+            <div class="timelines-section">
+                <div class="timelines-header">
+                    <div class="detail-subheading">Hourly breakdown</div>
+                    <span id="timelines-hourly-label" class="timelines-subtext">Select a day to view
+                        hourly detail.</span>
+                </div>
+                <div id="timelines-hourly-placeholder" class="timelines-placeholder">
+                    Select a day to view hourly detail.
+                </div>
+                <div id="timelines-hourly-chart" class="timelines-chart timelines-chart--compact" hidden></div>
+            </div>
+        </div>
+    </div>
+</div>
