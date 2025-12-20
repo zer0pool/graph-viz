@@ -7,11 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Embedded Lineage Manager</title>
     <link rel="stylesheet" href="static/css/modern-console.css">
-    <script src="https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
-    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
-    <script src="static/js/plugins/cytoscape-minimap.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="static/css/mermaid-styles.css">
+    <link rel="stylesheet" href="static/css/mermaid-zoom-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
 
     <style>
         /* Embedding Overrides */
@@ -159,30 +157,70 @@
                         </div>
                     </div>
                     <div class="toolbar-right">
-                        <button id="reset-view" class="simple-btn" title="Reset view">
-                            <span class="icon">⟲</span>
-                            <span class="label">Reset</span>
+                        <!-- Actions -->
+                        <button id="download-svg" class="simple-btn" title="Save as Image">
+                            <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                            </svg>
                         </button>
+
                         <span class="toolbar-divider"></span>
-                        <span id="zoom-level" class="zoom-label" title="Current zoom">100%</span>
-                        <span class="toolbar-divider"></span>
-                        <div class="zoom-buttons">
-                            <button id="zoom-in" class="circle-btn" title="Zoom In">
-                                <span class="icon icon-zoom-in"></span>
+
+                        <!-- Zoom Controls -->
+                        <div class="zoom-controls">
+                            <!-- Expand Upstream -->
+                            <button id="expand-upstream-btn" class="simple-btn" title="Expand Upstream (+1 Level)">
+                                <svg class="icon-svg" viewBox="0 0 24 24" style="transform: rotate(180deg);">
+                                    <path fill="currentColor"
+                                        d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" />
+                                </svg>
+                                <span class="zoom-display">UP</span>
                             </button>
-                            <button id="zoom-out" class="circle-btn" title="Zoom Out">
-                                <span class="icon icon-zoom-out"></span>
+
+                            <!-- Expand Downstream -->
+                            <button id="expand-downstream-btn" class="simple-btn" title="Expand Downstream (+1 Level)">
+                                <span class="zoom-display">DOWN</span>
+                                <svg class="icon-svg" viewBox="0 0 24 24">
+                                    <path fill="currentColor"
+                                        d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" />
+                                </svg>
                             </button>
-                            <button id="zoom-reset" class="circle-btn" title="Zoom Reset">
-                                <span class="icon icon-zoom-reset"></span>
+
+                            <span class="toolbar-divider"></span>
+
+                            <button id="zoom-out" class="simple-btn" title="Zoom Out">
+                                <svg class="icon-svg" viewBox="0 0 24 24">
+                                    <path fill="currentColor" d="M19 13H5v-2h14v2z" />
+                                </svg>
                             </button>
-                            <button id="minimap-toggle" class="circle-btn" title="Toggle minimap">
-                                <span class="icon icon-minimap"></span>
+                            <span id="zoom-level" class="zoom-display">100%</span>
+                            <button id="zoom-in" class="simple-btn" title="Zoom In">
+                                <svg class="icon-svg" viewBox="0 0 24 24">
+                                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                                </svg>
+                            </button>
+                            <button id="zoom-fit" class="simple-btn" title="Fit to View">
+                                <svg class="icon-svg" viewBox="0 0 24 24">
+                                    <path fill="currentColor"
+                                        d="M5 5h5v2H7v3H5V5zm12 0h-3v2h3v3h2V5h-2zm-3 14h3v-3h2v5h-5v-2zM7 19H5v-5h2v3h3v2H7z" />
+                                </svg>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="cy"></div>
+                <!-- Mermaid Graph Container -->
+                <div id="mermaid-graph" class="mermaid-container">
+                    <div class="mermaid">
+                        %%{init: {'flowchart': {'htmlLabels': true}} }%%
+                        graph LR
+                        Initial[Loading...]:::status
+                    </div>
+                </div>
+                <!-- Loading Overlay -->
+                <div id="loading-overlay" class="loading-overlay" hidden>
+                    <div class="spinner"></div>
+                    <div class="loading-text">Rendering graph...</div>
+                </div>
                 <div id="list-view" hidden>
                     <div class="list-toolbar">
                         <div class="list-title">Current nodes</div>
