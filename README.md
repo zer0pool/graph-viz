@@ -1,4 +1,4 @@
-# Graph Visualization Project
+# Lineage Manager
 
 FastAPI와 Cytoscape.js를 사용한 그래프 시각화 프로젝트입니다.
 

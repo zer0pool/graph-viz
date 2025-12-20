@@ -25,19 +25,18 @@ Complete UI/UX, API, and implementation specification for the Lineage Manager Ru
 
 
 Drawer (Details):
-
 ┌────────────────────────────── Run Detail Drawer ──────────────────────────────┐
-│ Run ID: scheduled__2025-11-28T03:00:00                                         │
-│ Status: failed                                                                 │
-│ Triggered by: schedule                                                         │
-│ Start: 2025-11-28T03:00:00                                                     │
-│ End:   2025-11-28T03:32:05                                                     │
-│ Duration: 1920s                                                                │
-│ Error Message:                                                                 │
-│   BigQuery timeout while scanning daily partition...                           │
-│                                                                                │
-│ [Close]                                                                         │
-└────────────────────────────────────────────────────────────────────────────────┘
+│ Run ID: scheduled__2025-11-28T03:00:00                                        │
+│ Status: failed                                                                │
+│ Triggered by: schedule                                                        │
+│ Start: 2025-11-28T03:00:00                                                    │
+│ End:   2025-11-28T03:32:05                                                    │
+│ Duration: 1920s                                                               │
+│ Error Message:                                                                │
+│   BigQuery timeout while scanning daily partition...                          │
+│                                                                               │
+│ [Close]                                                                       │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 3. Figma‑Style Wireframe
