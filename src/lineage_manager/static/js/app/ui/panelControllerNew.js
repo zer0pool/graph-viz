@@ -303,11 +303,9 @@ export class PanelController {
 
         this.currentTable = null;
         this.currentTableNode = null;
-        this.currentJob = node.data("job_id") || node.id();
-        // If node.id() is internal (j123), and job_id is missing, we might have an issue.
-        // But let's prioritize data("job_id") if available, claiming it as the authoritative ID.
-        // The backend expects the real job_id.
-        this.currentJobNodeId = node.id();
+        const rawId = node.id();
+        this.currentJob = (node.data("job_id") || rawId).replace(/^job:/, '');
+        this.currentJobNodeId = rawId;
         this.isJobRunLoading = false;
         this.lineageSummaryRequestId += 1;
 
@@ -336,7 +334,8 @@ export class PanelController {
         this.tableView.show();
 
         this.currentJob = null;
-        this.currentTable = node.data("full_name") || node.data("label") || null;
+        const rawName = node.data("full_name") || node.data("label") || node.id();
+        this.currentTable = rawName ? rawName.replace(/^table:/, '') : null;
         this.currentTableNode = node;
         this.lineageSummaryRequestId += 1;
 

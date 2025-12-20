@@ -10,9 +10,15 @@ class GraphView {
     }
 
     init() {
-        // Initialize Mermaid Manager
+        // Initialize Mermaid Manager (Singleton pattern to ensure all components share state)
         if (window.MermaidGraphManager) {
-            this.mermaidManager = new window.MermaidGraphManager();
+            if (!window.mermaidGraphManager) {
+                window.mermaidGraphManager = new window.MermaidGraphManager();
+                console.log('[GraphView] New MermaidGraphManager created and exported to window.mermaidGraphManager');
+            } else {
+                console.log('[GraphView] Using existing window.mermaidGraphManager');
+            }
+            this.mermaidManager = window.mermaidGraphManager;
             console.log('Mermaid GraphView initialized');
         } else {
             console.error('MermaidGraphManager not found');

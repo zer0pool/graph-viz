@@ -26,7 +26,20 @@ export class GraphController {
         this.view = new GraphView(container);
         this.view.init();
 
+        this.bindEvents(); // Bind View in Graph events
         return this.view;
+    }
+
+    bindEvents() {
+        document.addEventListener('job-detail:view-in-graph', (e) => {
+            console.log('[GraphController] Received job-detail:view-in-graph', e.detail);
+            this.centerOnNode(e.detail.nodeId);
+        });
+
+        document.addEventListener('table-detail:view-in-graph', (e) => {
+            console.log('[GraphController] Received table-detail:view-in-graph', e.detail);
+            this.centerOnNode(e.detail.nodeId);
+        });
     }
 
     /**
@@ -112,8 +125,11 @@ export class GraphController {
         console.log('expand - handled by expand buttons');
     }
 
-    centerOnNode() {
-        console.log('centerOnNode - auto-centered in Mermaid');
+    async centerOnNode(nodeId) {
+        console.log('[GraphController] centerOnNode:', nodeId);
+        if (this.view && this.view.mermaidManager) {
+            await this.view.mermaidManager.focusNode(nodeId);
+        }
     }
 
     resetTableTabs() {
