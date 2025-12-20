@@ -41,6 +41,7 @@
     justify-content: center;
     padding: 20px;
     box-sizing: border-box;
+    position: relative;
 }
 
 .mermaid-container .mermaid {
@@ -60,7 +61,58 @@
     /* Allow zoomed content to extend beyond original bounds */
 }
 
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Ensure the wrapper can expand */
 #mermaid-graph>div {
     overflow: visible;
+}
+
+/* Graph Legend */
+.graph-legend {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 2px solid transparent;
+}
+
+/* Match renderer.js colors */
+.legend-job {
+    background-color: #e3f2fd;
+    border-color: #1a73e8;
+}
+
+.legend-table {
+    background-color: #e8f5e9;
+    border-color: #34a853;
 }
