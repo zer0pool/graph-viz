@@ -2,6 +2,7 @@
  * Mermaid Zoom Controls
  * Adds zoom in/out and reset functionality to Mermaid SVG
  */
+console.log('[ZoomScript] File loading...');
 
 class MermaidZoomControls {
     constructor(containerSelector = '#mermaid-graph') {
@@ -36,7 +37,6 @@ class MermaidZoomControls {
     findSVG() {
         this.svg = this.container.querySelector('svg');
         if (this.svg) {
-            console.log('[Zoom] SVG found, initializing zoom controls');
             // Force absolute positioning to ignore Flexbox centering
             this.svg.style.position = 'absolute';
             this.svg.style.top = '0';
@@ -104,13 +104,96 @@ class MermaidZoomControls {
             this.panY = viewportCenterY - graphCenterY * this.zoomLevel;
 
             this.updateTransform();
-            console.log('[Zoom] Fit to view: level=', this.zoomLevel);
         } catch (e) {
             console.warn('[Zoom] Fit to view failed calculation', e);
             // Fallback to simple reset
             this.resetZoom();
         }
     }
+
+    async focusOnNode(mermaidId, label = null) {
+        if (!this.svg) this.findSVG();
+        if (!this.svg) return;
+
+
+        let nodeElement = null;
+        let retries = 5;
+
+        // 1. Try to find by ID patterns
+        while (retries > 0) {
+            // Mermaid often prefixes IDs with "flowchart-" or similar, or appends a timestamp
+            nodeElement = this.svg.getElementById(mermaidId) ||
+                this.svg.querySelector(`[id*="${mermaidId}"]`) || // Contains the ID (robust)
+                this.svg.querySelector(`g.${mermaidId}`) ||
+                this.svg.querySelector(`.node[data-id="${mermaidId}"]`);
+
+            if (nodeElement) break;
+
+            await new Promise(resolve => setTimeout(resolve, 100)); // 100ms wait
+            retries--;
+        }
+
+        // 2. Fallback: Search by label text if we have it
+        if (!nodeElement && label) {
+            const potentialNodes = this.svg.querySelectorAll('.node, .flowchart-node, .mermaid-node, g[class*="node"]');
+            for (const n of potentialNodes) {
+                if (n.textContent.trim() === label || n.textContent.trim().includes(label)) {
+                    nodeElement = n;
+                    break;
+                }
+            }
+        }
+
+        if (!nodeElement) {
+            return;
+        }
+
+        try {
+            // Get viewport dimensions
+            const parent = this.container.getBoundingClientRect();
+            if (parent.width === 0 || parent.height === 0) return;
+
+            const viewportCenterX = parent.width / 2;
+            const viewportCenterY = parent.height / 2;
+
+            // Get node bounding box relative to SVG
+            const nodeBox = nodeElement.getBBox();
+
+            const nodeCenterX = nodeBox.x + nodeBox.width / 2;
+            const nodeCenterY = nodeBox.y + nodeBox.height / 2;
+
+            // Target zoom level
+            let targetZoom = this.zoomLevel;
+            if (targetZoom < 0.6) targetZoom = 0.8;
+
+            // Calculate new pan
+            const newPanX = viewportCenterX - nodeCenterX * targetZoom;
+            const newPanY = viewportCenterY - nodeCenterY * targetZoom;
+
+            // Sanity check
+            if (isNaN(newPanX) || isNaN(newPanY) || !isFinite(newPanX) || !isFinite(newPanY)) {
+                console.error('[Zoom] Focus calculation produced invalid coordinates:', { newPanX, newPanY });
+                return;
+            }
+
+            this.panX = newPanX;
+            this.panY = newPanY;
+            this.zoomLevel = targetZoom;
+
+            this.updateTransform();
+
+            // Highlight effect
+            nodeElement.style.transition = 'filter 0.3s';
+            nodeElement.style.filter = 'brightness(1.2) drop-shadow(0 0 10px rgba(26, 115, 232, 0.7))';
+            setTimeout(() => {
+                if (nodeElement) nodeElement.style.filter = '';
+            }, 2000);
+        } catch (e) {
+            console.warn('[Zoom] Focus on node failed during calculation', e);
+        }
+    }
+
+
 
     setZoom(newZoom) {
         if (!this.container) return;
@@ -133,7 +216,6 @@ class MermaidZoomControls {
 
         this.zoomLevel = clampedZoom;
         this.updateTransform();
-        console.log('[Zoom] Zoom level:', this.zoomLevel.toFixed(2));
     }
 
     updateTransform() {
@@ -218,7 +300,6 @@ class MermaidZoomControls {
             this.panY = mouseY - worldY * this.zoomLevel;
 
             this.updateTransform();
-            console.log('[Zoom] Wheel zoom to:', this.zoomLevel.toFixed(2));
         }, { passive: false });
     }
 }

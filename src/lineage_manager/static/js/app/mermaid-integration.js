@@ -194,6 +194,7 @@ class MermaidGraphManager {
             const result = await renderMermaid(this.container, dsl, 'lineageGraph');
 
             if (result.success) {
+                // Attach handlers immediately after render ensures availability
                 this.attachNodeClickHandlers();
                 this.initializeZoomControls();
 
@@ -212,7 +213,11 @@ class MermaidGraphManager {
 
     initializeZoomControls() {
         // Initialize zoom controls
+        // console.log('[Manager] window.MermaidZoomControls type:', typeof window.MermaidZoomControls); // Removed excessive debug log
         if (!window.mermaidZoomControls) {
+            if (typeof window.MermaidZoomControls !== 'function') {
+                console.error('[Manager] CRITICAL: window.MermaidZoomControls is not a constructor!', window.MermaidZoomControls);
+            }
             window.mermaidZoomControls = new window.MermaidZoomControls('#mermaid-graph');
         }
         window.mermaidZoomControls.init();
@@ -276,68 +281,135 @@ class MermaidGraphManager {
     attachNodeClickHandlers() {
         console.log('Attaching node click handlers...');
 
-        // Wait a bit for Mermaid to finish rendering
-        setTimeout(() => {
-            const nodes = document.querySelectorAll('.node');
-            console.log(`Found ${nodes.length} nodes to attach handlers`);
+        // Specific selector to avoid catching parent container groups like "g.nodes"
+        const selector = '.node, .flowchart-node, .mermaid-node, g.node:not(.nodes)';
+        const nodes = this.container.querySelectorAll(selector);
+        console.log(`Found ${nodes.length} nodes to attach handlers using selector: ${selector}`);
 
-            nodes.forEach((nodeElement, index) => {
-                nodeElement.style.cursor = 'pointer';
+        if (nodes.length === 0) {
+            // If still 0, try a last-ditch effort: wait a bit longer or log SVG structure
+            console.warn('[Manager] No nodes found immediately. Retrying attachment in 100ms...');
+            setTimeout(() => this.attachNodeClickHandlersSync(), 100);
+            return;
+        }
 
-                // Remove existing listeners by cloning
-                const newNode = nodeElement.cloneNode(true);
-                nodeElement.parentNode.replaceChild(newNode, nodeElement);
-
-                newNode.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const nodeText = newNode.textContent.trim();
-                    console.log(`Node clicked: "${nodeText}"`);
-                    console.log('Available nodes:', this.nodes.map(n => ({ id: n.id, label: n.label })));
-
-                    const matchingNode = this.nodes.find(n =>
-                        n.label === nodeText ||
-                        n.id.includes(nodeText) ||
-                        nodeText.includes(n.label)
-                    );
-
-                    if (matchingNode) {
-                        console.log('Matched node:', matchingNode);
-                        this.selectNode(matchingNode.id);
-
-                        // Update global selection state
-                        selectionState.set({
-                            id: matchingNode.id,
-                            type: matchingNode.type,
-                            source: 'graph',
-                            label: matchingNode.label,
-                            data: matchingNode
-                        });
-
-                        // Trigger detail panel update
-                        window.dispatchEvent(new CustomEvent('nodeSelected', {
-                            detail: { nodeId: matchingNode.id, node: matchingNode }
-                        }));
-                    } else {
-                        console.warn('No matching node found for:', nodeText);
-                    }
-                });
-            });
-
-            console.log('Click handlers attached');
-        }, 100); // Small delay to ensure Mermaid is done
+        this.attachNodeClickHandlersSync(nodes);
     }
 
-    selectNode(nodeId) {
-        console.log('Selecting node:', nodeId);
+    attachNodeClickHandlersSync(manualNodes = null) {
+        const selector = '.node, .flowchart-node, .mermaid-node, g.node:not(.nodes)';
+        const nodes = manualNodes || this.container.querySelectorAll(selector);
+        if (nodes.length === 0) return;
+
+        nodes.forEach((nodeElement) => {
+            nodeElement.style.cursor = 'pointer';
+
+            // Remove existing listeners by cloning
+            const newNode = nodeElement.cloneNode(true);
+            nodeElement.parentNode.replaceChild(newNode, nodeElement);
+
+            newNode.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const nodeText = newNode.textContent.trim();
+                const nodeIdAttr = newNode.id || '';
+                console.log(`Node clicked: Text="${nodeText}", ID="${nodeIdAttr}"`);
+
+                // 1. Try to find match by ID attribute first (most reliable)
+                let matchingNode = null;
+
+                // Mermaid IDs often look like "flowchart-T_project_dataset_table-45"
+                // We want to see if our node IDs (table:project.dataset.table) match the middle part
+                this.nodes.forEach(node => {
+                    // Convert our ID (job:xxx) to the format used in Mermaid IDs (J_xxx)
+                    const parts = node.id.split(':');
+                    const type = parts[0];
+                    const rest = parts.slice(1).join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+                    const mermaidPart = `${type === 'job' ? 'J' : 'T'}_${rest}`;
+
+                    if (nodeIdAttr.includes(mermaidPart)) {
+                        matchingNode = node;
+                    }
+                });
+
+                // 2. Fallback: Match by searching label in concatenated text
+                if (!matchingNode) {
+                    let bestMatch = null;
+                    let maxMatchLength = 0;
+
+                    this.nodes.forEach(node => {
+                        // Check label
+                        if (node.label && nodeText.includes(node.label) && node.label.length > maxMatchLength) {
+                            bestMatch = node;
+                            maxMatchLength = node.label.length;
+                        }
+                        // Check ID suffix
+                        const idSuffix = node.id.split(':').pop();
+                        if (nodeText.includes(idSuffix) && idSuffix.length > maxMatchLength) {
+                            bestMatch = node;
+                            maxMatchLength = idSuffix.length;
+                        }
+                    });
+                    matchingNode = bestMatch;
+                }
+
+                if (matchingNode) {
+                    console.log('Matched node:', matchingNode.id);
+                    this.selectNode(matchingNode.id);
+
+                    // Update global selection state
+                    selectionState.set({
+                        id: matchingNode.id,
+                        type: matchingNode.type,
+                        source: 'graph',
+                        label: matchingNode.label,
+                        data: matchingNode
+                    });
+
+                    // Trigger detail panel update
+                    window.dispatchEvent(new CustomEvent('nodeSelected', {
+                        detail: { nodeId: matchingNode.id, node: matchingNode }
+                    }));
+                } else {
+                    console.warn('No matching node found for click');
+                }
+            });
+        });
+    }
+
+    async selectNode(nodeId) {
+        if (this.selectedNodeId === nodeId) return;
+
         this.selectedNodeId = nodeId;
 
-        // Re-render to show selection styling
-        this.render();
+        // Re-render to show selection styling and WAIT for it
+        await this.render();
 
         // Enable expand buttons
         this.setExpandButtonsState(true);
+    }
 
-        console.log('Node selected, selectedNodeId =', this.selectedNodeId);
+    async focusNode(nodeId) {
+        // 1. Select the node (triggers re-render with highlight and WAITS)
+        await this.selectNode(nodeId);
+
+        // 2. Center in view
+        if (window.mermaidZoomControls) {
+            const toMermaidId = (id) => {
+                const parts = id.split(':');
+                const type = parts[0];
+                const rest = parts.slice(1).join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+                return `${type === 'job' ? 'J' : 'T'}_${rest}`;
+            };
+
+            const mermaidId = toMermaidId(nodeId);
+            const nodeData = this.nodes.find(n => n.id === nodeId);
+            const label = nodeData ? nodeData.label : null;
+
+            // Give the browser one frame to layout the SVG elements properly after render
+            requestAnimationFrame(() => {
+                window.mermaidZoomControls.focusOnNode(mermaidId, label);
+            });
+        }
     }
 
     setExpandButtonsState(enabled) {
