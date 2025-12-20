@@ -2105,6 +2105,28 @@ body {
     z-index: 1001;
 }
 
+/* Placeholder node styling for graph - more specific to avoid affecting edges */
+.placeholder rect,
+.placeholder circle,
+.placeholder polygon,
+.placeholder .label-container rect {
+    stroke-dasharray: 5, 5 !important;
+    fill: #f8f9fa !important;
+    stroke: #9aa0a6 !important;
+}
+
+.placeholder text,
+.placeholder .label {
+    fill: #5f6368 !important;
+    font-style: italic !important;
+}
+
+.placeholder:hover rect,
+.placeholder:hover circle {
+    fill: #f1f3f4 !important;
+    stroke: #70757a !important;
+}
+
 
 
 
