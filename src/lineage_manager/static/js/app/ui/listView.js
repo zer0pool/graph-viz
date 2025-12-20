@@ -162,31 +162,38 @@ class ListView {
      * Handle global view switching (Graph vs List)
      */
     setViewMode(mode = "graph") {
+        console.log('[ListView] setViewMode called:', mode);
         const isList = mode === "list";
+
         // Toggle container visibility
+        console.log('[ListView] Toggling containers, isList:', isList, 'view element:', !!this.elements.view);
         if (this.elements.view) {
             this.elements.view.hidden = !isList;
+            console.log('[ListView] List view hidden:', this.elements.view.hidden);
         }
 
-        // Also toggle the graph container (managed by ID usually, or we can assume it's #cy or #graph-container)
-        // Ideally receiving the graph container reference would be better, but we can query it or assume standard ID.
-        // GraphController manages 'cy' but maybe not the wrapper.
-        // Let's grab #cy.
-        const graphArea = document.getElementById("cy");
+        // Toggle the Mermaid graph container
+        const graphArea = document.getElementById("mermaid-graph");
+        console.log('[ListView] Graph area found:', !!graphArea);
         if (graphArea) {
             graphArea.hidden = isList;
+            console.log('[ListView] Graph hidden:', graphArea.hidden);
         }
 
         // If switching to list, ensure we have initial data rendered if empty
         if (isList) {
+            console.log('[ListView] Switching to list, checking selection:', selectionState.selectedNode);
             // Check if we have a selection to default to Full Lineage
             if (selectionState.selectedNode) {
+                console.log('[ListView] Has selection, calling setMode("full")');
                 this.setMode("full");
                 // Auto-load if not already loaded for this node?
                 // Simple check: just call loadFullLineage, it handles idempotent logic or re-fetches.
                 // Better UX: Auto-load.
+                console.log('[ListView] Calling loadFullLineage()');
                 this.loadFullLineage();
             } else {
+                console.log('[ListView] No selection, calling setMode("current")');
                 this.setMode("current");
             }
         }

@@ -64,33 +64,33 @@ export class ControlBar {
             targetLabel = fallbackJob;
         }
 
-        try {
-            // Call neighbors API to get the graph
-            const kind = targetType === "job" ? "job" : "table";
-            const depth = this.filterState.depth || 1;
-            const payload = await this.api.fetchNeighbors(kind, targetLabel, depth);
+        // Get MermaidGraphManager directly
+        const mermaidManager = window.mermaidGraphManager || this.graph?.view?.mermaidManager;
 
-            // Render the graph
-            this.graph.renderGraph(payload, {
-                centerLabel: targetLabel,
-                rememberInitial: true,
-                rememberInitialSearch: true,
-                resetViewport: true,
-            });
-        } catch (error) {
-            console.error("Search error:", error);
-            // Fallback to simple node rendering
-            const payload = {
-                base_node: targetLabel,
-                nodes: [{ id: `${targetType[0]}${targetLabel}`, label: targetLabel, type: targetType }],
-                edges: [],
-            };
-            this.graph.renderGraph(payload, {
-                centerLabel: targetLabel,
-                rememberInitial: true,
-                rememberInitialSearch: true,
-                resetViewport: true,
-            });
+        if (mermaidManager) {
+            // Use Mermaid - format node_id as "type:label"
+            const nodeId = `${targetType}:${targetLabel}`;
+            console.log('[ControlBar] Loading Mermaid graph:', { nodeId, targetType, targetLabel });
+
+            try {
+                await mermaidManager.loadGraph(nodeId);
+
+                // Store for reset functionality
+                if (!this.graph.initialSearchSnapshot) {
+                    this.graph.initialSearchSnapshot = {
+                        nodeId: nodeId,
+                        type: targetType,
+                        label: targetLabel
+                    };
+                    this.graph.initialSearchCenterLabel = targetLabel;
+                }
+            } catch (error) {
+                console.error("[ControlBar] Search error:", error);
+                alert(`Failed to load graph: ${error.message}`);
+            }
+        } else {
+            console.error('[ControlBar] MermaidGraphManager not found');
+            alert('Graph manager not initialized');
         }
     }
 
@@ -134,72 +134,34 @@ export class ControlBar {
                 return;
             }
 
-            // Get currently selected node from graph
-            const selectedNode = this.graph?.selection?.selectedNode;
-            if (!selectedNode) {
+            // Get Mermaid manager
+            const mermaidManager = window.mermaidGraphManager || this.graph?.view?.mermaidManager;
+
+            if (!mermaidManager) {
+                console.error('MermaidGraphManager not found');
+                return;
+            }
+
+            // Check if node is selected
+            if (!mermaidManager.selectedNodeId) {
                 console.warn("No node selected in graph");
+                alert('Please select a node in the graph first');
                 return;
             }
 
             try {
                 // Expand for each selected direction
-                const depth = this.filterState?.depth || 1;
-                const nodeId = selectedNode.id();
-                const nodeType = selectedNode.data("type") || "job";
-                const nodeLabel = selectedNode.data("label") || nodeId;
-
-                console.log(`Expanding node: ${nodeLabel} (${nodeType}), directions:`, selectedDirections.map(d => d.value));
-
-                const nodeDbId = Number(nodeId?.slice(1));
-
                 for (const directionInput of selectedDirections) {
-                    const direction = directionInput.value;
-                    if (typeof this.graph?.expand === "function") {
-                        await this.graph.expand(selectedNode, direction, depth);
-                    } else if (this.graph?.expansion) {
-                        // Fallback if graph controller lacks expand helper
-                        const payload = await this.api.expand({
-                            node_type: nodeType,
-                            direction,
-                            depth: String(depth),
-                            node_db_id: Number.isNaN(nodeDbId) ? undefined : nodeDbId,
-                            node_id:
-                                nodeType === "job"
-                                    ? selectedNode.data("job_id") ||
-                                      nodeLabel ||
-                                      nodeId
-                                    : undefined,
-                            table_name:
-                                nodeType === "table"
-                                    ? selectedNode.data("full_name") ||
-                                      nodeLabel ||
-                                      nodeId
-                                    : undefined,
-                        });
-
-                        const added = this.graph.expansion.mergeGraph(
-                            payload,
-                            nodeId,
-                            direction,
-                            this.graph.persistence?.getHiddenNodes?.() || new Set()
-                        );
-                        this.graph.positioning?.positionNewRelative?.(
-                            nodeId,
-                            added.upstreamAdded,
-                            added.downstreamAdded
-                        );
-                        const dir = this.graph.persistence?.getLastLayoutDirection?.();
-                        this.graph.positioning?.forceLayout?.(dir || "horizontal", true);
-                        this.graph.applyFilters?.();
-                        this.graph.listView?.updateListView?.();
-                        this.graph.updateToolbarVisibility?.();
-                    }
+                    const direction = directionInput.value; // 'upstream' or 'downstream'
+                    console.log(`Expanding ${direction} from node: ${mermaidManager.selectedNodeId}`);
+                    await mermaidManager.expandNode(direction);
                 }
 
                 // Store last used directions
                 sessionStorage.setItem("lastDirections", selectedDirections.map(d => d.value).join(","));
             } catch (error) {
                 console.error("Expand error:", error);
+                alert(`Expansion failed: ${error.message}`);
             }
         });
     }

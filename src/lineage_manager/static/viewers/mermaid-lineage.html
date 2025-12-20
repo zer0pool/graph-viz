@@ -5,27 +5,187 @@
     <meta charset="UTF-8">
     <base href="/lineage-manager/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mermaid Lineage Viewer</title>
-    <!-- Mermaid.js from CDN for portability and zero-setup -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <title>Lineage Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <link rel="stylesheet" href="static/css/viewers/mermaid-viewer.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f8f9fa;
+        }
+
+        .lineage-viewer {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Navigation Bar */
+        .viewer-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #dadce0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .selected-node-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-node-info label {
+            font-weight: 500;
+            color: #5f6368;
+        }
+
+        #selected-node-label {
+            font-weight: 600;
+            color: #202124;
+            padding: 4px 12px;
+            background: #e8f0fe;
+            border-radius: 4px;
+        }
+
+        .viewer-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1557b0;
+        }
+
+        .btn-secondary {
+            background: #f1f3f4;
+            color: #202124;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e8eaed;
+        }
+
+        /* Graph Container */
+        .graph-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            background: #ffffff;
+        }
+
+        #mermaid-graph {
+            min-height: 400px;
+        }
+
+        /* Loading & Error */
+        .loading,
+        .error {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error {
+            background: #fef7f7;
+        }
+
+        .error-message {
+            color: #d93025;
+            font-weight: 500;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="viewer-root">
-        <div id="loading" class="status-overlay">
+    <div class="lineage-viewer">
+        <!-- Navigation Bar -->
+        <div class="viewer-navbar">
+            <div class="selected-node-info">
+                <label>Selected:</label>
+                <span id="selected-node-label">Loading...</span>
+            </div>
+            <div class="viewer-controls">
+                <button id="expand-upstream" class="btn btn-primary" disabled>
+                    ↑ Expand Upstream
+                </button>
+                <button id="expand-downstream" class="btn btn-primary" disabled>
+                    ↓ Expand Downstream
+                </button>
+                <button id="reset-view" class="btn btn-secondary">
+                    ⟲ Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Mermaid Canvas -->
+        <div class="graph-container">
+            <div id="mermaid-graph"></div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
-            <p>Fetching lineage data...</p>
+            <p>Loading graph...</p>
         </div>
-        <div id="error" class="status-overlay" style="display: none;">
+
+        <!-- Error Display -->
+        <div id="error" class="error" style="display: none;">
             <p class="error-message"></p>
-        </div>
-        <div id="graph-container">
-            <pre id="mermaid-graph" class="mermaid"></pre>
         </div>
     </div>
 
-    <script type="module" src="static/js/viewers/mermaid-viewer.js"></script>
+    <script src="static/js/viewers/mermaid-viewer.js"></script>
 </body>
 
 </html>

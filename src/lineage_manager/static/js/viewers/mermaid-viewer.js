@@ -1,10 +1,65 @@
 /**
  * mermaid-viewer.js
- * Read-only Lineage Viewer using Mermaid.js
- * MFE-ready: Stateless, input via URL params
+ * Enhanced Lineage Viewer using Mermaid.js with Expand functionality
  */
 
-// Initialize Mermaid with GCP-like theme
+// Mermaid DSL Generator (inline to avoid module issues)
+function toMermaidId(nodeId) {
+    const [type, ...rest] = nodeId.split(':');
+    const prefix = type === 'job' ? 'J' : 'T';
+    const sanitized = rest.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+    return `${prefix}_${sanitized}`;
+}
+
+function generateMermaidDSL(graphData, selectedNodeId = null) {
+    const { nodes, edges } = graphData;
+
+    const nodeLines = new Set();
+    const edgeLines = [];
+
+    // Generate nodes
+    nodes.forEach(node => {
+        const mermaidId = toMermaidId(node.id);
+        const nodeClass = node.type === 'job' ? 'job' : 'table';
+        const label = node.label || node.id;
+        nodeLines.add(`  ${mermaidId}["${label}"]:::${nodeClass}`);
+    });
+
+    // Generate edges
+    edges.forEach(edge => {
+        const sourceId = toMermaidId(edge.source);
+        const targetId = toMermaidId(edge.target);
+        const label = edge.type || '';
+
+        if (label) {
+            edgeLines.push(`  ${sourceId} -->|${label}| ${targetId}`);
+        } else {
+            edgeLines.push(`  ${sourceId} --> ${targetId}`);
+        }
+    });
+
+    // Build DSL
+    const lines = [
+        'graph LR',
+        '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
+        '  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6',
+        '  classDef selected stroke:#1a73e8,stroke-width:3.5px',
+        ...Array.from(nodeLines),
+        ...edgeLines
+    ];
+
+    // Apply selection style
+    if (selectedNodeId) {
+        const selectedMermaidId = toMermaidId(selectedNodeId);
+        lines.push(`  ${selectedMermaidId}:::selected`);
+    }
+
+    lines.push('  linkStyle default stroke:#dadce0,stroke-width:1px');
+
+    return lines.join('\n');
+}
+
+// Initialize Mermaid
 mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
@@ -21,164 +76,247 @@ mermaid.initialize({
     }
 });
 
-let currentJobData = null;
+// Viewer State
+const viewerState = {
+    nodes: [],
+    edges: [],
+    selectedNodeId: null,
+    expandedNodes: new Set(),
+    rootNodeId: null,
+    depth: 1,
+    maxNodes: 30
+};
 
+// Initialize viewer
 async function initViewer() {
     const params = new URLSearchParams(window.location.search);
-    const jobId = params.get('job_id');
+    const nodeId = params.get('node_id') || params.get('job_id');
 
-    if (!jobId) {
-        showError("Missing job_id parameter in URL.");
+    if (!nodeId) {
+        showError("Missing node_id parameter in URL");
         return;
     }
 
+    viewerState.rootNodeId = nodeId.includes(':') ? nodeId : `job:${nodeId}`;
+    viewerState.selectedNodeId = viewerState.rootNodeId;
+
+    await loadInitialGraph();
+}
+
+// Load initial graph
+async function loadInitialGraph() {
+    showLoading();
+
     try {
-        currentJobData = await fetchJobLineage(jobId);
-        renderViewer();
+        const response = await fetch(
+            `/api/v1/lineage/graph?node_id=${encodeURIComponent(viewerState.rootNodeId)}&depth=1`
+        );
+
+        if (!response.ok) {
+            throw new Error(`API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        viewerState.nodes = data.nodes || [];
+        viewerState.edges = data.edges || [];
+
+        renderGraph();
+        updateNavbar();
+
     } catch (err) {
-        showError(`Failed to load lineage: ${err.message}`);
-    }
-}
-
-function renderViewer() {
-    if (!currentJobData) return;
-    const dsl = generateMermaidDSL(currentJobData);
-    renderGraph(dsl).then(() => {
+        showError(`Failed to load graph: ${err.message}`);
+    } finally {
         hideLoading();
-    });
+    }
 }
 
-async function fetchJobLineage(jobId) {
-    const response = await fetch(`api/v1/jobs/${jobId}`);
-    if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-    }
-    return await response.json();
-}
-
-/**
- * Generates Mermaid DSL in Job-Table-Job format
- */
-function generateMermaidDSL(jobData) {
-    const targetJobRaw = jobData.job_id;
-    const targetJobId = sanitizeId(targetJobRaw);
-
-    const upstreams = jobData.upstreams || [];
-    const downstreams = jobData.downstreams || [];
-
-    const LIMIT = 5;
-    const nodes = new Set();
-    const edges = [];
-
-    function sanitizeId(id) {
-        return "id_" + id.replace(/[^a-zA-Z0-9_]/g, '_');
+// Expand node
+async function expandNode(direction) {
+    if (!viewerState.selectedNodeId) {
+        alert('Please select a node first');
+        return;
     }
 
-    // 1. Add Target Job
-    nodes.add(`  ${targetJobId}["${targetJobRaw}"]:::job`);
+    showLoading();
 
-    // 2. Handle Upstreams
-    const visibleUpstreams = upstreams.slice(0, LIMIT);
-    const hiddenUpCount = upstreams.length - LIMIT;
+    try {
+        const response = await fetch(
+            `/api/v1/lineage/graph?node_id=${encodeURIComponent(viewerState.selectedNodeId)}&direction=${direction}&depth=1`
+        );
 
-    visibleUpstreams.forEach((up, idx) => {
-        if (up.type === 'table') {
-            const tableId = sanitizeId(`T_UP_${idx}`);
-            nodes.add(`  ${tableId}["${up.name}"]:::table`);
-            edges.push(`  ${tableId} --> ${targetJobId}`);
-
-            if (up.writing_jobs) {
-                up.writing_jobs.forEach((wj, widx) => {
-                    const wjId = sanitizeId(`WJ_${idx}_${widx}_${wj}`);
-                    nodes.add(`  ${wjId}["${wj}"]:::job`);
-                    edges.push(`  ${wjId} --> ${tableId}`);
-                });
-            }
+        if (!response.ok) {
+            throw new Error(`API returned ${response.status}`);
         }
-    });
 
-    if (hiddenUpCount > 0) {
-        const moreUpId = "ID_MORE_UP";
-        nodes.add(`  ${moreUpId}["+ ${hiddenUpCount} more upstream nodes"]:::more`);
-        edges.push(`  ${moreUpId} -.-> ${targetJobId}`);
+        const data = await response.json();
+        mergeGraphData(data);
+        viewerState.expandedNodes.add(viewerState.selectedNodeId);
+
+        renderGraph();
+        updateNavbar();
+
+    } catch (err) {
+        showError(`Expansion failed: ${err.message}`);
+    } finally {
+        hideLoading();
     }
-
-    // 3. Handle Downstreams
-    const visibleDownstreams = downstreams.slice(0, LIMIT);
-    const hiddenDownCount = downstreams.length - LIMIT;
-
-    visibleDownstreams.forEach((down, idx) => {
-        if (down.type === 'table') {
-            const tableId = sanitizeId(`T_DOWN_${idx}`);
-            nodes.add(`  ${tableId}["${down.name}"]:::table`);
-            edges.push(`  ${targetJobId} --> ${tableId}`);
-
-            if (down.reading_jobs) {
-                down.reading_jobs.forEach((rj, ridx) => {
-                    const rjId = sanitizeId(`RJ_${idx}_${rj}`);
-                    nodes.add(`  ${rjId}["${rj}"]:::job`);
-                    edges.push(`  ${tableId} --> ${rjId}`);
-                });
-            }
-        }
-    });
-
-    if (hiddenDownCount > 0) {
-        const moreDownId = "ID_MORE_DOWN";
-        nodes.add(`  ${moreDownId}["+ ${hiddenDownCount} more downstream nodes"]:::more`);
-        edges.push(`  ${targetJobId} -.-> ${moreDownId}`);
-    }
-
-    const lines = [
-        'graph LR',
-        '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
-        '  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6',
-        '  classDef more fill:#f8f9fa,stroke:#dadce0,stroke-dasharray: 5 5,rx:6,ry:6',
-        '  classDef selected stroke:#1a73e8,stroke-width:3.5px',
-        ...Array.from(nodes),
-        ...edges,
-        `  ${targetJobId}:::selected`,
-        '  linkStyle default stroke:#dadce0,stroke-width:1px'
-    ];
-
-    const dsl = lines.join('\n');
-    console.log("Generated Mermaid DSL:\n", dsl);
-    return dsl;
 }
 
-async function renderGraph(dsl) {
+// Merge graph data
+function mergeGraphData(newData) {
+    const existingIds = new Set(viewerState.nodes.map(n => n.id));
+    const newNodes = (newData.nodes || []).filter(n => !existingIds.has(n.id));
+    viewerState.nodes.push(...newNodes);
+
+    const existingEdges = new Set(
+        viewerState.edges.map(e => `${e.source}->${e.target}`)
+    );
+    const newEdges = (newData.edges || []).filter(
+        e => !existingEdges.has(`${e.source}->${e.target}`)
+    );
+    viewerState.edges.push(...newEdges);
+}
+
+// Reset view
+async function resetView() {
+    viewerState.nodes = [];
+    viewerState.edges = [];
+    viewerState.expandedNodes.clear();
+    viewerState.selectedNodeId = viewerState.rootNodeId;
+
+    await loadInitialGraph();
+}
+
+// Render graph
+function renderGraph() {
+    const dsl = generateMermaidDSL(
+        {
+            nodes: viewerState.nodes,
+            edges: viewerState.edges
+        },
+        viewerState.selectedNodeId
+    );
+
+    console.log('Generated DSL:', dsl);
+    renderMermaid(dsl);
+}
+
+// Render Mermaid
+async function renderMermaid(dsl) {
     const container = document.getElementById('mermaid-graph');
 
-    // Clear previous content
+    if (!container) {
+        console.error('Mermaid container not found');
+        return;
+    }
+
+    // Clear and set content
     container.innerHTML = '';
-
-    // Set new DSL
-    container.textContent = dsl;
-
-    // Re-verify class
-    container.className = 'mermaid';
+    const mermaidDiv = document.createElement('div');
+    mermaidDiv.className = 'mermaid';
+    mermaidDiv.textContent = dsl;
+    container.appendChild(mermaidDiv);
 
     try {
         await mermaid.run({
-            nodes: [container]
+            nodes: [mermaidDiv],
+            suppressErrors: false
         });
-    } catch (renderError) {
-        console.error("Mermaid Render Error:", renderError);
-        throw renderError;
+
+        console.log('Mermaid rendered successfully');
+        attachNodeClickHandlers();
+    } catch (err) {
+        console.error('Mermaid render error:', err);
+        showError(`Rendering failed: ${err.message}`);
     }
 }
 
-function showError(msg) {
-    const errDiv = document.getElementById('error');
-    const msgP = errDiv.querySelector('.error-message');
-    msgP.textContent = msg;
-    errDiv.style.display = 'block';
-    hideLoading();
+// Attach click handlers
+function attachNodeClickHandlers() {
+    const nodes = document.querySelectorAll('.node');
+    nodes.forEach(node => {
+        node.style.cursor = 'pointer';
+        node.addEventListener('click', (e) => {
+            const nodeText = node.textContent;
+            const matchingNode = viewerState.nodes.find(n =>
+                n.label === nodeText || n.id.includes(nodeText)
+            );
+
+            if (matchingNode) {
+                selectNode(matchingNode.id);
+            }
+        });
+    });
+}
+
+// Select node
+function selectNode(nodeId) {
+    viewerState.selectedNodeId = nodeId;
+    updateNavbar();
+    renderGraph();
+}
+
+// Update navbar
+function updateNavbar() {
+    const selectedNode = viewerState.nodes.find(
+        n => n.id === viewerState.selectedNodeId
+    );
+
+    const label = selectedNode ? selectedNode.label : 'No selection';
+    const labelElement = document.getElementById('selected-node-label');
+    if (labelElement) {
+        labelElement.textContent = label;
+    }
+
+    const hasSelection = !!viewerState.selectedNodeId;
+    const upstreamBtn = document.getElementById('expand-upstream');
+    const downstreamBtn = document.getElementById('expand-downstream');
+
+    if (upstreamBtn) upstreamBtn.disabled = !hasSelection;
+    if (downstreamBtn) downstreamBtn.disabled = !hasSelection;
+}
+
+// Show/hide loading
+function showLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'flex';
 }
 
 function hideLoading() {
-    document.getElementById('loading').style.display = 'none';
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
 }
 
-// Start the viewer
-document.addEventListener('DOMContentLoaded', initViewer);
+// Show error
+function showError(msg) {
+    const errDiv = document.getElementById('error');
+    if (errDiv) {
+        const msgP = errDiv.querySelector('.error-message');
+        if (msgP) msgP.textContent = msg;
+        errDiv.style.display = 'block';
+    }
+    hideLoading();
+    console.error('Viewer error:', msg);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const upstreamBtn = document.getElementById('expand-upstream');
+    const downstreamBtn = document.getElementById('expand-downstream');
+    const resetBtn = document.getElementById('reset-view');
+
+    if (upstreamBtn) {
+        upstreamBtn.addEventListener('click', () => expandNode('upstream'));
+    }
+
+    if (downstreamBtn) {
+        downstreamBtn.addEventListener('click', () => expandNode('downstream'));
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetView);
+    }
+
+    initViewer();
+});

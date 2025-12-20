@@ -60,7 +60,14 @@ export function setupViewToggle(graphController, listViewController) {
     const tabs = document.querySelectorAll(".view-tab");
     if (!tabs.length) return;
 
+    const graphView = document.querySelector("#mermaid-graph");
+    const listView = document.querySelector("#list-view");
+
+    console.log('[ViewToggle] Initializing', { tabs: tabs.length, graphView: !!graphView, listView: !!listView });
+
     const setActive = (mode) => {
+        console.log('[ViewToggle] Setting mode:', mode);
+
         tabs.forEach((btn) => {
             const isList = btn.textContent.trim().toLowerCase() === "list";
             const active = mode === "list" ? isList : !isList;
@@ -68,20 +75,45 @@ export function setupViewToggle(graphController, listViewController) {
             btn.setAttribute("aria-selected", active ? "true" : "false");
         });
 
-        // Update both controllers if they have the method
-        listViewController?.setViewMode?.(mode);
-        // If GraphController needs to pause or resize when hidden, call it here
-        // graphController.handleViewChange(mode); 
+        // Toggle DOM elements
+        if (mode === "list") {
+            console.log('[ViewToggle] Showing List view');
+            if (graphView) graphView.hidden = true;
+            if (listView) listView.hidden = false;
+
+            // Update list view
+            if (listViewController?.updateListView) {
+                console.log('[ViewToggle] Updating list view');
+                listViewController.updateListView();
+            } else if (graphController?.listView?.updateListView) {
+                console.log('[ViewToggle] Updating list view via graphController');
+                graphController.listView.updateListView();
+            }
+        } else {
+            console.log('[ViewToggle] Showing Graph view');
+            if (graphView) graphView.hidden = false;
+            if (listView) listView.hidden = true;
+        }
+
+        // Call ListView.setViewMode
+        if (listViewController?.setViewMode) {
+            console.log('[ViewToggle] Calling listViewController.setViewMode');
+            listViewController.setViewMode(mode);
+        } else {
+            console.warn('[ViewToggle] listViewController.setViewMode not found');
+        }
     };
 
     tabs.forEach((btn) => {
         btn.addEventListener("click", () => {
             const mode = btn.textContent.trim().toLowerCase() === "list" ? "list" : "graph";
+            console.log('[ViewToggle] Tab clicked:', mode);
             setActive(mode);
         });
     });
 
     setActive("graph");
+    console.log('[ViewToggle] Initialized');
 }
 
 export function setupDetailTabs() {
