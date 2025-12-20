@@ -1,98 +1,74 @@
-PY=python3.12
-APP_NAME=Lineage-Manager
-APP_NAME_LOWER= $(shell echo $(APP_NAME) | tr A-Z a-z)
+# Root Makefile for Lineage Platform
+# Delegates most tasks to individual apps
 
-# App specific paths
 LM_DIR=apps/lineage-manager
-APP=$(LM_DIR)/src/lineage_manager/main:app
-PYTHONPATH=$(shell pwd)/$(LM_DIR)/src
+DJM_DIR=apps/dummy-job-manager
 
-PORT=5003
-DOCKER_IMAGE=graph-viz
-DOCKER_TAG=latest
-GAR_REGISTRY=asia-northeast3-docker.pkg.dev/gizmopool/test_server
+.PHONY: all venv-lm venv-djm venv-all run-lm run-djm kill-lm kill-djm test-lm test-djm test-all lint-all format-all clean-all help test-integration
 
-.PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop build-sec push-sec restart-sec kill
+all: help
 
-all: venv install-dev format lint test
+help:
+	@echo "Available commands:"
+	@echo "  make venv-lm          - Create venv for lineage-manager"
+	@echo "  make venv-djm         - Create venv for dummy-job-manager"
+	@echo "  make venv-all         - Create venv for all apps"
+	@echo "  make run-lm           - Run lineage-manager"
+	@echo "  make run-djm          - Run dummy-job-manager"
+	@echo "  make test-lm          - Test lineage-manager (unit tests)"
+	@echo "  make test-djm         - Test dummy-job-manager"
+	@echo "  make test-all         - Run all unit tests"
+	@echo "  make test-integration - Run integration tests (requires LM and DJM)"
+	@echo "  make lint-all         - Lint all apps"
+	@echo "  make format-all       - Format all apps"
+	@echo "  make clean-all        - Clean all apps"
+	@echo "  make compose-up       - Start infrastructure with docker-compose"
+	@echo "  make compose-down     - Stop infrastructure"
 
-venv:
-	$(PY) -m venv .venv || { echo "Failed to create venv"; exit 1; }
-	.venv/bin/pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	.venv/bin/pip install -r $(LM_DIR)/requirements.txt || { echo "Failed to install requirements"; exit 1; }
+# Lineage Manager delegation
+venv-lm:
+	$(MAKE) -C $(LM_DIR) venv
 
-activate:
-	@bash -c 'source .venv/bin/activate'
+run-lm:
+	$(MAKE) -C $(LM_DIR) run
 
-install-dev:
-	. .venv/bin/activate && pip install black pytest pytest-cov flake8 pytest-asyncio
+test-lm:
+	$(MAKE) -C $(LM_DIR) test
 
-run:
-	$(MAKE) kill
-	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT) --app-dir $(LM_DIR)/src
+kill-lm:
+	$(MAKE) -C $(LM_DIR) kill
 
-kill:
-	@echo "Killing process on port $(PORT)..."
-	-fuser -k -9 $(PORT)/tcp || true
-	@sleep 1
+# Dummy Job Manager delegation
+venv-djm:
+	$(MAKE) -C $(DJM_DIR) venv
 
-run-prod:
-	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn lineage_manager.main:app --host 0.0.0.0 --port $(PORT) --workers 4 --app-dir $(LM_DIR)/src
+run-djm:
+	$(MAKE) -C $(DJM_DIR) run
 
-test:
-	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) pytest $(LM_DIR)/tests/ -v
+kill-djm:
+	$(MAKE) -C $(DJM_DIR) kill
 
-lint:
-	. .venv/bin/activate && flake8 $(LM_DIR)/src/ $(LM_DIR)/tests/
+# All apps targets
+venv-all: venv-lm venv-djm
 
-format:
-	. .venv/bin/activate && black $(LM_DIR)/src/ $(LM_DIR)/tests/
+test-all:
+	$(MAKE) -C $(LM_DIR) test
+	# Add DJM tests if they exist
 
- 
-clean:
-	rm -rf .venv __pycache__ .pytest_cache
-	find . -type d -name __pycache__ -exec rm -r {} +
-	find . \( -name "*.pyc" -o -name "*.pyo" -o -name "*.pyd" \) -delete
-	find . -type f -name ".coverage" -delete
-	find . \( -name "*.egg-info" -o -name "*.egg" \) -exec rm -r {} +
+test-integration:
+	@echo "Running integration tests..."
+	# In the new structure, PYTHONPATH should include the app roots directly
+	. $(LM_DIR)/.venv/bin/activate && PYTHONPATH=$(shell pwd)/$(LM_DIR):$(shell pwd)/$(DJM_DIR) pytest tests/integration -v
 
+lint-all:
+	$(MAKE) -C $(LM_DIR) lint
 
-requirements:
-	. .venv/bin/activate && pip freeze > $(LM_DIR)/requirements.txt
+format-all:
+	$(MAKE) -C $(LM_DIR) format
 
-# Database migrations
-db-revision:
-	. .venv/bin/activate && cd $(LM_DIR) && alembic revision --autogenerate -m "$(name)"
-
-db-upgrade:
-	. .venv/bin/activate && cd $(LM_DIR) && alembic upgrade head
-
-db-downgrade:
-	. .venv/bin/activate && cd $(LM_DIR) && alembic downgrade -1
-
-db-history:
-	. .venv/bin/activate && cd $(LM_DIR) && alembic history --verbose
-
-db-current:
-	. .venv/bin/activate && cd $(LM_DIR) && alembic current
- 
-# Docker commands
-docker-build:
-	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f deploy/docker/Dockerfile .
-
-docker-run:
-	docker run -d --name $(DOCKER_IMAGE) -p $(PORT):5003 $(DOCKER_IMAGE):$(DOCKER_TAG)
-
-docker-stop:
-	docker stop $(DOCKER_IMAGE) || true
-	docker rm $(DOCKER_IMAGE) || true
-
-docker-push-gar:
-	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(GAR_REGISTRY)/$(GAR_IMAGE_NAME):$(DOCKER_TAG)
-	docker push $(GAR_REGISTRY)/$(GAR_IMAGE_NAME):$(DOCKER_TAG)
-
-docker-push:
-	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
+clean-all:
+	$(MAKE) -C $(LM_DIR) clean
+	$(MAKE) -C $(DJM_DIR) clean
 
 # Docker Compose commands
 compose-up:
@@ -103,3 +79,7 @@ compose-down:
 
 compose-logs:
 	docker-compose logs -f
+
+# Docker commands (legacy/centralized if needed)
+docker-build:
+	docker build -t graph-viz:latest -f deploy/docker/Dockerfile .
