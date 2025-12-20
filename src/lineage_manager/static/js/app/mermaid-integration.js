@@ -15,6 +15,10 @@ class MermaidGraphManager {
         this.edges = [];
         this.selectedNodeId = null;
         this.container = document.getElementById('mermaid-graph');
+
+        // History Management
+        this.history = [];
+        this.historyIndex = -1;
     }
 
     async loadGraph(nodeId) {
@@ -41,7 +45,14 @@ class MermaidGraphManager {
             this.edges = data.edges || [];
             this.selectedNodeId = nodeId;
 
+            // Reset history for new graph
+            this.history = [];
+            this.historyIndex = -1;
+
             await this.render();
+
+            // Initial state
+            this.pushToHistory();
 
             // Show toolbar after successful render
             const toolbar = document.getElementById('graph-toolbar');
@@ -63,6 +74,8 @@ class MermaidGraphManager {
             return;
         }
 
+        this.setExpandButtonsState(false);
+
         try {
             const url = `/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${direction}&depth=1`;
             console.log('Expanding with URL:', url);
@@ -76,9 +89,79 @@ class MermaidGraphManager {
             const data = await response.json();
             this.mergeGraphData(data);
             await this.render();
+            this.pushToHistory();
         } catch (err) {
             console.error('Expansion failed:', err);
             this.showError(`Expansion failed: ${err.message}`);
+        } finally {
+            this.setExpandButtonsState(true);
+        }
+    }
+
+    async handleSmartExpand() {
+        if (!this.selectedNodeId) return;
+
+        console.log('Smart expanding for:', this.selectedNodeId);
+
+        // 1. Analyze current connectivity
+        // Check if there are ANY incoming edges to this node in the current graph
+        const hasIncoming = this.edges.some(e => e.target === this.selectedNodeId);
+        // Check if there are ANY outgoing edges from this node in the current graph
+        const hasOutgoing = this.edges.some(e => e.source === this.selectedNodeId);
+
+        const directions = [];
+
+        // "If no node from previous ... then upstream"
+        if (!hasIncoming) {
+            directions.push('upstream');
+        }
+
+        // "If no node following ... then downstream"
+        if (!hasOutgoing) {
+            directions.push('downstream');
+        }
+
+        if (directions.length === 0) {
+            console.log('Node appears to be connected both ways. No expansion needed.');
+            return;
+        }
+
+        this.setExpandButtonsState(false);
+
+        try {
+            console.log('Expanding directions:', directions);
+            // Fetch relevant directions in parallel
+            const requests = directions.map(dir =>
+                fetch(`/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${dir}&depth=1`)
+                    .then(r => r.ok ? r.json() : { nodes: [], edges: [] })
+                    .catch(e => {
+                        console.warn(`Expand ${dir} failed`, e);
+                        return { nodes: [], edges: [] };
+                    })
+            );
+
+            const results = await Promise.all(requests);
+
+            let hasChanges = false;
+            results.forEach(data => {
+                if (data.nodes && data.nodes.length > 0) {
+                    this.mergeGraphData(data);
+                    hasChanges = true;
+                }
+            });
+
+            if (hasChanges) {
+                await this.render();
+                this.pushToHistory();
+            } else {
+                console.log('No new neighbors found.');
+            }
+
+        } catch (err) {
+            console.error('Smart expand error:', err);
+            this.showError(`Expand failed: ${err.message}`);
+        } finally {
+            this.setExpandButtonsState(true);
         }
     }
 
@@ -113,6 +196,11 @@ class MermaidGraphManager {
             if (result.success) {
                 this.attachNodeClickHandlers();
                 this.initializeZoomControls();
+
+                // Auto-fit to view on initial render
+                if (window.mermaidZoomControls) {
+                    window.mermaidZoomControls.fitToView();
+                }
             } else {
                 console.error('Render failed:', result.error);
             }
@@ -155,6 +243,31 @@ class MermaidGraphManager {
                     }
                 });
             };
+        }
+
+        const expandSmartBtn = document.getElementById('expand-smart-btn');
+        if (expandSmartBtn) {
+            expandSmartBtn.onclick = () => this.handleSmartExpand();
+        }
+
+        const expandUpstreamBtn = document.getElementById('expand-upstream-btn');
+        if (expandUpstreamBtn) {
+            expandUpstreamBtn.onclick = () => this.expandNode('upstream');
+        }
+
+        const expandDownstreamBtn = document.getElementById('expand-downstream-btn');
+        if (expandDownstreamBtn) {
+            expandDownstreamBtn.onclick = () => this.expandNode('downstream');
+        }
+
+        const undoBtn = document.getElementById('undo-btn');
+        if (undoBtn) {
+            undoBtn.onclick = () => this.undo();
+        }
+
+        const redoBtn = document.getElementById('redo-btn');
+        if (redoBtn) {
+            redoBtn.onclick = () => this.redo();
         }
 
         console.log('[Manager] Zoom & Download controls initialized');
@@ -222,12 +335,22 @@ class MermaidGraphManager {
         this.render();
 
         // Enable expand buttons
-        const upstreamBtn = document.getElementById('expand-upstream');
-        const downstreamBtn = document.getElementById('expand-downstream');
-        if (upstreamBtn) upstreamBtn.disabled = false;
-        if (downstreamBtn) downstreamBtn.disabled = false;
+        this.setExpandButtonsState(true);
 
         console.log('Node selected, selectedNodeId =', this.selectedNodeId);
+    }
+
+    setExpandButtonsState(enabled) {
+        const ids = ['expand-smart-btn', 'expand-upstream-btn', 'expand-downstream-btn'];
+        ids.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = !enabled;
+                btn.style.cursor = enabled ? 'pointer' : 'wait';
+                if (!enabled && btn.disabled) btn.style.cursor = 'not-allowed';
+                if (!enabled) btn.style.cursor = 'wait';
+            }
+        });
     }
 
     reset() {
@@ -247,6 +370,65 @@ class MermaidGraphManager {
                     <div class="error-message">${message}</div>
                 </div>
             `;
+        }
+    }
+
+    // History Management
+    pushToHistory() {
+        // Remove any future history if we were in the middle
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+
+        // Deep clone state (naive JSON approach is sufficient for this data)
+        const state = {
+            nodes: JSON.parse(JSON.stringify(this.nodes)),
+            edges: JSON.parse(JSON.stringify(this.edges)),
+            selectedNodeId: this.selectedNodeId
+        };
+
+        this.history.push(state);
+        this.historyIndex++;
+        this.updateHistoryButtons();
+        console.log(`[History] Pushed state. Index: ${this.historyIndex}, Total: ${this.history.length}`);
+    }
+
+    async undo() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            await this.restoreState(this.history[this.historyIndex]);
+            this.updateHistoryButtons();
+            console.log(`[History] Undo to index: ${this.historyIndex}`);
+        }
+    }
+
+    async redo() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            await this.restoreState(this.history[this.historyIndex]);
+            this.updateHistoryButtons();
+            console.log(`[History] Redo to index: ${this.historyIndex}`);
+        }
+    }
+
+    async restoreState(state) {
+        this.nodes = JSON.parse(JSON.stringify(state.nodes));
+        this.edges = JSON.parse(JSON.stringify(state.edges));
+        this.selectedNodeId = state.selectedNodeId;
+
+        await this.render();
+        // Restore selection UI state if needed? Render does it mostly.
+    }
+
+    updateHistoryButtons() {
+        const undoBtn = document.getElementById('undo-btn');
+        if (undoBtn) {
+            undoBtn.disabled = this.historyIndex <= 0;
+        }
+
+        const redoBtn = document.getElementById('redo-btn');
+        if (redoBtn) {
+            redoBtn.disabled = this.historyIndex >= this.history.length - 1;
         }
     }
 

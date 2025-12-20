@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Select, func, or_, select, desc
+from sqlalchemy import Select, func, or_, select, desc, cast, String
 
 from lineage_manager.models import GraphEdge, GraphNode
 from lineage_manager.repositories.base_repository import BaseRepository
@@ -99,7 +99,7 @@ class JobRepository(BaseRepository):
                 or_(
                     func.lower(GraphNode.name).like(pattern),
                     func.lower(
-                        GraphNode.properties["display_name"].as_string()
+                        cast(GraphNode.properties["display_name"], String)
                     ).like(pattern),
                 )
             )

@@ -168,21 +168,12 @@
 
                         <!-- Zoom Controls -->
                         <div class="zoom-controls">
-                            <!-- Expand Upstream -->
-                            <button id="expand-upstream-btn" class="simple-btn" title="Expand Upstream (+1 Level)">
-                                <svg class="icon-svg" viewBox="0 0 24 24" style="transform: rotate(180deg);">
-                                    <path fill="currentColor"
-                                        d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" />
-                                </svg>
-                                <span class="zoom-display">UP</span>
-                            </button>
-
-                            <!-- Expand Downstream -->
-                            <button id="expand-downstream-btn" class="simple-btn" title="Expand Downstream (+1 Level)">
-                                <span class="zoom-display">DOWN</span>
+                            <!-- Smart Expand -->
+                            <button id="expand-smart-btn" class="simple-btn" title="Expand Neighbors" disabled>
+                                <span class="zoom-display">EXPAND</span>
                                 <svg class="icon-svg" viewBox="0 0 24 24">
                                     <path fill="currentColor"
-                                        d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" />
+                                        d="M9.01 14H2v2h7.01v3L13 15l-3.99-4v3zm5.98-1v-3H22V8h-7.01V5L11 9l3.99 4z" />
                                 </svg>
                             </button>
 
