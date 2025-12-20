@@ -690,3 +690,147 @@ class GraphQueryService:
                 "lifecycle_status": "-",
             }
         }
+
+    # ============================================================================
+    # New Lineage Graph API for Mermaid Viewer (Cytoscape Migration)
+    # ============================================================================
+    
+    MAX_NODES = 30
+    MAX_EDGES = 50
+    MAX_DEPTH = 2
+    
+    def get_lineage_graph(
+        self,
+        node_id: str,
+        depth: int = 1,
+        direction: Optional[str] = None
+    ):
+        """
+        Get lineage graph optimized for Mermaid rendering.
+        
+        Args:
+            node_id: Node identifier in format "job:xxx" or "table:xxx"
+            depth: Traversal depth (1-2, enforced)
+            direction: None (both), "upstream", or "downstream"
+            
+        Returns:
+            MermaidGraphResponse with nodes, edges, and metadata
+        """
+        from lineage_manager.api.v1.schemas import (
+            GraphNode as GraphNodeSchema,
+            GraphEdge as GraphEdgeSchema,
+            GraphMetadata,
+            MermaidGraphResponse
+        )
+        
+        # Validate depth
+        if depth > self.MAX_DEPTH:
+            raise ValueError(f"Depth must be <= {self.MAX_DEPTH}")
+        
+        # Parse node_id
+        if ":" not in node_id:
+            # Assume it's a job_id for backward compatibility
+            node_id = f"job:{node_id}"
+        
+        node_type, node_name = node_id.split(":", 1)
+        
+        # Get base node
+        if node_type == "job":
+            base_node = self.uow.jobs.get(node_name)
+            if not base_node:
+                raise ValueError(f"Job '{node_name}' not found")
+        elif node_type == "table":
+            base_node = self.uow.tables.get_by_full_name(node_name)
+            if not base_node:
+                raise ValueError(f"Table '{node_name}' not found")
+        else:
+            raise ValueError(f"Invalid node type: {node_type}")
+        
+        # Use traversal helper to get neighbors
+        result = self._traversal.bfs_neighbors(
+            node_type, base_node.id, base_node, depth, direction or "both", limit=None
+        )
+        
+        # Build ID mapping: internal_id -> formatted_id
+        id_mapping = {}
+        nodes_list = []
+        
+        # Process nodes and build mapping
+        for node_data in result["nodes"]:
+            internal_id = node_data.get("id", "")  # e.g., "j1688", "t1690"
+            ntype = node_data.get("type", "")
+            
+            # Get actual identifier
+            if ntype == "job":
+                actual_id = node_data.get("job_id") or node_data.get("name", "")
+                label = node_data.get("name", actual_id)
+            else:  # table
+                actual_id = node_data.get("full_name") or node_data.get("name", "")
+                label = actual_id
+            
+            formatted_id = f"{ntype}:{actual_id}"
+            id_mapping[internal_id] = formatted_id
+            
+            # Extract properties
+            properties = {}
+            if "owner" in node_data:
+                properties["owner"] = node_data["owner"]
+            if "status" in node_data:
+                properties["status"] = node_data["status"]
+            if "enabled" in node_data:
+                properties["enabled"] = node_data["enabled"]
+            
+            node_schema = GraphNodeSchema(
+                id=formatted_id,
+                type=ntype,
+                label=label,
+                properties=properties
+            )
+            nodes_list.append(node_schema)
+        
+        # Process edges using ID mapping
+        edges_list = []
+        for edge_data in result["edges"]:
+            source_internal = edge_data.get("source", "")
+            target_internal = edge_data.get("target", "")
+            io_type = edge_data.get("io", "")
+            
+            # Map to formatted IDs
+            source_formatted = id_mapping.get(source_internal, source_internal)
+            target_formatted = id_mapping.get(target_internal, target_internal)
+            
+            # Determine edge type
+            if io_type == "output":
+                mermaid_type = "writes"
+            elif io_type == "input":
+                mermaid_type = "reads"
+            else:
+                mermaid_type = "related"
+            
+            edge_schema = GraphEdgeSchema(
+                source=source_formatted,
+                target=target_formatted,
+                type=mermaid_type,
+                properties={}
+            )
+            edges_list.append(edge_schema)
+        
+        # Apply node limit
+        truncated = False
+        if len(nodes_list) > self.MAX_NODES:
+            nodes_list = nodes_list[:self.MAX_NODES]
+            truncated = True
+        
+        # Build metadata
+        metadata = GraphMetadata(
+            total_nodes=len(nodes_list),
+            depth=depth,
+            truncated=truncated,
+            max_nodes_reached=truncated
+        )
+        
+        return MermaidGraphResponse(
+            nodes=nodes_list,
+            edges=edges_list,
+            metadata=metadata
+        )

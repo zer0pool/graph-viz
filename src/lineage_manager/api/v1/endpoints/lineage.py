@@ -184,3 +184,45 @@ async def get_lineage_batch_details(
         return {"status": "success", "results": {}}
     
     return svc.get_nodes_batch_details(node_ids)
+
+
+# ============================================================================
+# New Lineage Graph API for Mermaid Viewer (Cytoscape Migration)
+# ============================================================================
+
+@router.get("/graph")
+@inject
+async def get_lineage_graph(
+    node_id: str = Query(..., description="Node identifier: 'job:xxx' or 'table:xxx'"),
+    depth: int = Query(1, ge=1, le=2, description="Traversal depth (1-2)"),
+    direction: Optional[str] = Query(
+        None,
+        regex="^(upstream|downstream)$",
+        description="Direction: upstream, downstream, or both (default)"
+    ),
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Get lineage graph optimized for Mermaid rendering.
+    
+    This endpoint returns a simplified graph structure without Cytoscape-specific
+    fields like position, layout, etc. The response is designed to be directly
+    converted to Mermaid DSL on the frontend.
+    
+    **Examples:**
+    - Initial load: `/api/v1/lineage/graph?node_id=job:daily_agg&depth=1`
+    - Expand upstream: `/api/v1/lineage/graph?node_id=job:daily_agg&direction=upstream&depth=1`
+    - Expand downstream: `/api/v1/lineage/graph?node_id=table:proj.ds.tbl&direction=downstream&depth=1`
+    
+    **Limits:**
+    - Max depth: 2
+    - Max nodes: 30 (truncated if exceeded)
+    """
+    try:
+        result = svc.get_lineage_graph(node_id, depth, direction)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting lineage graph for {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

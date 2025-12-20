@@ -14,12 +14,10 @@ export const SELECTORS = {
   zoomControls: {
     in: "#zoom-in",
     out: "#zoom-out",
-    reset: "#reset-view",
-    zoomReset: "#zoom-reset",
-    minimap: "#minimap-toggle",
+    fit: "#zoom-fit",
   },
   ctxMenu: "#ctx-menu",
-  graphContainer: "#cy",
+  graphContainer: "#mermaid-graph",
   graphStatus: "#graph-status",
 };
 

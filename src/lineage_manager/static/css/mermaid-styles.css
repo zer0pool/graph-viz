@@ -1,0 +1,66 @@
+/* Mermaid Error Styles */
+.mermaid-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: #fef7f7;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.mermaid-error .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.mermaid-error .error-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #721c24;
+    margin-bottom: 8px;
+}
+
+.mermaid-error .error-message {
+    font-size: 14px;
+    color: #721c24;
+    text-align: center;
+    max-width: 600px;
+}
+
+/* Mermaid Container */
+.mermaid-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.mermaid-container .mermaid {
+    /* Allow content to expand beyond container when zoomed */
+    flex-shrink: 0;
+}
+
+.mermaid-container .empty-state {
+    color: #5f6368;
+    font-size: 16px;
+}
+
+/* Mermaid SVG Styling */
+.mermaid svg {
+    display: block;
+    overflow: visible !important;
+    /* Allow zoomed content to extend beyond original bounds */
+}
+
+/* Ensure the wrapper can expand */
+#mermaid-graph>div {
+    overflow: visible;
+}
