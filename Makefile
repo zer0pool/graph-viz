@@ -1,7 +1,12 @@
 PY=python3.12
 APP_NAME=Lineage-Manager
 APP_NAME_LOWER= $(shell echo $(APP_NAME) | tr A-Z a-z)
-APP=lineage_manager.main:app
+
+# App specific paths
+LM_DIR=apps/lineage-manager
+APP=$(LM_DIR)/src/lineage_manager/main:app
+PYTHONPATH=$(shell pwd)/$(LM_DIR)/src
+
 PORT=5003
 DOCKER_IMAGE=graph-viz
 DOCKER_TAG=latest
@@ -9,24 +14,22 @@ GAR_REGISTRY=asia-northeast3-docker.pkg.dev/gizmopool/test_server
 
 .PHONY: venv run clean test lint format install-dev all docker-build docker-run docker-stop build-sec push-sec restart-sec kill
 
-export PYTHONPATH=$(shell pwd)/src
-
 all: venv install-dev format lint test
 
 venv:
 	$(PY) -m venv .venv || { echo "Failed to create venv"; exit 1; }
 	.venv/bin/pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	.venv/bin/pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+	.venv/bin/pip install -r $(LM_DIR)/requirements.txt || { echo "Failed to install requirements"; exit 1; }
 
 activate:
 	@bash -c 'source .venv/bin/activate'
 
 install-dev:
-	. .venv/bin/activate && pip install black pytest pytest-cov flake8
+	. .venv/bin/activate && pip install black pytest pytest-cov flake8 pytest-asyncio
 
 run:
 	$(MAKE) kill
-	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn $(APP) --reload --host 0.0.0.0 --port $(PORT)
+	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT) --app-dir $(LM_DIR)/src
 
 kill:
 	@echo "Killing process on port $(PORT)..."
@@ -34,16 +37,16 @@ kill:
 	@sleep 1
 
 run-prod:
-	. .venv/bin/activate && uvicorn $(APP) --host 0.0.0.0 --port $(PORT) --workers 4
+	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) uvicorn lineage_manager.main:app --host 0.0.0.0 --port $(PORT) --workers 4 --app-dir $(LM_DIR)/src
 
 test:
-	. .venv/bin/activate && PYTHONPATH=src pytest tests/ -v
+	. .venv/bin/activate && PYTHONPATH=$(PYTHONPATH) pytest $(LM_DIR)/tests/ -v
 
 lint:
-	. .venv/bin/activate && flake8 src/ tests/
+	. .venv/bin/activate && flake8 $(LM_DIR)/src/ $(LM_DIR)/tests/
 
 format:
-	. .venv/bin/activate && black src/ tests/
+	. .venv/bin/activate && black $(LM_DIR)/src/ $(LM_DIR)/tests/
 
  
 clean:
@@ -55,23 +58,23 @@ clean:
 
 
 requirements:
-	. .venv/bin/activate && pip freeze > requirements.txt
+	. .venv/bin/activate && pip freeze > $(LM_DIR)/requirements.txt
 
 # Database migrations
 db-revision:
-	. .venv/bin/activate && alembic revision --autogenerate -m "$(name)"
+	. .venv/bin/activate && cd $(LM_DIR) && alembic revision --autogenerate -m "$(name)"
 
 db-upgrade:
-	. .venv/bin/activate && alembic upgrade head
+	. .venv/bin/activate && cd $(LM_DIR) && alembic upgrade head
 
 db-downgrade:
-	. .venv/bin/activate && alembic downgrade -1
+	. .venv/bin/activate && cd $(LM_DIR) && alembic downgrade -1
 
 db-history:
-	. .venv/bin/activate && alembic history --verbose
+	. .venv/bin/activate && cd $(LM_DIR) && alembic history --verbose
 
 db-current:
-	. .venv/bin/activate && alembic current
+	. .venv/bin/activate && cd $(LM_DIR) && alembic current
  
 # Docker commands
 docker-build:
@@ -100,8 +103,3 @@ compose-down:
 
 compose-logs:
 	docker-compose logs -f
-
-# Include sec environment commands
-# include deploy/sec.mk
-
-
