@@ -103,7 +103,7 @@ export class ExpandedLineageRenderer {
             </tr>
             <tr class="apa-header-detail">
                 <th style="width: 250px;">Table Name</th>
-                <th style="width: 50px;">Depth</th>
+                <th style="width: 50px; text-align: center;">Depth</th>
                 <th style="width: 100px;">Storage</th>
                 <th style="width: 100px;">Write Mode</th>
                 <th style="width: 150px;">Job ID</th>
