@@ -438,6 +438,7 @@ class MermaidGraphManager {
             undoBtn.onclick = () => this.undo();
         }
 
+        const redoBtn = document.getElementById('redo-btn');
         if (redoBtn) {
             redoBtn.onclick = () => this.redo();
         }
