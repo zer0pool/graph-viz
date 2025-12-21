@@ -14,7 +14,7 @@ class UserService:
         """Create or update the user profile whenever a login succeeds."""
         with self.uow:
             user = self.uow.users.upsert_from_claims(claims)
-        return serialize_user(claims, user)
+            return serialize_user(claims, user)
 
     def get_profile(self, sub: str, job_limit: int = 10) -> Optional[Dict[str, Any]]:
         """Return the persisted user profile plus recent jobs they own."""
