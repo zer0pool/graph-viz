@@ -23,14 +23,12 @@ export class LineageInsightProvider {
      */
     init() {
         this.lineageUI = {
-            pathPreview: document.getElementById("lineage-path-preview"),
-            pathButton: document.getElementById("lineage-path-expand"),
             rootSummary: document.getElementById("lineage-root-summary"),
             rootButton: document.getElementById("lineage-root-expand"),
             leafSummary: document.getElementById("lineage-leaf-summary"),
             leafButton: document.getElementById("lineage-leaf-expand"),
-            upstreamSummary: document.getElementById("lineage-upstream-summary"),
-            downstreamSummary: document.getElementById("lineage-downstream-summary"),
+            impactTables: document.getElementById("lineage-impact-tables"),
+            impactJobs: document.getElementById("lineage-impact-jobs"),
             depthSummary: document.getElementById("lineage-depth-summary"),
             drawer: document.getElementById("lineage-drawer"),
             drawerTitle: document.getElementById("lineage-drawer-title"),
@@ -44,21 +42,18 @@ export class LineageInsightProvider {
 
     setIdle(message = 'Select "Lineage" tab to load lineage summary.') {
         const state = this.createEmptyState();
-        state.pathPreview = message;
         this.pathCollapseState.clear();
         this.setState(state);
     }
 
     setLoading(message = "Loading lineage summary…") {
         const state = this.createEmptyState();
-        state.pathPreview = message;
         this.setState(state);
     }
 
     setError(message = "Failed to load lineage summary.") {
-        const state = this.createEmptyState();
-        state.pathPreview = message;
-        this.setState(state);
+        // No path preview to set error on anymore, maybe use root/leaf summary as fallback or toast?
+        this.setState(this.createEmptyState());
     }
 
     setSummary(summary) {
@@ -330,14 +325,14 @@ export class LineageInsightProvider {
             this.lineageUI.leafButton.disabled = !data.leafTables.length;
         }
 
-        if (this.lineageUI.upstreamSummary) {
-            this.lineageUI.upstreamSummary.innerHTML = `Tables: ${data.upstream.tables}<br>Jobs: ${data.upstream.jobs}`;
+        if (this.lineageUI.impactTables) {
+            this.lineageUI.impactTables.textContent = String(data.downstream.tables);
         }
-        if (this.lineageUI.downstreamSummary) {
-            this.lineageUI.downstreamSummary.innerHTML = `Tables: ${data.downstream.tables}<br>Jobs: ${data.downstream.jobs}`;
+        if (this.lineageUI.impactJobs) {
+            this.lineageUI.impactJobs.textContent = String(data.downstream.jobs);
         }
         if (this.lineageUI.depthSummary) {
-            this.lineageUI.depthSummary.innerHTML = `Upstream: ${data.depth.upstream}<br>Downstream: ${data.depth.downstream}`;
+            this.lineageUI.depthSummary.innerHTML = `Upstream: &nbsp;${data.depth.upstream}<br>Downstream: ${data.depth.downstream}`;
         }
     }
 
