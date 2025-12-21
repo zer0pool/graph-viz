@@ -26,6 +26,9 @@ class MermaidGraphManager {
         // History Management
         this.history = [];
         this.historyIndex = -1;
+
+        // Hidden nodes
+        this.hiddenNodeIds = new Set();
     }
 
     async loadGraph(nodeId) {
@@ -56,9 +59,9 @@ class MermaidGraphManager {
             this.edges = data.edges || [];
             this.selectedNodeId = nodeId;
 
-            // Reset history for new graph
             this.history = [];
             this.historyIndex = -1;
+            this.hiddenNodeIds.clear();
 
             await this.render();
 
@@ -185,6 +188,16 @@ class MermaidGraphManager {
     }
 
     mergeGraphData(newData) {
+        // Unhide any nodes that are being re-introduced/expanded
+        if (newData.nodes) {
+            newData.nodes.forEach(node => {
+                if (this.hiddenNodeIds.has(node.id)) {
+                    this.hiddenNodeIds.delete(node.id);
+                    console.log(`[Manager] Unhiding node due to re-expansion: ${node.id}`);
+                }
+            });
+        }
+
         const existingIds = new Set(this.nodes.map(n => n.id));
         const newNodes = (newData.nodes || []).filter(n => !existingIds.has(n.id));
         this.nodes.push(...newNodes);
@@ -241,17 +254,30 @@ class MermaidGraphManager {
         const pivotId = this.focusNodeId || this.selectedNodeId;
         if (!pivotId) return { visibleNodes: this.nodes, visibleEdges: this.edges };
 
+        // Filter out hidden nodes first
+        const effectiveNodes = this.nodes.filter(n => !this.hiddenNodeIds.has(n.id));
+
+        // Also exclude edges connected to hidden nodes
+        const effectiveEdges = this.edges.filter(e =>
+            !this.hiddenNodeIds.has(e.source) && !this.hiddenNodeIds.has(e.target)
+        );
+
         const upstreamNodes = [];
         const downstreamNodes = [];
         const otherNodes = []; // Nodes not directly connected to pivot
 
         const visibleNodeIds = new Set();
 
-        // Always include center node/pivot
-        const pivotNode = this.nodes.find(n => n.id === pivotId);
-        if (pivotNode) {
+        // Always include center node/pivot (unless hidden, but usually we don't hide the pivot)
+        const pivotNode = effectiveNodes.find(n => n.id === pivotId);
+        if (pivotNode && !this.hiddenNodeIds.has(pivotId)) {
             otherNodes.push(pivotNode);
             visibleNodeIds.add(pivotId);
+        } else if (this.hiddenNodeIds.has(pivotId)) {
+            // If pivot is hidden, we might have an issue. For now let's allow it to be hidden.
+            // But folding logic relies on pivot. 
+            // If pivot is hidden, maybe we should just return empty or what's visible?
+            // Let's proceed but pivot won't be in visibleNodeIds.
         }
 
         // 2. We don't manually add selectedNodeId to otherNodes here anymore if it's a neighbor
@@ -259,11 +285,11 @@ class MermaidGraphManager {
         // We will just ensure it's ALWAYS visible later when slicing neighbors.
 
         // Sort nodes by their relationship to the PIVOT
-        this.nodes.forEach(node => {
+        effectiveNodes.forEach(node => {
             if (node.id === pivotId) return;
 
-            const isUpstream = this.edges.some(e => e.source === node.id && e.target === pivotId);
-            const isDownstream = this.edges.some(e => e.source === pivotId && e.target === node.id);
+            const isUpstream = effectiveEdges.some(e => e.source === node.id && e.target === pivotId);
+            const isDownstream = effectiveEdges.some(e => e.source === pivotId && e.target === node.id);
 
             if (isUpstream) upstreamNodes.push(node);
             else if (isDownstream) downstreamNodes.push(node);
@@ -412,12 +438,34 @@ class MermaidGraphManager {
             undoBtn.onclick = () => this.undo();
         }
 
-        const redoBtn = document.getElementById('redo-btn');
         if (redoBtn) {
             redoBtn.onclick = () => this.redo();
         }
 
         console.log('[Manager] Zoom & Download controls initialized');
+
+        // Close detail panel on background click
+        if (this.container) {
+            this.container.onclick = (e) => {
+                // If clicking directly on the SVG or container (background)
+                if (e.target.tagName === 'svg' || e.target.id === 'mermaid-graph' || e.target.classList.contains('mermaid')) {
+                    console.log('[Manager] Background clicked, clearing selection');
+                    this.clearSelection();
+                }
+            };
+        }
+    }
+
+    clearSelection() {
+        this.selectedNodeId = null;
+        selectionState.clear();
+        this.render(); // Re-render to remove highlight
+        this.setExpandButtonsState(false);
+
+        // Dispatch event to close panel
+        document.dispatchEvent(new CustomEvent('detail-panel:selection', {
+            detail: { hasSelection: false }
+        }));
     }
 
     attachNodeClickHandlers() {
@@ -606,6 +654,21 @@ class MermaidGraphManager {
         }
     }
 
+    async hideNode(nodeId) {
+        if (!nodeId) return;
+        this.hiddenNodeIds.add(nodeId);
+        console.log(`[Manager] Hiding node: ${nodeId}`);
+        await this.render();
+        this.pushToHistory();
+    }
+
+    async resetHiddenNodes() {
+        this.hiddenNodeIds.clear();
+        console.log('[Manager] Reset hidden nodes');
+        await this.render();
+        this.pushToHistory();
+    }
+
     // History Management
     pushToHistory() {
         // Remove any future history if we were in the middle
@@ -617,7 +680,8 @@ class MermaidGraphManager {
         const state = {
             nodes: JSON.parse(JSON.stringify(this.nodes)),
             edges: JSON.parse(JSON.stringify(this.edges)),
-            selectedNodeId: this.selectedNodeId
+            selectedNodeId: this.selectedNodeId,
+            hiddenNodeIds: Array.from(this.hiddenNodeIds)
         };
 
         this.history.push(state);
@@ -648,6 +712,7 @@ class MermaidGraphManager {
         this.nodes = JSON.parse(JSON.stringify(state.nodes));
         this.edges = JSON.parse(JSON.stringify(state.edges));
         this.selectedNodeId = state.selectedNodeId;
+        this.hiddenNodeIds = new Set(state.hiddenNodeIds || []);
 
         await this.render();
         // Restore selection UI state if needed? Render does it mostly.
