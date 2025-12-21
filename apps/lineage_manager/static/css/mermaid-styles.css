@@ -59,6 +59,11 @@
     display: block;
     overflow: visible !important;
     /* Allow zoomed content to extend beyond original bounds */
+    font-family: 'Google Sans', 'Roboto', 'Helvetica Neue', sans-serif !important;
+}
+
+.mermaid .nodeLabel {
+    font-family: 'Google Sans', 'Roboto', 'Helvetica Neue', sans-serif !important;
 }
 
 .button-group {

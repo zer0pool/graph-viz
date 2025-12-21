@@ -4110,4 +4110,185 @@ body {
 
 .schedule-range .range-value {
     color: #475569;
+}/* Toolbar Dropdowns */
+.toolbar-dropdown-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.simple-btn.has-label {
+    gap: 6px;
+    padding-right: 8px;
+    width: auto;
+}
+
+.btn-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.btn-caret {
+    font-size: 10px;
+    color: #6e7781;
+}
+
+.toolbar-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+    min-width: 160px;
+    padding: 4px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.toolbar-dropdown-menu[hidden] {
+    display: none;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-size: 13px;
+    color: #24292f;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background: #f6f8fa;
+}
+
+.dropdown-item .check-icon {
+    width: 14px;
+    visibility: hidden;
+    color: #1a73e8;
+    font-weight: bold;
+}
+
+.dropdown-item.active .check-icon {
+    visibility: visible;
+}/* User Provided Layout Menu Styling */
+.layout-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    /* primary-200 equiv */
+    border-radius: 12px;
+    /* rounded-xl */
+    width: 192px;
+    /* w-48 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.layout-header {
+    background: #f0f9ff;
+    /* bg-primary-50 equiv */
+    padding: 8px 16px;
+    /* px-4 py-2 */
+    border-bottom: 1px solid #e0f2fe;
+    /* light separator */
+}
+
+.layout-header p {
+    margin: 0;
+    font-size: 14px;
+    /* text-sm */
+    font-weight: 600;
+    /* font-semibold */
+    color: #64748b;
+    /* text-tertiary-500 equiv */
+}
+
+.layout-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-item {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s ease;
+    border-bottom: 2px solid #f1f5f9;
+    /* divide-y-[2px] */
+}
+
+.layout-item:last-child {
+    border-bottom: none;
+}
+
+.layout-item:hover {
+    background: #f0f9ff;
+    /* hover:bg-primary-200 approx */
+}
+
+.layout-item-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    /* p-2 equiv */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.layout-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    /* text-sm */
+    font-weight: 500;
+    /* font-medium */
+    color: #1e293b;
+    /* text-secondary-800 */
+}
+
+.item-icon {
+    width: 24px;
+    /* size-6 */
+    height: 24px;
+    color: #64748b;
+    /* text-tertiary-500 */
+}
+
+.check-icon {
+    width: 20px;
+    height: 20px;
+    color: #1a73e8;
+    /* Active color */
+    visibility: hidden;
+}
+
+.layout-item.active .check-icon {
+    visibility: visible;
+}
+
+/* Dark mode overrides if parent has dark class (not currently used globally but good to have partial support) */
+.dark .layout-popup {
+    background: #0f172a;
+    border-color: #334155;
 }
