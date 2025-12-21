@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import select
 
 from lineage_manager.models import GraphUserAccount
+from lineage_manager.models.user_account import UserRole
 from lineage_manager.repositories.base_repository import BaseRepository
 
 
@@ -21,11 +22,17 @@ class UserRepository(BaseRepository):
             raise ValueError("Missing 'sub' claim in token")
 
         user = self.get_by_sub(sub)
+        
+        # Default to Viewer if no roles provided
+        roles = claims.get("roles") or claims.get("role")
+        if not roles:
+            roles = [UserRole.VIEWER]
+            
         payload = {
             "email": claims.get("email"),
             "name": claims.get("name") or claims.get("given_name"),
             "loginId": claims.get("preferred_username") or claims.get("email"),
-            "roles": claims.get("roles") or claims.get("role"),
+            "roles": roles,
             "dept": claims.get("dept"),
         }
 

@@ -123,10 +123,10 @@ export class PanelController {
 
                 this.updateMetadata(mockNode);
 
-                // Dispatch expansion event
-                document.dispatchEvent(new CustomEvent("detail-panel:selection", {
-                    detail: { hasSelection: true, nodeId: nodeData.id, node: mockNode }
-                }));
+                // Dispatch expansion event -> SUPPRESSED: Prevent auto-open on selection
+                // document.dispatchEvent(new CustomEvent("detail-panel:selection", {
+                //    detail: { hasSelection: true, nodeId: nodeData.id, node: mockNode }
+                // }));
 
                 // Note: updateRelations expects 'incomers'/'outgoers' which are Cy-specific function.
                 // If source is 'list', we don't have graph topology here unless we query graph or lineage state.

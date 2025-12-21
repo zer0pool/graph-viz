@@ -63,7 +63,8 @@ function escapeLabel(label) {
  * @param {string} selectedNodeId - Currently selected node
  * @returns {string} - Mermaid DSL
  */
-export function generateMermaidDSL(graphData, selectedNodeId = null) {
+// Update signature to accept direction
+export function generateMermaidDSL(graphData, selectedNodeId = null, renderer = 'dagre', direction = 'LR') {
     if (!graphData || !graphData.nodes) {
         throw new Error('Invalid graph data: nodes array is required');
     }
@@ -111,15 +112,24 @@ export function generateMermaidDSL(graphData, selectedNodeId = null) {
     });
 
     // Build DSL
-    const lines = [
-        'graph LR',
-        '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
-        '  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6',
-        '  classDef placeholder fill:#f5f5f5,stroke:#999,rx:20,ry:20',
-        '  classDef selected stroke:#1a73e8,stroke-width:3.5px',
-        ...Array.from(nodeLines),
-        ...edgeLines
-    ];
+    const lines = [];
+
+    // Inject renderer directive if needed
+    if (renderer === 'elk') {
+        lines.push('%%{init: {"flowchart": {"defaultRenderer": "elk"}} }%%');
+    } else {
+        // Explicitly set dagre-d3 for default to ensure switch back works
+        lines.push('%%{init: {"flowchart": {"defaultRenderer": "dagre-d3"}} }%%');
+    }
+
+    lines.push(`graph ${direction}`);
+    lines.push('  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6');
+    lines.push('  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6');
+    lines.push('  classDef placeholder fill:#f5f5f5,stroke:#999,rx:20,ry:20');
+    lines.push('  classDef selected stroke:#1a73e8,stroke-width:3.5px');
+
+    lines.push(...Array.from(nodeLines));
+    lines.push(...edgeLines);
 
     // Apply selection style
     if (selectedNodeId) {

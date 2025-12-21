@@ -5,7 +5,7 @@
  */
 
 import { renderMermaid, exportSVG, downloadSVG } from '../mermaid/renderer.js';
-import { generateMermaidDSL, validateGraphData } from '../mermaid/dsl-generator.js';
+import { generateMermaidDSL, validateGraphData, toMermaidId } from '../mermaid/dsl-generator.js';
 import { selectionState } from './state.js';
 import { getFoldedGraph } from './utils/graphUtils.js';
 
@@ -30,6 +30,106 @@ class MermaidGraphManager {
 
         // Hidden nodes
         this.hiddenNodeIds = new Set();
+
+        // Default layout renderer
+        this.renderer = 'dagre';
+
+        // Default direction
+        this.direction = 'LR';
+
+        // Expose globally for ControlBar access
+        window.mermaidGraphManager = this;
+
+        this.contextMenu = document.getElementById('node-context-menu');
+        this.initContextMenu();
+    }
+
+    initContextMenu() {
+        if (!this.contextMenu) return;
+
+        const expandUpstreamBtn = document.getElementById('ctx-btn-expand-upstream');
+        if (expandUpstreamBtn) {
+            expandUpstreamBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (this.selectedNodeId) {
+                    this.expandNode('upstream');
+                    this.hideContextMenu();
+                }
+            };
+        }
+
+        const expandDownstreamBtn = document.getElementById('ctx-btn-expand-downstream');
+        if (expandDownstreamBtn) {
+            expandDownstreamBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (this.selectedNodeId) {
+                    this.expandNode('downstream');
+                    this.hideContextMenu();
+                }
+            };
+        }
+
+        const detailBtn = document.getElementById('ctx-btn-detail');
+        if (detailBtn) {
+            detailBtn.onclick = (e) => {
+                e.stopPropagation();
+                // Manually trigger the panel open event
+                // The PanelController has already updated the content based on selectionState
+                document.dispatchEvent(new CustomEvent('detail-panel:selection', {
+                    detail: { hasSelection: true }
+                }));
+                this.hideContextMenu();
+            };
+        }
+
+        const deleteBtn = document.getElementById('ctx-btn-delete');
+        if (deleteBtn) {
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (this.selectedNodeId) {
+                    this.hideNode(this.selectedNodeId);
+                    this.hideContextMenu();
+                }
+            };
+        }
+    }
+
+    showContextMenu(nodeId, nodeElement) {
+        if (!this.contextMenu) return;
+
+        // Get node position relative to viewport
+        const rect = nodeElement.getBoundingClientRect();
+
+        // Calculate center top position, accounting for scroll
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+        // Position: Top Center of Node with slight offset up
+        // Note: transform: translate(-50%, -100%) in CSS handles centering and moving up
+        this.contextMenu.style.top = `${rect.top + scrollTop - 10}px`;
+        this.contextMenu.style.left = `${rect.left + scrollLeft + (rect.width / 2)}px`;
+
+        this.contextMenu.hidden = false;
+    }
+
+    hideContextMenu() {
+        if (this.contextMenu) {
+            this.contextMenu.hidden = true;
+        }
+    }
+
+    async setLayout(renderer) {
+        if (this.renderer === renderer) return;
+        this.renderer = renderer;
+        console.log(`[Manager] Switching layout to: ${renderer}`);
+        await this.render();
+    }
+
+    async setDirection(direction) {
+        if (this.direction === direction) return;
+        this.direction = direction;
+        console.log(`[Manager] Switching direction to: ${direction}`);
+        await this.render();
     }
 
     async loadGraph(nodeId) {
@@ -224,7 +324,9 @@ class MermaidGraphManager {
 
             const dsl = generateMermaidDSL(
                 { nodes: visibleNodes, edges: visibleEdges },
-                this.selectedNodeId
+                this.selectedNodeId,
+                this.renderer,
+                this.direction
             );
 
             const result = await renderMermaid(this.container, dsl, 'lineageGraph');
@@ -345,8 +447,12 @@ class MermaidGraphManager {
     clearSelection() {
         this.selectedNodeId = null;
         selectionState.clear();
-        this.render(); // Re-render to remove highlight
+
+        // Optimize: Update styles directly instead of full render
+        this.applySelectionStyles();
+
         this.setExpandButtonsState(false);
+        this.hideContextMenu();
 
         // Dispatch event to close panel
         document.dispatchEvent(new CustomEvent('detail-panel:selection', {
@@ -451,10 +557,13 @@ class MermaidGraphManager {
                         data: matchingNode
                     });
 
-                    // Trigger detail panel update
-                    window.dispatchEvent(new CustomEvent('nodeSelected', {
-                        detail: { nodeId: matchingNode.id, node: matchingNode }
-                    }));
+                    // Trigger detail panel update -> SUPPRESSED by user request
+                    // window.dispatchEvent(new CustomEvent('nodeSelected', {
+                    //    detail: { nodeId: matchingNode.id, node: matchingNode }
+                    // }));
+
+                    // Show Context Menu
+                    this.showContextMenu(matchingNode.id, newNode);
                 } else {
                     console.warn('No matching node found for click');
                 }
@@ -476,11 +585,32 @@ class MermaidGraphManager {
 
         this.selectedNodeId = nodeId;
 
-        // Re-render to show selection styling and WAIT for it
-        await this.render();
+        // Optimize: Update styles directly instead of full render
+        this.applySelectionStyles();
 
         // Enable expand buttons
         this.setExpandButtonsState(true);
+    }
+
+    applySelectionStyles() {
+        if (!this.container) return;
+
+        // Selector for all node elements
+        const selector = '.node, .flowchart-node, .mermaid-node, g.node:not(.nodes)';
+        const nodes = this.container.querySelectorAll(selector);
+
+        const selectedMermaidId = this.selectedNodeId ? toMermaidId(this.selectedNodeId) : null;
+
+        nodes.forEach(nodeEl => {
+            const nodeIdAttr = nodeEl.id || '';
+            const isSelected = selectedMermaidId && nodeIdAttr.includes(selectedMermaidId);
+
+            if (isSelected) {
+                nodeEl.classList.add('selected');
+            } else {
+                nodeEl.classList.remove('selected');
+            }
+        });
     }
 
     async focusNode(nodeId) {
