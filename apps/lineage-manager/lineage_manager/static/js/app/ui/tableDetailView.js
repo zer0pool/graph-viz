@@ -16,7 +16,6 @@ export class TableDetailView {
         this.description = container.querySelector("#table-description");
         this.docLink = container.querySelector("#table-doc-link");
         this.owner = container.querySelector("#table-owner");
-        this.storageSummary = container.querySelector("#table-storage");
         this.partitionSummary = container.querySelector("#table-partition");
         this.updated = container.querySelector("#table-updated");
 
@@ -98,7 +97,6 @@ export class TableDetailView {
             this.docLink.removeAttribute("href");
         }
         if (this.owner) this.owner.textContent = "-";
-        if (this.storageSummary) this.storageSummary.textContent = "-";
         if (this.partitionSummary) this.partitionSummary.textContent = "-";
         if (this.updated) this.updated.textContent = "-";
 
@@ -146,7 +144,6 @@ export class TableDetailView {
     renderStorage(storage = {}) {
         const type = storage.type || "-";
 
-        if (this.storageSummary) this.storageSummary.textContent = type;
         if (this.partitionSummary)
             this.partitionSummary.textContent = storage.partition || "-";
 
