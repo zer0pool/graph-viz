@@ -124,13 +124,19 @@ export class GraphController {
         console.log('forceLayout - not applicable for Mermaid');
     }
 
-    hideNodeById() {
-        console.log('hideNodeById - not implemented for Mermaid');
+    hideNodeById(nodeId) {
+        console.log('[GraphController] hideNodeById:', nodeId);
+        if (this.view && this.view.mermaidManager) {
+            this.view.mermaidManager.hideNode(nodeId);
+            return true;
+        }
         return false;
     }
 
     resetHiddenNodes() {
-        console.log('resetHiddenNodes - not needed for Mermaid');
+        if (this.view && this.view.mermaidManager) {
+            this.view.mermaidManager.resetHiddenNodes();
+        }
     }
 
     async expand() {

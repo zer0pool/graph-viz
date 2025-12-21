@@ -4,6 +4,7 @@
  */
 
 import { SELECTORS } from "../config.js";
+import { selectionState } from "../state.js";
 
 export class ResetControl {
     constructor(graph) {
@@ -18,7 +19,9 @@ export class ResetControl {
 
     init() {
         this.resetButton?.addEventListener("click", () => {
+            // Reset graph view AND hidden nodes
             this.graph?.resetGraphView?.();
+            this.graph?.resetHiddenNodes?.();
         });
 
         const updateLayoutButtons = (direction) => {
@@ -58,11 +61,13 @@ export class ResetControl {
         });
 
         this.hideNodeButton?.addEventListener("click", () => {
-            const selectedNode = this.graph?.selection?.getSelectedNode?.();
-            if (selectedNode) {
-                const ok = window.confirm(`Hide "${selectedNode.data("label")}"?`);
+            const state = selectionState.selectedNode;
+            if (state && state.id) {
+                const ok = window.confirm(`Hide "${state.label || state.id}"?`);
                 if (ok) {
-                    this.graph?.hideNodeById?.(selectedNode.id());
+                    this.graph?.hideNodeById?.(state.id);
+                    // Clear selection after hiding since the node is gone
+                    selectionState.clear();
                 }
             }
         });
