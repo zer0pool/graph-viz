@@ -1,7 +1,7 @@
 # Root Makefile for Lineage Platform
 # Delegates most tasks to individual apps
 
-LM_DIR=apps/lineage-manager
+LM_DIR=apps/lineage_manager
 DJM_DIR=apps/dummy-job-manager
 
 .PHONY: all venv-lm venv-djm venv-all run-lm run-djm kill-lm kill-djm test-lm test-djm test-all lint-all format-all clean-all help test-integration
