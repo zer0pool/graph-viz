@@ -145,6 +145,22 @@ export class ApiClient {
     return res.json();
   }
 
+  async resetGraph() {
+    // Call the reset endpoint
+    console.warn("[Api] Resetting entire graph database...");
+    const res = await this.request(`/api/v1/graph/reset`, { method: "POST" });
+    if (!res.ok) throw new Error(`Graph reset failed: ${res.status}`);
+    return res.json();
+  }
+
+  async initializeGraph() {
+    // Call the initialize endpoint
+    console.info("[Api] Initializing graph from Job Manager...");
+    const res = await this.request(`/api/v1/graph/initialize`, { method: "POST" });
+    if (!res.ok) throw new Error(`Graph initialization failed: ${res.status}`);
+    return res.json();
+  }
+
   async fetchConfig() {
     console.debug("[Api] GET /api/v1/auth/config");
     const res = await this.request(`/api/v1/auth/config`);

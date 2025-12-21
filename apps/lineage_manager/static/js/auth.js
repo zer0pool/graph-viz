@@ -146,7 +146,7 @@ import { ApiClient } from "./app/services/api.js";
       console.debug("[Auth] Fetching OIDC config from backend");
       const data = await this.apiClient.fetchConfig();
       console.debug(
-        `[Auth] Config loaded (requireAuth=${String(data?.require_authentication)})`
+        `[Auth] Config loaded (requireAuth=${String(data?.require_signin)})`
       );
       return data;
     }
@@ -357,6 +357,31 @@ import { ApiClient } from "./app/services/api.js";
       overlay?.addEventListener("click", (evt) => {
         if (evt.target === overlay) this.hideProfile();
       });
+
+
+      // Admin Tools Bindings
+      const initializeBtn = document.getElementById("admin-initialize-graph");
+      initializeBtn?.addEventListener("click", async () => {
+        if (!confirm("Initialize graph from Job Manager?\n\nThis will fetch all jobs and rebuild the lineage graph.")) {
+          return;
+        }
+
+        try {
+          // Disable button while processing
+          initializeBtn.disabled = true;
+          initializeBtn.textContent = "Initializing...";
+
+          const result = await this.apiClient.initializeGraph();
+
+          alert(`Graph initialized successfully!\n\nJobs fetched: ${result.jobs_fetched}\nNodes created: ${result.total_nodes_created}\nEdges created: ${result.edges_created}`);
+          window.location.reload();
+        } catch (err) {
+          console.error("Initialize failed", err);
+          alert(`Failed to initialize graph: ${err.message}`);
+          initializeBtn.textContent = "Initialize Graph"; // Restore text
+          initializeBtn.disabled = false;
+        }
+      });
     }
 
     applyProfileData(profile) {
@@ -438,6 +463,15 @@ import { ApiClient } from "./app/services/api.js";
       }
       if (panel) panel.hidden = false;
       this.populateProfileAttributes(user);
+
+      // Show Admin Tools if user has 'Admin' role
+      const adminSection = document.getElementById("profile-admin-section");
+      if (adminSection) {
+        console.log("[Auth] Checking admin status - user.roles:", user.roles);
+        const isAdmin = Array.isArray(user.roles) && user.roles.includes("Admin");
+        console.log("[Auth] isAdmin:", isAdmin, "adminSection.hidden will be:", !isAdmin);
+        adminSection.hidden = !isAdmin;
+      }
     }
 
     populateProfileAttributes(user = {}) {

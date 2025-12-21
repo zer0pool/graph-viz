@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -238,4 +239,39 @@ class MermaidGraphResponse(BaseModel):
     
     nodes: List[GraphNode] = Field(..., description="List of graph nodes")
     edges: List[GraphEdge] = Field(..., description="List of graph edges")
-    metadata: GraphMetadata = Field(..., description="Graph metadata")
+
+# ============================================================================
+# User Management Schemas
+# ============================================================================
+
+class UserBase(BaseModel):
+    name: Optional[str] = Field(None, description="User's full name")
+    email: Optional[str] = Field(None, description="User's email address")
+    dept: Optional[str] = Field(None, description="Department")
+    roles: List[str] = Field(default_factory=list, description="List of user roles")
+
+
+class UserCreate(UserBase):
+    sub: str = Field(..., description="Unique Subject ID (from OIDC)")
+    loginId: Optional[str] = Field(None, description="Login ID (e.g. username)")
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, description="User's full name")
+    email: Optional[str] = Field(None, description="User's email address")
+    dept: Optional[str] = Field(None, description="Department")
+    roles: Optional[List[str]] = Field(None, description="List of user roles")
+    sub: Optional[str] = Field(None, description="Unique Subject ID")
+    loginId: Optional[str] = Field(None, description="Login ID")
+
+
+class UserResponse(UserBase):
+    id: int
+    sub: str
+    loginId: Optional[str] = None
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+

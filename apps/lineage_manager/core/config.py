@@ -216,11 +216,6 @@ class Settings(BaseSettings):
         return self.environment == "production"
     
     @property
-    def require_authentication(self) -> bool:
-        """Check if authentication is required (legacy name, maps to require_signin)"""
-        return self.feature_flags.require_signin
-    
-    @property
     def require_signin(self) -> bool:
         """Check if sign-in is required"""
         return self.feature_flags.require_signin

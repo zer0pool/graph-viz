@@ -329,6 +329,67 @@ body {
     }
 }
 
+/* Admin Tools Section */
+.profile-admin-section {
+    margin-top: 16px;
+    padding-top: 16px;
+}
+
+.profile-admin-section .menu-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin-bottom: 12px;
+}
+
+.profile-admin-section .menu-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.profile-admin-section .btn-text {
+    width: 100%;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.profile-admin-section .btn-text:hover {
+    background: #f9fafb;
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.profile-admin-section .btn-text:active {
+    background: #f3f4f6;
+}
+
+.profile-admin-section .btn-text:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.profile-admin-section .btn-text.text-danger {
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.profile-admin-section .btn-text.text-danger:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+}
+
 .logout-btn {
     width: 100%;
     margin-top: 12px;
@@ -4110,7 +4171,9 @@ body {
 
 .schedule-range .range-value {
     color: #475569;
-}/* Toolbar Dropdowns */
+}
+
+/* Toolbar Dropdowns */
 .toolbar-dropdown-wrapper {
     position: relative;
     display: flex;
@@ -4182,7 +4245,9 @@ body {
 
 .dropdown-item.active .check-icon {
     visibility: visible;
-}/* User Provided Layout Menu Styling */
+}
+
+/* User Provided Layout Menu Styling */
 .layout-popup {
     position: absolute;
     top: 100%;

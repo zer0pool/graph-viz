@@ -194,7 +194,7 @@ $ curl http://localhost:5003/api/v1/graph/health
 ### Auth Config
 ```bash
 $ curl http://localhost:5003/api/v1/auth/config
-{"issuer":"https://accounts.google.com","client_id":"...","require_authentication":true}
+{"issuer":"https://accounts.google.com","client_id":"...","require_signin":true}
 ```
 
 ---

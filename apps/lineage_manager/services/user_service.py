@@ -35,3 +35,57 @@ class UserService:
             },          
         }
 
+    def _to_dto(self, user: GraphUserAccount) -> Dict[str, Any]:
+        return {
+            "id": user.id,
+            "sub": user.sub,
+            "name": user.name,
+            "email": user.email,
+            "dept": user.dept,
+            "roles": user.roles or [],
+            "loginId": user.loginId,
+            "created_at": user.created_at,
+            "last_login_at": user.last_login_at,
+        }
+
+    def list_users(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        with self.uow:
+            users = self.uow.users.get_all(limit, offset)
+            return [self._to_dto(u) for u in users]
+
+    def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
+        with self.uow:
+            user = self.uow.users.get_by_id(user_id)
+            return self._to_dto(user) if user else None
+
+    def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        with self.uow:
+            user = self.uow.users.create(user_data)
+            self.uow.commit() # Explicit commit for command
+            return self._to_dto(user)
+
+    def update_user(self, user_id: int, user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        with self.uow:
+            user = self.uow.users.update(user_id, user_data)
+            self.uow.commit()
+            return self._to_dto(user) if user else None
+
+    def delete_user(self, user_id: int) -> bool:
+        with self.uow:
+            deleted = self.uow.users.delete(user_id)
+            if deleted:
+                self.uow.commit()
+            return deleted
+
+    def add_role(self, user_id: int, role: str) -> Optional[Dict[str, Any]]:
+        with self.uow:
+            user = self.uow.users.add_role(user_id, role)
+            self.uow.commit()
+            return self._to_dto(user) if user else None
+
+    def remove_role(self, user_id: int, role: str) -> Optional[Dict[str, Any]]:
+        with self.uow:
+            user = self.uow.users.remove_role(user_id, role)
+            self.uow.commit()
+            return self._to_dto(user) if user else None
+

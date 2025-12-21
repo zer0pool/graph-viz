@@ -62,6 +62,7 @@ export function setupViewToggle(graphController, listViewController) {
 
     const graphView = document.querySelector("#mermaid-graph");
     const listView = document.querySelector("#list-view");
+    const contextMenu = document.getElementById('node-context-menu');
 
     console.log('[ViewToggle] Initializing', { tabs: tabs.length, graphView: !!graphView, listView: !!listView });
 
@@ -78,8 +79,13 @@ export function setupViewToggle(graphController, listViewController) {
         // Toggle DOM elements
         if (mode === "list") {
             console.log('[ViewToggle] Showing List view');
-            if (graphView) graphView.hidden = true;
+
+            // Show listview and hide context menu when switching to list view
             if (listView) listView.hidden = false;
+
+            // Hide graphview and context menu when switching to list view
+            if (graphView) graphView.hidden = true;
+            if (contextMenu) contextMenu.hidden = true;
 
             // Update list view
             if (listViewController?.updateListView) {
