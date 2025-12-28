@@ -40,7 +40,7 @@ function generateMermaidDSL(graphData, selectedNodeId = null) {
 
     // Build DSL
     const lines = [
-        'graph LR',
+        'flowchart LR',
         '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
         '  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6',
         '  classDef selected stroke:#1a73e8,stroke-width:3.5px',
@@ -63,6 +63,9 @@ function generateMermaidDSL(graphData, selectedNodeId = null) {
 mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
+    flowchart: {
+        curve: 'basis'
+    },
     themeVariables: {
         background: '#ffffff',
         primaryColor: '#e3f2fd',

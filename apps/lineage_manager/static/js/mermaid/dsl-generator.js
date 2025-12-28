@@ -116,17 +116,17 @@ export function generateMermaidDSL(graphData, selectedNodeId = null, renderer = 
 
     // Inject renderer directive if needed
     if (renderer === 'elk') {
-        lines.push('%%{init: {"flowchart": {"defaultRenderer": "elk"}} }%%');
+        lines.push('%%{init: {"flowchart": {"defaultRenderer": "elk", "curve": "basis"}} }%%');
     } else {
-        // Explicitly set dagre-d3 for default to ensure switch back works
-        lines.push('%%{init: {"flowchart": {"defaultRenderer": "dagre-d3"}} }%%');
+        // Explicitly set dagre for modern rendering (ensures curved lines)
+        lines.push('%%{init: {"flowchart": {"defaultRenderer": "dagre", "curve": "basis"}} }%%');
     }
 
-    lines.push(`graph ${direction}`);
+    lines.push(`flowchart ${direction}`);
     lines.push('  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6');
     lines.push('  classDef table fill:#e8f5e9,stroke:#34a853,rx:6,ry:6');
     lines.push('  classDef placeholder fill:#f5f5f5,stroke:#999,rx:20,ry:20');
-    lines.push('  classDef selected stroke:#1a73e8,stroke-width:3.5px');
+    lines.push('  classDef selected stroke:#1a73e8,stroke-width:5px');
 
     lines.push(...Array.from(nodeLines));
     lines.push(...edgeLines);

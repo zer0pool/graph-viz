@@ -519,6 +519,17 @@ body {
     pointer-events: none;
 }
 
+.simple-btn .chevron {
+    font-size: 10px;
+    margin-left: 4px;
+    color: #57606a;
+    transition: transform 0.2s ease;
+}
+
+.simple-btn:active .chevron {
+    transform: translateY(1px);
+}
+
 .panel-header h2 {
     margin: 8px 0 4px;
     font-size: 20px;

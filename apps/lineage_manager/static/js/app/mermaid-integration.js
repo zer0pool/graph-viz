@@ -92,6 +92,22 @@ class MermaidGraphManager {
                 }
             };
         }
+
+        // Hide context menu when detail panel opens to prevent overlap
+        document.addEventListener('detail-panel:selection', (e) => {
+            if (e.detail && e.detail.hasSelection) {
+                this.hideContextMenu();
+            }
+        });
+
+        // Also hide when detail panel toggle is clicked
+        const detailToggle = document.getElementById('detail-toggle');
+        if (detailToggle) {
+            detailToggle.addEventListener('click', () => {
+                // Always hide menu when detail panel toggle is clicked
+                this.hideContextMenu();
+            });
+        }
     }
 
     showContextMenu(nodeId, nodeElement) {
@@ -113,8 +129,45 @@ class MermaidGraphManager {
     }
 
     hideContextMenu() {
-        if (this.contextMenu) {
-            this.contextMenu.hidden = true;
+        if (!this.contextMenu) return;
+
+        // Early return if already hidden (optimization)
+        if (this.contextMenu.hidden) return;
+
+        this.contextMenu.hidden = true;
+    }
+
+    downloadJSON() {
+        const data = {
+            nodes: this.nodes,
+            edges: this.edges,
+            exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lineage_graph_${new Date().getTime()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async copyToClipboard() {
+        try {
+            const { visibleNodes, visibleEdges } = this.getFoldedGraph();
+            const dsl = generateMermaidDSL(
+                { nodes: visibleNodes, edges: visibleEdges },
+                this.selectedNodeId,
+                this.renderer,
+                this.direction
+            );
+            await navigator.clipboard.writeText(dsl);
+            console.log('Mermaid DSL copied to clipboard');
+            // Show a simple feedback if possible, or just log
+            alert('Mermaid chart code copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy to clipboard', err);
+            alert('Failed to copy to clipboard');
         }
     }
 
@@ -255,7 +308,7 @@ class MermaidGraphManager {
             console.log('Expanding directions:', directions);
             // Fetch relevant directions in parallel
             const requests = directions.map(dir =>
-                fetch(`api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${dir}&depth=1`)
+                fetch(`/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${dir}&depth=1`)
                     .then(r => r.ok ? r.json() : { nodes: [], edges: [] })
                     .catch(e => {
                         console.warn(`Expand ${dir} failed`, e);
@@ -317,6 +370,9 @@ class MermaidGraphManager {
             console.error('Container not found');
             return;
         }
+
+        // Hide context menu when graph is re-rendered (zoom, expand, etc.)
+        this.hideContextMenu();
 
         try {
             // Apply folding logic before generating DSL
@@ -381,19 +437,35 @@ class MermaidGraphManager {
         const zoomIn = document.getElementById('zoom-in');
         const zoomOut = document.getElementById('zoom-out');
         const zoomFit = document.getElementById('zoom-fit');
-        const downloadBtn = document.getElementById('download-svg');
 
-        if (zoomIn) {
-            zoomIn.onclick = () => window.mermaidZoomControls.zoomIn();
+        // Download menu logic
+        const downloadBtn = document.getElementById('download-btn');
+        const downloadMenu = document.getElementById('download-menu');
+        if (downloadBtn && downloadMenu) {
+            downloadBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = downloadMenu.hidden;
+
+                // Close other menus if any
+                const orientationMenu = document.getElementById('orientation-menu');
+                if (orientationMenu) orientationMenu.hidden = true;
+                const layoutMenu = document.getElementById('layout-menu');
+                if (layoutMenu) layoutMenu.hidden = true;
+
+                // Toggle this one
+                downloadMenu.hidden = !isHidden;
+            };
+
+            // Close menu on click outside
+            document.addEventListener('click', () => {
+                downloadMenu.hidden = true;
+            });
         }
-        if (zoomOut) {
-            zoomOut.onclick = () => window.mermaidZoomControls.zoomOut();
-        }
-        if (zoomFit) {
-            zoomFit.onclick = () => window.mermaidZoomControls.fitToView();
-        }
-        if (downloadBtn) {
-            downloadBtn.onclick = () => {
+
+        const downloadSvgBtn = document.getElementById('download-svg-btn');
+        if (downloadSvgBtn) {
+            downloadSvgBtn.onclick = () => {
+                downloadMenu.hidden = true;
                 import('../mermaid/renderer.js').then(module => {
                     const container = document.querySelector('#mermaid-graph .mermaid');
                     if (container) {
@@ -402,6 +474,41 @@ class MermaidGraphManager {
                         console.warn('No graph to download');
                     }
                 });
+            };
+        }
+
+        const downloadJsonBtn = document.getElementById('download-json-btn');
+        if (downloadJsonBtn) {
+            downloadJsonBtn.onclick = () => {
+                downloadMenu.hidden = true;
+                this.downloadJSON();
+            };
+        }
+
+        const copyMermaidBtn = document.getElementById('copy-mermaid-btn');
+        if (copyMermaidBtn) {
+            copyMermaidBtn.onclick = () => {
+                downloadMenu.hidden = true;
+                this.copyToClipboard();
+            };
+        }
+
+        if (zoomIn) {
+            zoomIn.onclick = () => {
+                this.hideContextMenu(); // Hide menu on zoom
+                window.mermaidZoomControls.zoomIn();
+            };
+        }
+        if (zoomOut) {
+            zoomOut.onclick = () => {
+                this.hideContextMenu(); // Hide menu on zoom
+                window.mermaidZoomControls.zoomOut();
+            };
+        }
+        if (zoomFit) {
+            zoomFit.onclick = () => {
+                this.hideContextMenu(); // Hide menu on fit
+                window.mermaidZoomControls.fitToView();
             };
         }
 
@@ -431,6 +538,36 @@ class MermaidGraphManager {
         }
 
         console.log('[Manager] Zoom & Download controls initialized');
+
+        // Hide context menu when SVG is panned/zoomed via mouse/touch
+        const svgContainer = document.querySelector('#mermaid-graph svg');
+        if (svgContainer) {
+            // Listen for wheel events (zoom via mouse wheel)
+            svgContainer.addEventListener('wheel', () => {
+                this.hideContextMenu();
+            }, { passive: true });
+
+            // Listen for mouse drag (pan)
+            let isPanning = false;
+            svgContainer.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left mouse button
+                    isPanning = true;
+                }
+            });
+            svgContainer.addEventListener('mousemove', () => {
+                if (isPanning) {
+                    this.hideContextMenu();
+                }
+            });
+            svgContainer.addEventListener('mouseup', () => {
+                isPanning = false;
+            });
+
+            // Listen for touch events (mobile pan/zoom)
+            svgContainer.addEventListener('touchmove', () => {
+                this.hideContextMenu();
+            }, { passive: true });
+        }
 
         // Close detail panel on background click
         if (this.container) {

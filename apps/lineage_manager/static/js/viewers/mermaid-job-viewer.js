@@ -8,6 +8,9 @@
 mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
+    flowchart: {
+        curve: 'basis'
+    },
     themeVariables: {
         primaryColor: '#e3f2fd',
         primaryTextColor: '#1a73e8',
@@ -43,7 +46,7 @@ async function initViewer() {
 
 async function fetchJobGraph(jobId) {
     // depth=2 is required to see Job -> Table -> NEXT_JOB
-    const response = await fetch(`api/v1/jobs/${jobId}/graph?depth=2`);
+    const response = await fetch(`/api/v1/jobs/${jobId}/graph?depth=2`);
     if (!response.ok) {
         throw new Error(`API returned ${response.status}`);
     }
@@ -160,7 +163,7 @@ function generateJobOnlyDSL(graphData) {
     }
 
     const lines = [
-        'graph LR',
+        'flowchart LR',
         '  classDef job fill:#e3f2fd,stroke:#1a73e8,rx:6,ry:6',
         '  classDef more fill:#f8f9fa,stroke:#dadce0,stroke-dasharray: 5 5,rx:6,ry:6',
         '  classDef selected stroke:#1a73e8,stroke-width:3.5px',

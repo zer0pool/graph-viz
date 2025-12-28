@@ -8,6 +8,9 @@
 mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
+    flowchart: {
+        curve: 'basis'
+    },
     themeVariables: {
         primaryColor: '#e8f5e9',
         primaryTextColor: '#34a853',
@@ -68,9 +71,10 @@ async function expand(direction, targetId = state.selectedId, isSilent = false) 
 
     try {
         // Use the Neighbors API with level=2 to get Table -> Job -> Table connections in one hop
-        const response = await fetch(`api/v1/graph/table/${targetId}/neighbors?level=2&direction=${direction}`);
-        if (!response.ok) throw new Error("Failed to fetch neighbors");
-
+        const response = await fetch(`/api/v1/graph/table/${targetId}/neighbors?level=2&direction=${direction}`);
+        if (!response.ok) {
+            throw new Error(`API returned ${response.status}`);
+        }
         const data = await response.json();
         const newNodes = data.nodes || [];
         const newEdges = data.edges || [];
@@ -159,7 +163,7 @@ async function render() {
 }
 
 function generateDSL() {
-    const lines = ['graph LR'];
+    const lines = ['flowchart LR'];
     lines.push('  classDef table fill:#f8f9fa,stroke:#dadce0,rx:6,ry:6');
     lines.push('  classDef job fill:#fff4e5,stroke:#ffab40,rx:6,ry:6');
     lines.push('  classDef more fill:#f8f9fa,stroke:#dadce0,stroke-dasharray: 5 5,rx:6,ry:6');

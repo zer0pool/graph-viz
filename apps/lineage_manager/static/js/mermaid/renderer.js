@@ -18,6 +18,7 @@ export function initializeMermaid() {
             theme: 'default',
             securityLevel: 'loose',
             flowchart: {
+                defaultRenderer: 'dagre',
                 useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis',

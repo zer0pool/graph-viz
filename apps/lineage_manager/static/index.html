@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="static/css/context-menu.css">
     <link rel="icon" href="static/images/logo.png">
     <link rel="shortcut icon" href="static/images/favicon.ico">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 </head>
 
@@ -105,11 +106,47 @@
                         <!-- Desktop Buttons Container -->
                         <div id="toolbar-main-actions" class="toolbar-actions">
                             <!-- Actions -->
-                            <button id="download-svg" class="simple-btn" title="Save as Image">
-                                <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
-                                    <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                                </svg>
-                            </button>
+                            <div class="toolbar-dropdown-wrapper">
+                                <button id="download-btn" class="simple-btn" title="Download Options">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                        <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                                    </svg>
+                                </button>
+                                <div id="download-menu" class="layout-popup" hidden>
+                                    <div class="layout-header">
+                                        <p>Download Options</p>
+                                    </div>
+                                    <div class="layout-list">
+                                        <button id="download-svg-btn" class="layout-item">
+                                            <div class="layout-item-content">
+                                                <svg class="item-icon" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                                    <path fill="currentColor"
+                                                        d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                                                </svg>
+                                                <span>Save as Image (SVG)</span>
+                                            </div>
+                                        </button>
+                                        <button id="download-json-btn" class="layout-item">
+                                            <div class="layout-item-content">
+                                                <svg class="item-icon" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                                    <path fill="currentColor"
+                                                        d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                                </svg>
+                                                <span>Save as JSON file</span>
+                                            </div>
+                                        </button>
+                                        <button id="copy-mermaid-btn" class="layout-item">
+                                            <div class="layout-item-content">
+                                                <svg class="item-icon" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                                    <path fill="currentColor"
+                                                        d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                                                </svg>
+                                                <span>Copy Mermaid chart</span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
 
                             <span class="toolbar-divider"></span>
 

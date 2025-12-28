@@ -56,7 +56,16 @@ export class ControlBar {
         // Toggle menu
         orientationBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            orientationMenu.hidden = !orientationMenu.hidden;
+            const isHidden = orientationMenu.hidden;
+
+            // Close all menus first
+            document.getElementById('orientation-menu').hidden = true;
+            document.getElementById('layout-menu').hidden = true;
+            const downloadMenu = document.getElementById('download-menu');
+            if (downloadMenu) downloadMenu.hidden = true;
+
+            // Toggle this one
+            orientationMenu.hidden = !isHidden;
         });
 
         // Close menu when clicking outside
@@ -95,7 +104,16 @@ export class ControlBar {
         // Toggle menu
         layoutBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            layoutMenu.hidden = !layoutMenu.hidden;
+            const isHidden = layoutMenu.hidden;
+
+            // Close all menus first
+            document.getElementById('orientation-menu').hidden = true;
+            document.getElementById('layout-menu').hidden = true;
+            const downloadMenu = document.getElementById('download-menu');
+            if (downloadMenu) downloadMenu.hidden = true;
+
+            // Toggle this one
+            layoutMenu.hidden = !isHidden;
         });
 
         // Close menu when clicking outside
