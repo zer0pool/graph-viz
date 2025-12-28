@@ -4269,11 +4269,23 @@ body {
     /* primary-200 equiv */
     border-radius: 12px;
     /* rounded-xl */
-    width: 192px;
-    /* w-48 */
+    width: 200px;
+    /* slightly wider for content */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     z-index: 1000;
+
+    /* Animation properties */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layout-popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .layout-header {

@@ -9,14 +9,23 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    animation: fadeIn 0.15s ease-out;
-    transform: translate(-50%, -100%);
+    transform: translate(-50%, -90%);
+    /* Start slightly lower */
     /* Center x, move up y */
     pointer-events: auto;
+
+    /* Animation properties */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.floating-context-menu[hidden] {
-    display: none;
+.floating-context-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -100%);
 }
 
 .ctx-btn {

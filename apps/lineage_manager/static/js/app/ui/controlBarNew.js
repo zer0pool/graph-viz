@@ -56,22 +56,21 @@ export class ControlBar {
         // Toggle menu
         orientationBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isHidden = orientationMenu.hidden;
+            const isShowing = orientationMenu.classList.contains('show');
 
             // Close all menus first
-            document.getElementById('orientation-menu').hidden = true;
-            document.getElementById('layout-menu').hidden = true;
-            const downloadMenu = document.getElementById('download-menu');
-            if (downloadMenu) downloadMenu.hidden = true;
+            document.querySelectorAll('.layout-popup').forEach(menu => menu.classList.remove('show'));
 
             // Toggle this one
-            orientationMenu.hidden = !isHidden;
+            if (!isShowing) {
+                orientationMenu.classList.add('show');
+            }
         });
 
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
             if (!orientationBtn.contains(e.target) && !orientationMenu.contains(e.target)) {
-                orientationMenu.hidden = true;
+                orientationMenu.classList.remove('show');
             }
         });
 
@@ -83,7 +82,7 @@ export class ControlBar {
                 // Update UI active state
                 orientationOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                orientationMenu.hidden = true;
+                orientationMenu.classList.remove('show');
 
                 // Update Graph
                 const mermaidManager = window.mermaidGraphManager || this.graph?.view?.mermaidManager;
@@ -104,22 +103,21 @@ export class ControlBar {
         // Toggle menu
         layoutBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isHidden = layoutMenu.hidden;
+            const isShowing = layoutMenu.classList.contains('show');
 
             // Close all menus first
-            document.getElementById('orientation-menu').hidden = true;
-            document.getElementById('layout-menu').hidden = true;
-            const downloadMenu = document.getElementById('download-menu');
-            if (downloadMenu) downloadMenu.hidden = true;
+            document.querySelectorAll('.layout-popup').forEach(menu => menu.classList.remove('show'));
 
             // Toggle this one
-            layoutMenu.hidden = !isHidden;
+            if (!isShowing) {
+                layoutMenu.classList.add('show');
+            }
         });
 
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
             if (!layoutBtn.contains(e.target) && !layoutMenu.contains(e.target)) {
-                layoutMenu.hidden = true;
+                layoutMenu.classList.remove('show');
             }
         });
 
@@ -131,7 +129,7 @@ export class ControlBar {
                 // Update UI active state
                 layoutOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                layoutMenu.hidden = true;
+                layoutMenu.classList.remove('show');
 
                 // Update Button Icon
                 // Hierarchical Path (Tree)

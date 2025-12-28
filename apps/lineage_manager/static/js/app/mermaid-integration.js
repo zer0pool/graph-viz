@@ -125,16 +125,16 @@ class MermaidGraphManager {
         this.contextMenu.style.top = `${rect.top + scrollTop - 10}px`;
         this.contextMenu.style.left = `${rect.left + scrollLeft + (rect.width / 2)}px`;
 
-        this.contextMenu.hidden = false;
+        this.contextMenu.classList.add('show');
     }
 
     hideContextMenu() {
         if (!this.contextMenu) return;
 
         // Early return if already hidden (optimization)
-        if (this.contextMenu.hidden) return;
+        if (!this.contextMenu.classList.contains('show')) return;
 
-        this.contextMenu.hidden = true;
+        this.contextMenu.classList.remove('show');
     }
 
     downloadJSON() {
@@ -444,28 +444,27 @@ class MermaidGraphManager {
         if (downloadBtn && downloadMenu) {
             downloadBtn.onclick = (e) => {
                 e.stopPropagation();
-                const isHidden = downloadMenu.hidden;
+                const isShowing = downloadMenu.classList.contains('show');
 
                 // Close other menus if any
-                const orientationMenu = document.getElementById('orientation-menu');
-                if (orientationMenu) orientationMenu.hidden = true;
-                const layoutMenu = document.getElementById('layout-menu');
-                if (layoutMenu) layoutMenu.hidden = true;
+                document.querySelectorAll('.layout-popup').forEach(menu => menu.classList.remove('show'));
 
                 // Toggle this one
-                downloadMenu.hidden = !isHidden;
+                if (!isShowing) {
+                    downloadMenu.classList.add('show');
+                }
             };
 
             // Close menu on click outside
             document.addEventListener('click', () => {
-                downloadMenu.hidden = true;
+                downloadMenu.classList.remove('show');
             });
         }
 
         const downloadSvgBtn = document.getElementById('download-svg-btn');
         if (downloadSvgBtn) {
             downloadSvgBtn.onclick = () => {
-                downloadMenu.hidden = true;
+                downloadMenu.classList.remove('show');
                 import('../mermaid/renderer.js').then(module => {
                     const container = document.querySelector('#mermaid-graph .mermaid');
                     if (container) {
@@ -480,7 +479,7 @@ class MermaidGraphManager {
         const downloadJsonBtn = document.getElementById('download-json-btn');
         if (downloadJsonBtn) {
             downloadJsonBtn.onclick = () => {
-                downloadMenu.hidden = true;
+                downloadMenu.classList.remove('show');
                 this.downloadJSON();
             };
         }
@@ -488,7 +487,7 @@ class MermaidGraphManager {
         const copyMermaidBtn = document.getElementById('copy-mermaid-btn');
         if (copyMermaidBtn) {
             copyMermaidBtn.onclick = () => {
-                downloadMenu.hidden = true;
+                downloadMenu.classList.remove('show');
                 this.copyToClipboard();
             };
         }
@@ -699,10 +698,31 @@ class MermaidGraphManager {
                     //    detail: { nodeId: matchingNode.id, node: matchingNode }
                     // }));
 
-                    // Show Context Menu
-                    this.showContextMenu(matchingNode.id, newNode);
+                    // Show Context Menu -> MOVED TO dblclick
+                    // this.showContextMenu(matchingNode.id, newNode);
                 } else {
                     console.warn('No matching node found for click');
+                }
+            });
+
+            newNode.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const nodeIdAttr = newNode.id || '';
+
+                // Find matching node
+                let matchingNode = null;
+                this.nodes.forEach(node => {
+                    const parts = node.id.split(':');
+                    const type = parts[0];
+                    const rest = parts.slice(1).join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+                    const mermaidPart = `${type === 'job' ? 'J' : 'T'}_${rest}`;
+                    if (nodeIdAttr.includes(mermaidPart)) {
+                        matchingNode = node;
+                    }
+                });
+
+                if (matchingNode) {
+                    this.showContextMenu(matchingNode.id, newNode);
                 }
             });
         });
