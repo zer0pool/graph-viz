@@ -1,14 +1,14 @@
-version: '3.8'
-
 services:
-  web:
+  lineage-manager:
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile
     ports:
-      - "8000:8000"
+      - "5003:5003"
     volumes:
-      - ./apps:/app/src
+      - ./apps/lineage_manager:/app/src/lineage_manager
     environment:
-      - PORT=8000
+      - PORT=5003
+      - PYTHONPATH=/app/src
     restart: unless-stopped
+    container_name: lineage-manager-backend
