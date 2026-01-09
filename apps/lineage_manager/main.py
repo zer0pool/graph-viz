@@ -5,6 +5,7 @@ import sys
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from lineage_manager.api.v1.endpoints import auth as auth_ep
 from lineage_manager.api.v1.endpoints import web as web_ep
@@ -69,6 +70,15 @@ def create_app() -> GraphApp:
         redoc_url="/redoc" if settings.feature_flags.enable_swagger else None,
         openapi_url="/openapi.json" if settings.feature_flags.enable_swagger else None,
     )
+
+    # CORS middleware not needed - webpack dev server proxy handles this
+    # app.add_middleware(
+    #     CORSMiddleware,
+    #     allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+    #     allow_credentials=True,
+    #     allow_methods=["*"],
+    #     allow_headers=["*"],
+    # )
 
     # Add health check logging filter middleware
     app.middleware("http")(health_check_middleware)

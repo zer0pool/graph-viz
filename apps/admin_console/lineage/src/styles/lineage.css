@@ -1,0 +1,768 @@
+/* Lineage MFE Styles */
+
+.lineage-container,
+.lineage-mfe-root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(2px);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e8f0fe;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.graph-wrapper,
+.graph-shell {
+  flex: 1;
+  background: #f8fafc;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Control Bar (Zoom/Pan) */
+.graph-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #ffffff;
+  padding: 4px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Modern soft shadow */
+  z-index: 10;
+  min-height: 48px;
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+}
+
+.toolbar-shell {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #dadce0;
+  margin: 0 8px;
+}
+
+/* Button Base - Ensure relative positioning for tooltips */
+.control-btn,
+.simple-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  color: #5f6368;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  position: relative; /* Essential for tooltip positioning */
+}
+
+/* Tooltip Animation - Specific for tooltips to avoid position conflicts */
+@keyframes fadeInTooltip {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px); /* Start slightly higher */
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0); /* End at natural position */
+  }
+}
+
+/* Tooltip (Legacy Style) */
+.ctx-btn[data-tooltip]:hover::after,
+.control-btn[data-tooltip]:hover::after,
+.simple-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%; /* Position below */
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px; /* Spacing */
+  background-color: #ffffff;
+  color: #3c4043;
+  padding: 4px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  z-index: 1001;
+  pointer-events: none;
+  animation: fadeInTooltip 0.2s ease-out forwards;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn:hover:not(:disabled),
+.simple-btn:hover:not(:disabled) {
+  background: #f1f3f4;
+  color: #1a73e8;
+}
+
+.control-btn.active,
+.simple-btn.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.control-btn:disabled,
+.simple-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.control-btn .icon-svg,
+.simple-btn .icon-svg {
+  width: 20px;
+  height: 20px;
+}
+
+.zoom-level-text {
+  font-size: 12px;
+  color: #5f6368;
+  font-weight: 500;
+  min-width: 36px;
+  text-align: center;
+}
+
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: #f1f3f4;
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.button-group .control-btn:hover:not(:disabled) {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.smart-expand-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  color: #1a73e8 !important;
+}
+
+.btn-text {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
+/* Context Menu */
+.floating-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: #f8fafc;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeInMenu 0.15s ease-out;
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+}
+
+.ctx-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #3c4043;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.ctx-btn:hover {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.ctx-btn.danger:hover {
+  background: #fce8e6;
+  color: #d93025;
+}
+
+.ctx-divider {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+}
+
+@keyframes fadeInMenu {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+/* Floating Panels */
+.floating-panel {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 5;
+  transition: all 0.3s ease;
+}
+
+.graph-legend {
+  bottom: 16px;
+  left: 16px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #3c4043;
+  font-weight: 500;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-job {
+  background: #e8f0fe;
+  border: 1px solid #1a73e8;
+}
+.legend-table {
+  background: #f1f3f4;
+  border: 1px solid #5f6368;
+}
+
+.graph-status {
+  bottom: 16px;
+  right: 16px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+/* View Toggle (Graph/List) */
+.view-toggle {
+  display: flex;
+  background: #f1f3f4;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.view-tab {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-tab.active {
+  background: #ffffff;
+  color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-tab:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mermaid svg {
+  cursor: grab;
+  transition: transform 0.1s ease-out;
+}
+
+/* Dropdown Menus (Legacy Parity) */
+.toolbar-dropdown-wrapper {
+  position: relative;
+}
+
+.layout-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 170px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeInMenu 0.2s ease-out;
+}
+
+.layout-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.layout-header p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.layout-list {
+  padding: 6px 0;
+}
+
+.layout-item {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.layout-item:hover {
+  background: #f8f9fa;
+}
+
+.layout-item.active {
+  color: #1a73e8;
+}
+
+.layout-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.layout-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.menu-icon-wrapper {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.layout-item .item-icon,
+.layout-item svg {
+  width: 18px;
+  height: 18px;
+  color: #5f6368;
+}
+
+.layout-item.active .item-icon {
+  color: #1a73e8;
+}
+
+.layout-item .check-icon {
+  width: 18px;
+  height: 18px;
+  color: #1a73e8;
+}
+
+.zoom-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  min-width: 45px;
+  text-align: center;
+}
+
+@keyframes fadeInMenu {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.icon-svg {
+  width: 18px;
+  height: 18px;
+  display: block; /* Eliminate line-height issues */
+}
+
+.mermaid.grabbing svg {
+  cursor: grabbing !important;
+}
+
+/* Default cursor for canvas */
+.mermaid-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+}
+
+/* When grabbing active */
+.mermaid-container.grabbing {
+  cursor: grabbing !important;
+}
+
+/* Force pointer on nodes */
+.node,
+.jobNode,
+.tableNode,
+.node rect,
+.node circle,
+.node polygon,
+.node path {
+  cursor: pointer !important;
+}
+
+/* Selected Node Styling (Sharp Bounding Box) */
+.selected foreignObject > div {
+  box-shadow: none !important;
+}
+
+/* Ensure selected node border remains standard and add outline */
+.selected rect,
+.selected polygon,
+.selected circle,
+.selected ellipse {
+  outline: 1.5px solid #2352db !important;
+  outline-offset: 4px; /* Frame the entire node */
+  stroke: #d1d5db !important;
+  stroke-width: 1px !important;
+}
+
+/* Prevent clipping of the selection outline */
+#mermaid-main-svg,
+.mermaid-inner-graph,
+.node,
+foreignObject {
+  overflow: visible !important;
+}
+
+/* Dagster-Style assetNode */
+.assetNode > rect,
+.assetNode > polygon,
+.assetNode > path,
+.assetNode > circle {
+  fill: #ffffff !important;
+  stroke: #d1d5db !important;
+  stroke-width: 1px !important;
+}
+
+.assetNode .nodeLabel {
+  color: #111827 !important;
+  padding: 4px 10px !important; /* Slightly increased to prevent overflow */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.assetNode hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0 !important; /* Remove margin entirely */
+  width: 100%;
+}
+
+.assetNode sub {
+  color: #6b7280;
+  font-size: 8px; /* Even smaller metadata */
+  line-height: 1;
+}
+
+/* Ensure text color is applied */
+g.assetNode text {
+  fill: #111827 !important;
+}
+
+/* Fix Label Positioning for htmlLabels: true */
+.node .label {
+  text-align: center;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100%;
+  width: 100%;
+}
+
+.node foreignObject {
+  overflow: visible;
+}
+
+.nodeLabel {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  text-align: center !important;
+}
+
+g.table text {
+  fill: #202124 !important;
+}
+
+/* ========================================
+   MERMAID SVG STYLES (from legacy mermaid-styles.css)
+   ======================================== */
+
+/* Mermaid Container */
+.mermaid-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mermaid-container .mermaid {
+  flex-shrink: 0;
+}
+
+.mermaid-container .empty-state {
+  color: #5f6368;
+  font-size: 16px;
+}
+
+/* Fix for Thick Edges (Aggressive Fill Removal) */
+.mermaid svg path,
+.mermaid svg [class*="edge-"] path,
+.mermaid svg .path,
+.mermaid svg g.edge path,
+.mermaid svg g.edgePath path {
+  fill: none !important;
+}
+
+/* Re-enable fill ONLY for node shapes (rect, polygon, circle, etc.) */
+.node rect,
+.node polygon,
+.node circle,
+.node ellipse,
+.node path:not(.edgePath),
+.assetNode > rect,
+.assetNode > polygon,
+.assetNode > path,
+.assetNode > circle {
+  fill: #ffffff !important;
+}
+
+/* Ensure markers (arrowheads) maintain their color and no fill glitch */
+.mermaid .marker,
+.mermaid marker path,
+.mermaid .marker path {
+  fill: #666666 !important;
+  stroke: none !important;
+}
+
+/* Mermaid SVG Styling */
+.mermaid svg {
+  display: block;
+  overflow: visible !important;
+  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
+  cursor: grab;
+  min-width: 600px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+.mermaid svg:active {
+  cursor: grabbing;
+}
+
+/* Critical: SVG Text Centering - Fixes label alignment */
+.mermaid svg text {
+  dominant-baseline: central !important;
+  text-anchor: middle !important;
+  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
+}
+
+.mermaid .nodeLabel {
+  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
+}
+
+/* Node label specific centering */
+.node text,
+.nodeLabel,
+g.node text {
+  dominant-baseline: central !important;
+  text-anchor: middle !important;
+}
+
+/* Edge Labels - Center alignment */
+.edgeLabel {
+  background-color: #ffffff !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
+}
+
+.edgeLabel text {
+  fill: #5f6368 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  dominant-baseline: central !important;
+  text-anchor: middle !important;
+}
+
+/* Edge label centering */
+g.edgeLabel text {
+  dominant-baseline: central !important;
+  text-anchor: middle !important;
+}
+
+/* Fix for Thick Edges (Weird Fill issue) */
+.mermaid .edgePaths path,
+.mermaid .edgePath path,
+.mermaid [class*="edge-thickness-"] path,
+.mermaid path.path,
+.mermaid svg path.edge {
+  fill: none !important;
+  stroke: #666666 !important;
+  stroke-width: 1.5px !important;
+}
+
+/* Ensure markers (arrowheads) don't get messed up */
+.mermaid .marker,
+.mermaid marker path {
+  fill: #666666 !important;
+  stroke: none !important;
+}
+
+/* ========================================
+   ADDITIONAL FIXES FOR LABEL ALIGNMENT
+   ======================================== */
+
+/* Force vertical centering for all SVG text elements */
+.mermaid svg text,
+.mermaid svg .nodeLabel,
+.mermaid svg tspan {
+  dominant-baseline: middle !important;
+  alignment-baseline: middle !important;
+  text-anchor: middle !important;
+}
+
+/* Fix for foreignObject-based labels */
+.node foreignObject {
+  overflow: visible !important;
+}
+
+.node foreignObject > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Specific fixes for job and table nodes */
+.job text,
+.table text {
+  dominant-baseline: middle !important;
+  alignment-baseline: middle !important;
+}
+
+/* Edge label vertical centering */
+.edgeLabel foreignObject,
+.edgeLabel foreignObject > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important;
+}
+
+/* Ensure the wrapper can expand */
+#mermaid-graph > div {
+  overflow: visible;
+}

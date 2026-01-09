@@ -1,0 +1,42 @@
+
+> dev
+> webpack serve --mode development
+
+<i> [webpack-dev-server] [HPM] Proxy created: /api  -> http://localhost:5003/lineage-manager
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: http://localhost:3000/
+<i> [webpack-dev-server] On Your Network (IPv4): http://172.21.164.104:3000/
+<i> [webpack-dev-server] Content not from webpack is served from '/home/darkwing/src/lineage_platform/apps/admin_console/shell/public' directory
+<i> [webpack-dev-server] 404s will fallback to '/index.html'
+assets by chunk 1.51 MiB (id hint: vendors)
+  asset vendors-node_modules_react-dom_index_js.bundle.js 1.03 MiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_css-loader_dist_runtime_noSo-6100d6.bundle.js 400 KiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_react_index_js.bundle.js 89.9 KiB [emitted] (id hint: vendors)
+asset bundle.js 184 KiB [emitted] (name: main)
+asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 132 KiB [emitted]
+runtime modules 19.6 KiB 16 modules
+modules by path ./node_modules/ 1.56 MiB 44 modules
+modules by path ./src/ 103 KiB
+  modules by path ./src/layout/*.tsx 16.6 KiB 4 modules
+  modules by path ./src/app/*.tsx 3.62 KiB 3 modules
+  modules by path ./src/*.tsx 294 bytes 2 modules
+  modules by path ./src/mfe/ 4.06 KiB 2 modules
+  modules by path ./src/styles/*.css 76 KiB 2 modules
+  + 2 modules
+provide-module modules 84 bytes
+  provide shared module (default) react-dom@18.3.1 = ./node_modules/reac...(truncated) 42 bytes [built] [code generated]
+  provide shared module (default) react@18.3.1 = ./node_modules/react/index.js 42 bytes [built] [code generated]
+consume-shared-module modules 84 bytes
+  consume shared module (default) react@* (singleton) (fallback: ./node_modules/r...(truncated) 42 bytes [built] [code generated]
+  consume shared module (default) react-dom@* (singleton) (fallback: ./node_module...(truncated) 42 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 1474 ms
+(node:94680) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 317 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 132 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 62 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/ShellApp.tsx 1.27 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 65 ms
