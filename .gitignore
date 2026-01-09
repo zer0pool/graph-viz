@@ -12,3 +12,5 @@ venv/
 *.sqlite3
 .DS_Store
 *.bak
+npm_modules/
+node_modules/
