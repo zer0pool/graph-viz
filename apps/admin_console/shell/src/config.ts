@@ -3,7 +3,7 @@
 
 export const config = {
   API_BASE_URL: (window as any).__APP_CONFIG__?.API_BASE_URL || "/api",
-  BASE_URL: (window as any).__APP_CONFIG__?.BASE_URL || "",
+  BASE_URL: (window as any).__APP_CONFIG__?.BASE_URL || "/lineage-manager",
   ENABLE_LINEAGE_MFE:
     (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
   ENABLE_TABLE_DETAIL_MFE:

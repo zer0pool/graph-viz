@@ -27,9 +27,9 @@ RUN rm -rf ./*
 # Copy built assets from builder stage
 COPY --from=builder /app/dist .
 
-# Copy entrypoint and nginx config
+# Copy entrypoint and nginx config template
 COPY deploy/docker/entrypoint.sh /entrypoint.sh
-COPY deploy/docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80

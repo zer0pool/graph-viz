@@ -10,6 +10,9 @@ services:
       - "${SHELL_PORT:-3000}:80"
     environment:
       - API_BASE_URL=http://lineage-manager:5003
+      - BASE_URL=${BASE_URL:-/}
+      - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
+      - ENABLE_TABLE_DETAIL_MFE=${ENABLE_TABLE_DETAIL_MFE:-true}
       - NODE_ENV=production
     depends_on:
       - lineage-manager
