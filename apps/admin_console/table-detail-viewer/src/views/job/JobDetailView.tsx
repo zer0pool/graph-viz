@@ -4,6 +4,7 @@ import { DetailLayout, Tab } from "../../components/DetailLayout";
 import { useJobOverview } from "../../hooks/useJobOverview";
 import { useJobRunHistory } from "../../hooks/useJobRunHistory";
 import { JobOverview } from "../../components/job/JobOverview";
+import { JobLineage } from "../../components/job/JobLineage";
 import { JobRunHistory } from "../../components/job/JobRunHistory";
 import { JobRunTimeline } from "../../components/job/JobRunTimeline";
 import { JobRunDrawer } from "../../components/job/JobRunDrawer";
@@ -11,6 +12,7 @@ import { JobRun } from "../../types/job";
 
 const JOB_TABS: Tab[] = [
   { id: "info", label: "Overview" },
+  { id: "lineage", label: "Run Dependency" },
   { id: "runs", label: "Run History" },
 ];
 
@@ -61,6 +63,14 @@ export const JobDetailView: React.FC<{
                 loading={loadingJob}
               />
               <JobRunTimeline runs={runs} onRunSelect={setSelectedRun} />
+            </div>
+          )}
+          {tab === "lineage" && (
+            <div className="animate-fade-in">
+              <JobLineage
+                job={job || { id: jobId, name: jobId, status: "loading" }}
+                loading={loadingJob}
+              />
             </div>
           )}
           {tab === "runs" && (

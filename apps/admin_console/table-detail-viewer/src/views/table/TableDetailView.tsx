@@ -4,15 +4,16 @@ import { DetailLayout, Tab } from "../../components/DetailLayout";
 import { useTableOverview } from "../../hooks/useTableOverview";
 import { useTableSchema } from "../../hooks/useTableSchema";
 import { useTableTimeliness } from "../../hooks/useTableTimeliness";
+import { useTableLineage } from "../../hooks/useTableLineage";
 import { TableOverview } from "../../components/table/TableOverview";
 import { TableSchema } from "../../components/table/TableSchema";
 import { TableTimeliness } from "../../components/table/TableTimeliness";
-import { MermaidGraph } from "../../components/MermaidGraph";
+import { TableLineage } from "../../components/table/TableLineage";
 
 const TABLE_TABS: Tab[] = [
-  { id: "info", label: "Table Info" },
-  { id: "schema", label: "Schema" },
+  { id: "info", label: "Overview" },
   { id: "lineage", label: "Lineage" },
+  { id: "schema", label: "Schema" },
   { id: "timeliness", label: "Timeliness" },
 ];
 
@@ -21,48 +22,59 @@ export const TableDetailView: React.FC<{
   mode?: ViewMode;
 }> = ({ tableName, mode = "EMBEDDED" }) => {
   const [tab, setTab] = useState("info");
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(["info"]));
 
-  // Hooks
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    setLoadedTabs((prev) => new Set(prev).add(newTab));
+  };
+
+  // Hooks - now only active if their tab was ever opened
   const { table, loading: loadingInfo } = useTableOverview(tableName);
-  const { schema, loading: loadingSchema } = useTableSchema(tableName);
-  const { timeliness, loading: loadingTime } = useTableTimeliness(tableName);
 
-  // Mock Lineage Chart for now
-  const lineageChart = `
-    graph TD
-    A[Source] --> B(${tableName})
-    B --> C[Downstream]
-  `;
+  const { schema, loading: loadingSchema } = useTableSchema(
+    loadedTabs.has("schema") ? tableName : ""
+  );
+
+  const { timeliness, loading: loadingTime } = useTableTimeliness(
+    loadedTabs.has("timeliness") ? tableName : ""
+  );
+
+  const { lineage, loading: loadingLineage } = useTableLineage(
+    loadedTabs.has("lineage") ? tableName : ""
+  );
 
   return (
     <DetailLayout
       title={`Table: ${table?.name || tableName}`}
       tabs={TABLE_TABS}
       activeTab={tab}
-      onTabChange={setTab}
+      onTabChange={handleTabChange}
       mode={mode}
     >
-      {tab === "info" && (
-        <TableOverview
-          table={table || ({ id: tableName, name: tableName } as any)}
-          loading={loadingInfo}
-        />
-      )}
-      {tab === "schema" && (
-        <TableSchema columns={schema?.columns || []} loading={loadingSchema} />
-      )}
-      {tab === "lineage" && (
-        <div className="h-full">
-          <h4 className="text-lg font-medium mb-4">Lineage Graph</h4>
-          <MermaidGraph chart={lineageChart} loading={false} />
-        </div>
-      )}
-      {tab === "timeliness" && (
-        <TableTimeliness
-          history={timeliness?.history || []}
-          loading={loadingTime}
-        />
-      )}
+      <div className="p-6">
+        {tab === "info" && (
+          <TableOverview
+            table={table || ({ id: tableName, name: tableName } as any)}
+            loading={loadingInfo}
+          />
+        )}
+        {tab === "lineage" && (
+          <TableLineage lineage={lineage} loading={loadingLineage} />
+        )}
+        {tab === "schema" && (
+          <TableSchema
+            columns={schema?.columns || []}
+            loading={loadingSchema}
+          />
+        )}
+        {tab === "timeliness" && (
+          <TableTimeliness
+            history={timeliness?.history || []}
+            loading={loadingTime}
+          />
+        )}
+      </div>
     </DetailLayout>
   );
 };

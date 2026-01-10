@@ -11,19 +11,16 @@ const Tabs = ({
   active: string;
   onChange: (id: string) => void;
 }) => (
-  <div style={{ display: "flex", gap: 16, borderBottom: "1px solid #eee" }}>
+  <div className="flex gap-1 border-b border-gray-100 bg-gray-50/50 px-2">
     {tabs.map((t) => (
       <button
         key={t.id}
         onClick={() => onChange(t.id)}
-        style={{
-          padding: "8px 12px",
-          border: "none",
-          background: "none",
-          borderBottom: active === t.id ? "2px solid #2563eb" : "none",
-          color: active === t.id ? "#2563eb" : "#666",
-          cursor: "pointer",
-        }}
+        className={`px-5 py-3 text-xs font-bold tracking-wider uppercase transition-all border-b-2 ${
+          active === t.id
+            ? "border-blue-600 text-blue-600 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+            : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/50"
+        }`}
       >
         {t.label}
       </button>
@@ -43,24 +40,28 @@ export const DetailLayout: React.FC<{
 }> = ({ title, tabs, activeTab, onTabChange, mode, children }) => {
   return (
     <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        maxWidth: mode === "PAGE" ? 1200 : "100%",
-        margin: mode === "PAGE" ? "0 auto" : undefined,
-        background: "#fff",
-      }}
+      className={`h-full flex flex-col bg-white ${
+        mode === "PAGE" ? "max-w-6xl mx-auto shadow-xl min-h-screen" : "w-full"
+      }`}
     >
-      <div style={{ padding: 16, borderBottom: "1px solid #e5e7eb" }}>
-        <h3>{title}</h3>
-      </div>
+      <header className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+        <h3 className="text-lg font-bold text-gray-900 tracking-tight leading-none">
+          {title}
+        </h3>
+        {mode === "PAGE" && (
+          <span className="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full uppercase tracking-widest">
+            Standalone View
+          </span>
+        )}
+      </header>
 
-      <div style={{ padding: "0 16px" }}>
+      <div className="sticky top-[72px] z-10 bg-white shadow-sm">
         <Tabs tabs={tabs} active={activeTab} onChange={onTabChange} />
       </div>
 
-      <div style={{ flex: 1, padding: 16, overflow: "auto" }}>{children}</div>
+      <main className="flex-1 overflow-y-auto bg-slate-50/30">
+        <div className="max-w-full">{children}</div>
+      </main>
     </div>
   );
 };

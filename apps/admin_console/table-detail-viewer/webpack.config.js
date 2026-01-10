@@ -1,5 +1,6 @@
 const ModuleFederationPlugin =
   require("webpack").container.ModuleFederationPlugin;
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const path = require("path");
 
@@ -11,6 +12,7 @@ module.exports = {
     port: 3002,
     hot: false,
     liveReload: false,
+    historyApiFallback: true,
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
@@ -56,6 +58,9 @@ module.exports = {
       __API_BASE_URL__: JSON.stringify(process.env.API_BASE_URL || ""),
       __NODE_ENV__: JSON.stringify(process.env.NODE_ENV || "development"),
     }),
+    new HtmlWebpackPlugin({
+      template: "./index.html",
+    }),
     new ModuleFederationPlugin({
       name: "tableDetailViewer",
       filename: "remoteEntry.js",
@@ -80,7 +85,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "auto",
+    publicPath: "/",
     path: path.resolve(__dirname, "dist"),
     clean: true,
   },

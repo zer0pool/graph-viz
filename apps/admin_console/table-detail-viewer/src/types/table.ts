@@ -8,6 +8,7 @@ export interface TableDetail {
   created_at?: string;
   updated_at?: string;
   storage_info?: {
+    type?: string;
     location: string;
     format: string;
     size_bytes?: number;
@@ -15,6 +16,24 @@ export interface TableDetail {
     partitioning?: string;
     clustering?: string[];
   };
+}
+
+export interface TableLineageRelation {
+  id: string;
+  name: string;
+  type: "job" | "table";
+  status?: string;
+  relation_type?: "source" | "sink" | "trigger";
+}
+
+export interface TableLineageSummary {
+  upstreams: TableLineageRelation[];
+  downstreams: TableLineageRelation[];
+}
+
+export interface TableLineageResponse {
+  status: string;
+  result: TableLineageSummary;
 }
 
 export interface TableSchemaColumn {

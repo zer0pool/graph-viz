@@ -131,7 +131,6 @@ case $MODE in
         start_frontend
         ;;
     all)
-        start_backend
         start_frontend
         ;;
     *)
@@ -147,7 +146,6 @@ echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━
 
 echo -e "📍 Access Points:"
 echo -e "   Shell:                ${BLUE}http://localhost:3000${NC}"
-echo -e "   Backend API Docs:     ${BLUE}http://localhost:5003/lineage-manager/docs${NC}"
 echo -e "   Table Detail Viewer:  ${BLUE}http://localhost:3002${NC}"
 echo -e "   Lineage:              ${BLUE}http://localhost:3001${NC}"
 

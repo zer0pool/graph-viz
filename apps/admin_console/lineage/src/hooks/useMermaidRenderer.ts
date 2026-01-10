@@ -16,6 +16,7 @@ interface UseMermaidRendererOptions {
   orientation: LayoutOrientation;
   onSelect?: SelectHandler;
   onSmartExpand?: () => void;
+  onExpandGroup?: (node: GraphNode) => void;
   layout: "dagre" | "elk";
 }
 
@@ -24,6 +25,7 @@ export function useMermaidRenderer({
   orientation,
   onSelect,
   onSmartExpand,
+  onExpandGroup,
   layout,
 }: UseMermaidRendererOptions) {
   const mermaidRef = useRef<HTMLDivElement>(null);
@@ -241,6 +243,13 @@ export function useMermaidRenderer({
             const handleNodeAction = (e: MouseEvent) => {
               e.stopPropagation();
               e.preventDefault();
+
+              // NEW: Handle Group Node Expansion
+              if (node.type === "group" && onExpandGroup) {
+                onExpandGroup(node);
+                return;
+              }
+
               const rect = el.getBoundingClientRect();
               selectNode(node);
               setContextMenu({

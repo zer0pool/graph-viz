@@ -1,3 +1,11 @@
+export interface JobNodeRelation {
+  id?: string;
+  name: string;
+  full_name?: string;
+  type: string;
+  dependency_type?: "HARD" | "SOFT";
+}
+
 export interface JobDetail {
   id: string;
   name: string;
@@ -16,6 +24,8 @@ export interface JobDetail {
     running: number;
     total: number;
   };
+  upstreams?: JobNodeRelation[];
+  downstreams?: JobNodeRelation[];
 }
 
 export interface JobRun {

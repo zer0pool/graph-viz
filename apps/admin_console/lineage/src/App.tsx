@@ -11,6 +11,7 @@ import { StatusBar } from "./components/StatusBar";
 import { ViewMode } from "./components/ControlBar/ViewToggle";
 import { LayoutType } from "./components/ControlBar/LayoutControls";
 import { useGraphExport } from "./hooks/useGraphExport";
+import { ListView } from "./components/ListView/ListView";
 
 interface AppProps {
   rootNode?: Selection | null;
@@ -33,6 +34,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     redo,
     canUndo,
     canRedo,
+    expandGroup,
   } = useGraphData();
 
   const handleSmartExpand = useCallback(async () => {
@@ -71,6 +73,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     orientation,
     onSelect,
     onSmartExpand: handleSmartExpand,
+    onExpandGroup: expandGroup,
     layout,
   });
 
@@ -146,55 +149,129 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     setTimeout(resetView, 100);
   }, [resetToInitial, resetView]);
 
+  // List Actions
+  // Ref for List Actions
+  const listActionRef = useRef<any>(null);
+
+  const handleListReload = useCallback(() => {
+    if (listActionRef.current) {
+      listActionRef.current.reload();
+    }
+  }, []);
+
+  const handleListExport = useCallback(() => {
+    if (listActionRef.current) {
+      listActionRef.current.exportCsv();
+    }
+  }, []);
+
   return (
     <div className="lineage-container">
-      <ControlBar
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onReset={handleReset}
-        onFit={fitToView}
-        onRotate={setOrientation}
-        onDownloadSVG={handleDownload}
-        onCopyMermaid={handleCopyMermaid}
-        onUndo={undo}
-        onRedo={redo}
-        onExpandUpstream={() => handleExpandExplicit("upstream")}
-        onExpandDownstream={() => handleExpandExplicit("downstream")}
-        onSmartExpand={handleSmartExpand}
-        zoomLevel={zoomLevel}
-        orientation={orientation}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        layout={layout}
-        onLayoutChange={setLayout}
-        isNodeSelected={!!selectedNode}
-      />
+      {viewMode === "graph" ? (
+        <ControlBar
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={handleReset}
+          onFit={fitToView}
+          onRotate={setOrientation}
+          onDownloadSVG={handleDownload}
+          onCopyMermaid={handleCopyMermaid}
+          onUndo={undo}
+          onRedo={redo}
+          onExpandUpstream={() => handleExpandExplicit("upstream")}
+          onExpandDownstream={() => handleExpandExplicit("downstream")}
+          onSmartExpand={handleSmartExpand}
+          zoomLevel={zoomLevel}
+          orientation={orientation}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          layout={layout}
+          onLayoutChange={setLayout}
+          isNodeSelected={!!selectedNode}
+        />
+      ) : (
+        // List Mode Control Bar
+        <ControlBar
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={handleReset}
+          onFit={fitToView}
+          onRotate={setOrientation}
+          onDownloadSVG={handleDownload}
+          onCopyMermaid={handleCopyMermaid}
+          onUndo={undo}
+          onRedo={redo}
+          onExpandUpstream={() => handleExpandExplicit("upstream")}
+          onExpandDownstream={() => handleExpandExplicit("downstream")}
+          onSmartExpand={handleSmartExpand}
+          zoomLevel={zoomLevel}
+          orientation={orientation}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          layout={layout}
+          onLayoutChange={setLayout}
+          isNodeSelected={!!selectedNode}
+          // List Actions
+          onListReload={handleListReload}
+          onListExport={handleListExport}
+        />
+      )}
+
+      {/* View Toggle needs to remain accessible in List Mode to switch back 
+          (handled by ControlBar now) */}
 
       <div className="graph-shell">
-        {viewMode === "graph" ? (
+        <div
+          style={{
+            display: viewMode === "graph" ? "block" : "none",
+            height: "100%",
+          }}
+        >
           <GraphCanvas
             ref={mermaidRef}
             loading={loading}
             error={error}
             isEmpty={!graphData || graphData.nodes.length === 0}
           />
-        ) : (
-          <div className="list-view-placeholder">
-            {/* List view implementation can go here later */}
-            <p style={{ padding: "40px", textAlign: "center", color: "#666" }}>
-              List view is currently in development.
-            </p>
-          </div>
-        )}
+        </div>
+
+        <div
+          style={{
+            display: viewMode === "list" ? "block" : "none",
+            height: "100%",
+          }}
+        >
+          <ListView
+            graphData={graphData || { nodes: [], edges: [] }}
+            selectedNode={selectedNode}
+            defaultRootNode={rootNode}
+            listActionRef={listActionRef}
+            onSelectNode={(node) => {
+              if (onSelect) {
+                onSelect({
+                  type: node.type as any,
+                  id: node.id,
+                  jobId: node.type === "job" ? node.id : undefined,
+                  tableName:
+                    node.type === "table"
+                      ? node.full_name || node.name
+                      : undefined,
+                });
+              }
+            }}
+          />
+        </div>
 
         <Legend />
         <StatusBar loading={loading} error={error} />
       </div>
 
       <ContextMenu
-        state={contextMenu}
+        state={viewMode === "graph" ? contextMenu : null}
         onClose={() => setContextMenu(null)}
         onExpandUpstream={() => handleExpandExplicit("upstream")}
         onExpandDownstream={() => handleExpandExplicit("downstream")}
