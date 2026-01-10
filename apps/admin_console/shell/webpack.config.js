@@ -2,6 +2,8 @@ const ModuleFederationPlugin =
   require("webpack").container.ModuleFederationPlugin;
 const webpack = require("webpack");
 const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/main.tsx",
@@ -58,6 +60,21 @@ module.exports = {
       "import.meta.env.DEV": JSON.stringify(
         process.env.NODE_ENV !== "production"
       ),
+    }),
+    new HtmlWebpackPlugin({
+      template: "./public/index.html",
+      publicPath: "auto",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: "public/images", to: "images", noErrorOnMissing: true },
+        {
+          from: "public/favicon.png",
+          to: "favicon.png",
+          noErrorOnMissing: true,
+        },
+        { from: "public/config.template.js", to: "config.template.js" },
+      ],
     }),
     new ModuleFederationPlugin({
       name: "shell",

@@ -134,20 +134,16 @@ export const Navbar: React.FC<{
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "0.5rem",
           textDecoration: "none",
           color: "inherit",
         }}
       >
         <img
           src="/images/logo.png"
-          alt="Logo"
+          alt="Pipeline Ops Console"
           className="nav-logo"
-          style={{ height: "32px", width: "32px" }}
+          style={{ height: "36px", objectFit: "contain" }}
         />
-        <h2 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 600 }}>
-          Lineage Manager
-        </h2>
       </a>
 
       {/* Search Bar */}
