@@ -5,6 +5,7 @@ import { AuthProvider } from "./AuthContext";
 import { AppRouter } from "./Router";
 import { Drawer } from "../layout/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
+import { config } from "../config";
 
 type DrawerState = null | {
   type: "table" | "job";
@@ -22,7 +23,7 @@ export const ShellApp = () => {
 
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={config.BASE_URL}>
         <AppLayout
           onSelectGraphNode={(node) => {
             console.log("[Shell] Setting activeGraphNode:", node);
@@ -48,15 +49,17 @@ export const ShellApp = () => {
         </AppLayout>
 
         {/* Connector: selection -> Detail MFE */}
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <RemoteMount
-            scope="tableDetailViewer"
-            module="./index"
-            url="http://localhost:3002/remoteEntry.js"
-            mountProps={selection}
-            visible={drawerOpen}
-          />
-        </Drawer>
+        {config.ENABLE_TABLE_DETAIL_MFE && (
+          <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <RemoteMount
+              scope="tableDetailViewer"
+              module="./index"
+              url="http://localhost:3002/remoteEntry.js"
+              mountProps={selection}
+              visible={drawerOpen}
+            />
+          </Drawer>
+        )}
       </BrowserRouter>
     </AuthProvider>
   );

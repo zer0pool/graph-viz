@@ -82,3 +82,35 @@ cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-sha
 runtime modules 19.6 KiB 16 modules
 ./src/app/AuthCallback.tsx 2.37 KiB [built] [code generated]
 webpack 5.104.1 compiled successfully in 131 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/config.ts 460 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 205 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/ShellApp.tsx 2.08 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 113 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/Router.tsx 1.43 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 35 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/ShellApp.tsx 2.12 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 35 ms

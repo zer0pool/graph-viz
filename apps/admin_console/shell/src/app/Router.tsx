@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { AuthCallback } from "./AuthCallback";
 import { MiniShell } from "../test/MiniShell";
+import { config } from "../config";
 
 export const AppRouter: React.FC<{
   onSelectNode: (event: any) => void;
@@ -13,22 +14,24 @@ export const AppRouter: React.FC<{
     <Route path="/" element={<div>Welcome to Admin Console</div>} />
     <Route path="/authorized" element={<AuthCallback />} />
     <Route path="/test/minishell" element={<MiniShell />} />
-    <Route
-      path="/lineage"
-      element={
-        <RemoteMount
-          scope="lineage"
-          module="./index"
-          url="http://localhost:3001/remoteEntry.js"
-          mountProps={{
-            onSelect: onSelectNode,
-            rootNode: activeGraphNode,
-            initialSelection: selection,
-          }}
-          visible={true}
-        />
-      }
-    />
+    {config.ENABLE_LINEAGE_MFE && (
+      <Route
+        path="/lineage"
+        element={
+          <RemoteMount
+            scope="lineage"
+            module="./index"
+            url="http://localhost:3001/remoteEntry.js"
+            mountProps={{
+              onSelect: onSelectNode,
+              rootNode: activeGraphNode,
+              initialSelection: selection,
+            }}
+            visible={true}
+          />
+        }
+      />
+    )}
     <Route
       path="/jobs/:jobId"
       element={
