@@ -3,13 +3,16 @@
 
 echo "[Shell] Starting Entrypoint Script..."
 
-# 1. Environment Variable Injection (Optional but recommended for In-Net)
-# If we need to replace placeholders in built JS files with runtime env vars:
-# Example: find /usr/share/nginx/html -name "*.js" | xargs sed -i "s|__VITE_API_BASE_URL__|${API_BASE_URL}|g"
+# 1. Environment Variable Injection
+echo "[Shell] Injecting runtime configuration..."
+# Use envsubst to replace placeholders in config.template.js
+envsubst '${API_BASE_URL} ${BASE_URL} ${ENABLE_LINEAGE_MFE} ${ENABLE_TABLE_DETAIL_MFE}' \
+  < /usr/share/nginx/html/config.template.js \
+  > /usr/share/nginx/html/config.js
 
 echo "[Shell] Verified environment variables:"
-echo " - NODE_ENV: $NODE_ENV"
-echo " - PORT: ${PORT:-80}"
+echo " - BASE_URL: $BASE_URL"
+echo " - API_BASE_URL: $API_BASE_URL"
 
 # 2. Start Nginx
 echo "[Shell] Launching Nginx..."
