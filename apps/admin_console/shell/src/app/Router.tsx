@@ -1,14 +1,17 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { RemoteMount } from "../mfe/RemoteMount";
+import { AuthCallback } from "./AuthCallback";
 import { MiniShell } from "../test/MiniShell";
 
 export const AppRouter: React.FC<{
   onSelectNode: (event: any) => void;
   activeGraphNode: any;
-}> = ({ onSelectNode, activeGraphNode }) => (
+  selection?: any;
+}> = ({ onSelectNode, activeGraphNode, selection }) => (
   <Routes>
     <Route path="/" element={<div>Welcome to Admin Console</div>} />
+    <Route path="/authorized" element={<AuthCallback />} />
     <Route path="/test/minishell" element={<MiniShell />} />
     <Route
       path="/lineage"
@@ -20,6 +23,7 @@ export const AppRouter: React.FC<{
           mountProps={{
             onSelect: onSelectNode,
             rootNode: activeGraphNode,
+            initialSelection: selection,
           }}
           visible={true}
         />

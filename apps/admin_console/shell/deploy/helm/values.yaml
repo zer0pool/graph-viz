@@ -1,0 +1,23 @@
+# values.yaml for admin-console-shell
+
+replicaCount: 2
+
+image:
+  repository: admin-console-shell
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+env:
+  apiBaseUrl: "http://lineage-manager:5003"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

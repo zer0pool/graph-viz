@@ -15,15 +15,32 @@ export const TableDetailViewer: React.FC<{ selection: Selection | null }> = ({
   }
 
   // Route to JobDetailView if it's a job
-  if (selection.type === "job" && selection.jobId) {
-    return <JobDetailView jobId={selection.jobId} mode="EMBEDDED" />;
+  const jobId =
+    selection.jobId || (selection.type === "job" ? selection.id : null);
+  if (selection.type === "job" && jobId) {
+    const cleanJobId = jobId.startsWith("job:") ? jobId.substring(4) : jobId;
+    console.log("[TableDetailViewer] Routing to JobDetailView:", cleanJobId);
+    return <JobDetailView jobId={cleanJobId} mode="EMBEDDED" />;
   }
 
   // Route to TableDetailView if it's a table
-  if (selection.type === "table" && selection.tableName) {
-    return <TableDetailView tableName={selection.tableName} mode="EMBEDDED" />;
+  const tableName =
+    selection.tableName || (selection.type === "table" ? selection.id : null);
+  if (selection.type === "table" && tableName) {
+    const cleanTableName = tableName.startsWith("table:")
+      ? tableName.substring(6)
+      : tableName;
+    console.log(
+      "[TableDetailViewer] Routing to TableDetailView:",
+      cleanTableName
+    );
+    return <TableDetailView tableName={cleanTableName} mode="EMBEDDED" />;
   }
 
+  console.warn(
+    "[TableDetailViewer] Could not determine targets for selection:",
+    selection
+  );
   return (
     <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
       Unknown selection type: {JSON.stringify(selection)}

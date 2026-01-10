@@ -5,7 +5,7 @@ const webpack = require("webpack");
 const path = require("path");
 
 module.exports = {
-  entry: "./src/index.ts",
+  entry: "./src/main.tsx",
   mode: "development",
 
   devServer: {
@@ -85,8 +85,11 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "/",
+    publicPath: "http://localhost:3002/",
     path: path.resolve(__dirname, "dist"),
     clean: true,
+  },
+  experiments: {
+    importMeta: true,
   },
 };

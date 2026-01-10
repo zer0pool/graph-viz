@@ -1,4 +1,4 @@
-import { mount } from "./viewMount";
+import { mount } from "./mount";
 
 // --- Standalone Auto-Mount Logic ---
 // If running from index.html (not via Module Federation container), auto-mount to #root

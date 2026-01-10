@@ -1,1 +1,1 @@
-import("./bootstrap");
+export { mount } from "./mount";

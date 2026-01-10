@@ -34,19 +34,20 @@ export function useMermaidRenderer({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const selectNode = useCallback(
-    (node: GraphNode | null) => {
+    (node: GraphNode | null, action?: "click" | "showDetail") => {
       setSelectedNode(node);
       if (onSelect) {
-        if (node) {
+        if (!node) {
+          onSelect(null);
+        } else {
           onSelect({
             type: node.type as any,
             id: node.id,
             jobId: node.type === "job" ? node.id : undefined,
             tableName:
               node.type === "table" ? node.full_name || node.name : undefined,
+            action,
           });
-        } else {
-          onSelect(null);
         }
       }
     },
@@ -251,7 +252,7 @@ export function useMermaidRenderer({
               }
 
               const rect = el.getBoundingClientRect();
-              selectNode(node);
+              selectNode(node, "click");
               setContextMenu({
                 x: rect.left + rect.width / 2,
                 y: rect.top - 12,
