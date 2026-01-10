@@ -33,4 +33,23 @@ export class GraphApiService {
 
     return response.json();
   }
+
+  static async fetchTableHierarchy(tableName: string): Promise<any> {
+    const cleanTableName = tableName.startsWith("table:")
+      ? tableName.substring(6)
+      : tableName;
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/tables/${encodeURIComponent(
+        cleanTableName
+      )}/hierarchy`
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Hierarchy API error (${response.status}): ${errorText}`);
+    }
+
+    return response.json();
+  }
 }

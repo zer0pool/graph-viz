@@ -44,7 +44,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
       <button
         className="control-btn"
         onClick={onReset}
-        data-tooltip="Reset Data"
+        data-tooltip="Reset Graph"
       >
         <ResetIcon />
       </button>

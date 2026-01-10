@@ -7,7 +7,7 @@ TESTS_DIR=tests
 VENV=.venv
 PYTHONPATH=$(shell pwd)
 
-.PHONY: venv run clean test lint format install-dev all kill db-revision db-upgrade db-downgrade db-history db-current
+.PHONY: venv run clean test lint format install-dev all kill db-revision db-upgrade db-downgrade db-history db-current docker-up docker-down docker-logs
 
 all: venv install-dev format lint test
 
@@ -61,3 +61,13 @@ db-history:
 
 db-current:
 	. $(VENV)/bin/activate && alembic current
+
+# Docker commands
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f

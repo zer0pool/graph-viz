@@ -70,16 +70,12 @@ clean-all:
 	$(MAKE) -C $(LM_DIR) clean
 	$(MAKE) -C $(DJM_DIR) clean
 
-# Docker Compose commands
+# Docker Compose commands (delegated to lineage_manager)
 compose-up:
-	docker-compose up -d
+	$(MAKE) -C $(LM_DIR) docker-up
 
 compose-down:
-	docker-compose down
+	$(MAKE) -C $(LM_DIR) docker-down
 
 compose-logs:
-	docker-compose logs -f
-
-# Docker commands (legacy/centralized if needed)
-docker-build:
-	docker build -t graph-viz:latest -f deploy/docker/Dockerfile .
+	$(MAKE) -C $(LM_DIR) docker-logs

@@ -57,19 +57,21 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 pt-6 border-t border-gray-100">
           <Field label="Owner" value={job.owner} />
-          <Field label="Type" value={job.type} />
+          <Field label="Platform" value={job.labels?.platform} />
+          <Field label="Job Type" value={job.type} />
+          <Field label="Status" value={job.status} isBadge={true} />
           <Field label="Lifecycle" value={job.lifecycle_status} />
           <Field label="Schedule" value={job.schedule} />
           <Field label="Last Run" value={job.last_run_time} />
           <Field label="Next Run" value={job.next_run_time} />
-          <div className="col-span-full">
-            <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+          <div className="col-span-full bg-gray-50 p-4 rounded-lg border border-gray-100">
+            <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest text">
               Description
             </label>
-            <div className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
-              {job.description || "-"}
+            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap italic">
+              {job.description || "No description provided."}
             </div>
           </div>
         </div>
@@ -101,14 +103,23 @@ const SummaryCard: React.FC<{
   );
 };
 
-const Field: React.FC<{ label: string; value?: string }> = ({
+const Field: React.FC<{ label: string; value?: string; isBadge?: boolean }> = ({
   label,
   value,
+  isBadge,
 }) => (
-  <div>
-    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+  <div className="group">
+    <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-widest">
       {label}
     </label>
-    <div className="text-sm font-medium text-gray-900">{value || "-"}</div>
+    {isBadge && value ? (
+      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold uppercase border border-blue-100">
+        {value}
+      </span>
+    ) : (
+      <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+        {value || "—"}
+      </div>
+    )}
   </div>
 );

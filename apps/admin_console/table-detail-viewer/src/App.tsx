@@ -10,6 +10,12 @@ export const App: React.FC<{
   const [selection, setSelection] = useState<any>(initialSelection ?? null);
 
   useEffect(() => {
+    if (initialSelection) {
+      setSelection(initialSelection);
+    }
+  }, [initialSelection]);
+
+  useEffect(() => {
     if (!eventTarget) return;
 
     const handler = (e: any) => {

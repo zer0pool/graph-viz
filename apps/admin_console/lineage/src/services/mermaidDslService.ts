@@ -55,6 +55,7 @@ export class MermaidDslService {
     // 2. Style Section (Injectable Styles)
     const graphStyles = [
       "  classDef assetNode fill:#FFFFFF,stroke:#D1D5DB,stroke-width:1px,color:#111827,rx:10,ry:10",
+      "  classDef groupNode fill:#F8F9FA,stroke:#1A73E8,stroke-width:2px,stroke-dasharray: 5 5,color:#1A73E8,rx:20,ry:20",
       "  linkStyle default stroke:#666666,stroke-width:1.5px,fill:none",
     ].join("\n");
 
@@ -63,18 +64,29 @@ export class MermaidDslService {
     // 3. Content Section (Nodes)
     graphData.nodes.forEach((node) => {
       const safeId = node.id.replace(/:/g, "_");
-      const displayName = this.getShortenedName(
-        node.label || node.name,
-        node.type
-      );
-      const platform =
-        (node as any).platform || (node.type === "table" ? "snowflake" : "dbt");
 
-      const richLabel = `<b><font color='#2352DB' size='1'>●</font> ${displayName}</b><br/><hr/><sub>${node.type} | ${platform}</sub>`;
-      const escapedLabel = richLabel.replace(/"/g, '\\"');
+      if (node.type === "group") {
+        // Special rendering for Group Node
+        const label = node.name || "... more";
+        // Simple pill shape
+        dsl += `  ${safeId}("${label}")\n`;
+        dsl += `  ${safeId}:::groupNode\n`;
+      } else {
+        // Standard Asset Node
+        const displayName = this.getShortenedName(
+          node.label || node.name,
+          node.type
+        );
+        const platform =
+          (node as any).platform ||
+          (node.type === "table" ? "snowflake" : "dbt");
 
-      dsl += `  ${safeId}@{ label: "${escapedLabel}" }\n`;
-      dsl += `  ${safeId}:::assetNode\n`;
+        const richLabel = `<b><font color='#2352DB' size='1'>●</font> ${displayName}</b><br/><hr/><sub>${node.type} | ${platform}</sub>`;
+        const escapedLabel = richLabel.replace(/"/g, '\\"');
+
+        dsl += `  ${safeId}@{ label: "${escapedLabel}" }\n`;
+        dsl += `  ${safeId}:::assetNode\n`;
+      }
     });
 
     // 4. Content Section (Edges)

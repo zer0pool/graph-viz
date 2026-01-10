@@ -22,7 +22,7 @@ COPY --from=builder /app/requirements.txt .
 RUN pip install --no-cache /wheels/*
 
 # 소스 코드 복사
-COPY apps/lineage_manager ./src/lineage_manager
+COPY . ./src/lineage_manager
 COPY deploy/docker/entrypoint.sh /entrypoint.sh
 
 # 환경 변수 설정
