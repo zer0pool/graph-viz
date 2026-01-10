@@ -14,3 +14,6 @@ venv/
 *.bak
 npm_modules/
 node_modules/
+logs/
+*.log
+*.pid

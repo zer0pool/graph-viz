@@ -67,6 +67,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     resetView,
     zoomIn,
     zoomOut,
+    selectNode,
     dsl,
   } = useMermaidRenderer({
     graphData,
@@ -105,13 +106,21 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
   const lastFetchedNode = useRef<{ type: string; id: string } | null>(null);
 
   useEffect(() => {
+    console.log("[Lineage App] rootNode updated:", rootNode);
     if (rootNode?.id) {
       if (
         lastFetchedNode.current?.id !== rootNode.id ||
         lastFetchedNode.current?.type !== rootNode.type
       ) {
+        console.log(
+          "[Lineage App] Fetching graph for:",
+          rootNode.type,
+          rootNode.id
+        );
         fetchGraph(rootNode.type, rootNode.id, false, "both", true);
         lastFetchedNode.current = { type: rootNode.type, id: rootNode.id };
+      } else {
+        console.log("[Lineage App] Skipping fetch, same as lastFetchedNode");
       }
     }
   }, [rootNode, fetchGraph]);
@@ -276,17 +285,8 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
         onExpandUpstream={() => handleExpandExplicit("upstream")}
         onExpandDownstream={() => handleExpandExplicit("downstream")}
         onShowDetails={() => {
-          // Re-trigger global selection to open drawer
-          if (onSelect && selectedNode) {
-            onSelect({
-              type: selectedNode.type as any,
-              id: selectedNode.id,
-              jobId: selectedNode.type === "job" ? selectedNode.id : undefined,
-              tableName:
-                selectedNode.type === "table"
-                  ? selectedNode.full_name || selectedNode.name
-                  : undefined,
-            });
+          if (selectedNode) {
+            selectNode(selectedNode, "showDetail");
           }
         }}
         onDelete={() => selectedNode && removeNode(selectedNode.id)}

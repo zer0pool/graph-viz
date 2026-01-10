@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # --- Admin Console Shell MFE ---
+  shell:
+    build:
+      context: ./apps/admin_console/shell
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - "${SHELL_PORT:-3000}:80"
+    environment:
+      - API_BASE_URL=http://lineage-manager:5003
+      - NODE_ENV=production
+    depends_on:
+      - lineage-manager
+    container_name: admin-console-shell
+    networks:
+      - lineage-network
+
+  # --- Lineage Manager Backend ---
+  lineage-manager:
+    build:
+      context: ./apps/lineage_manager
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - "${BACKEND_PORT:-5003}:5003"
+    environment:
+      - PORT=5003
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-lineage_manager}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-root123}
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - FEATURE_REQUIRE_AUTHENTICATION=true
+    depends_on:
+      - mysql-db
+      - redis-cache
+    container_name: lineage-manager-backend
+    networks:
+      - lineage-network
+
+  # --- Infrastructure ---
+  mysql-db:
+    image: mysql:8.0-debian
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+    ports:
+      - "${DB_EXTERNAL_PORT:-33306}:3306"
+    container_name: mysql-db
+    networks:
+      - lineage-network
+
+  redis-cache:
+    image: redis:alpine
+    container_name: redis-cache
+    networks:
+      - lineage-network
+
+networks:
+  lineage-network:
+    driver: bridge

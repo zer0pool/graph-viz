@@ -104,8 +104,8 @@ export const Navbar: React.FC<{
   };
 
   const handleLogin = () => {
-    // Mock login - in real app this would redirect to OIDC
-    login("demo_user");
+    console.info("[Navbar] User clicked Sign in, initiating login flow");
+    login();
   };
 
   return (
@@ -303,11 +303,18 @@ export const Navbar: React.FC<{
           >
             <img
               id="user-avatar"
-              src={`https://ui-avatars.com/api/?name=${user}&background=1a73e8&color=fff`}
+              src={
+                user.picture ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  user.name || user.email || user.sub
+                )}&background=1a73e8&color=fff`
+              }
               alt="User profile"
               style={{ width: "32px", height: "32px", borderRadius: "50%" }}
             />
-            <span style={{ color: "#24292f", fontSize: "14px" }}>{user}</span>
+            <span style={{ color: "#24292f", fontSize: "14px" }}>
+              {user.name || user.preferred_username || user.email || user.sub}
+            </span>
             <span
               className="caret"
               style={{ fontSize: "12px", color: "#57606a" }}
@@ -338,7 +345,12 @@ export const Navbar: React.FC<{
           >
             <div style={{ textAlign: "center", marginBottom: "1rem" }}>
               <img
-                src={`https://ui-avatars.com/api/?name=${user}&background=3b82f6&color=fff&size=64`}
+                src={
+                  user.picture ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user.name || user.email || user.sub
+                  )}&background=3b82f6&color=fff&size=64`
+                }
                 alt="Profile"
                 style={{
                   width: "64px",
@@ -347,7 +359,12 @@ export const Navbar: React.FC<{
                   marginBottom: "0.5rem",
                 }}
               />
-              <h3 style={{ margin: 0, fontSize: "1rem" }}>{user}</h3>
+              <h3 style={{ margin: 0, fontSize: "1rem" }}>
+                {user.name || user.preferred_username}
+              </h3>
+              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                {user.email}
+              </div>
             </div>
             <button
               id="logout-btn"

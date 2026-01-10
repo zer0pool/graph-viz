@@ -27,6 +27,7 @@ export interface Selection {
   id?: string;
   jobId?: string;
   tableName?: string;
+  action?: "click" | "showDetail";
 }
 
 export type SelectHandler = (selection: Selection | null) => void;

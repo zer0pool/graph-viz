@@ -8,40 +8,50 @@
 <i> [webpack-dev-server] Loopback: http://localhost:3002/
 <i> [webpack-dev-server] On Your Network (IPv4): http://172.21.164.104:3002/
 <i> [webpack-dev-server] Content not from webpack is served from '/home/darkwing/src/lineage_platform/apps/admin_console/table-detail-viewer/public' directory
-assets by chunk 16 MiB (id hint: vendors) 33 assets
-+ 19 assets
-orphan modules 2.18 MiB [orphan] 1981 modules
-runtime modules 37.9 KiB 31 modules
-modules by path ./node_modules/ 12.1 MiB 2308 modules
-modules by path ./src/ 109 KiB 25 modules
-provide-module modules 84 bytes
-  provide shared module (default) react-dom@18.3.1 = ./node_modules/reac...(truncated) 42 bytes [built] [code generated]
-  provide shared module (default) react@18.3.1 = ./node_modules/react/index.js 42 bytes [built] [code generated]
-consume-shared-module modules 84 bytes
-  consume shared module (default) react@* (singleton) (fallback: ./node_modules/r...(truncated) 42 bytes [built] [code generated]
-  consume shared module (default) react-dom@* (singleton) (fallback: ./node_module...(truncated) 42 bytes [built] [code generated]
-container entry 42 bytes [built] [code generated]
-webpack 5.104.1 compiled successfully in 8279 ms
-assets by status 16.2 MiB [cached] 49 assets
-assets by status 8.52 MiB [emitted]
-  asset main.js 8.28 MiB [emitted] (name: main)
-  asset remoteEntry.js 187 KiB [emitted] (name: tableDetailViewer)
-  asset src_views_job_JobDetailView_tsx-src_views_table_TableDetailView_tsx.js 58.3 KiB [emitted]
-cached modules 14.4 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 4318 modules
-runtime modules 37.9 KiB 31 modules
-./src/components/job/JobOverview.tsx 3.38 KiB [built] [code generated]
-webpack 5.104.1 compiled successfully in 1012 ms
-assets by status 16.2 MiB [cached] 49 assets
-assets by status 8.54 MiB [emitted]
-  asset main.js 8.29 MiB [emitted] (name: main)
-  asset remoteEntry.js 187 KiB [emitted] (name: tableDetailViewer)
-  asset src_views_job_JobDetailView_tsx-src_views_table_TableDetailView_tsx.js 68.7 KiB [emitted]
-cached modules 14.4 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 4317 modules
-runtime modules 37.9 KiB 31 modules
-javascript modules 8.9 KiB
-  modules by path ./src/components/job/*.tsx 4.85 KiB
-    ./src/components/job/JobRunTimeline.tsx 2.47 KiB [built] [code generated]
-    ./src/components/job/JobRunDrawer.tsx 2.38 KiB [built] [code generated]
-  ./src/views/job/JobDetailView.tsx 2.2 KiB [built] [code generated]
-  ./src/utils.ts 1.85 KiB [built] [code generated]
-webpack 5.104.1 compiled successfully in 897 ms
+<i> [webpack-dev-server] 404s will fallback to '/index.html'
+assets by chunk 6.89 MiB (id hint: vendors)
+  asset vendors-node_modules_echarts-for-react_esm_index_js-node_modules_react_jsx-runtime_js.js 5.4 MiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_react-dom_index_js.js 1.03 MiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_react-dom_client_js-node_modules_react-router_dist_development_chunk-EPO-6f5df0.js 379 KiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_react_index_js.js 90 KiB [emitted] (id hint: vendors)
+asset remoteEntry.js 185 KiB [emitted] (name: tableDetailViewer)
+asset main.js 182 KiB [emitted] (name: main)
+asset src_bootstrap_ts.js 108 KiB [emitted]
+asset src_views_job_JobDetailView_tsx-src_views_table_TableDetailView_tsx.js 99.5 KiB [emitted]
+asset src_viewMount_tsx.js 5.51 KiB [emitted]
+asset src_TableDetailViewer_tsx.js 3.18 KiB [emitted]
+asset src_index_ts.js 1.57 KiB [emitted]
+asset index.html 578 bytes [emitted]
+713 modules
+webpack 5.104.1 compiled successfully in 4362 ms
+assets by status 6.99 MiB [cached] 8 assets
+assets by status 6.07 MiB [emitted]
+  asset main.js 5.78 MiB [emitted] (name: main)
+  asset remoteEntry.js 185 KiB [emitted] (name: tableDetailViewer)
+  asset src_index_ts.js 108 KiB [emitted]
+cached modules 1.69 MiB (javascript) 84 bytes (share-init) 42 bytes (consume-shared) [cached] 48 modules
+runtime modules 35.9 KiB 31 modules
+modules by path ./node_modules/echarts/ 3.48 MiB 483 modules
+modules by path ./node_modules/zrender/lib/ 591 KiB 95 modules
+modules by path ./src/ 134 KiB 27 modules
+modules by path ./node_modules/size-sensor/lib/ 9.14 KiB 8 modules
+modules by path ./node_modules/echarts-for-react/esm/ 10.6 KiB 6 modules
+modules by path ./node_modules/style-loader/dist/runtime/*.js 5.84 KiB 6 modules
+modules by path ./node_modules/react/ 41.9 KiB
+  ./node_modules/react/jsx-runtime.js 214 bytes [code generated]
+  ./node_modules/react/cjs/react-jsx-runtime.development.js 41.7 KiB [code generated]
+modules by path ./node_modules/css-loader/dist/runtime/*.js 2.31 KiB
+  ./node_modules/css-loader/dist/runtime/noSourceMaps.js 64 bytes [code generated]
+  ./node_modules/css-loader/dist/runtime/api.js 2.25 KiB [code generated]
++ 4 modules
+webpack 5.104.1 compiled successfully in 366 ms
+assets by status 6.99 MiB [cached] 7 assets
+assets by status 6.08 MiB [emitted]
+  asset main.js 5.79 MiB [emitted] (name: main)
+  asset remoteEntry.js 185 KiB [emitted] (name: tableDetailViewer)
+  asset src_index_ts.js 109 KiB [emitted]
+  asset src_TableDetailViewer_tsx.js 3.82 KiB [emitted]
+cached modules 5.95 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 680 modules
+runtime modules 35.9 KiB 31 modules
+./src/TableDetailViewer.tsx 1.59 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 233 ms
