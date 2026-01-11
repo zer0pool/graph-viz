@@ -19,6 +19,17 @@ export const config = {
   TABLE_DETAIL_MFE_URL:
     (window as any).__APP_CONFIG__?.TABLE_DETAIL_MFE_URL ||
     "http://localhost:3002/remoteEntry.js",
+
+  // Standalone Auth Config
+  ENABLE_AUTH: (window as any).__APP_CONFIG__?.ENABLE_AUTH !== "false", // Default true
+  OIDC_AUTHORITY:
+    (window as any).__APP_CONFIG__?.OIDC_AUTHORITY ||
+    "https://accounts.google.com",
+  OIDC_CLIENT_ID: (window as any).__APP_CONFIG__?.OIDC_CLIENT_ID || "",
+  OIDC_REDIRECT_URI: (window as any).__APP_CONFIG__?.OIDC_REDIRECT_URI || "",
+  OIDC_SCOPE:
+    (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
+
   DEBUG: (import.meta as any).env.DEV === true,
 };
 
