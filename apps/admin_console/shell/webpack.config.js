@@ -5,9 +5,13 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
+console.log("Webpack running for shell...");
+console.log("Current directory:", __dirname);
+console.log("Mode:", process.env.NODE_ENV);
+
 module.exports = {
   entry: "./src/main.tsx",
-  mode: "development",
+  mode: process.env.NODE_ENV === "production" ? "production" : "development",
 
   devServer: {
     port: 3000,
@@ -62,18 +66,25 @@ module.exports = {
       ),
     }),
     new HtmlWebpackPlugin({
-      template: "./public/index.html",
-      publicPath: "auto",
+      template: path.resolve(__dirname, "public/index.html"),
+      filename: "index.html",
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: "public/images", to: "images", noErrorOnMissing: true },
         {
-          from: "public/favicon.png",
+          from: path.resolve(__dirname, "public/images"),
+          to: "images",
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.resolve(__dirname, "public/favicon.png"),
           to: "favicon.png",
           noErrorOnMissing: true,
         },
-        { from: "public/config.template.js", to: "config.template.js" },
+        {
+          from: path.resolve(__dirname, "public/config.template.js"),
+          to: "config.template.js",
+        },
       ],
     }),
     new ModuleFederationPlugin({
@@ -107,5 +118,8 @@ module.exports = {
   },
   experiments: {
     importMeta: true,
+  },
+  optimization: {
+    minimize: process.env.NODE_ENV === "production",
   },
 };

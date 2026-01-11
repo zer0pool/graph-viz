@@ -2,21 +2,41 @@ server {
     listen 80;
     server_name localhost;
 
-    # Serve static assets and handle SPA routing at the configured BASE_URL
-    # If BASE_URL is /lineage-manager, this handles /lineage-manager/...
-    location ${BASE_URL} {
-        alias /usr/share/nginx/html;
-        index index.html index.htm;
-        try_files $uri $uri/ ${BASE_URL}/index.html;
+    # 1. Base root directory
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # 2. Access logs to stdout/stderr for K8s observability
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    # 3. Handle Static Assets at Subpath
+    # This block allows assets like /lineage-manager/bundle.js to be served
+    # from the root of /usr/share/nginx/html while preserving the URL.
+    location ${BASE_URL}/ {
+        # Force trailing slash for consistency if accessed without it
+        # (handhandled by the = ${BASE_URL} block below)
+        
+        # Rewrite subpath prefix away for internal file lookup
+        # e.g. /lineage-manager/config.js -> /config.js
+        rewrite ^${BASE_URL}/(.*)$ /$1 break;
+        
+        # Try finding the file. If not found, serve index.html for SPA routing.
+        try_files $uri $uri/ /index.html;
     }
 
-    # Redirect root to BASE_URL if they are different (Optional, but often helpful)
-    # location = / {
-    #     return 301 ${BASE_URL};
-    # }
+    # 4. Redirect root to BASE_URL (Landing page)
+    location = / {
+        return 301 ${BASE_URL}/;
+    }
 
-    # Handle proxying for API
-    location /api {
+    # 5. Redirect exact base path (without slash) to trailing slash
+    location = ${BASE_URL} {
+        return 301 ${BASE_URL}/;
+    }
+
+    # 6. API Proxying (Handles both relative and absolute paths)
+    location ~ ^(${BASE_URL})?/api {
         proxy_pass http://lineage-manager:5003;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -24,7 +44,10 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Error pages
+    # SPA routing fallback for any other path starting with BASE_URL
+    # (Redundant due to try_files in location block, but safer)
+    error_page 404 /index.html;
+
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {
         root /usr/share/nginx/html;

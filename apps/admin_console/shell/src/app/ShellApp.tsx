@@ -54,7 +54,7 @@ export const ShellApp = () => {
             <RemoteMount
               scope="tableDetailViewer"
               module="./index"
-              url="http://localhost:3002/remoteEntry.js"
+              url={config.TABLE_DETAIL_MFE_URL}
               mountProps={selection}
               visible={drawerOpen}
             />

@@ -11,6 +11,7 @@ RUN npm install
 # Copy source and build
 COPY . .
 RUN npm run build
+RUN ls -la dist/  # Verify build output
 
 # --- Stage 2: Production ---
 # Use alpine for the smallest possible footprint
@@ -26,6 +27,7 @@ RUN rm -rf ./*
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist .
+RUN chmod -R 755 /usr/share/nginx/html
 
 # Copy entrypoint and nginx config template
 COPY deploy/docker/entrypoint.sh /entrypoint.sh

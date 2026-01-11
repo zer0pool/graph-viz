@@ -36,7 +36,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-root123}
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
-      - FEATURE_REQUIRE_AUTHENTICATION=true
+      - FEATURE_REQUIRE_SIGNIN=true
+      - OIDC_REDIRECT_URI=http://localhost:3000/authorized
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5003
     depends_on:
       - mysql-db
       - redis-cache
