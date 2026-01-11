@@ -1,13 +1,15 @@
 server {
     listen 80;
-    server_name localhost;
+    listen [::]:80;
+    server_name _;
 
     # 1. Base root directory
     root /usr/share/nginx/html;
     index index.html;
 
-    # 2. Access logs to stdout/stderr for K8s observability
+    # 2. Access logs: stdout for K8s logs, and a REAL file for internal tail -f debugging
     access_log /dev/stdout;
+    access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
     # 3. Handle Static Assets at Subpath
@@ -18,10 +20,20 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # 4. Landing Page Logic
+    # 4. Landing Page & Health Check Logic
     location = / {
+        # Satisfy GCP/GKE Health Checkers which expect 200 OK
+        if ($http_user_agent ~* "GoogleHC") {
+            return 200 "healthy";
+        }
         $REDIRECT_COMMAND
         try_files $uri /index.html;
+    }
+
+    # Dedicated Health Check endpoint
+    location = /healthz {
+        access_log off;
+        return 200 "OK";
     }
 
     # 5. Subpath Redirect Block (e.g. /admin -> /admin/)
@@ -33,10 +45,18 @@ server {
         set $upstream http://lineage-manager:5003;
         
         proxy_pass $upstream;
-        proxy_set_header Host $host;
+
+        # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
+        # This ensures backend redirects use the correct external domain
+        proxy_set_header Host $http_host;
+        
+        # Forward the original protocol (HTTPS) from the Ingress
+        # This prevents Mixed Content errors and ensures OIDC redirects are HTTPS
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        
+        # Standard forwarding headers
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # SPA routing fallback for any other path starting with BASE_URL

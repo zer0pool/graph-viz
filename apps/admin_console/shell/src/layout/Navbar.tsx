@@ -139,7 +139,7 @@ export const Navbar: React.FC<{
         }}
       >
         <img
-          src="/images/logo.png"
+          src={`${config.BASE_URL}/images/logo.png`}
           alt="Pipeline Ops Console"
           className="nav-logo"
           style={{ height: "36px", objectFit: "contain" }}
