@@ -4,7 +4,7 @@ import { useAuth } from "./AuthContext";
 
 export const AuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { handleCallback } = useAuth();
+  const { handleCallback, handleImplicitCallback } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,14 +16,49 @@ export const AuthCallback: React.FC = () => {
       const code = queryParams.get("code") || hashParams.get("code");
       const state = queryParams.get("state") || hashParams.get("state");
 
-      // Note: In Hybrid flow, id_token is also present here, but we will rely on
-      // the back-channel token exchange using 'code' for security and simplicity.
+      const accessToken = hashParams.get("access_token");
+      const idToken = hashParams.get("id_token");
 
       console.info(
         "[Auth][Phase:Callback-UI] Detected OIDC callback in URL. Checking parameters."
       );
 
-      if (code && state) {
+      // DEBUG LOGGING
+      console.debug(
+        "[Auth][Phase:Callback-UI] Query Params:",
+        Object.fromEntries(queryParams.entries())
+      );
+      console.debug(
+        "[Auth][Phase:Callback-UI] Hash Params:",
+        Object.fromEntries(hashParams.entries())
+      );
+      console.debug(
+        `[Auth][Phase:Callback-UI] Code: ${code ? "YES" : "NO"}, AT: ${
+          accessToken ? "YES" : "NO"
+        }, IDT: ${idToken ? "YES" : "NO"}, State: ${state ? "YES" : "NO"}`
+      );
+
+      // Handle Hybrid/Implicit Flow (access_token + id_token OR just id_token)
+      if (idToken && state) {
+        console.debug("[Auth][Phase:Callback-UI] Found Implicit Flow tokens.");
+        // If access_token is missing (e.g. id_token flow), use id_token as effective access token
+        const effectiveAccessToken = accessToken || idToken;
+        try {
+          await handleImplicitCallback(effectiveAccessToken, idToken, state);
+          console.info(
+            "[Auth][Phase:Callback-UI] Context callback executed. Redirecting."
+          );
+          navigate("/", { replace: true });
+        } catch (err) {
+          console.error(
+            "[Auth][Phase:Callback-UI] FATAL: Implicit callback failed.",
+            err
+          );
+          navigate("/", { replace: true });
+        }
+      }
+      // Handle Code Flow
+      else if (code && state) {
         console.debug(
           `[Auth][Phase:Callback-UI] Found code (length: ${code.length}) and state: ${state}`
         );
@@ -42,7 +77,7 @@ export const AuthCallback: React.FC = () => {
         }
       } else {
         console.warn(
-          "[Auth][Phase:Callback-UI] MISSING code or state in URL. Unauthorized access or user cancel?"
+          "[Auth][Phase:Callback-UI] MISSING code or tokens in URL. Unauthorized access?"
         );
         navigate("/", { replace: true });
       }

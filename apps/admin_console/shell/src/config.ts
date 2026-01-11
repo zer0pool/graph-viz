@@ -28,8 +28,11 @@ export const config = {
   OIDC_CLIENT_ID: (window as any).__APP_CONFIG__?.OIDC_CLIENT_ID || "",
   OIDC_CLIENT_SECRET: (window as any).__APP_CONFIG__?.OIDC_CLIENT_SECRET || "",
   OIDC_RESPONSE_TYPE:
-    (window as any).__APP_CONFIG__?.OIDC_RESPONSE_TYPE || "code",
+    (window as any).__APP_CONFIG__?.OIDC_RESPONSE_TYPE || "code id_token",
   OIDC_RESPONSE_MODE: (window as any).__APP_CONFIG__?.OIDC_RESPONSE_MODE || "",
+  OIDC_AUTH_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_AUTH_ENDPOINT || "",
+  OIDC_TOKEN_ENDPOINT:
+    (window as any).__APP_CONFIG__?.OIDC_TOKEN_ENDPOINT || "",
   OIDC_REDIRECT_URI: (window as any).__APP_CONFIG__?.OIDC_REDIRECT_URI || "",
   OIDC_SCOPE:
     (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
