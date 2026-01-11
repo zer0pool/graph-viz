@@ -34,6 +34,7 @@ export interface OidcConfig {
   client_id: string;
   authorization_endpoint: string;
   token_endpoint: string;
+  userinfo_endpoint?: string;
   redirect_uri: string;
   scope: string;
   require_signin: boolean;
@@ -71,6 +72,7 @@ const TOKEN_KEY = "lm.tokens";
 const USER_KEY = "lm.user";
 const VERIFIER_KEY = "lm.pkce_verifier";
 const STATE_KEY = "lm.pkce_state";
+const NONCE_KEY = "lm.oidc_nonce";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -111,8 +113,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.info("[Auth] Using Standalone/Local OIDC Configuration.");
           cfg = {
             client_id: config.OIDC_CLIENT_ID,
-            authorization_endpoint: `${config.OIDC_AUTHORITY}/protocol/openid-connect/auth`, // Generic assumption, might need tweaking per IDP
+            authorization_endpoint: `${config.OIDC_AUTHORITY}/protocol/openid-connect/auth`,
             token_endpoint: `${config.OIDC_AUTHORITY}/protocol/openid-connect/token`,
+            userinfo_endpoint:
+              config.OIDC_USERINFO_ENDPOINT ||
+              `${config.OIDC_AUTHORITY}/protocol/openid-connect/userinfo`,
             redirect_uri: config.OIDC_REDIRECT_URI,
             scope: config.OIDC_SCOPE,
             require_signin: true,
@@ -201,19 +206,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const verifier = cryptoRandomString(64);
       const challenge = await sha256(verifier);
       const state = cryptoRandomString(32);
+      const nonce = cryptoRandomString(32); // Required for Hybrid Flow
 
       sessionStorage.setItem(VERIFIER_KEY, verifier);
       sessionStorage.setItem(STATE_KEY, state);
+      sessionStorage.setItem(NONCE_KEY, nonce);
       console.debug(
-        `[Auth][Phase:LoginStart] PKCE State: ${state}, Verifier stored.`
+        `[Auth][Phase:LoginStart] PKCE State: ${state}, Nonce generated.`
       );
 
       const authUrl = new URL(oidcConfig.authorization_endpoint);
       authUrl.searchParams.set("client_id", oidcConfig.client_id);
       authUrl.searchParams.set("redirect_uri", oidcConfig.redirect_uri);
-      authUrl.searchParams.set("response_type", "code");
+
+      // ADFS Resource Support
+      if (config.OIDC_RESOURCE) {
+        authUrl.searchParams.set("resource", config.OIDC_RESOURCE);
+      }
+
+      // Use configured response type (default 'code', user may set 'code id_token')
+      const rType = config.OIDC_RESPONSE_TYPE || "code";
+      authUrl.searchParams.set("response_type", rType);
+
+      // Determine Response Mode (ADFS defaults to form_post for hybrid, we need fragment)
+      let responseMode = config.OIDC_RESPONSE_MODE;
+      if (!responseMode) {
+        // Smart default: if requesting tokens directly (hybrid), use fragment.
+        if (rType.includes("token")) {
+          responseMode = "fragment";
+        } else {
+          responseMode = "query";
+        }
+      }
+      authUrl.searchParams.set("response_mode", responseMode);
+
       authUrl.searchParams.set("scope", oidcConfig.scope);
       authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("nonce", nonce);
       authUrl.searchParams.set("code_challenge", challenge);
       authUrl.searchParams.set("code_challenge_method", "S256");
 
@@ -264,6 +293,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         oidcConfig?.redirect_uri || window.location.origin
       );
       formData.append("client_id", oidcConfig?.client_id || "");
+
+      // ADFS Confidential Client Support
+      if (config.OIDC_CLIENT_SECRET) {
+        console.debug(
+          "[Auth] Attaching Client Secret to token exchange request"
+        );
+        formData.append("client_secret", config.OIDC_CLIENT_SECRET);
+      }
 
       let exchangeUrl = "";
       let method = "POST";
@@ -328,6 +365,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         // Fallback if no user info found
         newUser = { sub: "unknown", name: "Guest" };
+      }
+
+      // Fetch UserInfo if endpoint is configured (Crucial for ADFS/Okta which return minimal ID Tokens)
+      if (oidcConfig?.userinfo_endpoint) {
+        try {
+          console.info(
+            `[Auth] Fetching user info from: ${oidcConfig.userinfo_endpoint}`
+          );
+          const uiResp = await fetch(oidcConfig.userinfo_endpoint, {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+          });
+
+          if (uiResp.ok) {
+            const uiData = await uiResp.json();
+            console.debug("[Auth] UserInfo received:", uiData);
+            // Merge UserInfo into newUser (UserInfo takes precedence for profile fields)
+            newUser = { ...newUser, ...uiData };
+          } else {
+            console.warn(`[Auth] UserInfo fetch failed: ${uiResp.status}`);
+          }
+        } catch (e) {
+          console.error("[Auth] Error fetching UserInfo:", e);
+        }
       }
 
       const newTokens: AuthTokens = {
