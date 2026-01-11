@@ -81,29 +81,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   // 1. Initialize: Load config and session
+  // 1. Initialize: Load config and session
   useEffect(() => {
     const init = async () => {
       console.info(
         "[Auth][Phase:Initialization] Starting AuthProvider initialization..."
       );
-      try {
-        // Fetch OIDC Config
-        const configUrl = `${config.API_BASE_URL}/api/v1/auth/config`;
-        console.debug(
-          `[Auth][Phase:Initialization] Fetching OIDC config from: ${configUrl}`
-        );
 
-        const resp = await fetch(configUrl);
-        if (!resp.ok) {
-          console.error(
-            `[Auth][Phase:Initialization] FAILED to fetch auth config. Status: ${resp.status}`
+      // 1. Check if Auth is disabled
+      if (!config.ENABLE_AUTH) {
+        console.warn("[Auth] Authentication is DISABLED via config.");
+        setOidcConfig({
+          client_id: "disabled",
+          authorization_endpoint: "",
+          token_endpoint: "",
+          redirect_uri: "",
+          scope: "",
+          require_signin: false,
+        });
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        let cfg: OidcConfig;
+
+        // 2. Check for Standalone Config (Environment Variables)
+        if (config.OIDC_CLIENT_ID) {
+          console.info("[Auth] Using Standalone/Local OIDC Configuration.");
+          cfg = {
+            client_id: config.OIDC_CLIENT_ID,
+            authorization_endpoint: `${config.OIDC_AUTHORITY}/protocol/openid-connect/auth`, // Generic assumption, might need tweaking per IDP
+            token_endpoint: `${config.OIDC_AUTHORITY}/protocol/openid-connect/token`,
+            redirect_uri: config.OIDC_REDIRECT_URI,
+            scope: config.OIDC_SCOPE,
+            require_signin: true,
+          };
+        } else {
+          // 3. Fallback to Backend Fetch
+          const configUrl = `${config.API_BASE_URL}/api/v1/auth/config`;
+          console.debug(
+            `[Auth][Phase:Initialization] Fetching OIDC config from: ${configUrl}`
           );
-          throw new Error(`Failed to fetch auth config: ${resp.status}`);
+          const resp = await fetch(configUrl);
+          if (!resp.ok) {
+            console.error(
+              `[Auth][Phase:Initialization] FAILED to fetch auth config. Status: ${resp.status}`
+            );
+            // Don't throw fatal error, just fail auth initialization
+            // throw new Error(`Failed to fetch auth config: ${resp.status}`);
+            return;
+          }
+          cfg = await resp.json();
         }
 
-        const cfg: OidcConfig = await resp.json();
         setOidcConfig(cfg);
-        console.info("[Auth][Phase:Initialization] OIDC Config received:", {
+        console.info("[Auth][Phase:Initialization] OIDC Config ready:", {
           auth_endpoint: cfg.authorization_endpoint,
           redirect_uri: cfg.redirect_uri,
         });
@@ -221,21 +254,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("Missing PKCE Verifier");
     }
 
-    console.info(
-      "[Auth][Phase:Callback] Exchanging code for tokens at backend..."
-    );
+    console.info("[Auth][Phase:Callback] Exchanging code for tokens...");
     try {
       const formData = new URLSearchParams();
       formData.append("code", code);
       formData.append("code_verifier", verifier);
+      formData.append(
+        "redirect_uri",
+        oidcConfig?.redirect_uri || window.location.origin
+      );
+      formData.append("client_id", oidcConfig?.client_id || "");
 
-      const exchangeUrl = `${config.API_BASE_URL}/api/v1/auth/exchange`;
+      let exchangeUrl = "";
+      let method = "POST";
+
+      // Select Exchange Target: Direct IDP or Backend Proxy
+      if (config.OIDC_CLIENT_ID) {
+        console.info("[Auth] Doing Direct Token Exchange with IDP.");
+        // Direct exchange requires grant_type
+        formData.append("grant_type", "authorization_code");
+        if (oidcConfig?.token_endpoint) {
+          exchangeUrl = oidcConfig.token_endpoint;
+        } else {
+          throw new Error("Token Endpoint missing in OIDC Config");
+        }
+      } else {
+        console.info("[Auth] Doing Backend Proxy Token Exchange.");
+        exchangeUrl = `${config.API_BASE_URL}/api/v1/auth/exchange`;
+      }
+
       console.debug(
         `[Auth][Phase:Callback] Requesting exchange via: ${exchangeUrl}`
       );
 
       const resp = await fetch(exchangeUrl, {
-        method: "POST",
+        method: method,
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
       });
@@ -251,6 +304,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await resp.json();
       console.info("[Auth][Phase:Callback] SUCCESS: Tokens received.");
 
+      // Normalize token/user structure if IDP returns different format than backend
+      // Backend returns { access_token, id_token, user: {...} }
+      // Standard IDP might just return tokens. We heavily rely on ID Token for user info in frontend only mode.
+
+      let newUser: UserProfile;
+      if (data.user) {
+        newUser = data.user;
+      } else if (data.id_token) {
+        // Decode ID Token (JWT) part 2 to get user profile
+        const base64Url = data.id_token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          window
+            .atob(base64)
+            .split("")
+            .map(function (c) {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join("")
+        );
+        newUser = JSON.parse(jsonPayload);
+      } else {
+        // Fallback if no user info found
+        newUser = { sub: "unknown", name: "Guest" };
+      }
+
       const newTokens: AuthTokens = {
         access_token: data.access_token,
         id_token: data.id_token,
@@ -258,7 +337,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         expires_at: Date.now() + (data.expires_in || 3600) * 1000,
       };
 
-      const newUser: UserProfile = data.user;
       console.debug("[Auth][Phase:Callback] User profile data:", newUser);
 
       setTokens(newTokens);
