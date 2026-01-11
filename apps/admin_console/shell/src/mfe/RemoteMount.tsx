@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadRemote } from "./loadRemote";
-import { useAuth, AuthClient } from "../app/AuthContext";
+import { useAuth } from "../app/AuthContext";
+import { AuthClient } from "../app/auth/types";
 
 type Props = {
   scope: string;
@@ -21,12 +22,12 @@ export const RemoteMount: React.FC<Props> = ({
   const cleanupRef = useRef<null | (() => void)>(null);
   const mountedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const { user, getToken, fetchWithAuth } = useAuth(); // Get auth client
+  const auth = useAuth(); // Get full auth client
 
   // Memoize auth object if needed, but since functions might not be stable, careful.
   // Actually, useAuth from Context usually provides stable functions if implemented with useMemo or outside.
   // In our AuthContext implementation, it is memoized.
-  const authClient: AuthClient = { user, getToken, fetchWithAuth };
+  const authClient: AuthClient = auth;
 
   // 🔹 mount: 단 한 번만
   useEffect(() => {

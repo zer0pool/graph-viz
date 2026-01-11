@@ -356,10 +356,51 @@ export const Navbar: React.FC<{
                 }}
               />
               <h3 style={{ margin: 0, fontSize: "1rem" }}>
-                {user.name || user.preferred_username}
+                {user.name || user.preferred_username || user.sub}
               </h3>
-              <div style={{ fontSize: "12px", color: "#64748b" }}>
+              <div
+                id="user-email"
+                style={{ fontSize: "13px", color: "#64748b", margin: "4px 0" }}
+              >
                 {user.email}
+              </div>
+              {(user.title || user.jobTitle) && (
+                <div
+                  id="user-title"
+                  style={{
+                    fontSize: "12px",
+                    color: "#475569",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {user.title || user.jobTitle}
+                </div>
+              )}
+              {user.department && (
+                <div
+                  id="user-dept"
+                  style={{
+                    fontSize: "12px",
+                    color: "#475569",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {user.department}
+                </div>
+              )}
+              <div
+                id="user-sub"
+                style={{
+                  fontSize: "10px",
+                  color: "#94a3b8",
+                  wordBreak: "break-all",
+                  padding: "4px",
+                  background: "#f8fafc",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                }}
+              >
+                ID: {user.sub}
               </div>
             </div>
             <button

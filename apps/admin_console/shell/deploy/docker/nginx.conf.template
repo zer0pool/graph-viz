@@ -24,6 +24,7 @@ server {
     location = / {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK
         if ($http_user_agent ~* "GoogleHC") {
+            access_log off;
             return 200 "healthy";
         }
         $REDIRECT_COMMAND
