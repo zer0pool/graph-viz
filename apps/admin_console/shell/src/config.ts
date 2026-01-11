@@ -2,8 +2,10 @@
 // Modern MFE standard: use import.meta.env instead of process.env
 
 export const config = {
-  API_BASE_URL: (window as any).__APP_CONFIG__?.API_BASE_URL || "/api",
-  BASE_URL: (window as any).__APP_CONFIG__?.BASE_URL || "/lineage-manager",
+  // Fallback to localhost if window config is missing (for npm run dev)
+  API_BASE_URL:
+    (window as any).__APP_CONFIG__?.API_BASE_URL || "http://localhost:5003",
+  BASE_URL: (window as any).__APP_CONFIG__?.BASE_URL || "/",
   ENABLE_LINEAGE_MFE:
     (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
   ENABLE_TABLE_DETAIL_MFE:
