@@ -26,9 +26,16 @@ export const config = {
     (window as any).__APP_CONFIG__?.OIDC_AUTHORITY ||
     "https://accounts.google.com",
   OIDC_CLIENT_ID: (window as any).__APP_CONFIG__?.OIDC_CLIENT_ID || "",
+  OIDC_CLIENT_SECRET: (window as any).__APP_CONFIG__?.OIDC_CLIENT_SECRET || "",
+  OIDC_RESPONSE_TYPE:
+    (window as any).__APP_CONFIG__?.OIDC_RESPONSE_TYPE || "code",
+  OIDC_RESPONSE_MODE: (window as any).__APP_CONFIG__?.OIDC_RESPONSE_MODE || "",
   OIDC_REDIRECT_URI: (window as any).__APP_CONFIG__?.OIDC_REDIRECT_URI || "",
   OIDC_SCOPE:
     (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
+  OIDC_RESOURCE: (window as any).__APP_CONFIG__?.OIDC_RESOURCE || "",
+  OIDC_USERINFO_ENDPOINT:
+    (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
 
   DEBUG: (import.meta as any).env.DEV === true,
 };

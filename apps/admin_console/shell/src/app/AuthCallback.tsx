@@ -9,8 +9,15 @@ export const AuthCallback: React.FC = () => {
 
   useEffect(() => {
     const processCallback = async () => {
-      const code = searchParams.get("code");
-      const state = searchParams.get("state");
+      // Hybrid flow returns params in Hash, Code flow in Query
+      const queryParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove leading #
+
+      const code = queryParams.get("code") || hashParams.get("code");
+      const state = queryParams.get("state") || hashParams.get("state");
+
+      // Note: In Hybrid flow, id_token is also present here, but we will rely on
+      // the back-channel token exchange using 'code' for security and simplicity.
 
       console.info(
         "[Auth][Phase:Callback-UI] Detected OIDC callback in URL. Checking parameters."

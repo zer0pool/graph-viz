@@ -14,6 +14,12 @@ services:
       - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
       - ENABLE_TABLE_DETAIL_MFE=${ENABLE_TABLE_DETAIL_MFE:-true}
       - NODE_ENV=production
+      # --- Standalone Auth Config (Uncomment to enable) ---
+      # - ENABLE_AUTH=false  # Set to false to disable login
+      # - OIDC_AUTHORITY=https://accounts.google.com
+      # - OIDC_CLIENT_ID=my-client-id
+      # - OIDC_REDIRECT_URI=http://localhost:3000/authorized
+      # - OIDC_SCOPE=openid profile email
     depends_on:
       - lineage-manager
     container_name: admin-console-shell
