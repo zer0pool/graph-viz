@@ -11,38 +11,25 @@ server {
     error_log /dev/stderr warn;
 
     # 3. Handle Static Assets at Subpath
-    # This block allows assets like /lineage-manager/bundle.js to be served
-    # from the root of /usr/share/nginx/html while preserving the URL.
-    location ${BASE_URL}/ {
-        # Force trailing slash for consistency if accessed without it
-        # (handhandled by the = ${BASE_URL} block below)
-        
+    # BASE_URL_PREFIX is empty for root (/), or e.g. '/lineage-manager'
+    location $BASE_URL_PREFIX/ {
         # Rewrite subpath prefix away for internal file lookup
-        # e.g. /lineage-manager/config.js -> /config.js
-        rewrite ^${BASE_URL}/(.*)$ /$1 break;
-        
-        # Try finding the file. If not found, serve index.html for SPA routing.
+        rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
         try_files $uri $uri/ /index.html;
     }
 
-    # 4. Redirect root to BASE_URL (Landing page)
+    # 4. Landing Page Logic
     location = / {
-        return 301 ${BASE_URL}/;
+        $REDIRECT_COMMAND
+        try_files $uri /index.html;
     }
 
-    # 5. Redirect exact base path (without slash) to trailing slash
-    location = ${BASE_URL} {
-        return 301 ${BASE_URL}/;
-    }
+    # 5. Subpath Redirect Block (e.g. /admin -> /admin/)
+    $SUBPATH_REDIRECT_BLOCK
 
-    # 6. API Proxying (Handles both relative and absolute paths)
-    location ~ ^(${BASE_URL})?/api {
-        # Use a resolver to allow runtime resolution of upstream hosts.
-        # This prevents Nginx from crashing if the 'lineage-manager' host 
-        # is not resolvable at startup (common in K8S).
-        resolver ${NAMESERVER} valid=30s;
-        
-        # Use a variable for the proxy_pass target to force runtime resolution.
+    # 6. API Proxying
+    location ~ $API_LOCATION_REGEX {
+        resolver $NAMESERVER valid=30s;
         set $upstream http://lineage-manager:5003;
         
         proxy_pass $upstream;
