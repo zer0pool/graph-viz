@@ -1,23 +1,41 @@
-# values.yaml for admin-console-shell
-
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: admin-console-shell
-  pullPolicy: IfNotPresent
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-shell
+  pullPolicy: Always
   tag: "latest"
+
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
+namespace: "self-scheduling-dev1"
 
 service:
   type: ClusterIP
-  port: 80
-
-env:
-  apiBaseUrl: "http://lineage-manager:5003"
+  port: 5100
+  targetPort: 80
 
 resources:
   limits:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 100m
+    memory: 128Mi
   requests:
     cpu: 100m
     memory: 128Mi
+
+env:
+  API_BASE_URL: "http://lineage-manager:5003"
+  BASE_URL: "/"
+  ENABLE_AUTH: "false"
+  ENABLE_LINEAGE_MFE: "true"
+  ENABLE_TABLE_DETAIL_MFE: "true"
+  # OIDC Configuration (Override via --set or separate values file)
+  OIDC_AUTHORITY: ""
+  OIDC_CLIENT_ID: ""
+  OIDC_CLIENT_SECRET: ""
+  OIDC_REDIRECT_URI: ""
+  OIDC_SCOPE: "openid profile email"
+  OIDC_RESPONSE_TYPE: "code"
+  OIDC_RESPONSE_MODE: "query"
+  OIDC_RESOURCE: ""

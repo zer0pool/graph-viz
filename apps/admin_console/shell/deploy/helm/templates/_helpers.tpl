@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "admin-console-shell.name" -}}
+{{- define "shell.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "admin-console-shell.fullname" -}}
+{{- define "shell.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,9 +24,9 @@ Create a default fully qualified app name.
 {{/*
 Common labels
 */}}
-{{- define "admin-console-shell.labels" -}}
-helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{ include "admin-console-shell.selectorLabels" . }}
+{{- define "shell.labels" -}}
+helm.sh/chart: {{ include "shell.chart" . }}
+{{ include "shell.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -36,7 +36,14 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "admin-console-shell.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "admin-console-shell.name" . }}
+{{- define "shell.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "shell.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "shell.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}

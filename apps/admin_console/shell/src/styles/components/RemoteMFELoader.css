@@ -1,0 +1,37 @@
+.mfe-loader-loading {
+  padding: 20px;
+  text-align: center;
+}
+
+.mfe-loader-error {
+  padding: 40px;
+  text-align: center;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  margin: 20px;
+}
+
+.mfe-loader-error h2 {
+  color: #856404;
+  margin-top: 0;
+}
+
+.mfe-loader-error p {
+  color: #856404;
+}
+
+.mfe-loader-retry-btn {
+  padding: 10px 20px;
+  background-color: #ffc107;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.mfe-loader-retry-btn:hover {
+  background-color: #e6af06;
+}

@@ -2,11 +2,11 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { AuthCallback } from "./AuthCallback";
-import { MiniShell } from "../test/MiniShell";
 import { config } from "../config";
+import "../styles/app/Router.css";
 
 const Diagnostics: React.FC = () => (
-  <div style={{ padding: "20px", fontFamily: "monospace" }}>
+  <div className="diagnostics-container">
     <h1>Shell Diagnostics</h1>
     <pre>{JSON.stringify(config, null, 2)}</pre>
     <hr />
@@ -21,10 +21,12 @@ export const AppRouter: React.FC<{
   selection?: any;
 }> = ({ onSelectNode, activeGraphNode, selection }) => (
   <Routes>
-    <Route path="/" element={<div>Welcome to Admin Console</div>} />
+    <Route
+      path="/"
+      element={<div className="router-welcome">Welcome to Admin Console</div>}
+    />
     <Route path="/diag" element={<Diagnostics />} />
     <Route path="/authorized" element={<AuthCallback />} />
-    <Route path="/test/minishell" element={<MiniShell />} />
     {config.ENABLE_LINEAGE_MFE && (
       <Route
         path="/lineage"

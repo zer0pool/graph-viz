@@ -29,7 +29,7 @@ services:
   # --- Lineage Manager Backend ---
   lineage-manager:
     build:
-      context: ./apps/lineage_manager
+      context: ./apps/backend/lineage_manager
       dockerfile: deploy/docker/Dockerfile
     ports:
       - "${BACKEND_PORT:-5003}:5003"

@@ -1,5 +1,6 @@
 import React, { Suspense, ReactNode, lazy } from "react";
 import { ErrorBoundary } from "./ErrorBoundary";
+import "../styles/components/RemoteMFELoader.css";
 
 interface RemoteMFELoaderProps {
   children: ReactNode;
@@ -8,7 +9,7 @@ interface RemoteMFELoaderProps {
 }
 
 const defaultLoadingFallback = (
-  <div style={{ padding: "20px", textAlign: "center" }}>
+  <div className="mfe-loader-loading">
     <p>Loading component...</p>
   </div>
 );
@@ -20,35 +21,16 @@ const defaultErrorFallback = (error: Error, retry: () => void) => {
     error.name === "ScriptExternalLoadError";
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        textAlign: "center",
-        backgroundColor: "#fff3cd",
-        border: "1px solid #ffc107",
-        borderRadius: "4px",
-        margin: "20px",
-      }}
-    >
-      <h2 style={{ color: "#856404" }}>
+    <div className="mfe-loader-error">
+      <h2>
         {isRemoteLoadError ? "Module Unavailable" : "Error Loading Component"}
       </h2>
-      <p style={{ color: "#856404" }}>
+      <p>
         {isRemoteLoadError
           ? "The remote module is currently unavailable. Please ensure the service is running."
           : error.message}
       </p>
-      <button
-        onClick={retry}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: "#ffc107",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontSize: "14px",
-        }}
-      >
+      <button className="mfe-loader-retry-btn" onClick={retry}>
         Retry
       </button>
     </div>

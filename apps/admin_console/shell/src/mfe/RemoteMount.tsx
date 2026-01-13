@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { loadRemote } from "./loadRemote";
 import { useAuth } from "../app/AuthContext";
 import { AuthClient } from "../app/auth/types";
+import "../styles/mfe/RemoteMount.css";
 
 type Props = {
   scope: string;
@@ -89,14 +90,9 @@ export const RemoteMount: React.FC<Props> = ({
   if (error) {
     return (
       <div
-        style={{
-          display: visible ? "flex" : "none",
-          height: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#dc2626",
-          padding: "1rem",
-        }}
+        className={`remote-mount-error ${
+          visible ? "remote-mount-visible-flex" : "remote-mount-hidden"
+        }`}
       >
         <p>{error}</p>
       </div>
@@ -106,10 +102,9 @@ export const RemoteMount: React.FC<Props> = ({
   return (
     <div
       ref={containerRef}
-      style={{
-        display: visible ? "block" : "none",
-        height: "100%",
-      }}
+      className={`remote-mount-container ${
+        visible ? "remote-mount-visible-block" : "remote-mount-hidden"
+      }`}
     />
   );
 };

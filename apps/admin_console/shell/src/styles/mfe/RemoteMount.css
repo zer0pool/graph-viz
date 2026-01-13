@@ -1,0 +1,28 @@
+.remote-mount-container {
+  height: 100%;
+}
+
+.remote-mount-error {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  padding: 1rem;
+}
+
+.remote-mount-error p {
+  margin: 0;
+}
+
+.remote-mount-hidden {
+  display: none !important;
+}
+
+.remote-mount-visible-block {
+  display: block !important;
+}
+
+.remote-mount-visible-flex {
+  display: flex !important;
+}

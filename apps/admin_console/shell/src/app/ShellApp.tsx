@@ -3,9 +3,10 @@ import { BrowserRouter } from "react-router-dom";
 import { AppLayout } from "../layout/AppLayout";
 import { AuthProvider } from "./AuthContext";
 import { AppRouter } from "./Router";
-import { Drawer } from "../layout/Drawer";
+import { Drawer } from "../components/common/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { config } from "../config";
+import "../styles/global.css";
 
 type DrawerState = null | {
   type: "table" | "job";

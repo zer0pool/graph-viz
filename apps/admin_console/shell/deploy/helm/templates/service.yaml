@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: { { include "admin-console-shell.fullname" . } }
-  labels: { { - include "admin-context-shell.labels" . | nindent 4 } }
+  name: { { include "shell.fullname" . } }
+  labels: { { - include "shell.labels" . | nindent 4 } }
 spec:
   type: { { .Values.service.type } }
   ports:
     - port: { { .Values.service.port } }
-      targetPort: 80
+      targetPort: { { .Values.service.targetPort } }
       protocol: TCP
       name: http
-  selector: { { - include "admin-console-shell.selectorLabels" . | nindent 4 } }
+  selector: { { - include "shell.selectorLabels" . | nindent 4 } }
