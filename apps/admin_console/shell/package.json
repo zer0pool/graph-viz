@@ -1,5 +1,5 @@
 {
-  "name": "admin-console-shell",
+  "name": "admin-shell",
   "private": true,
   "scripts": {
     "dev": "webpack serve --mode development",

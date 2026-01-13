@@ -1,0 +1,27 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: #eef2f7;
+}
+
+.main-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Structural IDs (backward compatibility if needed) */
+#main-layout {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+}

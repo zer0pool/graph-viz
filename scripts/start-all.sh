@@ -73,7 +73,7 @@ start_backend() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
     
     start_component "backend" \
-        "$PROJECT_ROOT/apps/lineage_manager" \
+        "$PROJECT_ROOT/apps/backend/lineage_manager" \
         ". .venv/bin/activate && PYTHONPATH=.. uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port 5003" \
         "5003"
     

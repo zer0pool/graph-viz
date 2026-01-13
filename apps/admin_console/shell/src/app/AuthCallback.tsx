@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import "../styles/app/AuthCallback.css";
 
 export const AuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -87,31 +88,9 @@ export const AuthCallback: React.FC = () => {
   }, [searchParams, handleCallback, navigate]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "80vh",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div
-        className="spinner"
-        style={{
-          width: "40px",
-          height: "40px",
-          border: "4px solid #f3f3f3",
-          borderTop: "4px solid #3498db",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      ></div>
-      <div style={{ fontSize: "1.2rem", color: "#666" }}>Authenticating...</div>
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      `}</style>
+    <div className="auth-callback-container">
+      <div className="auth-callback-spinner"></div>
+      <div className="auth-callback-text">Authenticating...</div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 {
-  "name": "admin-console-lineage",
+  "name": "admin-lineage",
   "private": true,
   "scripts": {
     "dev": "webpack serve --mode development",

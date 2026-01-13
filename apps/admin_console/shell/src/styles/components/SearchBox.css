@@ -1,0 +1,74 @@
+#search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 500px;
+  margin: 0 2rem;
+}
+
+#search-icon {
+  width: 16px;
+  height: 16px;
+  fill: #94a3b8;
+}
+
+#jobId {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 14px;
+}
+
+#loadBtn {
+  padding: 6px 12px;
+  background: var(--primary-color);
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: var(--shadow-md);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.suggestion-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: #f1f5f9;
+}
+
+.suggestion-name {
+  font-weight: 500;
+}
+
+.suggestion-type {
+  font-size: 0.75rem;
+  color: #64748b;
+}

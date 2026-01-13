@@ -1,4 +1,5 @@
 import React, { Component, ReactNode } from "react";
+import "../styles/components/ErrorBoundary.css";
 
 interface Props {
   children: ReactNode;
@@ -35,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div style={{ padding: "20px", textAlign: "center" }}>
+        <div className="error-boundary-container">
           <h2>Something went wrong</h2>
           <p>{this.state.error.message}</p>
           <button onClick={this.retry}>Retry</button>

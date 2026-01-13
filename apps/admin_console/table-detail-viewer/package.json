@@ -1,5 +1,5 @@
 {
-  "name": "admin-console-table-detail-viewer",
+  "name": "admin-table-detail",
   "private": true,
   "scripts": {
     "dev": "webpack serve --mode development",
