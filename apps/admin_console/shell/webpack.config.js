@@ -14,8 +14,10 @@ module.exports = {
   mode: process.env.NODE_ENV === "production" ? "production" : "development",
 
   devServer: {
-    port: 3000,
-    historyApiFallback: true,
+    port: 5100,
+    historyApiFallback: {
+      index: "/lineage-manager/index.html",
+    },
     hot: false, // Disable HMR to avoid WebSocket errors
     liveReload: false, // Also disable live reload
     client: {
@@ -111,7 +113,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "auto",
+    publicPath: "/lineage-manager/",
     path: path.resolve(__dirname, "dist"),
     filename: "bundle.js",
     clean: true,

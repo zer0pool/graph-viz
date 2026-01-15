@@ -15,6 +15,9 @@ service:
   type: NodePort
   port: 5100
   targetPort: 80
+  annotations:
+    cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
+    cloud.google.com/neg: '{"ingress": true}'
 
 resources:
   limits:
@@ -26,7 +29,7 @@ resources:
 
 env:
   API_BASE_URL: "http://shell:5100"
-  BASE_URL: "/admin"
+  BASE_URL: "/lineage-manager"
   ENABLE_AUTH: "false"
   ENABLE_LINEAGE_MFE: "true"
   ENABLE_TABLE_DETAIL_MFE: "true"
@@ -34,7 +37,7 @@ env:
   OIDC_AUTHORITY: "https://sts.secsso.net/adfs/"
   OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"
   OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
-  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/admin/authorized"
+  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/lineage-manager/authorized"
   OIDC_SCOPE: "openid profile email"
   OIDC_RESPONSE_TYPE: "id_token"
   OIDC_RESPONSE_MODE: "fragment"
