@@ -49,7 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token_endpoint: tokenEndpoint,
         userinfo_endpoint: config.OIDC_USERINFO_ENDPOINT,
         redirect_uri:
-          config.OIDC_REDIRECT_URI || window.location.origin + "/authorized",
+          config.OIDC_REDIRECT_URI ||
+          window.location.origin + config.BASE_URL + "/authorized",
         scope: config.OIDC_SCOPE,
         require_signin: true,
       };
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionStorage.clear();
     setUser(null);
     setTokens(null);
-    window.location.href = "/";
+    window.location.href = config.BASE_URL || "/";
   };
 
   const handleImplicitCallback = async (
