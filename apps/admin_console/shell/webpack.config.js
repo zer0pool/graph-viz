@@ -16,7 +16,7 @@ module.exports = {
   devServer: {
     port: 5100,
     historyApiFallback: {
-      index: "/lineage-manager/index.html",
+      index: "/admin-console/index.html",
     },
     hot: false, // Disable HMR to avoid WebSocket errors
     liveReload: false, // Also disable live reload
@@ -63,6 +63,13 @@ module.exports = {
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
         process.env.API_BASE_URL || ""
       ),
+      "import.meta.env.LINEAGE_REMOTE_URL": JSON.stringify(
+        process.env.LINEAGE_REMOTE_URL || "http://localhost:5101/remoteEntry.js"
+      ),
+      "import.meta.env.TABLE_DETAIL_REMOTE_URL": JSON.stringify(
+        process.env.TABLE_DETAIL_REMOTE_URL ||
+          "http://localhost:5102/remoteEntry.js"
+      ),
       "import.meta.env.DEV": JSON.stringify(
         process.env.NODE_ENV !== "production"
       ),
@@ -92,9 +99,14 @@ module.exports = {
     new ModuleFederationPlugin({
       name: "shell",
       remotes: {
-        lineage: "lineage@http://localhost:3001/remoteEntry.js",
-        tableDetailViewer:
-          "tableDetailViewer@http://localhost:3002/remoteEntry.js",
+        lineage: `lineage@${
+          process.env.LINEAGE_REMOTE_URL ||
+          "http://localhost:5101/remoteEntry.js"
+        }`,
+        tableDetailViewer: `tableDetailViewer@${
+          process.env.TABLE_DETAIL_REMOTE_URL ||
+          "http://localhost:5102/remoteEntry.js"
+        }`,
       },
 
       shared: {
@@ -113,7 +125,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "/lineage-manager/",
+    publicPath: "auto",
     path: path.resolve(__dirname, "dist"),
     filename: "bundle.js",
     clean: true,

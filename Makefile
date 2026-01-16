@@ -70,12 +70,32 @@ clean-all:
 	$(MAKE) -C $(LM_DIR) clean
 	$(MAKE) -C $(DJM_DIR) clean
 
-# Docker Compose commands (delegated to lineage_manager)
-compose-up:
-	$(MAKE) -C $(LM_DIR) docker-up
+# Docker Compose commands
+up:
+	docker-compose -f apps/backend/docker-compose.yml up -d
+	docker-compose -f apps/admin_console/docker-compose.yml up -d
 
-compose-down:
-	$(MAKE) -C $(LM_DIR) docker-down
+down:
+	docker-compose -f apps/admin_console/docker-compose.yml down
+	docker-compose -f apps/backend/docker-compose.yml down
 
-compose-logs:
-	$(MAKE) -C $(LM_DIR) docker-logs
+backend-up:
+	docker-compose -f apps/backend/docker-compose.yml up -d
+
+backend-down:
+	docker-compose -f apps/backend/docker-compose.yml down
+
+backend-logs:
+	docker-compose -f apps/backend/docker-compose.yml logs -f
+
+admin-up:
+	docker-compose -f apps/admin_console/docker-compose.yml up -d
+
+admin-down:
+	docker-compose -f apps/admin_console/docker-compose.yml down
+
+admin-logs:
+	docker-compose -f apps/admin_console/docker-compose.yml logs -f
+
+logs:
+	docker-compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f

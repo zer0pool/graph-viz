@@ -34,7 +34,7 @@ export const AppRouter: React.FC<{
           <RemoteMount
             scope="lineage"
             module="./index"
-            url="http://localhost:3001/remoteEntry.js"
+            url={config.LINEAGE_MFE_URL}
             mountProps={{
               onSelect: onSelectNode,
               rootNode: activeGraphNode,
@@ -51,7 +51,7 @@ export const AppRouter: React.FC<{
         <RemoteMount
           scope="tableDetailViewer"
           module="./views"
-          url="http://localhost:3002/remoteEntry.js"
+          url={config.TABLE_DETAIL_MFE_URL}
           mountProps={{ mode: "STANDALONE" }}
           visible={true}
         />
@@ -63,7 +63,7 @@ export const AppRouter: React.FC<{
         <RemoteMount
           scope="tableDetailViewer"
           module="./views"
-          url="http://localhost:3002/remoteEntry.js"
+          url={config.TABLE_DETAIL_MFE_URL}
           mountProps={{ mode: "STANDALONE" }}
           visible={true}
         />

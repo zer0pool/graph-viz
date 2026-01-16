@@ -9,7 +9,7 @@ module.exports = {
   mode: "development",
 
   devServer: {
-    port: 3001,
+    port: 5101,
     hot: false,
     liveReload: false,
     headers: {

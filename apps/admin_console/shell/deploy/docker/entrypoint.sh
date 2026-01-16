@@ -44,14 +44,13 @@ else
 fi
 
 # Inject into config.js
-envsubst "$ALL_VARS" \
-  < /usr/share/nginx/html/config.template.js \
-  > /usr/share/nginx/html/config.js
+envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/nginx/html/config.js
+
+# Inject into index.html (for base href)
+envsubst "$ALL_VARS" < /usr/share/nginx/html/index.html.template > /usr/share/nginx/html/index.html
 
 # Prevent Nginx official script from overriding our config
-envsubst "$ALL_VARS" \
-  < /etc/nginx/templates/default.conf.template \
-  > /etc/nginx/conf.d/default.conf
+envsubst "$ALL_VARS" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
 
 # Disable official template substitution
 rm -f /etc/nginx/templates/default.conf.template

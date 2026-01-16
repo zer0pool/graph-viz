@@ -63,7 +63,7 @@ stop_component "backend"
 # Also kill any remaining node/python processes on these ports
 echo -e "\n${BLUE}Cleaning up any remaining processes...${NC}"
 
-for port in 3000 3001 3002 5003; do
+for port in 5100 5101 5102 5003; do
     pid=$(lsof -ti:$port 2>/dev/null || true)
     if [ ! -z "$pid" ]; then
         echo -e "${YELLOW}Killing process on port $port (PID: $pid)${NC}"

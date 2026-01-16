@@ -18,9 +18,9 @@ export const Navbar: React.FC<{
   return (
     <div id="navbar">
       {/* Logo & Brand */}
-      <a href={config.BASE_URL || "/"} className="nav-brand">
+      <a href="./" className="nav-brand">
         <img
-          src={`${config.BASE_URL}/images/logo.png`}
+          src="images/logo.png"
           alt="Pipeline Ops Console"
           className="nav-logo"
         />

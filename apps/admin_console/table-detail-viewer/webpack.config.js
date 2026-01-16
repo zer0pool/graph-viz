@@ -9,7 +9,7 @@ module.exports = {
   mode: "development",
 
   devServer: {
-    port: 3002,
+    port: 5102,
     hot: false,
     liveReload: false,
     historyApiFallback: true,
@@ -85,7 +85,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "http://localhost:3002/",
+    publicPath: "http://localhost:5102/",
     path: path.resolve(__dirname, "dist"),
     clean: true,
   },

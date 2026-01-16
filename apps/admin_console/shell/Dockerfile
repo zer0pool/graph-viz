@@ -27,6 +27,7 @@ RUN rm -rf ./*
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist .
+RUN cp index.html index.html.template
 RUN chmod -R 755 /usr/share/nginx/html
 
 # Copy entrypoint, variable manifest, and nginx config template

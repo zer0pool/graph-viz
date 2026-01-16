@@ -1,0 +1,43 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    # Support for Iframe embedding (for Shell usage)
+    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000;" always;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Support for Standalone Access at Subpath
+    location $BASE_URL/ {
+        rewrite ^$BASE_URL/(.*)$ /$1 break;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Handle Static Assets
+    # Use regex that supports optional BASE_URL prefix
+    location ~* \.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        rewrite ^$BASE_URL/(.*)$ /$1 break;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+        access_log off;
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}

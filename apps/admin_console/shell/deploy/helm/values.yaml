@@ -43,7 +43,7 @@ resources:
 
 env:
   API_BASE_URL: "http://shell:5100"
-  BASE_URL: "/lineage-manager"
+  BASE_URL: "/admin-console"
   ENABLE_AUTH: "false"
   ENABLE_LINEAGE_MFE: "true"
   ENABLE_TABLE_DETAIL_MFE: "true"
