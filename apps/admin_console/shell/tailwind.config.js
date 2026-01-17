@@ -3,6 +3,16 @@ module.exports = {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      spacing: {
+        navbar: "48px",
+        sidebar: "200px",
+      },
+      height: {
+        navbar: "48px",
+      },
+      width: {
+        sidebar: "200px",
+      },
       colors: {
         primary: {
           DEFAULT: "#1a73e8",

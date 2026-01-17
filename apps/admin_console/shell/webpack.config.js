@@ -61,17 +61,18 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || ""
+        process.env.API_BASE_URL || "",
       ),
       "import.meta.env.LINEAGE_REMOTE_URL": JSON.stringify(
-        process.env.LINEAGE_REMOTE_URL || "http://localhost:5101/remoteEntry.js"
+        process.env.LINEAGE_REMOTE_URL ||
+          "http://localhost:5101/remoteEntry.js",
       ),
       "import.meta.env.TABLE_DETAIL_REMOTE_URL": JSON.stringify(
         process.env.TABLE_DETAIL_REMOTE_URL ||
-          "http://localhost:5102/remoteEntry.js"
+          "http://localhost:5102/remoteEntry.js",
       ),
       "import.meta.env.DEV": JSON.stringify(
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV !== "production",
       ),
     }),
     new HtmlWebpackPlugin({
@@ -112,13 +113,23 @@ module.exports = {
       shared: {
         react: {
           singleton: true,
-          eager: false,
-          requiredVersion: false,
+          eager: true,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
-          eager: false,
-          requiredVersion: false,
+          eager: true,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^0.562.0",
         },
       },
     }),

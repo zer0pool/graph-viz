@@ -85,12 +85,22 @@ module.exports = {
         react: {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^0.562.0",
         },
       },
     }),

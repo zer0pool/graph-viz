@@ -56,10 +56,10 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || ""
+        process.env.API_BASE_URL || "",
       ),
       "import.meta.env.DEV": JSON.stringify(
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV !== "production",
       ),
     }),
     new HtmlWebpackPlugin({
@@ -87,12 +87,22 @@ module.exports = {
         react: {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^0.562.0",
         },
       },
     }),

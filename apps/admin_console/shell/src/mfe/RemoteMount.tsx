@@ -36,11 +36,23 @@ export const RemoteMount: React.FC<Props> = ({
 
     (async () => {
       try {
+        console.log(
+          `[Shell:RemoteMount] Starting load for scope: ${scope}, url: ${url}`,
+        );
         const container = await loadRemote(scope, url);
         if (cancelled) return;
 
+        console.log(
+          `[Shell:RemoteMount] Container loaded for ${scope}. Getting module: ${module}`,
+        );
         const factory = await container.get(module);
         const moduleExports = factory();
+
+        console.log(
+          `[Shell:RemoteMount] Module exports for ${module}:`,
+          Object.keys(moduleExports),
+        );
+
         // Support named 'mount', default 'mount', or default export as function
         const mount =
           moduleExports.mount ||
@@ -50,11 +62,12 @@ export const RemoteMount: React.FC<Props> = ({
         if (typeof mount !== "function") {
           throw new Error(
             `Module ${module} does not export a 'mount' function. Exports: ${Object.keys(
-              moduleExports
-            ).join(", ")}`
+              moduleExports,
+            ).join(", ")}`,
           );
         }
 
+        console.log(`[Shell:RemoteMount] Calling mount function for ${scope}`);
         cleanupRef.current = mount(containerRef.current!, {
           ...(mountProps ?? {}),
           initialSelection: mountProps,
@@ -62,17 +75,27 @@ export const RemoteMount: React.FC<Props> = ({
           auth: authClient, // Inject Auth Client
         });
         mountedRef.current = true;
+        console.log(`[Shell:RemoteMount] Mount successful for ${scope}`);
       } catch (err) {
-        console.error(`Failed to load remote module ${scope}:`, err);
+        console.error(
+          `[Shell:RemoteMount] Error loading/mounting ${scope}:`,
+          err,
+        );
         setError(`Failed to load module: ${scope}`);
       }
     })();
 
     return () => {
-      // Shell 자체가 내려갈 때만 실행됨
+      cancelled = true;
+      console.log(`[Shell:RemoteMount] Cleaning up for ${scope}`);
       cleanupRef.current?.();
+      cleanupRef.current = null;
+      mountedRef.current = false;
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
     };
-  }, []); // Intentionally empty dependency to mount ONLY ONCE. Auth updates handled via events or stable ref if supported by MFE.
+  }, [scope, url, module, authClient]); // Re-mount when target MFE changes
 
   // 🔹 props 변경 (지금은 noop, 이후 확장)
   useEffect(() => {
