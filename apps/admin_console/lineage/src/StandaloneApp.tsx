@@ -46,7 +46,7 @@ export const StandaloneApp: React.FC = () => {
         }}
       >
         <span>Lineage MFE - Standalone Mode</span>
-        <span style={{ fontSize: "12px", opacity: 0.8 }}>localhost:3001</span>
+        <span style={{ fontSize: "12px", opacity: 0.8 }}>localhost:5101</span>
       </header>
       <main style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         <App rootNode={rootNode} onSelect={handleSelect} />

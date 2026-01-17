@@ -3,6 +3,7 @@ const ModuleFederationPlugin =
 const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/main.tsx",
@@ -47,7 +48,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
     ],
   },
@@ -63,6 +64,17 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "public"),
+          to: ".",
+          globOptions: {
+            ignore: ["**/index.html"],
+          },
+        },
+      ],
     }),
     new ModuleFederationPlugin({
       name: "lineage",

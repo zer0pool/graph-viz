@@ -12,6 +12,13 @@ server {
     access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
+    # 2.1 Disable caching for Module Federation configs
+    location ~* (remoteEntry\.js|config\.js)$ {
+        rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+    }
+
     # 3. Handle Static Assets at Subpath
     location ~* $BASE_URL_PREFIX/(.*)\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;

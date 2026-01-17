@@ -22,7 +22,10 @@ help:
 	@echo "  make lint-all         - Lint all apps"
 	@echo "  make format-all       - Format all apps"
 	@echo "  make clean-all        - Clean all apps"
-	@echo "  make compose-up       - Start infrastructure with docker-compose"
+	@echo "  make admin-up         - Start admin console"
+	@echo "  make admin-down       - Stop admin console"
+	@echo "  make admin-lineage-rebuild - Rebuild and restart Lineage MFE"
+	@echo "  make admin-table-rebuild   - Rebuild and restart Table Viewer MFE"
 	@echo "  make compose-down     - Stop infrastructure"
 
 # Lineage Manager delegation
@@ -93,6 +96,15 @@ admin-up:
 
 admin-down:
 	docker-compose -f apps/admin_console/docker-compose.yml down
+
+admin-lineage-rebuild:
+	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
+
+admin-table-rebuild:
+	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
+
+admin-shell-rebuild:
+	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
 
 admin-logs:
 	docker-compose -f apps/admin_console/docker-compose.yml logs -f

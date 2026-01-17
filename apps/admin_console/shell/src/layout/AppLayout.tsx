@@ -1,7 +1,7 @@
 import React from "react";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
-import "../styles/layout/AppLayout.css";
+import { cn } from "../lib/utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -13,11 +13,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onSelectGraphNode,
 }) => {
   return (
-    <div className="app-container">
+    <div className="flex flex-col h-screen overflow-hidden">
       <Navbar onSelectGraphNode={onSelectGraphNode} />
-      <div id="main-layout" className="main-layout">
+      <div className="flex flex-1 overflow-hidden bg-[#eef2f7]">
         <Sidebar />
-        <main className="main-content">{children}</main>
+        <main className="flex-1 p-4 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

@@ -22,8 +22,28 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # API Proxying
+    location ~ ^($BASE_URL)?/api {
+        resolver $NAMESERVER valid=30s;
+        set $upstream http://app-manager:5003;
+        
+        rewrite ^($BASE_URL)?/api/(.*)$ /lineage-manager/api/$2 break;
+        proxy_pass $upstream;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    # Disable caching for Module Federation configs
+    location ~* (remoteEntry\.js|config\.js)$ {
+        rewrite ^$BASE_URL/(.*)$ /$1 break;
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
     }
 
     # Handle Static Assets

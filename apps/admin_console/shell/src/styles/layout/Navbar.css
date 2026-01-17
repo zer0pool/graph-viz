@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
-  backgroundcolor: var(--bg-color);
+  background-color: var(--surface-color);
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);

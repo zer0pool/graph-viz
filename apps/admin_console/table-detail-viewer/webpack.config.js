@@ -3,6 +3,7 @@ const ModuleFederationPlugin =
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/main.tsx",
@@ -48,7 +49,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
     ],
   },
@@ -59,7 +60,18 @@ module.exports = {
       __NODE_ENV__: JSON.stringify(process.env.NODE_ENV || "development"),
     }),
     new HtmlWebpackPlugin({
-      template: "./index.html",
+      template: "./public/index.html",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "public"),
+          to: ".",
+          globOptions: {
+            ignore: ["**/index.html"],
+          },
+        },
+      ],
     }),
     new ModuleFederationPlugin({
       name: "tableDetailViewer",

@@ -7,6 +7,7 @@ import { Drawer } from "../components/common/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { config } from "../config";
 import "../styles/global.css";
+import "../styles/tailwind.css";
 
 type DrawerState = null | {
   type: "table" | "job";
