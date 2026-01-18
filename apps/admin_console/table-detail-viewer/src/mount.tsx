@@ -1,4 +1,5 @@
 import React from "react";
+import "./index.css";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ApiProvider } from "./components/ApiContext";
@@ -10,7 +11,7 @@ export function mount(
     initialSelection?: any;
     eventTarget?: EventTarget;
     auth?: AuthClient;
-  } = {}
+  } = {},
 ) {
   console.log("[TableDetailViewer] mount() called", { options });
   const root = createRoot(el);
@@ -30,7 +31,7 @@ export function mount(
           eventTarget={props.eventTarget}
           initialSelection={props.initialSelection}
         />
-      </ApiProvider>
+      </ApiProvider>,
     );
   };
 
@@ -45,7 +46,7 @@ export function mount(
     if (newSelection) {
       console.log(
         "[TableDetailViewer] Performing reactive update with:",
-        newSelection
+        newSelection,
       );
       render({ ...options, initialSelection: newSelection });
     }

@@ -102,6 +102,16 @@ module.exports = {
           eager: false,
           requiredVersion: "^0.562.0",
         },
+        clsx: {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^2.1.1",
+        },
+        "tailwind-merge": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^3.4.0",
+        },
       },
     }),
   ],
@@ -110,6 +120,9 @@ module.exports = {
     publicPath: "http://localhost:5102/",
     path: path.resolve(__dirname, "dist"),
     clean: true,
+  },
+  optimization: {
+    minimize: false,
   },
   experiments: {
     importMeta: true,

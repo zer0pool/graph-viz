@@ -1,3 +1,4 @@
+import "./index.css";
 import { mount } from "./mount";
 
 // --- Standalone Auto-Mount Logic ---

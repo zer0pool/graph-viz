@@ -131,6 +131,16 @@ module.exports = {
           eager: true,
           requiredVersion: "^0.562.0",
         },
+        clsx: {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^2.1.1",
+        },
+        "tailwind-merge": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^3.4.0",
+        },
       },
     }),
   ],

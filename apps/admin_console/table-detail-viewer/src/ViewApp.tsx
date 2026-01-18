@@ -3,8 +3,6 @@ import { JobDetailView } from "./views/job/JobDetailView";
 import { TableDetailView } from "./views/table/TableDetailView";
 import { Briefcase, Table2 } from "lucide-react";
 
-console.log("ViewApp mounted");
-
 const JobPage = () => {
   const { jobId } = useParams();
   if (!jobId) return null;
@@ -16,6 +14,8 @@ const TablePage = () => {
   if (!tableName) return null;
   return <TableDetailView tableName={tableName} mode="PAGE" />;
 };
+
+import { TableLanding } from "./views/landing/TableLanding";
 
 const JobLanding = () => (
   <div className="p-8">
@@ -29,23 +29,6 @@ const JobLanding = () => (
       </p>
       <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
         Job list view is currently being integrated...
-      </div>
-    </div>
-  </div>
-);
-
-const TableLanding = () => (
-  <div className="p-8">
-    <div className="bg-white rounded-xl shadow-sm border border-border p-8 text-center max-w-2xl mx-auto mt-10">
-      <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Table2 className="w-8 h-8" />
-      </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Tables Explorer</h1>
-      <p className="text-gray-500 mb-6">
-        Browse the unified data catalog and explore table schemas.
-      </p>
-      <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-        Table list view is currently being integrated...
       </div>
     </div>
   </div>

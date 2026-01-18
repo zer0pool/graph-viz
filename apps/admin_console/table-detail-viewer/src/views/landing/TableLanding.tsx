@@ -18,106 +18,11 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { TrendsSection } from "./TrendsSection";
+import { TopLists } from "./TopLists";
+import { DatasetsTable } from "./DatasetsTable";
 
-// Mock Data
-export const datasetsData = [
-  {
-    name: "analytics_prod",
-    tables: 247,
-    size: "28.4 TB",
-    sizeBytes: 28400,
-    delayed: 5,
-    expiring: 2,
-    schemaChanges: 3,
-    lastModified: "2026-01-17 14:30",
-    service: "account",
-    growth: "+12%",
-  },
-  {
-    name: "user_events",
-    tables: 189,
-    size: "18.9 TB",
-    sizeBytes: 18900,
-    delayed: 12,
-    expiring: 0,
-    schemaChanges: 1,
-    lastModified: "2026-01-17 14:25",
-    service: "scheduling",
-    growth: "+8%",
-  },
-  {
-    name: "finance_data",
-    tables: 156,
-    size: "15.2 TB",
-    sizeBytes: 15200,
-    delayed: 3,
-    expiring: 4,
-    schemaChanges: 0,
-    lastModified: "2026-01-17 14:10",
-    service: "dip",
-    growth: "+3%",
-  },
-  {
-    name: "marketing_campaigns",
-    tables: 98,
-    size: "12.7 TB",
-    sizeBytes: 12700,
-    delayed: 8,
-    expiring: 1,
-    schemaChanges: 2,
-    lastModified: "2026-01-17 13:45",
-    service: "eStore",
-    growth: "+15%",
-  },
-  {
-    name: "product_catalog",
-    tables: 67,
-    size: "8.3 TB",
-    sizeBytes: 8300,
-    delayed: 2,
-    expiring: 0,
-    schemaChanges: 1,
-    lastModified: "2026-01-17 12:20",
-    service: "dqa",
-    growth: "+5%",
-  },
-  {
-    name: "warehouse_inventory",
-    tables: 134,
-    size: "22.1 TB",
-    sizeBytes: 22100,
-    delayed: 15,
-    expiring: 3,
-    schemaChanges: 4,
-    lastModified: "2026-01-17 11:30",
-    service: "vdkpi",
-    growth: "+7%",
-  },
-  {
-    name: "customer_profiles",
-    tables: 78,
-    size: "9.8 TB",
-    sizeBytes: 9800,
-    delayed: 6,
-    expiring: 5,
-    schemaChanges: 0,
-    lastModified: "2026-01-17 10:15",
-    service: "account",
-    growth: "+4%",
-  },
-  {
-    name: "legacy_archive",
-    tables: 423,
-    size: "32.6 TB",
-    sizeBytes: 32600,
-    delayed: 28,
-    expiring: 8,
-    schemaChanges: 5,
-    lastModified: "2026-01-15 18:00",
-    service: "scheduling",
-    growth: "+1%",
-  },
-];
+import { datasetsData } from "./data";
 
 const totalTables = datasetsData.reduce((sum, d) => sum + d.tables, 0);
 const totalSize = datasetsData.reduce((sum, d) => sum + d.sizeBytes, 0) / 1000; // in TB
@@ -146,18 +51,6 @@ export function TableLanding() {
           <Button variant="outline" className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Refresh
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Dataset
           </Button>
         </div>
       </div>
@@ -252,6 +145,15 @@ export function TableLanding() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Trends Section */}
+      <TrendsSection />
+
+      {/* Top 10 Lists */}
+      <TopLists />
+
+      {/* All Datasets Table */}
+      <DatasetsTable />
     </div>
   );
 }
