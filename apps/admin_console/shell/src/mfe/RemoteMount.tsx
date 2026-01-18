@@ -25,14 +25,19 @@ export const RemoteMount: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const auth = useAuth(); // Get full auth client
 
-  // Memoize auth object if needed, but since functions might not be stable, careful.
-  // Actually, useAuth from Context usually provides stable functions if implemented with useMemo or outside.
-  // In our AuthContext implementation, it is memoized.
-  const authClient: AuthClient = auth;
+  // 🔹 Stabilize authClient reference for MFE
+  // MFEs don't need a re-mount if the auth object reference changes slightly (e.g. from context re-calc)
+  // but they might need the latest one. We'll pass the stable one and update refs if needed,
+  // but for now, the main goal is preventing re-mount.
+  const authRef = useRef<AuthClient>(auth);
+  useEffect(() => {
+    authRef.current = auth;
+  }, [auth]);
 
   // 🔹 mount: 단 한 번만
   useEffect(() => {
     let cancelled = false;
+    let didCleanup = false;
 
     (async () => {
       try {
@@ -67,12 +72,11 @@ export const RemoteMount: React.FC<Props> = ({
           );
         }
 
-        console.log(`[Shell:RemoteMount] Calling mount function for ${scope}`);
         cleanupRef.current = mount(containerRef.current!, {
           ...(mountProps ?? {}),
           initialSelection: mountProps,
           eventTarget: containerRef.current,
-          auth: authClient, // Inject Auth Client
+          auth: authRef.current, // Inject Auth Client
         });
         mountedRef.current = true;
         console.log(`[Shell:RemoteMount] Mount successful for ${scope}`);
@@ -87,15 +91,25 @@ export const RemoteMount: React.FC<Props> = ({
 
     return () => {
       cancelled = true;
+      if (didCleanup) return;
+      didCleanup = true;
+
       console.log(`[Shell:RemoteMount] Cleaning up for ${scope}`);
-      cleanupRef.current?.();
-      cleanupRef.current = null;
-      mountedRef.current = false;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
+      try {
+        if (cleanupRef.current) {
+          cleanupRef.current();
+        }
+      } catch (e) {
+        console.warn(
+          `[Shell:RemoteMount] Error during cleanup for ${scope}:`,
+          e,
+        );
+      } finally {
+        cleanupRef.current = null;
+        mountedRef.current = false;
       }
     };
-  }, [scope, url, module, authClient]); // Re-mount when target MFE changes
+  }, [scope, url, module]); // Removed authClient from deps to prevent re-mounts
 
   // 🔹 props 변경 (지금은 noop, 이후 확장)
   useEffect(() => {

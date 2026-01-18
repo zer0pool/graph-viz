@@ -43,9 +43,17 @@ class GraphInitializerService:
             jobs_data = await self._fetch_jobs()
 
             # Step 3: Register jobs with partial success
+            # PERFORMANCE OPTIMIZATION: Pass compute_closure=False to skip expensive transitive closure updates
             result = await self._process_jobs_with_partial_success(jobs_data)
 
-            # Step 4: Get final statistics
+            # Step 4: Rebuild Closure Table (Bulk Operation)
+            # Since we skipped updates during registration, we must rebuild the full closure now.
+            self.logger.info("Rebuilding graph closure table (bulk operation)...")
+            with self.command_service.uow.transactional():
+                self.command_service.rebuild_closure()
+            self.logger.info("Graph closure table rebuilt successfully.")
+
+            # Step 5: Get final statistics
             stats = self.query_service.get_health_stats()
 
             return self._build_result(result, stats)
@@ -105,7 +113,8 @@ class GraphInitializerService:
             # Optimistic batch commit
             with self.command_service.uow.transactional():
                 for job_data in batch:
-                    self.command_service.register_lineage_job(job_data)
+                    # Pass compute_closure=False for bulk load optimization
+                    self.command_service.register_lineage_job(job_data, compute_closure=False)
             
             # If we get here, batch succeeded
             self.logger.info(f"Batch {batch_idx + 1} succeeded ({len(batch)} jobs)")
@@ -127,7 +136,8 @@ class GraphInitializerService:
         for job_data in batch:
             try:
                 with self.command_service.uow.transactional():
-                    self.command_service.register_lineage_job(job_data)
+                    # Still use compute_closure=False in fallback, as we still rebuild at the end
+                    self.command_service.register_lineage_job(job_data, compute_closure=False)
                 success_count += 1
             except Exception as inner_e:
                 self.logger.error(

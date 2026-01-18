@@ -377,7 +377,7 @@ class GraphCommandService:
         
         return changes
 
-    def _create_upstream_relationships(self, job, in_ids: List[int]):
+    def _create_upstream_relationships(self, job, in_ids: List[int], compute_closure: bool = True):
         logger.debug("Calculating upstream relationships")
         if not in_ids:
             return
@@ -387,12 +387,14 @@ class GraphCommandService:
             for up in up_jobs:
                 logger.debug(f"Creating dependency edge: {up} -> {job.id}")
                 self.uow.edges.add(up, job.id, "job", "job", "dependency")
-                self.uow.closures.add_direct(up, job.id)
-                self.uow.closures.expand_closure(up, job.id)
+                
+                if compute_closure:
+                    self.uow.closures.add_direct(up, job.id)
+                    self.uow.closures.expand_closure(up, job.id)
         except Exception as e:
             logger.error(f"Error querying/creating upstream jobs: {e}")
 
-    def _create_downstream_relationships(self, job, out_ids: List[int]):
+    def _create_downstream_relationships(self, job, out_ids: List[int], compute_closure: bool = True):
         logger.debug("Calculating downstream relationships (forward dependencies)")
         if not out_ids:
             return
@@ -406,13 +408,15 @@ class GraphCommandService:
                         continue
                     logger.debug(f"Creating forward dependency edge: {job.id} -> {consumer.id}")
                     self.uow.edges.add(job.id, consumer.id, "job", "job", "dependency")
-                    self.uow.closures.add_direct(job.id, consumer.id)
-                    self.uow.closures.expand_closure(job.id, consumer.id)
+                    
+                    if compute_closure:
+                        self.uow.closures.add_direct(job.id, consumer.id)
+                        self.uow.closures.expand_closure(job.id, consumer.id)
         except Exception as e:
             logger.error(f"Error querying/creating downstream jobs: {e}")
 
     # --- Changed: register_lineage_job implementation ---
-    def register_lineage_job(self, lineage: SchedulingLineage) -> str:
+    def register_lineage_job(self, lineage: SchedulingLineage, compute_closure: bool = True) -> str:
         """
         Register a job described via SchedulingLineage payload directly to graph.
         
@@ -467,7 +471,7 @@ class GraphCommandService:
             
             # TRIGGER logic: HARD -> dependency_type='HARD'
             dep_type = upstream.dependency_type or "SOFT"
-            uow.edges.create_job_table_edge(
+            self.uow.edges.create_job_table_edge(
                 job.id, upstream_node.id, "input", dependency_type=dep_type
             )
 
@@ -495,10 +499,14 @@ class GraphCommandService:
             )
 
         # 4. Create Job-to-Job Dependencies
-        self._create_upstream_relationships(job, input_table_ids)
-        self._create_downstream_relationships(job, output_table_ids)
+        self._create_upstream_relationships(job, input_table_ids, compute_closure=compute_closure)
+        self._create_downstream_relationships(job, output_table_ids, compute_closure=compute_closure)
         
         return job.id
+
+    def rebuild_closure(self):
+        """Delegate rebuild_closure to the repository via UOW"""
+        self.uow.closures.rebuild_closure()
 
     # --- Helpers moved from GraphSyncService ---
 
