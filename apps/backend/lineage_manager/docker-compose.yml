@@ -1,0 +1,55 @@
+services:
+  lineage-manager:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - "${BACKEND_PORT:-5003}:5003"
+    volumes:
+      - .:/app/src/lineage_manager
+
+    environment:
+      - PORT=5003
+      - PYTHONPATH=/app/src
+      - DB_HOST=${DB_HOST:-mysql80}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-lineage_manager}
+      - DB_USER=${DB_USER:-ss_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-admin_password}
+      - REDIS_HOST=${REDIS_HOST:-redis-container}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - APP_JOB_MANAGER_URL=${APP_JOB_MANAGER_URL:-http://dummy-job-manager:9000}
+    restart: unless-stopped
+    container_name: lineage-manager-backend
+    depends_on:
+      - mysql80
+      - redis-container
+
+  mysql80:
+    image: mysql:8.0-debian
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
+      MYSQL_USER: ${DB_USER:-ss_admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-admin_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+    ports:
+      - "${DB_EXTERNAL_PORT:-33306}:3306"
+    container_name: mysql80
+
+  redis-container:
+    image: redis:latest
+    restart: always
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    container_name: redis-container
+
+  dummy-job-manager:
+    build:
+      context: ../dummy-job-manager
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    container_name: dummy-job-manager
+    restart: unless-stopped
