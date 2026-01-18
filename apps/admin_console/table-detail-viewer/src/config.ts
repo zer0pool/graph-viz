@@ -1,9 +1,12 @@
 // Environment configuration
 // Modern MFE standard: use import.meta.env instead of process.env
 
+// Runtime Configuration Support
+const runtimeConfig = (window as any).__APP_CONFIG__ || {};
+
 export const config = {
-  // Use relative path - webpack dev server will proxy to backend
-  // Mapped via Webpack DefinePlugin
-  API_BASE_URL: (import.meta as any).env.VITE_API_BASE_URL || "",
-  DEBUG: (import.meta as any).env.DEV === true,
+  // Use runtime config if available, fallback to build-time env
+  API_BASE_URL:
+    runtimeConfig.API_BASE_URL || (__API_BASE_URL__ as string) || "",
+  NODE_ENV: (__NODE_ENV__ as string) || "development",
 };

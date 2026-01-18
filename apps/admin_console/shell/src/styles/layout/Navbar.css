@@ -1,27 +1,4 @@
+/* Navbar styles are now managed via Tailwind in Navbar.tsx */
 #navbar {
-  height: var(--navbar-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 18px;
-  backgroundcolor: var(--bg-color);
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  gap: 18px;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-}
-
-.nav-logo {
-  height: 36px;
-  object-fit: contain;
+  /* Kept for potential selector targeting, but empty */
 }

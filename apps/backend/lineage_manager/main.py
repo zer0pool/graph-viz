@@ -71,14 +71,14 @@ def create_app() -> GraphApp:
         openapi_url="/openapi.json" if settings.feature_flags.enable_swagger else None,
     )
 
-    # CORS middleware not needed - webpack dev server proxy handles this
-    # app.add_middleware(
-    #     CORSMiddleware,
-    #     allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
-    #     allow_credentials=True,
-    #     allow_methods=["*"],
-    #     allow_headers=["*"],
-    # )
+    # ✅ Enable CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors.allowed_origins,
+        allow_credentials=settings.cors.allow_credentials,
+        allow_methods=settings.cors.allow_methods,
+        allow_headers=settings.cors.allow_headers,
+    )
 
     # Add health check logging filter middleware
     app.middleware("http")(health_check_middleware)

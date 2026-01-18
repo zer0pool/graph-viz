@@ -1,0 +1,59 @@
+services:
+  app-manager:
+    build:
+      context: ./lineage_manager
+      dockerfile: deploy/docker/Dockerfile
+    container_name: app-manager
+    ports:
+      - "${BACKEND_PORT:-5003}:5003"
+    env_file:
+      - ./lineage_manager/.env
+    environment:
+      - PORT=5003
+      - DB_HOST=db-mysql
+      - DB_PORT=3306
+      - REDIS_HOST=cache-redis
+      - REDIS_PORT=6379
+      - APP_JOB_MANAGER_URL=http://app-job-dummy:9000
+      - FEATURE_REQUIRE_SIGNIN=false
+    depends_on:
+      - db-mysql
+      - cache-redis
+    networks:
+      - backend-network
+
+  db-mysql:
+    image: mysql:8.0-debian
+    container_name: db-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    env_file:
+      - ./lineage_manager/.env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
+      MYSQL_USER: ${DB_USER:-ss_admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-admin_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+    ports:
+      - "${DB_EXTERNAL_PORT:-33306}:3306"
+    networks:
+      - backend-network
+
+  cache-redis:
+    image: redis:alpine
+    container_name: cache-redis
+    networks:
+      - backend-network
+
+  app-job-dummy:
+    build:
+      context: ./dummy-job-manager
+      dockerfile: Dockerfile
+    container_name: app-job-dummy
+    ports:
+      - "9000:9000"
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

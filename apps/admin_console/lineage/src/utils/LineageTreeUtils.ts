@@ -27,7 +27,7 @@ export const LineageTreeUtils = {
   buildFlatTree(
     items: any[],
     expandedGroupIds?: Set<string>,
-    limit: number = 20
+    limit: number = 20,
   ): LineageItem[] {
     if (!items || items.length === 0) return [];
 
@@ -60,9 +60,12 @@ export const LineageTreeUtils = {
     const flatList: LineageItem[] = [];
 
     // Recursive helper
-    const traverseLogical = (nodes: LineageItem[], prefix: string) => {
+    const traverseLogical = (
+      nodes: LineageItem[],
+      prefix: string,
+      parentId: string,
+    ) => {
       // Flatten: Table -> [Jobs] -> [Tables]. We want Table -> [Tables]
-      // Collect all "Grandchild Tables" from the "Child Jobs"
       let visibleChildren: LineageItem[] = [];
       nodes.forEach((job) => {
         if (job.children && job.children.length > 0) {
@@ -75,9 +78,16 @@ export const LineageTreeUtils = {
       // Sort by name for consistent tree
       visibleChildren.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
 
-      visibleChildren.forEach((table, index) => {
-        const isLast = index === visibleChildren.length - 1;
-        // marker를 2글자로 단축
+      // Progressive Loading Logic
+      const isExpanded = expandedGroupIds?.has(parentId);
+      const totalCount = visibleChildren.length;
+      const shouldTruncate = !isExpanded && totalCount > limit;
+      const displayList = shouldTruncate
+        ? visibleChildren.slice(0, limit)
+        : visibleChildren;
+
+      displayList.forEach((table, index) => {
+        const isLast = !shouldTruncate && index === displayList.length - 1;
         const marker = isLast ? "└ " : "├ ";
         const nextPrefix = prefix + (isLast ? "  " : "│ ");
 
@@ -88,16 +98,29 @@ export const LineageTreeUtils = {
 
         // Recurse: If this table has jobs, traverse them
         if (table.children && table.children.length > 0) {
-          traverseLogical(table.children, nextPrefix);
+          traverseLogical(table.children, nextPrefix, table.id);
         }
       });
+
+      // Add "MORE" node if truncated
+      if (shouldTruncate) {
+        const moreCount = totalCount - limit;
+        flatList.push({
+          id: `more-${parentId}`,
+          name: `... ${moreCount} more`,
+          type: "MORE",
+          depth: 0, // Doesn't matter much for MORE node
+          treePrefix: prefix + "└ ",
+          properties: { parentId },
+        });
+      }
     };
 
     // Start Traversal from Root(s)
     roots.forEach((rootNode) => {
       flatList.push({ ...rootNode, treePrefix: "" });
       if (rootNode.children && rootNode.children.length > 0) {
-        traverseLogical(rootNode.children, "");
+        traverseLogical(rootNode.children, "", rootNode.id);
       }
     });
 
@@ -107,12 +130,12 @@ export const LineageTreeUtils = {
   getCounts(items: any[]) {
     if (!items) return { t: 0, j: 0 };
     const tableCount = items.filter(
-      (i) => (i.type && i.type.toLowerCase() === "table") || i.depth === 0
+      (i) => (i.type && i.type.toLowerCase() === "table") || i.depth === 0,
     ).length;
     const uniqueJobs = new Set(
       items
         .filter((i) => i.type && i.type.toLowerCase() === "job")
-        .map((i) => i.name)
+        .map((i) => i.name),
     );
     return { t: tableCount, j: uniqueJobs.size };
   },

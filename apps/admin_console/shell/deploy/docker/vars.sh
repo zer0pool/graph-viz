@@ -4,7 +4,6 @@
 # Centralizing this list makes it easier to add/remove settings.
 
 # 1. Variables for config.js (Application Config)
-# 1. Variables for config.js (Application Config)
 export APP_VARS='$API_BASE_URL $BASE_URL $ENABLE_LINEAGE_MFE $ENABLE_TABLE_DETAIL_MFE $LINEAGE_MFE_URL $TABLE_DETAIL_MFE_URL $ENABLE_AUTH $OIDC_AUTHORITY $OIDC_CLIENT_ID $OIDC_REDIRECT_URI $OIDC_SCOPE $OIDC_CLIENT_SECRET $OIDC_RESOURCE $OIDC_USERINFO_ENDPOINT $OIDC_RESPONSE_TYPE $OIDC_RESPONSE_MODE $OIDC_AUTH_ENDPOINT $OIDC_TOKEN_ENDPOINT'
 
 # 2. Variables for nginx.conf (Infrastructure Config)

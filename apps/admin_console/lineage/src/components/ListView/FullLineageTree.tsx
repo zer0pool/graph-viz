@@ -27,7 +27,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
 }) => {
   // Effective root node to display lineage for.
   const [effectiveRoot, setEffectiveRoot] = useState<GraphNode | null>(
-    rootNode
+    rootNode,
   );
 
   // Local selection state for "Select Row" feature
@@ -60,8 +60,79 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
         const tableName =
           effectiveRoot.full_name || effectiveRoot.name || effectiveRoot.id;
         const result = await GraphApiService.fetchTableHierarchy(tableName);
-        const payload = result.tree || result;
-        setData(payload);
+        const hierarchyData = result.tree || result;
+
+        // --- NEW: Batch Metadata Enrichment ---
+        const allNodes: any[] = [
+          ...(hierarchyData.upstream || []),
+          ...(hierarchyData.downstream || []),
+        ];
+
+        // 1. Collect all unique IDs
+        const nodeIds = Array.from(new Set(allNodes.map((n: any) => n.id)));
+
+        // 2. Fetch batch details
+        const detailsResponse =
+          await GraphApiService.fetchBatchDetails(nodeIds);
+        const detailsMap = detailsResponse.results || {};
+
+        // 3. Helper to merge details into a node
+        const enrichNode = (item: any) => {
+          const detail = detailsMap[item.id];
+          if (!detail) {
+            console.warn(`[Lineage] No detail found for node: ${item.id}`);
+            return { ...item };
+          }
+
+          // Merge BOTH table and job info into properties
+          const properties = {
+            ...(item.properties || {}),
+            ...(detail.table_info || {}),
+            ...(detail.job_info || {}),
+            // Explicit mappings for LineageTable columns
+            storage:
+              detail.table_info?.storage_type ||
+              detail.table_info?.storage ||
+              "-",
+            write_mode: detail.table_info?.write_mode || "-",
+            owner: detail.job_info?.owner || "-",
+            status:
+              detail.job_info?.status || detail.job_info?.run_status || "-",
+            schedule:
+              detail.job_info?.cron ||
+              detail.job_info?.schedule ||
+              detail.job_info?.cron_expression ||
+              "-",
+            lifecycle: detail.job_info?.lifecycle_status || "-",
+          };
+
+          // Also enrich viaJob if it exists (for table rows that reference a job)
+          let viaJob = item.viaJob;
+          if (detail.job_info && detail.job_info.job_id !== "-") {
+            viaJob = {
+              ...(viaJob || {}),
+              id: detail.job_info.job_id,
+              name: detail.job_info.job_id,
+              properties: {
+                ...(viaJob?.properties || {}),
+                ...properties, // Use the same enriched properties
+              },
+            };
+          }
+
+          return { ...item, properties, viaJob };
+        };
+
+        // 4. Enrich all items
+        const enrichedUpstream = (hierarchyData.upstream || []).map(enrichNode);
+        const enrichedDownstream = (hierarchyData.downstream || []).map(
+          enrichNode,
+        );
+
+        setData({
+          upstream: enrichedUpstream,
+          downstream: enrichedDownstream,
+        });
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -95,7 +166,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
         upstream: data.upstream,
         downstream: data.downstream,
       },
-      effectiveRoot.id
+      effectiveRoot.id,
     );
   };
 
@@ -107,7 +178,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
       exportCsv: handleExport,
       isLocalSelected: !!localSelectedNode,
     }),
-    [handleReload, handleExport, localSelectedNode] // Deps necessary for correct closure? Actually handleReload/Export depend on state, so yes.
+    [handleReload, handleExport, localSelectedNode], // Deps necessary for correct closure? Actually handleReload/Export depend on state, so yes.
   );
 
   if (!effectiveRoot) {

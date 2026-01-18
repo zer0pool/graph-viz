@@ -6,10 +6,12 @@ WORKDIR /app
 RUN pip install fastapi uvicorn
 
 # Copy dummy server code
-COPY dummy_job_manager.py /app/dummy_job_manager.py
+COPY app /app/app
+COPY dummy_lineage.json /app/dummy_lineage.json
 
 # Expose port
 EXPOSE 9000
 
 # Run server
-CMD ["uvicorn", "dummy_job_manager:app", "--host", "0.0.0.0", "--port", "9000"]
+# PYTHONPATH implicitly includes /app
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "9000"]

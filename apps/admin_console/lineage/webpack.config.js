@@ -3,13 +3,14 @@ const ModuleFederationPlugin =
 const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/main.tsx",
   mode: "development",
 
   devServer: {
-    port: 3001,
+    port: 5101,
     hot: false,
     liveReload: false,
     headers: {
@@ -47,7 +48,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
     ],
   },
@@ -55,14 +56,25 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || ""
+        process.env.API_BASE_URL || "",
       ),
       "import.meta.env.DEV": JSON.stringify(
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV !== "production",
       ),
     }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "public"),
+          to: ".",
+          globOptions: {
+            ignore: ["**/index.html"],
+          },
+        },
+      ],
     }),
     new ModuleFederationPlugin({
       name: "lineage",
@@ -75,12 +87,22 @@ module.exports = {
         react: {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^0.562.0",
         },
       },
     }),

@@ -2,6 +2,7 @@ server {
     listen 80;
     listen [::]:80;
     server_name _;
+    absolute_redirect off;
 
     # 1. Base root directory
     root /usr/share/nginx/html;
@@ -12,8 +13,21 @@ server {
     access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
+    # 2.1 Disable caching for Module Federation configs
+    location ~* (remoteEntry\.js|config\.js)$ {
+        rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+    }
+
     # 3. Handle Static Assets at Subpath
-    # BASE_URL_PREFIX is empty for root (/), or e.g. '/lineage-manager'
+    location ~* $BASE_URL_PREFIX/(.*)\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+    }
+
     location $BASE_URL_PREFIX/ {
         # Rewrite subpath prefix away for internal file lookup
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
@@ -43,8 +57,11 @@ server {
     # 6. API Proxying
     location ~ $API_LOCATION_REGEX {
         resolver $NAMESERVER valid=30s;
-        set $upstream http://lineage-manager:5003;
+        set $upstream http://app-manager:5003;
         
+        # Strip the prefix if it exists and ADD the backend root_path
+        rewrite ^($BASE_URL_PREFIX)?/api/(.*)$ /lineage-manager/api/$2 break;
+
         proxy_pass $upstream;
 
         # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
@@ -62,7 +79,7 @@ server {
 
     # SPA routing fallback for any other path starting with BASE_URL
     # (Redundant due to try_files in location block, but safer)
-    error_page 404 /index.html;
+    # error_page 404 /index.html;
 
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {

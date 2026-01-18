@@ -1,5 +1,7 @@
 # MFE Platform 실행 가이드
 
+> [!TIP] > **더 빠르고 간편한 실행 방법**: Docker Compose를 사용하여 전체 환경을 한 번에 띄우려면 [Docker 통합 실행 가이드](./00.guides/local-docker-guide.md)를 참고하세요.
+
 ## 📦 컴포넌트 목록 및 포트
 
 | 컴포넌트                    | 경로                                     | 포트 | 실행 명령                                                                    |

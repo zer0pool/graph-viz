@@ -7,9 +7,18 @@ Priority: .env > OS environment > default values
 from functools import lru_cache
 from typing import List, Optional
 import json
+import os
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load .env file explicitly from project root
+from dotenv import load_dotenv
+
+# Find .env file in the lineage_manager directory
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path, override=False)
 
 
 # ============================================================================

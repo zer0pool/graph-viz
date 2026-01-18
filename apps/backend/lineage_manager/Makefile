@@ -12,16 +12,17 @@ PYTHONPATH=$(shell pwd)
 all: venv install-dev format lint test
 
 venv:
+	rm -rf $(VENV)
 	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
-	$(VENV)/bin/pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
+	$(VENV)/bin/python -m pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
 
 install-dev:
-	. $(VENV)/bin/activate && pip install black pytest pytest-cov flake8 pytest-asyncio
+	$(VENV)/bin/python -m pip install black pytest pytest-cov flake8 pytest-asyncio
 
 run:
 	$(MAKE) kill
-	. $(VENV)/bin/activate && PYTHONPATH=.. uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT)
+	PYTHONPATH=.. $(VENV)/bin/python -m uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT)
 
 kill:
 	@echo "Killing process on port $(PORT)..."
@@ -29,13 +30,13 @@ kill:
 	@sleep 1
 
 test:
-	. $(VENV)/bin/activate && PYTHONPATH=$(PYTHONPATH) pytest $(TESTS_DIR)/ -v
+	PYTHONPATH=..:$(PYTHONPATH) $(VENV)/bin/python -m pytest $(TESTS_DIR)/ -v
 
 lint:
-	. $(VENV)/bin/activate && flake8 lineage_manager/ $(TESTS_DIR)/
+	PYTHONPATH=.. $(VENV)/bin/python -m flake8 lineage_manager/ $(TESTS_DIR)/
 
 format:
-	. $(VENV)/bin/activate && black lineage_manager/ $(TESTS_DIR)/
+	PYTHONPATH=.. $(VENV)/bin/python -m black lineage_manager/ $(TESTS_DIR)/
 
 clean:
 	rm -rf $(VENV) __pycache__ .pytest_cache
@@ -44,23 +45,23 @@ clean:
 	find . -type f -name ".coverage" -delete
 
 requirements:
-	. $(VENV)/bin/activate && pip freeze > requirements.txt
+	$(VENV)/bin/python -m pip freeze > requirements.txt
 
 # Database migrations
 db-revision:
-	. $(VENV)/bin/activate && alembic revision --autogenerate -m "$(name)"
+	PYTHONPATH=.. $(VENV)/bin/python -m alembic revision --autogenerate -m "$(name)"
 
 db-upgrade:
-	. $(VENV)/bin/activate && alembic upgrade head
+	PYTHONPATH=.. $(VENV)/bin/python -m alembic upgrade head
 
 db-downgrade:
-	. $(VENV)/bin/activate && alembic downgrade -1
+	PYTHONPATH=.. $(VENV)/bin/python -m alembic downgrade -1
 
 db-history:
-	. $(VENV)/bin/activate && alembic history --verbose
+	PYTHONPATH=.. $(VENV)/bin/python -m alembic history --verbose
 
 db-current:
-	. $(VENV)/bin/activate && alembic current
+	PYTHONPATH=.. $(VENV)/bin/python -m alembic current
 
 # Docker commands
 docker-up:

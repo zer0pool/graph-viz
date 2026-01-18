@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { GitBranch } from "lucide-react";
 import "./styles/lineage.css";
 import { Selection, SelectHandler, LayoutOrientation } from "./types/graph";
 import { useGraphData } from "./hooks/useGraphData";
@@ -89,7 +90,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
       if (!selectedNode) return;
       await fetchGraph(selectedNode.type, selectedNode.id, true, dir);
     },
-    [selectedNode, fetchGraph]
+    [selectedNode, fetchGraph],
   );
 
   const { handleDownload } = useGraphExport(mermaidRef);
@@ -115,7 +116,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
         console.log(
           "[Lineage App] Fetching graph for:",
           rootNode.type,
-          rootNode.id
+          rootNode.id,
         );
         fetchGraph(rootNode.type, rootNode.id, false, "both", true);
         lastFetchedNode.current = { type: rootNode.type, id: rootNode.id };
@@ -143,11 +144,11 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     return () => {
       document.removeEventListener(
         "job-detail:view-in-graph",
-        handleViewInGraph
+        handleViewInGraph,
       );
       document.removeEventListener(
         "table-detail:view-in-graph",
-        handleViewInGraph
+        handleViewInGraph,
       );
     };
   }, [fetchGraph]);
@@ -175,85 +176,66 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
   }, []);
 
   return (
-    <div className="lineage-container">
-      {viewMode === "graph" ? (
-        <ControlBar
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
-          onReset={handleReset}
-          onFit={fitToView}
-          onRotate={setOrientation}
-          onDownloadSVG={handleDownload}
-          onCopyMermaid={handleCopyMermaid}
-          onUndo={undo}
-          onRedo={redo}
-          onExpandUpstream={() => handleExpandExplicit("upstream")}
-          onExpandDownstream={() => handleExpandExplicit("downstream")}
-          onSmartExpand={handleSmartExpand}
-          zoomLevel={zoomLevel}
-          orientation={orientation}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          layout={layout}
-          onLayoutChange={setLayout}
-          isNodeSelected={!!selectedNode}
-        />
-      ) : (
-        // List Mode Control Bar
-        <ControlBar
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
-          onReset={handleReset}
-          onFit={fitToView}
-          onRotate={setOrientation}
-          onDownloadSVG={handleDownload}
-          onCopyMermaid={handleCopyMermaid}
-          onUndo={undo}
-          onRedo={redo}
-          onExpandUpstream={() => handleExpandExplicit("upstream")}
-          onExpandDownstream={() => handleExpandExplicit("downstream")}
-          onSmartExpand={handleSmartExpand}
-          zoomLevel={zoomLevel}
-          orientation={orientation}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          layout={layout}
-          onLayoutChange={setLayout}
-          isNodeSelected={!!selectedNode}
-          // List Actions
-          onListReload={handleListReload}
-          onListExport={handleListExport}
-        />
-      )}
-
-      {/* View Toggle needs to remain accessible in List Mode to switch back 
-          (handled by ControlBar now) */}
+    <div
+      className={`lineage-container view-mode-${viewMode}`}
+      data-view-mode={viewMode}
+      style={{
+        border: "2px solid transparent",
+      }} /* Space for debug if needed, but keeping it clean for now */
+    >
+      <ControlBar
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onReset={handleReset}
+        onFit={fitToView}
+        onRotate={setOrientation}
+        onDownloadSVG={handleDownload}
+        onCopyMermaid={handleCopyMermaid}
+        onUndo={undo}
+        onRedo={redo}
+        onExpandUpstream={() => handleExpandExplicit("upstream")}
+        onExpandDownstream={() => handleExpandExplicit("downstream")}
+        onSmartExpand={handleSmartExpand}
+        zoomLevel={zoomLevel}
+        orientation={orientation}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        layout={layout}
+        onLayoutChange={setLayout}
+        isNodeSelected={!!selectedNode}
+        // List Actions
+        onListReload={handleListReload}
+        onListExport={handleListExport}
+      />
 
       <div className="graph-shell">
-        <div
-          style={{
-            display: viewMode === "graph" ? "block" : "none",
-            height: "100%",
-          }}
-        >
-          <GraphCanvas
-            ref={mermaidRef}
-            loading={loading}
-            error={error}
-            isEmpty={!graphData || graphData.nodes.length === 0}
-          />
+        <div className={`graph-view ${viewMode === "graph" ? "active" : ""}`}>
+          {!rootNode && viewMode === "graph" ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                <GitBranch className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Welcome to Data Lineage
+              </h2>
+              <p className="text-gray-500 max-w-md">
+                Search for a table or job to explore its upstream and downstream
+                dependencies.
+              </p>
+            </div>
+          ) : (
+            <GraphCanvas
+              ref={mermaidRef}
+              loading={loading}
+              error={error}
+              isEmpty={!graphData || graphData.nodes.length === 0}
+            />
+          )}
         </div>
 
-        <div
-          style={{
-            display: viewMode === "list" ? "block" : "none",
-            height: "100%",
-          }}
-        >
+        <div className={`list-view ${viewMode === "list" ? "active" : ""}`}>
           <ListView
             graphData={graphData || { nodes: [], edges: [] }}
             selectedNode={selectedNode}

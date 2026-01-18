@@ -1,38 +1,4 @@
+/* Sidebar styles are now managed via Tailwind in Sidebar.tsx */
 .sidebar {
-  width: var(--sidebar-width);
-  background: #ffffff;
-  color: var(--text-primary);
-  padding: 16px;
-  border-right: 1px solid var(--border-color);
-  box-shadow: 0 14px 25px rgba(15, 23, 42, 0.08);
-}
-
-.sidebar-heading {
-  margin-bottom: 20px;
-  color: #6b7280;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-
-.sidebar-nav-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sidebar-nav-link {
-  display: block;
-  color: var(--text-primary);
-  text-decoration: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s ease;
-}
-
-.sidebar-nav-link:hover {
-  background: var(--bg-color);
+  /* Kept for potential selector targeting, but empty */
 }

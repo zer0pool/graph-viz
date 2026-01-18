@@ -1,6 +1,6 @@
 from sqlalchemy import insert, select, text
 
-from lineage_manager.models import GraphClosure, GraphNode
+from lineage_manager.models import GraphClosure, GraphNode, GraphEdge
 from lineage_manager.repositories.base_repository import BaseRepository
 
 
@@ -113,3 +113,65 @@ class ClosureRepository(BaseRepository):
             }
             for row in result
         ]
+
+    def rebuild_closure(self):
+        """
+        Rebuild the entire graph_closure table using Python-based BFS.
+        This avoids database recursion limits and is faster for graphs that fit in memory (<100k nodes).
+        """
+        import collections
+
+        # 1. Fetch all edges using ORM models
+        edges = self.db.execute(
+            select(GraphEdge.source_node_id, GraphEdge.target_node_id)
+        ).fetchall()
+        
+        # 2. Build Adjacency List
+        adj = collections.defaultdict(list)
+        nodes = set()
+        for src, dst in edges:
+            adj[src].append(dst)
+            nodes.add(src)
+            nodes.add(dst)
+            
+        closure_records = []
+        
+        # 3. BFS for each node to find all descendants
+        # Complexity: O(V * (V+E)) - acceptable for V < 5000
+        for start_node in nodes:
+            queue = collections.deque([(start_node, 0)])
+            visited = {start_node}
+            
+            while queue:
+                curr, depth = queue.popleft()
+                
+                # Add to closure (skip self-loop at depth 0 if desired, but typically closure includes self or starts at depth 1)
+                if depth > 0:
+                    closure_records.append({
+                        "ancestor_id": start_node,
+                        "descendant_id": curr,
+                        "depth": depth
+                    })
+                
+                # Limit depth to prevent unreasonable growth for extremely deep chains
+                if depth >= 100: 
+                    continue
+                    
+                for neighbor in adj[curr]:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append((neighbor, depth + 1))
+
+        # 4. Truncate and Bulk Insert
+        self.db.execute(text(f"TRUNCATE TABLE {GraphClosure.__tablename__}"))
+        
+        if closure_records:
+            # Insert in chunks to avoid packet size limits
+            chunk_size = 5000
+            for i in range(0, len(closure_records), chunk_size):
+                chunk = closure_records[i:i + chunk_size]
+                self.db.execute(
+                    insert(GraphClosure),
+                    chunk
+                )
+

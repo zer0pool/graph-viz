@@ -108,19 +108,22 @@ class JobRepository(BaseRepository):
     def search_by_prefix(self, prefix: str, limit: int = 10):
         """Search jobs by job_id or display name prefix."""
         pattern = f"%{prefix.lower()}%"
+        
+        # Use as_string() for JSON property extraction for better compatibility
+        display_name_field = GraphNode.properties["display_name"].as_string()
+        
         stmt = (
             self._base_query()
             .where(
                 or_(
                     func.lower(GraphNode.name).like(pattern),
-                    func.lower(
-                        cast(GraphNode.properties["display_name"], String)
-                    ).like(pattern),
+                    func.lower(display_name_field).like(pattern),
                 )
             )
             .order_by(GraphNode.name)
             .limit(limit)
         )
+        
         return self.db.execute(stmt).scalars().all()
 
     def search_owners_by_prefix(self, prefix: str, limit: int = 10):

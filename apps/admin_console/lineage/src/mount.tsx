@@ -29,7 +29,7 @@ export function mount(el: HTMLElement, options: MountOptions = {}) {
       if (detail.rootNode) {
         console.log(
           "[Lineage MFE] Updating rootNode from detail.rootNode:",
-          detail.rootNode
+          detail.rootNode,
         );
         render({ ...options, rootNode: detail.rootNode });
         return;
@@ -48,8 +48,10 @@ export function mount(el: HTMLElement, options: MountOptions = {}) {
 
   return () => {
     el.removeEventListener("mfe:selection", handleSelection);
-    queueMicrotask(() => {
+    try {
       root.unmount();
-    });
+    } catch (e) {
+      console.warn("[Lineage MFE] Error during root.unmount():", e);
+    }
   };
 }

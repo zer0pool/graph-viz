@@ -1,0 +1,54 @@
+services:
+  web-shell:
+    build:
+      context: ./shell
+      dockerfile: Dockerfile
+    container_name: web-shell
+    ports:
+      - "${SHELL_PORT:-5100}:80"
+    environment:
+      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - BASE_URL=${BASE_URL:-/admin-console}
+      - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
+      - TABLE_DETAIL_MFE_URL=http://localhost:5102/mfe-table-viewer/remoteEntry.js
+      - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
+      - ENABLE_TABLE_DETAIL_MFE=${ENABLE_TABLE_DETAIL_MFE:-true}
+      - NODE_ENV=production
+    networks:
+      - admin-network
+      - backend-network
+
+  web-lineage:
+    build:
+      context: ./lineage
+      dockerfile: Dockerfile
+    container_name: web-lineage
+    ports:
+      - "${LINEAGE_PORT:-5101}:80"
+    environment:
+      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - BASE_URL=${LINEAGE_BASE_URL:-/mfe-lineage}
+    networks:
+      - admin-network
+      - backend-network
+
+  web-table-viewer:
+    build:
+      context: ./table-detail-viewer
+      dockerfile: Dockerfile
+    container_name: web-table-viewer
+    ports:
+      - "${TABLE_DETAIL_PORT:-5102}:80"
+    environment:
+      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - BASE_URL=${TABLE_DETAIL_BASE_URL:-/mfe-table-viewer}
+    networks:
+      - admin-network
+      - backend-network
+
+networks:
+  admin-network:
+    driver: bridge
+  backend-network:
+    external: true
+    name: backend_backend-network

@@ -51,7 +51,7 @@ export function useMermaidRenderer({
         }
       }
     },
-    [onSelect]
+    [onSelect],
   );
 
   const {
@@ -93,7 +93,7 @@ export function useMermaidRenderer({
 
     if (selectedNode) {
       const nodeEls = container.querySelectorAll(
-        "g.node, .jobNode, .tableNode, [id*='flowchart-']"
+        "g.node, .jobNode, .tableNode, [id*='flowchart-']",
       );
       const safeId = selectedNode.id.replace(/:/g, "_");
 
@@ -168,7 +168,7 @@ export function useMermaidRenderer({
           if (!innerG) {
             innerG = document.createElementNS(
               "http://www.w3.org/2000/svg",
-              "g"
+              "g",
             );
             innerG.innerHTML = newSvg.innerHTML;
             newSvg.innerHTML = "";
@@ -197,7 +197,7 @@ export function useMermaidRenderer({
             if (zoomBehaviorRef.current && container) {
               d3.select(container).call(
                 zoomBehaviorRef.current.transform as any,
-                transform
+                transform,
               );
             }
             setZoomLevel(scale);
@@ -215,7 +215,7 @@ export function useMermaidRenderer({
             if (zoomBehaviorRef.current && container) {
               d3.select(container).call(
                 zoomBehaviorRef.current.transform as any,
-                transform
+                transform,
               );
             }
             setPan({ x, y });
@@ -229,7 +229,7 @@ export function useMermaidRenderer({
         }
 
         const nodeEls = container.querySelectorAll(
-          "g.node, .jobNode, .tableNode, [id*='flowchart-']"
+          "g.node, .jobNode, .tableNode, [id*='flowchart-']",
         );
         nodeEls.forEach((el) => {
           const nodeIdMatch = graphData?.nodes.find((n) => {

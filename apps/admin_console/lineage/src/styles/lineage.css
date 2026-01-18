@@ -1,69 +1,117 @@
 /* Lineage MFE Styles */
 
-.lineage-container,
-.lineage-mfe-root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  box-sizing: border-box;
-  overflow: hidden;
-  background: #f8fafc;
+.lineage-container {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  background: #f8fafc !important;
 }
 
-/* Loading Overlay */
-.loading-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(248, 250, 252, 0.95);
-  backdrop-filter: blur(2px);
+/* Header Area: Holds the ControlBar */
+.lineage-header {
+  flex: 0 0 auto !important;
+  z-index: 100 !important;
+  width: 100% !important;
+  transition: all 0.3s ease-in-out !important;
 }
 
-/* Loading Spinner */
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #e8f0fe;
-  border-top-color: #1a73e8;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+/* In Graph Mode, the header floats over the content */
+[data-view-mode="graph"] .lineage-header {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  pointer-events: none !important; /* Allow clicking through to the graph */
+  background: transparent !important;
+  border-bottom: none !important;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* In List Mode, the header occupies space (stacks) */
+[data-view-mode="list"] .lineage-header {
+  position: relative !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #dadce0 !important;
+  pointer-events: auto !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-.graph-wrapper,
-.graph-shell {
-  flex: 1;
-  background: #f8fafc;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
+/* Main Content Area: Holds the Views */
+.lineage-main {
+  flex: 1 !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important; /* Essential for flex child to shrink/grow */
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-/* Control Bar (Zoom/Pan) */
+/* Smooth View Transition Animation */
+.graph-view,
+.list-view {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.3s ease-in-out,
+    transform 0.3s ease-in-out !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+[data-view-mode="graph"] .graph-view,
+[data-view-mode="list"] .list-view {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+
+/* Control Bar Styles - Floating (Absolute) in all modes */
 .graph-control-bar {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: #ffffff;
-  padding: 4px 8px;
-  border: 1px solid #dadce0;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Modern soft shadow */
-  z-index: 10;
-  min-height: 48px;
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: fit-content;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  background: #ffffff !important;
+  padding: 4px 8px !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  z-index: 1000 !important; /* Ensure it's above everything */
+  width: fit-content !important;
+  min-height: 48px !important;
+  position: absolute !important;
+  top: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+/* Parent Shell for Graph/Canvas - Always 100% height */
+.graph-shell {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 0 !important;
+}
+
+/* 
+   Overlap Fix for List View:
+   Instead of moving the control bar, we shift the list content down 
+   so the floating bar doesn't cover anything.
+*/
+[data-view-mode="list"] .list-view-container {
+  padding-top: 88px !important; /* Space for the floating control bar */
 }
 
 .toolbar-shell {
@@ -212,7 +260,9 @@
   background: #f8fafc;
   padding: 4px 8px;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -536,11 +586,12 @@ foreignObject {
 
 .assetNode .nodeLabel {
   color: #111827 !important;
-  padding: 4px 10px !important; /* Slightly increased to prevent overflow */
+  padding: 2px 8px !important; /* Reduced padding for slim appearance */
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
+  line-height: 1.2 !important; /* Tighter line height */
 }
 
 .assetNode hr {
@@ -561,19 +612,17 @@ g.assetNode text {
   fill: #111827 !important;
 }
 
-/* Fix Label Positioning for htmlLabels: true */
 .node .label {
   text-align: center;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 100%;
-  width: 100%;
+  width: 100% !important;
 }
 
 .node foreignObject {
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .nodeLabel {
@@ -582,8 +631,21 @@ g.assetNode text {
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  height: 100% !important;
   text-align: center !important;
+  padding: 4px 8px !important; /* Restored some minimal padding */
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure sub and b tags don't break flex alignment */
+.nodeLabel b,
+.nodeLabel sub,
+.nodeLabel font {
+  display: inline-block !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: middle !important;
 }
 
 g.table text {
@@ -598,12 +660,9 @@ g.table text {
 .mermaid-container {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden; /* Changed from auto to hidden to prevent scrollbar flicker during zoom */
   background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  padding: 0; /* Removing padding to make D3 calculations simpler */
   box-sizing: border-box;
   position: relative;
 }
@@ -744,6 +803,7 @@ g.edgeLabel text {
   align-items: center !important;
   justify-content: center !important;
   text-align: center !important;
+  width: 100% !important;
 }
 
 /* Specific fixes for job and table nodes */

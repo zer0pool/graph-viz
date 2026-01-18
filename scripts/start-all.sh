@@ -90,28 +90,28 @@ start_frontend() {
     start_component "lineage" \
         "$PROJECT_ROOT/apps/admin_console/lineage" \
         "npm run dev" \
-        "3001"
+        "5101"
     
     sleep 2
-    wait_for_port 3001
+    wait_for_port 5101
     
     # Table Detail Viewer MFE
     start_component "table-detail-viewer" \
         "$PROJECT_ROOT/apps/admin_console/table-detail-viewer" \
         "npm run dev" \
-        "3002"
+        "5102"
     
     sleep 2
-    wait_for_port 3002
+    wait_for_port 5102
     
     # Shell
     start_component "shell" \
         "$PROJECT_ROOT/apps/admin_console/shell" \
         "npm run dev" \
-        "3000"
+        "5100"
     
     sleep 2
-    wait_for_port 3000
+    wait_for_port 5100
 }
 
 # Main
@@ -145,9 +145,9 @@ echo -e "${GREEN}  🚀 All components started!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 
 echo -e "📍 Access Points:"
-echo -e "   Shell:                ${BLUE}http://localhost:3000${NC}"
-echo -e "   Table Detail Viewer:  ${BLUE}http://localhost:3002${NC}"
-echo -e "   Lineage:              ${BLUE}http://localhost:3001${NC}"
+echo -e "   Shell:                ${BLUE}http://localhost:5100/lineage-manager${NC}"
+echo -e "   Table Detail Viewer:  ${BLUE}http://localhost:5102${NC}"
+echo -e "   Lineage:              ${BLUE}http://localhost:5101${NC}"
 
 echo -e "\n📝 Logs:"
 echo -e "   All logs: ${YELLOW}$LOG_DIR/${NC}"

@@ -22,7 +22,10 @@ help:
 	@echo "  make lint-all         - Lint all apps"
 	@echo "  make format-all       - Format all apps"
 	@echo "  make clean-all        - Clean all apps"
-	@echo "  make compose-up       - Start infrastructure with docker-compose"
+	@echo "  make admin-up         - Start admin console"
+	@echo "  make admin-down       - Stop admin console"
+	@echo "  make admin-lineage-rebuild - Rebuild and restart Lineage MFE"
+	@echo "  make admin-table-rebuild   - Rebuild and restart Table Viewer MFE"
 	@echo "  make compose-down     - Stop infrastructure"
 
 # Lineage Manager delegation
@@ -70,12 +73,41 @@ clean-all:
 	$(MAKE) -C $(LM_DIR) clean
 	$(MAKE) -C $(DJM_DIR) clean
 
-# Docker Compose commands (delegated to lineage_manager)
-compose-up:
-	$(MAKE) -C $(LM_DIR) docker-up
+# Docker Compose commands
+up:
+	docker compose -f apps/backend/docker-compose.yml up -d
+	docker compose -f apps/admin_console/docker-compose.yml up -d
 
-compose-down:
-	$(MAKE) -C $(LM_DIR) docker-down
+down:
+	docker compose -f apps/admin_console/docker-compose.yml down
+	docker compose -f apps/backend/docker-compose.yml down
 
-compose-logs:
-	$(MAKE) -C $(LM_DIR) docker-logs
+backend-up:
+	docker compose -f apps/backend/docker-compose.yml up -d
+
+backend-down:
+	docker compose -f apps/backend/docker-compose.yml down
+
+backend-logs:
+	docker compose -f apps/backend/docker-compose.yml logs -f
+
+admin-up:
+	docker compose -f apps/admin_console/docker-compose.yml up -d
+
+admin-down:
+	docker compose -f apps/admin_console/docker-compose.yml down
+
+admin-lineage-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
+
+admin-table-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
+
+admin-shell-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
+
+admin-logs:
+	docker compose -f apps/admin_console/docker-compose.yml logs -f
+
+logs:
+	docker compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f

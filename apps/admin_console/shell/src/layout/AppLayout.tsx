@@ -1,7 +1,8 @@
-import React from "react";
+import { useState } from "react";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
-import "../styles/layout/AppLayout.css";
+import { Breadcrumbs } from "../components/Breadcrumbs";
+import { cn } from "../lib/utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,12 +13,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   onSelectGraphNode,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsCollapsed((prev) => !prev);
+  };
+
   return (
-    <div className="app-container">
-      <Navbar onSelectGraphNode={onSelectGraphNode} />
-      <div id="main-layout" className="main-layout">
-        <Sidebar />
-        <main className="main-content">{children}</main>
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
+      <Navbar
+        onSelectGraphNode={onSelectGraphNode}
+        onToggleSidebar={toggleSidebar}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isCollapsed={isCollapsed} />
+        <main className="flex-1 overflow-y-auto relative p-4 pb-12">
+          <Breadcrumbs />
+          {children}
+        </main>
       </div>
     </div>
   );

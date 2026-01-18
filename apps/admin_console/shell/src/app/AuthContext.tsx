@@ -75,11 +75,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     init();
   }, []);
 
-  const login = async () => {
+  const login = React.useCallback(async () => {
     if (!oidcConfig) return;
     console.info("[Auth] Starting Login Flow...");
 
-    // PKCE & Nonce Generation
     const verifier = cryptoRandomString(64);
     const challenge = await sha256(verifier);
     const state = cryptoRandomString(32);
@@ -89,157 +88,159 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionStorage.setItem(STATE_KEY, state);
     sessionStorage.setItem(NONCE_KEY, nonce);
 
-    // Build URL
     const authUrlStr = OidcClient.generateAuthUrl(
       oidcConfig,
       state,
       nonce,
-      challenge
+      challenge,
     );
 
     console.debug(`[Auth] Redirecting to: ${authUrlStr}`);
     window.location.href = authUrlStr;
-  };
+  }, [oidcConfig]);
 
-  const logout = () => {
+  const logout = React.useCallback(() => {
     sessionStorage.clear();
     setUser(null);
     setTokens(null);
     window.location.href = config.BASE_URL || "/";
-  };
+  }, []);
 
-  const handleImplicitCallback = async (
-    accessToken: string,
-    idToken: string,
-    state: string
-  ) => {
-    console.info("[Auth] Handling Implicit Callback...");
-    const storedState = sessionStorage.getItem(STATE_KEY);
-    if (!storedState || state !== storedState) throw new Error("Invalid State");
+  const handleImplicitCallback = React.useCallback(
+    async (accessToken: string, idToken: string, state: string) => {
+      console.info("[Auth] Handling Implicit Callback...");
+      const storedState = sessionStorage.getItem(STATE_KEY);
+      if (!storedState || state !== storedState)
+        throw new Error("Invalid State");
 
-    const rawProfile = parseJwt(idToken);
-    const profile = normalizeProfile(rawProfile);
+      const rawProfile = parseJwt(idToken);
+      const profile = normalizeProfile(rawProfile);
 
-    // Verify Nonce
-    const storedNonce = sessionStorage.getItem(NONCE_KEY);
-    if (profile.nonce && storedNonce && profile.nonce !== storedNonce) {
-      throw new Error("Invalid Nonce");
-    }
-
-    sessionStorage.removeItem(STATE_KEY);
-    sessionStorage.removeItem(NONCE_KEY);
-
-    // Store
-    sessionStorage.setItem(TOKEN_KEY, accessToken);
-    sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
-    setUser(profile);
-  };
-
-  const handleCallback = async (code: string, state: string) => {
-    console.info("[Auth] Handling Code Callback...");
-    const storedState = sessionStorage.getItem(STATE_KEY);
-    const verifier = sessionStorage.getItem(VERIFIER_KEY);
-
-    if (!storedState || state !== storedState) throw new Error("Invalid State");
-    if (!verifier) throw new Error("Missing Verifier");
-    if (!oidcConfig) throw new Error("Missing Config");
-
-    try {
-      // Exchange
-      const data = await OidcClient.exchangeCode(
-        code,
-        verifier,
-        oidcConfig,
-        config.OIDC_CLIENT_SECRET
-      );
-
-      // Normalize
-      let newUser: UserProfile = { sub: "unknown", name: "Guest" };
-      if (data.user) {
-        newUser = normalizeProfile(data.user);
-      } else if (data.id_token) {
-        newUser = normalizeProfile(parseJwt(data.id_token));
+      const storedNonce = sessionStorage.getItem(NONCE_KEY);
+      if (profile.nonce && storedNonce && profile.nonce !== storedNonce) {
+        throw new Error("Invalid Nonce");
       }
 
-      // Fetch UserInfo
-      if (oidcConfig.userinfo_endpoint) {
-        try {
-          const uiData = await OidcClient.fetchUserInfo(
-            oidcConfig.userinfo_endpoint,
-            data.access_token
-          );
-          newUser = normalizeProfile({ ...newUser, ...uiData });
-        } catch (e) {
-          console.warn("[Auth] UserInfo fetch failed", e);
+      sessionStorage.removeItem(STATE_KEY);
+      sessionStorage.removeItem(NONCE_KEY);
+
+      const tokenObj: AuthTokens = {
+        access_token: accessToken,
+        id_token: idToken,
+        expires_at: Date.now() + 3600 * 1000,
+      };
+
+      sessionStorage.setItem(TOKEN_KEY, JSON.stringify(tokenObj));
+      sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
+      setTokens(tokenObj);
+      setUser(profile);
+    },
+    [],
+  );
+
+  const handleCallback = React.useCallback(
+    async (code: string, state: string) => {
+      console.info("[Auth] Handling Code Callback...");
+      const storedState = sessionStorage.getItem(STATE_KEY);
+      const verifier = sessionStorage.getItem(VERIFIER_KEY);
+
+      if (!storedState || state !== storedState)
+        throw new Error("Invalid State");
+      if (!verifier) throw new Error("Missing Verifier");
+      if (!oidcConfig) throw new Error("Missing Config");
+
+      try {
+        const data = await OidcClient.exchangeCode(
+          code,
+          verifier,
+          oidcConfig,
+          config.OIDC_CLIENT_SECRET,
+        );
+
+        let newUser: UserProfile = { sub: "unknown", name: "Guest" };
+        if (data.user) {
+          newUser = normalizeProfile(data.user);
+        } else if (data.id_token) {
+          newUser = normalizeProfile(parseJwt(data.id_token));
+        }
+
+        if (oidcConfig.userinfo_endpoint) {
+          try {
+            const uiData = await OidcClient.fetchUserInfo(
+              oidcConfig.userinfo_endpoint,
+              data.access_token,
+            );
+            newUser = normalizeProfile({ ...newUser, ...uiData });
+          } catch (e) {
+            console.warn("[Auth] UserInfo fetch failed", e);
+          }
+        }
+
+        const newTokens: AuthTokens = {
+          access_token: data.access_token,
+          id_token: data.id_token,
+          refresh_token: data.refresh_token,
+          expires_at: Date.now() + (data.expires_in || 3600) * 1000,
+        };
+
+        setTokens(newTokens);
+        setUser(newUser);
+        sessionStorage.setItem(TOKEN_KEY, JSON.stringify(newTokens));
+        sessionStorage.setItem(USER_KEY, JSON.stringify(newUser));
+      } finally {
+        sessionStorage.removeItem(STATE_KEY);
+        sessionStorage.removeItem(VERIFIER_KEY);
+      }
+    },
+    [oidcConfig],
+  );
+
+  const fetchWithAuth = React.useCallback(
+    async (url: string, options: RequestInit = {}) => {
+      let token = tokens?.access_token;
+      if (!token && user) {
+        const stored = sessionStorage.getItem(TOKEN_KEY);
+        if (stored && stored.startsWith("{")) {
+          token = JSON.parse(stored).access_token;
+        } else if (stored) {
+          token = stored;
         }
       }
 
-      const newTokens: AuthTokens = {
-        access_token: data.access_token,
-        id_token: data.id_token,
-        refresh_token: data.refresh_token,
-        expires_at: Date.now() + (data.expires_in || 3600) * 1000,
+      const headers = {
+        ...options.headers,
+        Authorization: token ? `Bearer ${token}` : "",
       };
+      return fetch(url, { ...options, headers });
+    },
+    [tokens, user],
+  );
 
-      setTokens(newTokens);
-      setUser(newUser);
-      sessionStorage.setItem(TOKEN_KEY, JSON.stringify(newTokens));
-      sessionStorage.setItem(USER_KEY, JSON.stringify(newUser));
-    } finally {
-      sessionStorage.removeItem(STATE_KEY);
-      sessionStorage.removeItem(VERIFIER_KEY);
-    }
-  };
+  const getToken = React.useCallback(
+    async () => tokens?.access_token || null,
+    [tokens],
+  );
 
-  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-    let token = tokens?.access_token;
-    if (!token && user) {
-      // Try fallback check in storage
-      const stored = sessionStorage.getItem(TOKEN_KEY);
-      if (stored && stored.startsWith("{")) {
-        token = JSON.parse(stored).access_token;
-      } else if (stored) {
-        token = stored; // Implicit flow stores raw string sometimes? No, I updated handleImplicitCallback to store raw accessToken string in TOKEN_KEY in previous code, be careful!
-      }
-    }
-
-    // Correction: In Implicit Flow, I stored `accessToken` string in `TOKEN_KEY`.
-    // In Code Flow, I stored `JSON.stringify(newTokens)`.
-    // My Restore Logic (useEffect) expects JSON.parse.
-    // I need to be consistent.
-    // Implicit callback should store format compatible with Restore logic.
-    // I will fix implicit callback to store object.
-
-    const headers = {
-      ...options.headers,
-      Authorization: token ? `Bearer ${token}` : "",
-    };
-    return fetch(url, { ...options, headers });
-  };
-
-  const getToken = async () => tokens?.access_token || null;
+  const value = React.useMemo(
+    () => ({
+      fetchWithAuth,
+      getToken,
+      user,
+      login,
+      logout,
+      handleCallback,
+      handleImplicitCallback,
+      config: oidcConfig,
+      isAuthenticated: !!user,
+    }),
+    [tokens, user, oidcConfig, fetchWithAuth, getToken, login, handleCallback],
+  );
 
   if (isInitializing) {
     return <div>Loading...</div>;
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        fetchWithAuth,
-        getToken,
-        user,
-        login,
-        logout,
-        handleCallback,
-        handleImplicitCallback,
-        config: oidcConfig,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

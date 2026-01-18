@@ -46,6 +46,7 @@ public/config.js
 
 # --- Logs & Temp ---
 logs/
+pids/
 *.log
 *.pid
 *.seed

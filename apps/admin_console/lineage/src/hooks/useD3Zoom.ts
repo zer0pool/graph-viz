@@ -42,7 +42,7 @@ export function useD3Zoom({
         if (innerG) {
           d3.select(innerG).attr(
             "transform",
-            (event.transform as any).toString()
+            (event.transform as any).toString(),
           );
           setZoomLevel(event.transform.k);
           setPan({ x: event.transform.x, y: event.transform.y });
@@ -84,7 +84,10 @@ export function useD3Zoom({
     const y = cy - finalScale * (graphBBox.y + graphBBox.height / 2);
 
     const transform = d3.zoomIdentity.translate(x, y).scale(finalScale);
-    d3.select(svg).call(zoomBehaviorRef.current.transform as any, transform);
+    d3.select(mermaidRef.current as any).call(
+      zoomBehaviorRef.current.transform as any,
+      transform,
+    );
   }, [mermaidRef]);
 
   const resetView = useCallback(() => {

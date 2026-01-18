@@ -25,22 +25,39 @@ export const RemoteMount: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const auth = useAuth(); // Get full auth client
 
-  // Memoize auth object if needed, but since functions might not be stable, careful.
-  // Actually, useAuth from Context usually provides stable functions if implemented with useMemo or outside.
-  // In our AuthContext implementation, it is memoized.
-  const authClient: AuthClient = auth;
+  // 🔹 Stabilize authClient reference for MFE
+  // MFEs don't need a re-mount if the auth object reference changes slightly (e.g. from context re-calc)
+  // but they might need the latest one. We'll pass the stable one and update refs if needed,
+  // but for now, the main goal is preventing re-mount.
+  const authRef = useRef<AuthClient>(auth);
+  useEffect(() => {
+    authRef.current = auth;
+  }, [auth]);
 
   // 🔹 mount: 단 한 번만
   useEffect(() => {
     let cancelled = false;
+    let didCleanup = false;
 
     (async () => {
       try {
+        console.log(
+          `[Shell:RemoteMount] Starting load for scope: ${scope}, url: ${url}`,
+        );
         const container = await loadRemote(scope, url);
         if (cancelled) return;
 
+        console.log(
+          `[Shell:RemoteMount] Container loaded for ${scope}. Getting module: ${module}`,
+        );
         const factory = await container.get(module);
         const moduleExports = factory();
+
+        console.log(
+          `[Shell:RemoteMount] Module exports for ${module}:`,
+          Object.keys(moduleExports),
+        );
+
         // Support named 'mount', default 'mount', or default export as function
         const mount =
           moduleExports.mount ||
@@ -50,8 +67,8 @@ export const RemoteMount: React.FC<Props> = ({
         if (typeof mount !== "function") {
           throw new Error(
             `Module ${module} does not export a 'mount' function. Exports: ${Object.keys(
-              moduleExports
-            ).join(", ")}`
+              moduleExports,
+            ).join(", ")}`,
           );
         }
 
@@ -59,20 +76,40 @@ export const RemoteMount: React.FC<Props> = ({
           ...(mountProps ?? {}),
           initialSelection: mountProps,
           eventTarget: containerRef.current,
-          auth: authClient, // Inject Auth Client
+          auth: authRef.current, // Inject Auth Client
         });
         mountedRef.current = true;
+        console.log(`[Shell:RemoteMount] Mount successful for ${scope}`);
       } catch (err) {
-        console.error(`Failed to load remote module ${scope}:`, err);
+        console.error(
+          `[Shell:RemoteMount] Error loading/mounting ${scope}:`,
+          err,
+        );
         setError(`Failed to load module: ${scope}`);
       }
     })();
 
     return () => {
-      // Shell 자체가 내려갈 때만 실행됨
-      cleanupRef.current?.();
+      cancelled = true;
+      if (didCleanup) return;
+      didCleanup = true;
+
+      console.log(`[Shell:RemoteMount] Cleaning up for ${scope}`);
+      try {
+        if (cleanupRef.current) {
+          cleanupRef.current();
+        }
+      } catch (e) {
+        console.warn(
+          `[Shell:RemoteMount] Error during cleanup for ${scope}:`,
+          e,
+        );
+      } finally {
+        cleanupRef.current = null;
+        mountedRef.current = false;
+      }
     };
-  }, []); // Intentionally empty dependency to mount ONLY ONCE. Auth updates handled via events or stable ref if supported by MFE.
+  }, [scope, url, module]); // Removed authClient from deps to prevent re-mounts
 
   // 🔹 props 변경 (지금은 noop, 이후 확장)
   useEffect(() => {

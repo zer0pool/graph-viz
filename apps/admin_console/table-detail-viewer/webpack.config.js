@@ -3,13 +3,14 @@ const ModuleFederationPlugin =
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/main.tsx",
   mode: "development",
 
   devServer: {
-    port: 3002,
+    port: 5102,
     hot: false,
     liveReload: false,
     historyApiFallback: true,
@@ -48,7 +49,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
     ],
   },
@@ -59,7 +60,18 @@ module.exports = {
       __NODE_ENV__: JSON.stringify(process.env.NODE_ENV || "development"),
     }),
     new HtmlWebpackPlugin({
-      template: "./index.html",
+      template: "./public/index.html",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "public"),
+          to: ".",
+          globOptions: {
+            ignore: ["**/index.html"],
+          },
+        },
+      ],
     }),
     new ModuleFederationPlugin({
       name: "tableDetailViewer",
@@ -73,21 +85,44 @@ module.exports = {
         react: {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
           eager: false,
-          requiredVersion: false,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^0.562.0",
+        },
+        clsx: {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^2.1.1",
+        },
+        "tailwind-merge": {
+          singleton: true,
+          eager: false,
+          requiredVersion: "^3.4.0",
         },
       },
     }),
   ],
 
   output: {
-    publicPath: "http://localhost:3002/",
+    publicPath: "http://localhost:5102/",
     path: path.resolve(__dirname, "dist"),
     clean: true,
+  },
+  optimization: {
+    minimize: false,
   },
   experiments: {
     importMeta: true,

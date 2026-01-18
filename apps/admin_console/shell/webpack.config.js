@@ -16,7 +16,7 @@ module.exports = {
   devServer: {
     port: 5100,
     historyApiFallback: {
-      index: "/lineage-manager/index.html",
+      index: "/admin-console/index.html",
     },
     hot: false, // Disable HMR to avoid WebSocket errors
     liveReload: false, // Also disable live reload
@@ -53,7 +53,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
     ],
   },
@@ -61,10 +61,18 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || ""
+        process.env.API_BASE_URL || "",
+      ),
+      "import.meta.env.LINEAGE_REMOTE_URL": JSON.stringify(
+        process.env.LINEAGE_REMOTE_URL ||
+          "http://localhost:5101/remoteEntry.js",
+      ),
+      "import.meta.env.TABLE_DETAIL_REMOTE_URL": JSON.stringify(
+        process.env.TABLE_DETAIL_REMOTE_URL ||
+          "http://localhost:5102/remoteEntry.js",
       ),
       "import.meta.env.DEV": JSON.stringify(
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV !== "production",
       ),
     }),
     new HtmlWebpackPlugin({
@@ -92,28 +100,53 @@ module.exports = {
     new ModuleFederationPlugin({
       name: "shell",
       remotes: {
-        lineage: "lineage@http://localhost:3001/remoteEntry.js",
-        tableDetailViewer:
-          "tableDetailViewer@http://localhost:3002/remoteEntry.js",
+        lineage: `lineage@${
+          process.env.LINEAGE_REMOTE_URL ||
+          "http://localhost:5101/remoteEntry.js"
+        }`,
+        tableDetailViewer: `tableDetailViewer@${
+          process.env.TABLE_DETAIL_REMOTE_URL ||
+          "http://localhost:5102/remoteEntry.js"
+        }`,
       },
 
       shared: {
         react: {
           singleton: true,
-          eager: false,
-          requiredVersion: false,
+          eager: true,
+          requiredVersion: "^18.2.0",
         },
         "react-dom": {
           singleton: true,
-          eager: false,
-          requiredVersion: false,
+          eager: true,
+          requiredVersion: "^18.2.0",
+        },
+        "react-router-dom": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^6.22.3",
+        },
+        "lucide-react": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^0.562.0",
+        },
+        clsx: {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^2.1.1",
+        },
+        "tailwind-merge": {
+          singleton: true,
+          eager: true,
+          requiredVersion: "^3.4.0",
         },
       },
     }),
   ],
 
   output: {
-    publicPath: "/lineage-manager/",
+    publicPath: "auto",
     path: path.resolve(__dirname, "dist"),
     filename: "bundle.js",
     clean: true,
