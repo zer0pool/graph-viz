@@ -75,39 +75,39 @@ clean-all:
 
 # Docker Compose commands
 up:
-	docker-compose -f apps/backend/docker-compose.yml up -d
-	docker-compose -f apps/admin_console/docker-compose.yml up -d
+	docker compose -f apps/backend/docker-compose.yml up -d
+	docker compose -f apps/admin_console/docker-compose.yml up -d
 
 down:
-	docker-compose -f apps/admin_console/docker-compose.yml down
-	docker-compose -f apps/backend/docker-compose.yml down
+	docker compose -f apps/admin_console/docker-compose.yml down
+	docker compose -f apps/backend/docker-compose.yml down
 
 backend-up:
-	docker-compose -f apps/backend/docker-compose.yml up -d
+	docker compose -f apps/backend/docker-compose.yml up -d
 
 backend-down:
-	docker-compose -f apps/backend/docker-compose.yml down
+	docker compose -f apps/backend/docker-compose.yml down
 
 backend-logs:
-	docker-compose -f apps/backend/docker-compose.yml logs -f
+	docker compose -f apps/backend/docker-compose.yml logs -f
 
 admin-up:
-	docker-compose -f apps/admin_console/docker-compose.yml up -d
+	docker compose -f apps/admin_console/docker-compose.yml up -d
 
 admin-down:
-	docker-compose -f apps/admin_console/docker-compose.yml down
+	docker compose -f apps/admin_console/docker-compose.yml down
 
 admin-lineage-rebuild:
-	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
 
 admin-table-rebuild:
-	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
 
 admin-shell-rebuild:
-	docker-compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
 
 admin-logs:
-	docker-compose -f apps/admin_console/docker-compose.yml logs -f
+	docker compose -f apps/admin_console/docker-compose.yml logs -f
 
 logs:
-	docker-compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f
+	docker compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f
