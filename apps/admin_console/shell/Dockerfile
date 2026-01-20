@@ -33,7 +33,7 @@ RUN chmod -R 755 /usr/share/nginx/html
 # Copy entrypoint, variable manifest, and nginx config template
 COPY deploy/docker/entrypoint.sh /entrypoint.sh
 COPY deploy/docker/vars.sh /vars.sh
-COPY deploy/docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY deploy/docker/nginx.conf.template /etc/nginx/nginx.conf.template
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80

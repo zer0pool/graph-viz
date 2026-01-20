@@ -1,29 +1,29 @@
-const ModuleFederationPlugin =
-  require("webpack").container.ModuleFederationPlugin;
+const { ModuleFederationPlugin } = require("webpack").container;
 const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
-console.log("Webpack running for shell...");
-console.log("Current directory:", __dirname);
-console.log("Mode:", process.env.NODE_ENV);
+const isProd = process.env.NODE_ENV === "production";
 
 module.exports = {
   entry: "./src/main.tsx",
-  mode: process.env.NODE_ENV === "production" ? "production" : "development",
+  mode: isProd ? "production" : "development",
 
   devServer: {
     port: 5100,
     historyApiFallback: {
       index: "/admin-console/index.html",
     },
-    hot: false, // Disable HMR to avoid WebSocket errors
-    liveReload: false, // Also disable live reload
+    hot: false,
+    liveReload: false,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+    },
     client: {
-      webSocketURL: "auto://0.0.0.0:0/ws", // Suppress WebSocket connection attempts
+      webSocketURL: "auto://0.0.0.0:0/ws",
       overlay: {
-        errors: false, // Disable error overlay
+        errors: false,
         warnings: false,
         runtimeErrors: false,
       },
@@ -46,9 +46,7 @@ module.exports = {
       {
         test: /\.tsx?$/,
         loader: "ts-loader",
-        options: {
-          transpileOnly: true,
-        },
+        options: { transpileOnly: true },
         exclude: /node_modules/,
       },
       {
@@ -60,6 +58,10 @@ module.exports = {
 
   plugins: [
     new webpack.DefinePlugin({
+      "import.meta.env.NODE_ENV": JSON.stringify(
+        process.env.NODE_ENV || "development",
+      ),
+      "import.meta.env.DEV": JSON.stringify(!isProd),
       "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
         process.env.API_BASE_URL || "",
       ),
@@ -71,9 +73,6 @@ module.exports = {
         process.env.TABLE_DETAIL_REMOTE_URL ||
           "http://localhost:5102/remoteEntry.js",
       ),
-      "import.meta.env.DEV": JSON.stringify(
-        process.env.NODE_ENV !== "production",
-      ),
     }),
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "public/index.html"),
@@ -81,20 +80,13 @@ module.exports = {
     }),
     new CopyWebpackPlugin({
       patterns: [
+        { from: "public/images", to: "images", noErrorOnMissing: true },
         {
-          from: path.resolve(__dirname, "public/images"),
-          to: "images",
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.resolve(__dirname, "public/favicon.png"),
+          from: "public/favicon.png",
           to: "favicon.png",
           noErrorOnMissing: true,
         },
-        {
-          from: path.resolve(__dirname, "public/config.template.js"),
-          to: "config.template.js",
-        },
+        { from: "public/config.template.js", to: "config.template.js" },
       ],
     }),
     new ModuleFederationPlugin({
@@ -109,13 +101,8 @@ module.exports = {
           "http://localhost:5102/remoteEntry.js"
         }`,
       },
-
       shared: {
-        react: {
-          singleton: true,
-          eager: true,
-          requiredVersion: "^18.2.0",
-        },
+        react: { singleton: true, eager: true, requiredVersion: "^18.2.0" },
         "react-dom": {
           singleton: true,
           eager: true,
@@ -131,11 +118,7 @@ module.exports = {
           eager: true,
           requiredVersion: "^0.562.0",
         },
-        clsx: {
-          singleton: true,
-          eager: true,
-          requiredVersion: "^2.1.1",
-        },
+        clsx: { singleton: true, eager: true, requiredVersion: "^2.1.1" },
         "tailwind-merge": {
           singleton: true,
           eager: true,
@@ -148,13 +131,16 @@ module.exports = {
   output: {
     publicPath: "auto",
     path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js",
+    filename: "[name].[contenthash].js",
+    chunkFilename: "[name].[contenthash].js",
     clean: true,
   },
+
   experiments: {
     importMeta: true,
   },
+
   optimization: {
-    minimize: process.env.NODE_ENV === "production",
+    minimize: isProd,
   },
 };

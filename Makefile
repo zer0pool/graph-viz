@@ -9,24 +9,26 @@ DJM_DIR=apps/backend/dummy-job-manager
 all: help
 
 help:
-	@echo "Available commands:"
-	@echo "  make venv-lm          - Create venv for lineage-manager"
-	@echo "  make venv-djm         - Create venv for dummy-job-manager"
-	@echo "  make venv-all         - Create venv for all apps"
-	@echo "  make run-lm           - Run lineage-manager"
-	@echo "  make run-djm          - Run dummy-job-manager"
-	@echo "  make test-lm          - Test lineage-manager (unit tests)"
-	@echo "  make test-djm         - Test dummy-job-manager"
-	@echo "  make test-all         - Run all unit tests"
-	@echo "  make test-integration - Run integration tests (requires LM and DJM)"
-	@echo "  make lint-all         - Lint all apps"
-	@echo "  make format-all       - Format all apps"
-	@echo "  make clean-all        - Clean all apps"
-	@echo "  make admin-up         - Start admin console"
-	@echo "  make admin-down       - Stop admin console"
-	@echo "  make admin-lineage-rebuild - Rebuild and restart Lineage MFE"
-	@echo "  make admin-table-rebuild   - Rebuild and restart Table Viewer MFE"
-	@echo "  make compose-down     - Stop infrastructure"
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "System Management:"
+	@echo "  up                  - Start entire platform (Backend + Admin)"
+	@echo "  down                - Stop entire platform"
+	@echo "  logs                - View all platform logs"
+	@echo "  clean-all           - Clean all application builds and venvs"
+	@echo ""
+	@echo "Backend Management (Lineage Manager):"
+	@echo "  backend-up          - Start backend services"
+	@echo "  backend-down        - Stop backend services"
+	@echo "  backend-logs        - View backend logs"
+	@echo "  venv-all            - Setup python environments for all backends"
+	@echo "  test-all            - Run all backend unit tests"
+	@echo ""
+	@echo "Admin Console Management (MFEs):"
+	@echo "  admin-up            - Start admin console MFEs"
+	@echo "  admin-down          - Stop admin console MFEs"
+	@echo "  admin-rebuild       - Rebuild and restart all admin MFEs (Shell, Lineage, Table)"
+	@echo "  admin-logs          - View admin console logs"
 
 # Lineage Manager delegation
 venv-lm:
@@ -97,6 +99,10 @@ admin-up:
 admin-down:
 	docker compose -f apps/admin_console/docker-compose.yml down
 
+admin-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell web-lineage web-table-viewer
+
+# (Internal/Secondary) Rebuild individual MFEs if needed
 admin-lineage-rebuild:
 	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
 

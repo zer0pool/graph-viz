@@ -50,10 +50,9 @@ envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/ngi
 envsubst "$ALL_VARS" < /usr/share/nginx/html/index.html.template > /usr/share/nginx/html/index.html
 
 # Prevent Nginx official script from overriding our config
-envsubst "$ALL_VARS" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
-
-# Disable official template substitution
-rm -f /etc/nginx/templates/default.conf.template
+# We read from /etc/nginx/nginx.conf.template instead of the templates/ folder
+# to avoid automatic (and potentially failing) processing by Nginx's entrypoint.
+envsubst "$ALL_VARS" < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
 # 3. Hand over to official Nginx entrypoint
 echo "[Shell] Launching Nginx..."
