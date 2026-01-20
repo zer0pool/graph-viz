@@ -1,19 +1,20 @@
-const ModuleFederationPlugin =
-  require("webpack").container.ModuleFederationPlugin;
-const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { ModuleFederationPlugin } = require("webpack").container;
 const webpack = require("webpack");
 const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+
+const isProd = process.env.NODE_ENV === "production";
 
 module.exports = {
   entry: "./src/main.tsx",
-  mode: "development",
+  mode: isProd ? "production" : "development",
 
   devServer: {
     port: 5102,
+    historyApiFallback: true,
     hot: false,
     liveReload: false,
-    historyApiFallback: true,
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
@@ -42,9 +43,7 @@ module.exports = {
       {
         test: /\.tsx?$/,
         loader: "ts-loader",
-        options: {
-          transpileOnly: true,
-        },
+        options: { transpileOnly: true },
         exclude: /node_modules/,
       },
       {
@@ -56,8 +55,13 @@ module.exports = {
 
   plugins: [
     new webpack.DefinePlugin({
-      __API_BASE_URL__: JSON.stringify(process.env.API_BASE_URL || ""),
-      __NODE_ENV__: JSON.stringify(process.env.NODE_ENV || "development"),
+      "import.meta.env.NODE_ENV": JSON.stringify(
+        process.env.NODE_ENV || "development",
+      ),
+      "import.meta.env.DEV": JSON.stringify(!isProd),
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
+        process.env.API_BASE_URL || "",
+      ),
     }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
@@ -82,11 +86,7 @@ module.exports = {
         "./views": "./src/viewMount.tsx",
       },
       shared: {
-        react: {
-          singleton: true,
-          eager: false,
-          requiredVersion: "^18.2.0",
-        },
+        react: { singleton: true, eager: false, requiredVersion: "^18.2.0" },
         "react-dom": {
           singleton: true,
           eager: false,
@@ -102,11 +102,7 @@ module.exports = {
           eager: false,
           requiredVersion: "^0.562.0",
         },
-        clsx: {
-          singleton: true,
-          eager: false,
-          requiredVersion: "^2.1.1",
-        },
+        clsx: { singleton: true, eager: false, requiredVersion: "^2.1.1" },
         "tailwind-merge": {
           singleton: true,
           eager: false,
@@ -117,14 +113,18 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "http://localhost:5102/",
+    publicPath: "auto",
     path: path.resolve(__dirname, "dist"),
+    filename: "[name].[contenthash].js",
+    chunkFilename: "[name].[contenthash].js",
     clean: true,
   },
-  optimization: {
-    minimize: false,
-  },
+
   experiments: {
     importMeta: true,
+  },
+
+  optimization: {
+    minimize: isProd,
   },
 };

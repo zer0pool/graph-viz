@@ -21,19 +21,13 @@ echo "[MFE] Injecting runtime configuration..."
 export ALL_VARS='$API_BASE_URL $BASE_URL $NAMESERVER'
 
 # Inject into config.js
-if [ -f /usr/share/nginx/html/config.template.js ]; then
-    envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/nginx/html/config.js
-fi
+envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/nginx/html/config.js
 
 # Inject into index.html (for base href)
-if [ -f /usr/share/nginx/html/index.html.template ]; then
-    envsubst "$ALL_VARS" < /usr/share/nginx/html/index.html.template > /usr/share/nginx/html/index.html
-fi
+envsubst "$ALL_VARS" < /usr/share/nginx/html/index.html.template > /usr/share/nginx/html/index.html
 
 # Inject into Nginx config
-if [ -f /etc/nginx/templates/default.conf.template ]; then
-    envsubst "$ALL_VARS" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
-fi
+envsubst "$ALL_VARS" < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
 # 4. Hand over to official Nginx entrypoint
 echo "[MFE] Launching Nginx..."
