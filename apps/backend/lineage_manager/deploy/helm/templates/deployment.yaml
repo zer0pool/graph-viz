@@ -19,7 +19,7 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["./deploy/docker/entrypoint.sh"]
+          command: ["/entrypoint.sh"]
           args: ["backend"]
           ports:
             - name: http
