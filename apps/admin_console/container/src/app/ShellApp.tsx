@@ -52,12 +52,12 @@ export const ShellApp = () => {
       </AppLayout>
 
       {/* Connector: selection -> Detail MFE */}
-      {config.ENABLE_TABLE_DETAIL_MFE && (
+      {config.ENABLE_MFE_CATALOG && (
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <RemoteMount
             scope="tableDetailViewer"
             module="./index"
-            url={config.TABLE_DETAIL_MFE_URL}
+            url={config.CATALOG_MFE_URL}
             mountProps={selection}
             visible={drawerOpen}
           />

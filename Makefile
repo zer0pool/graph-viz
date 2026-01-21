@@ -16,6 +16,8 @@ help:
 	@echo "  down                - Stop entire platform"
 	@echo "  logs                - View all platform logs"
 	@echo "  clean-all           - Clean all application builds and venvs"
+	@echo "  docker-rmi          - Delete all Docker images on the system"
+	@echo "  docker-clean        - Prune all unused Docker data (images, containers, volumes)"
 	@echo ""
 	@echo "Backend Management (Lineage Manager):"
 	@echo "  backend-up          - Start backend services"
@@ -121,3 +123,11 @@ admin-logs:
 
 logs:
 	docker compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f
+
+docker-rmi:
+	@echo "⚠️  [WARNING] Deleting ALL docker images..."
+	-docker rmi -f $$(docker images -q)
+
+docker-clean:
+	@echo "⚠️  [WARNING] Pruning ALL unused Docker resources (system + volumes)..."
+	docker system prune -a --volumes -f

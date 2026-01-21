@@ -8,15 +8,15 @@ export const config = {
   BASE_URL: (
     (window as any).__APP_CONFIG__?.BASE_URL || "/admin-console"
   ).replace(/\/$/, ""),
-  ENABLE_LINEAGE_MFE:
-    (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
-  ENABLE_TABLE_DETAIL_MFE:
-    (window as any).__APP_CONFIG__?.ENABLE_TABLE_DETAIL_MFE !== "false",
+  ENABLE_MFE_LINEAGE:
+    (window as any).__APP_CONFIG__?.ENABLE_MFE_LINEAGE !== "false",
+  ENABLE_MFE_CATALOG:
+    (window as any).__APP_CONFIG__?.ENABLE_MFE_CATALOG !== "false",
   LINEAGE_MFE_URL:
     (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL ||
     "http://localhost:5101/remoteEntry.js",
-  TABLE_DETAIL_MFE_URL:
-    (window as any).__APP_CONFIG__?.TABLE_DETAIL_MFE_URL ||
+  CATALOG_MFE_URL:
+    (window as any).__APP_CONFIG__?.CATALOG_MFE_URL ||
     "http://localhost:5102/remoteEntry.js",
 
   // Standalone Auth Config

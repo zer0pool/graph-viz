@@ -74,10 +74,10 @@ def create_app() -> GraphApp:
     # ✅ Enable CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors.allowed_origins,
+        allow_origins=["*"], # Allow all origins for easier debugging in local networks
         allow_credentials=settings.cors.allow_credentials,
-        allow_methods=settings.cors.allow_methods,
-        allow_headers=settings.cors.allow_headers,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # Add health check logging filter middleware

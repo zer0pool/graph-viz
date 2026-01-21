@@ -34,7 +34,7 @@ export const AppRouter: React.FC<{
     <Route path="/diag" element={<Diagnostics />} />
     <Route path="/authorized" element={<AuthCallback />} />
     {/* Lineage MFE */}
-    {config.ENABLE_LINEAGE_MFE && (
+    {config.ENABLE_MFE_LINEAGE && (
       <Route
         path="/lineage/*"
         element={
@@ -55,7 +55,7 @@ export const AppRouter: React.FC<{
     )}
 
     {/* Table/Job Detail Viewer MFE - Landing & Detail */}
-    {config.ENABLE_TABLE_DETAIL_MFE && (
+    {config.ENABLE_MFE_CATALOG && (
       <>
         <Route
           path="/jobs/*"
@@ -64,7 +64,7 @@ export const AppRouter: React.FC<{
               key="tableDetailViewer-jobs"
               scope="tableDetailViewer"
               module="./views"
-              url={config.TABLE_DETAIL_MFE_URL}
+              url={config.CATALOG_MFE_URL}
               mountProps={{ mode: "STANDALONE" }}
               visible={true}
             />
@@ -77,7 +77,7 @@ export const AppRouter: React.FC<{
               key="tableDetailViewer-tables"
               scope="tableDetailViewer"
               module="./views"
-              url={config.TABLE_DETAIL_MFE_URL}
+              url={config.CATALOG_MFE_URL}
               mountProps={{ mode: "STANDALONE" }}
               visible={true}
             />
