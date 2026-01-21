@@ -1,0 +1,21 @@
+{{- range $app := list "app" "mfeLineage" "mfeCatalog" }}
+{{- $config := index $.Values $app }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}
+  labels:
+    app: {{ $config.name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    release: {{ $.Release.Name }}
+spec:
+  type: {{ $.Values.service.type }}
+  ports:
+    - port: {{ $.Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ $config.name }}
+{{- end }}

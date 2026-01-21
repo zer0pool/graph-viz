@@ -1,0 +1,60 @@
+replicaCount: 1
+
+image:
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-console-app
+  pullPolicy: Always
+  tag: "latest"
+
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
+namespace: "self-scheduling-dev1"
+
+service:
+  type: NodePort
+  port: 5100
+  targetPort: 80
+  annotations:
+    cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+fullnameOverride: "admin-console-app"
+
+env:
+  API_BASE_URL: ""
+  BASE_URL: "/admin-console"
+  ENABLE_AUTH: "false"
+  ENABLE_MFE_LINEAGE: "true"
+  ENABLE_MFE_CATALOG: "true"
+  # OIDC Configuration (Override via --set or separate values file)
+  OIDC_AUTHORITY: "https://sts.secsso.net/adfs"
+  OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"
+  OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
+  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/authorized"
+  OIDC_SCOPE: "openid profile email"
+  OIDC_RESPONSE_TYPE: "id_token"
+  OIDC_RESPONSE_MODE: "fragment"
+  OIDC_RESOURCE: ""

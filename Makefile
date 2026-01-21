@@ -104,17 +104,17 @@ admin-down:
 	docker compose -f apps/admin_console/docker-compose.yml down
 
 admin-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell web-lineage web-table-viewer
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app admin-mfe-lineage admin-mfe-catalog
 
 # (Internal/Secondary) Rebuild individual MFEs if needed
 admin-lineage-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-lineage
 
-admin-table-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
+admin-catalog-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-catalog
 
-admin-shell-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
+admin-container-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app
 
 admin-logs:
 	docker compose -f apps/admin_console/docker-compose.yml logs -f

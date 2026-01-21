@@ -1,0 +1,88 @@
+# Default values for admin-console
+replicaCount: 1
+
+image:
+  registry: docker.io
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# App (Shell) configuration
+app:
+  name: admin-console-app
+  image: admin-console-app
+  port: 5100
+  basePath: /admin-console
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# MFE Lineage configuration
+mfeLineage:
+  name: admin-mfe-lineage
+  image: admin-mfe-lineage
+  port: 5101
+  basePath: /mfe-lineage
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# MFE Catalog configuration
+mfeCatalog:
+  name: admin-mfe-catalog
+  image: admin-mfe-catalog
+  port: 5102
+  basePath: /mfe-catalog
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Backend API configuration
+backend:
+  url: http://lineage-manager:5003/lineage-manager
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: admin.example.com
+      paths:
+        - path: /admin-console
+          pathType: Prefix
+          service: admin-console-app
+        - path: /mfe-lineage
+          pathType: Prefix
+          service: admin-mfe-lineage
+        - path: /mfe-catalog
+          pathType: Prefix
+          service: admin-mfe-catalog
+  tls:
+    - secretName: admin-console-tls
+      hosts:
+        - admin.example.com
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+
+# Environment-specific overrides
+env: dev
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,75 @@
+{{- range $app := list "app" "mfeLineage" "mfeCatalog" }}
+{{- $config := index $.Values $app }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $config.name }}
+  labels:
+    app: {{ $config.name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    release: {{ $.Release.Name }}
+spec:
+  replicas: {{ $.Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $config.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $config.name }}
+    spec:
+      containers:
+      - name: {{ $config.name }}
+        image: "{{ $.Values.image.registry }}/{{ $config.image }}:{{ $.Values.image.tag }}"
+        imagePullPolicy: {{ $.Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        env:
+        - name: API_BASE_URL
+          value: ""
+        - name: BACKEND_HOST
+          value: {{ $.Values.backend.url }}
+        - name: BASE_URL
+          value: {{ $config.basePath }}
+        {{- if eq $app "app" }}
+        - name: LINEAGE_MFE_URL
+          value: "http://{{ $.Values.mfeLineage.name }}{{ $.Values.mfeLineage.basePath }}/remoteEntry.js"
+        - name: CATALOG_MFE_URL
+          value: "http://{{ $.Values.mfeCatalog.name }}{{ $.Values.mfeCatalog.basePath }}/remoteEntry.js"
+        - name: ENABLE_LINEAGE_MFE
+          value: "true"
+        - name: ENABLE_CATALOG_MFE
+          value: "true"
+        {{- end }}
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          {{- toYaml $config.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
