@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lineage-manager.fullname" . }}
+  labels:
+    {{- include "lineage-manager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "lineage-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lineage-manager.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["./deploy/docker/entrypoint.sh"]
+          args: ["backend"]
+          ports:
+            - name: http
+              containerPort: 5003
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+        
+        {{- if .Values.cloudSqlProxy.enabled }}
+        - name: cloud-sql-proxy
+          image: {{ .Values.cloudSqlProxy.image }}
+          imagePullPolicy: Always
+          command:
+            - /cloud_sql_proxy
+            - -ip_address_types=PRIVATE
+            - -instances={{ .Values.cloudSqlProxy.instanceConnectionName }}=tcp:{{ .Values.cloudSqlProxy.port }}
+          securityContext:
+            runAsNonRoot: true
+        {{- end }}
