@@ -1,3 +1,4 @@
+services:
   admin-console-app:
     build:
       context: ./container
