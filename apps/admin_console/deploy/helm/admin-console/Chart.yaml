@@ -1,0 +1,6 @@
+apiVersion: v2
+name: admin-console
+description: Admin Console Helm Chart for App Shell and MFEs
+type: application
+version: 0.1.0
+appVersion: "1.0"

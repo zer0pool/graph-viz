@@ -168,7 +168,7 @@ class RealBigQueryService:
         query = (
             "SELECT project_name, dataset_name, table_name, period, cron_schedule, "
             "date, hour, start_time "
-            "FROM `gizmopool.test_data.table_load_history` "
+            f"FROM `{self.history_table}` "
             "WHERE project_name = @project_id "
             "AND dataset_name = @dataset_id "
             "AND table_name = @table_id "
@@ -294,7 +294,7 @@ class RealBigQueryService:
 
         query = (
             "SELECT * "
-            "FROM `gizmopool.test_data.table_load_history` "
+            f"FROM `{self.history_table}` "
             "WHERE project_name = @project_id "
             "AND dataset_name = @dataset_id "
             "AND table_name = @table_id "
@@ -330,3 +330,11 @@ class RealBigQueryService:
             
         logger.info(f"Retrieved {len(results)} load history records for {table_name}")
         return results
+
+    def get_history_table_path(self) -> str:
+        """Return the configured path for the history table.
+        
+        Returns:
+            String representing the full table path (project.dataset.table)
+        """
+        return self.history_table

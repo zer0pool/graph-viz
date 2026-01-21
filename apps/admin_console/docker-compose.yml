@@ -1,28 +1,33 @@
-services:
-  web-shell:
+  admin-console-app:
     build:
-      context: ./shell
-      dockerfile: Dockerfile
-    container_name: web-shell
+      context: ./container
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
+        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
+    container_name: admin-console-app
     ports:
       - "${SHELL_PORT:-5100}:80"
     environment:
       - API_BASE_URL=http://localhost:5003/lineage-manager
       - BASE_URL=${BASE_URL:-/admin-console}
       - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
-      - TABLE_DETAIL_MFE_URL=http://localhost:5102/mfe-table-viewer/remoteEntry.js
-      - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
-      - ENABLE_TABLE_DETAIL_MFE=${ENABLE_TABLE_DETAIL_MFE:-true}
+      - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
+      - ENABLE_MFE_LINEAGE=${ENABLE_MFE_LINEAGE:-true}
+      - ENABLE_MFE_CATALOG=${ENABLE_MFE_CATALOG:-true}
       - NODE_ENV=production
     networks:
       - admin-network
       - backend-network
 
-  web-lineage:
+  admin-mfe-lineage:
     build:
-      context: ./lineage
-      dockerfile: Dockerfile
-    container_name: web-lineage
+      context: ./mfe-lineage
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
+        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
+    container_name: admin-mfe-lineage
     ports:
       - "${LINEAGE_PORT:-5101}:80"
     environment:
@@ -32,16 +37,19 @@ services:
       - admin-network
       - backend-network
 
-  web-table-viewer:
+  admin-mfe-catalog:
     build:
-      context: ./table-detail-viewer
-      dockerfile: Dockerfile
-    container_name: web-table-viewer
+      context: ./mfe-catalog
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
+        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
+    container_name: admin-mfe-catalog
     ports:
       - "${TABLE_DETAIL_PORT:-5102}:80"
     environment:
       - API_BASE_URL=http://localhost:5003/lineage-manager
-      - BASE_URL=${TABLE_DETAIL_BASE_URL:-/mfe-table-viewer}
+      - BASE_URL=${CATALOG_BASE_URL:-/mfe-catalog}
     networks:
       - admin-network
       - backend-network
@@ -50,5 +58,5 @@ networks:
   admin-network:
     driver: bridge
   backend-network:
-    external: true
+    external: false
     name: backend_backend-network

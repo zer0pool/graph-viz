@@ -228,3 +228,11 @@ class DummyBigQueryService:
         
         logger.info(f"Generated {len(results)} dummy load history records for {table_name}")
         return results
+
+    def get_history_table_path(self) -> str:
+        """Return a dummy placeholder for the history table.
+        
+        Returns:
+            String representing a dummy table path
+        """
+        return "dummy.project.history_table"

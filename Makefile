@@ -20,6 +20,7 @@ help:
 	@echo "Backend Management (Lineage Manager):"
 	@echo "  backend-up          - Start backend services"
 	@echo "  backend-down        - Stop backend services"
+	@echo "  backend-rebuild     - Rebuild and restart backend apps"
 	@echo "  backend-logs        - View backend logs"
 	@echo "  venv-all            - Setup python environments for all backends"
 	@echo "  test-all            - Run all backend unit tests"
@@ -90,6 +91,9 @@ backend-up:
 backend-down:
 	docker compose -f apps/backend/docker-compose.yml down
 
+backend-rebuild:
+	docker compose -f apps/backend/docker-compose.yml up -d --build app-manager app-job-dummy
+
 backend-logs:
 	docker compose -f apps/backend/docker-compose.yml logs -f
 
@@ -100,17 +104,17 @@ admin-down:
 	docker compose -f apps/admin_console/docker-compose.yml down
 
 admin-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell web-lineage web-table-viewer
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app admin-mfe-lineage admin-mfe-catalog
 
 # (Internal/Secondary) Rebuild individual MFEs if needed
 admin-lineage-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-lineage
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-lineage
 
-admin-table-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-table-viewer
+admin-catalog-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-catalog
 
-admin-shell-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build web-shell
+admin-container-rebuild:
+	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app
 
 admin-logs:
 	docker compose -f apps/admin_console/docker-compose.yml logs -f
