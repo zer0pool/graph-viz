@@ -95,7 +95,7 @@ export function useMermaidRenderer({
       const nodeEls = container.querySelectorAll(
         "g.node, .jobNode, .tableNode, [id*='flowchart-']",
       );
-      const safeId = selectedNode.id.replace(/:/g, "_");
+      const safeId = MermaidDslService.sanitizeId(selectedNode.id);
 
       nodeEls.forEach((el) => {
         if (el.id.includes(safeId)) {
@@ -232,10 +232,15 @@ export function useMermaidRenderer({
           "g.node, .jobNode, .tableNode, [id*='flowchart-']",
         );
         nodeEls.forEach((el) => {
-          const nodeIdMatch = graphData?.nodes.find((n) => {
-            const safeId = n.id.replace(/:/g, "_");
-            return el.id.includes(safeId);
-          });
+          const matches =
+            graphData?.nodes.filter((n) => {
+              const safeId = MermaidDslService.sanitizeId(n.id);
+              return el.id.includes(safeId);
+            }) || [];
+
+          // Sort by ID length descending to prefer group nodes over anchors
+          matches.sort((a, b) => b.id.length - a.id.length);
+          const nodeIdMatch = matches[0];
 
           if (nodeIdMatch) {
             const node = nodeIdMatch;
@@ -245,14 +250,32 @@ export function useMermaidRenderer({
               e.stopPropagation();
               e.preventDefault();
 
+              console.log(
+                "[Mermaid] Node action event:",
+                e.type,
+                "on node:",
+                node.id,
+                "type:",
+                node.type,
+              );
+
               // NEW: Handle Group Node Expansion
               if (node.type === "group" && onExpandGroup) {
+                console.log(
+                  "[Mermaid] Group node click (mousedown/contextmenu) -> Expanding:",
+                  node.id,
+                );
                 onExpandGroup(node);
                 return;
               }
 
               const rect = el.getBoundingClientRect();
               selectNode(node, "click");
+              console.log(
+                "[Mermaid] Selected node:",
+                node.id,
+                "Opening context menu",
+              );
               setContextMenu({
                 x: rect.left + rect.width / 2,
                 y: rect.top - 12,
@@ -264,6 +287,18 @@ export function useMermaidRenderer({
             el.addEventListener("contextmenu", handleNodeAction as any);
             el.addEventListener("dblclick", (e) => {
               e.stopPropagation();
+              console.log(
+                "[Mermaid] Double click on node:",
+                node.id,
+                node.type,
+              );
+
+              if (node.type === "group" && onExpandGroup) {
+                console.log("[Mermaid] Expanding group node:", node.id);
+                onExpandGroup(node);
+                return;
+              }
+
               if (onSmartExpandRef.current) onSmartExpandRef.current();
             });
           }

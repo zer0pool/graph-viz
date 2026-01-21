@@ -101,11 +101,11 @@ class TableService:
                 },
             }
 
-        # Handle demo fallback logic (previously in endpoint)
-        target_table = "gizmopool.test_data.table_load_history"
+        # Metadata fallback logic: query the history table instead of the requested table
+        target_path = self.bigquery_service.get_history_table_path()
         try:
-            details = self.bigquery_service.get_table_detail(target_table)
-            # Patch identity
+            details = self.bigquery_service.get_table_detail(target_path)
+            # Patch identity to maintain UI consistency
             details["full_name"] = table_name
             return {"status": "success", "result": details}
         except Exception as e:

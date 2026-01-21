@@ -20,6 +20,7 @@ help:
 	@echo "Backend Management (Lineage Manager):"
 	@echo "  backend-up          - Start backend services"
 	@echo "  backend-down        - Stop backend services"
+	@echo "  backend-rebuild     - Rebuild and restart backend apps"
 	@echo "  backend-logs        - View backend logs"
 	@echo "  venv-all            - Setup python environments for all backends"
 	@echo "  test-all            - Run all backend unit tests"
@@ -89,6 +90,9 @@ backend-up:
 
 backend-down:
 	docker compose -f apps/backend/docker-compose.yml down
+
+backend-rebuild:
+	docker compose -f apps/backend/docker-compose.yml up -d --build app-manager app-job-dummy
 
 backend-logs:
 	docker compose -f apps/backend/docker-compose.yml logs -f

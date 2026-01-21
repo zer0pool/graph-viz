@@ -16,8 +16,7 @@ def get_scheduling_lineage(
 ):
     """Paginated static lineage data from file."""
     if scheduling_type:
-        # scheduling_type is now an Enum, so use .value
-        target_type = scheduling_type.value.replace("-TYPE", "")
+        target_type = scheduling_type.value
         filtered = repo.get_by_type(target_type)
     else:
         filtered = repo.get_all()

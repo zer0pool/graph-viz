@@ -64,3 +64,11 @@ class BigQueryServiceProtocol(Protocol):
             List of load history records with run_id, status, duration, etc.
         """
         ...
+
+    def get_history_table_path(self) -> str:
+        """Return the configured path for the history table.
+        
+        Returns:
+            String representing the full table path (project.dataset.table)
+        """
+        ...

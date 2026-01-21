@@ -162,8 +162,9 @@ class ClosureRepository(BaseRepository):
                         visited.add(neighbor)
                         queue.append((neighbor, depth + 1))
 
-        # 4. Truncate and Bulk Insert
-        self.db.execute(text(f"TRUNCATE TABLE {GraphClosure.__tablename__}"))
+        # 4. Clear and Bulk Insert
+        # Use DELETE instead of TRUNCATE for transaction safety (avoids implicit commit and metadata locks)
+        self.db.execute(text(f"DELETE FROM {GraphClosure.__tablename__}"))
         
         if closure_records:
             # Insert in chunks to avoid packet size limits

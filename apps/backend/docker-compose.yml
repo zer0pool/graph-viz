@@ -16,6 +16,10 @@ services:
       - REDIS_PORT=6379
       - APP_JOB_MANAGER_URL=http://app-job-dummy:9000
       - FEATURE_REQUIRE_SIGNIN=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
+      - GOOGLE_CLOUD_PROJECT=gizmopool
+    volumes:
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
     depends_on:
       - db-mysql
       - cache-redis

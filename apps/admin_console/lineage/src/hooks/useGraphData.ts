@@ -3,6 +3,10 @@ import { GraphState, GraphNode, GraphEdge } from "../types/graph";
 import { GraphApiService } from "../services/GraphApiService";
 import { useGraphHistory } from "./useGraphHistory";
 import { config } from "../config";
+import {
+  createGroupNode,
+  applyProgressiveLoading,
+} from "../utils/GraphFoldingUtils";
 
 export function useGraphData() {
   const [graphData, setGraphData] = useState<GraphState | null>(null);
@@ -11,9 +15,7 @@ export function useGraphData() {
     id: string;
   } | null>(null);
 
-  // Initialize loading to true if URL parameters are present to avoid flash of empty state
   const [loading, setLoading] = useState(() => {
-    // Check full href for params (covers hash router and normal search)
     const href = window.location.href;
     return href.includes("node_id=") || href.includes("table_name=");
   });
@@ -29,37 +31,13 @@ export function useGraphData() {
     canRedo,
   } = useGraphHistory();
 
-  // Helper to create a Group Node
-  const createGroupNode = (
-    remainingNodes: GraphNode[],
-    remainingEdges: GraphEdge[],
-    anchorId: string, // The node we expanded FROM (optional, but good for positioning if using special layout)
-    direction: "upstream" | "downstream"
-  ): GraphNode => {
-    const count = remainingNodes.length;
-    const groupId = `__GROUP__:${anchorId}:${Date.now()}`; // Unique ID
-    return {
-      id: groupId,
-      type: "group",
-      name: `... ${count} more`,
-      full_name: `${count} more items`,
-      properties: {
-        remainingNodes,
-        remainingEdges,
-        anchorId,
-        direction,
-        count,
-      },
-    };
-  };
-
   const fetchGraph = useCallback(
     async (
       type: string,
       id: string,
       isExpansion = false,
       direction: "upstream" | "downstream" | "both" = "both",
-      rememberAsInitial = false
+      rememberAsInitial = false,
     ) => {
       if (rememberAsInitial) {
         setInitialNode({ type, id });
@@ -75,140 +53,97 @@ export function useGraphData() {
         const data = await GraphApiService.fetchExpand(type, id, direction);
 
         if (isExpansion) {
-          setGraphData((prev) => {
+          setGraphData((prev: GraphState | null) => {
             if (!prev) {
               pushToHistory(data);
               return data;
             }
 
             const limit = config.PROGRESSIVE_LOADING_LIMIT;
-            const newNodes: GraphNode[] = [];
-            const hiddenNodes: GraphNode[] = [];
-
-            // Filter out existing nodes
-            const uniqueNewNodes = data.nodes.filter(
-              (n) => !prev.nodes.some((existing) => existing.id === n.id)
+            const fullId = id.includes(":") ? id : `${type}:${id}`;
+            console.log(
+              "[useGraphData] Expansion request for:",
+              fullId,
+              "direction:",
+              direction,
             );
 
-            // Progressive Logic:
-            // Only if we found new nodes > limit
-            if (uniqueNewNodes.length > limit) {
-              // We take 'limit' nodes
-              newNodes.push(...uniqueNewNodes.slice(0, limit));
-              // The rest are hidden
-              hiddenNodes.push(...uniqueNewNodes.slice(limit));
-            } else {
-              newNodes.push(...uniqueNewNodes);
-            }
+            // 1. Combine new data with existing graph
+            const uniqueNewNodes = data.nodes.filter(
+              (n: any) =>
+                !prev.nodes.some((existing: any) => existing.id === n.id),
+            );
+            const uniqueNewEdges = data.edges.filter(
+              (e: any) =>
+                !prev.edges.some(
+                  (existing: any) =>
+                    existing.source === e.source &&
+                    existing.target === e.target,
+                ),
+            );
 
-            // Edges must behave similarly.
-            // We only add edges that connect to visible nodes (existing or newly added visible ones).
-            // Hidden edges go to the group node conceptually, or we store them.
+            const combinedNodes = [...prev.nodes, ...uniqueNewNodes];
+            const combinedEdges = [...prev.edges, ...uniqueNewEdges];
 
-            const visibleNodeIds = new Set([
-              ...prev.nodes.map((n) => n.id),
-              ...newNodes.map((n) => n.id),
-            ]);
-
-            const newEdges: GraphEdge[] = [];
-            const hiddenEdges: GraphEdge[] = [];
-
-            data.edges.forEach((e) => {
-              // If exists, skip
-              if (
-                prev.edges.some(
-                  (existing) =>
-                    existing.source === e.source && existing.target === e.target
-                )
-              )
-                return;
-
-              const sourceVisible =
-                visibleNodeIds.has(e.source) || e.source === id; // id is the expanded node (anchor)
-              const targetVisible =
-                visibleNodeIds.has(e.target) || e.target === id;
-
-              // Note: The 'anchor' (id) is definitely visible.
-              // The 'other' side must be one of the new nodes.
-              // If the 'other' side is in 'hiddenNodes', then this edge is hidden.
-
-              const isHiddenSource = hiddenNodes.some((n) => n.id === e.source);
-              const isHiddenTarget = hiddenNodes.some((n) => n.id === e.target);
-
-              if (isHiddenSource || isHiddenTarget) {
-                hiddenEdges.push(e);
-              } else {
-                newEdges.push(e);
-              }
-            });
-
-            // If we have hidden nodes, create a group node
-            if (hiddenNodes.length > 0) {
-              const groupNode = createGroupNode(
-                hiddenNodes,
-                hiddenEdges,
-                id,
-                direction as any
+            // 2. Determine current visibility to calculate new limit
+            const currentCount = prev.nodes.filter((n: any) => {
+              const isUpstream = prev.edges.some(
+                (e: any) => e.source === n.id && e.target === fullId,
               );
-              newNodes.push(groupNode);
+              const isDownstream = prev.edges.some(
+                (e: any) => e.source === fullId && e.target === n.id,
+              );
 
-              // Add edge to group node
-              if (direction === "upstream" || direction === "both") {
-                // For upstream expansion, items are upstream OF the anchor.
-                // edge: item -> anchor.
-                // group edge: group -> anchor
-                // BUT mermaid might need specific direction.
-                // Let's assume standard behavior: we just add an edge connecting 'group' and 'id'.
-                // Actually direction helps determine source/target.
-                // If expanding upstream: New items -> Anchor. Edge: Group -> Anchor.
-                // If expanding downstream: Anchor -> New items. Edge: Anchor -> Group.
-                if (
-                  uniqueNewNodes.some((n) =>
-                    data.edges.some((e) => e.source === n.id && e.target === id)
-                  )
-                ) {
-                  newEdges.push({
-                    source: groupNode.id,
-                    target: id,
-                    type: "group-edge",
-                  });
-                }
-              }
-              if (direction === "downstream" || direction === "both") {
-                // downstream: anchor -> item
-                // edge: anchor -> group
-                if (
-                  uniqueNewNodes.some((n) =>
-                    data.edges.some((e) => e.source === id && e.target === n.id)
-                  )
-                ) {
-                  newEdges.push({
-                    source: id,
-                    target: groupNode.id,
-                    type: "group-edge",
-                  });
-                }
-              }
-            }
+              if (direction === "upstream") return isUpstream;
+              if (direction === "downstream") return isDownstream;
+              if (direction === "both") return isUpstream || isDownstream;
+              return false;
+            }).length;
 
-            const finalNodes = [...prev.nodes, ...newNodes];
-            const finalEdges = [...prev.edges, ...newEdges];
+            console.log(
+              "[useGraphData] currentCount:",
+              currentCount,
+              "Limit:",
+              limit,
+            );
 
-            const newState = { nodes: finalNodes, edges: finalEdges };
-            // Move pushToHistory to the next tick to avoid calling it during render/state update
+            // 3. Re-apply folding with increased limit for this expansion
+            const options = {
+              upstreamLimit:
+                direction === "upstream" ? currentCount + limit : undefined,
+              downstreamLimit:
+                direction === "downstream" ? currentCount + limit : undefined,
+              globalLimit: limit,
+            };
+
+            const newState = applyProgressiveLoading(
+              { nodes: combinedNodes, edges: combinedEdges },
+              fullId,
+              options,
+            );
+
             setTimeout(() => pushToHistory(newState), 0);
             return newState;
           });
         } else {
-          setGraphData(data);
-          resetHistory(data);
+          // INITIAL LOAD
+          const limit = config.PROGRESSIVE_LOADING_LIMIT;
+          const fullNodeId = id.includes(":") ? id : `${type}:${id}`;
+          console.log(
+            "[useGraphData] Initial load for:",
+            fullNodeId,
+            "Limit:",
+            limit,
+          );
+          const foldedData = applyProgressiveLoading(data, fullNodeId, limit);
+          setGraphData(foldedData);
+          resetHistory(foldedData);
         }
       } catch (err: any) {
         console.error("Error fetching graph:", err);
         setError(err.message);
       } finally {
         if (!isExpansion) {
-          // Ensure minimum 1 second loading time to prevent flickering only for full reloads
           const elapsed = Date.now() - startTime;
           const remainingTime = Math.max(0, 1000 - elapsed);
           setTimeout(() => setLoading(false), remainingTime);
@@ -217,98 +152,82 @@ export function useGraphData() {
         }
       }
     },
-    [pushToHistory, resetHistory]
+    [pushToHistory, resetHistory],
   );
 
   const expandGroup = useCallback(
     (groupNode: GraphNode) => {
-      setGraphData((prev) => {
+      setGraphData((prev: GraphState | null) => {
         if (!prev) return null;
 
         const props = groupNode.properties || {};
-        const hiddenNodes: GraphNode[] = props.remainingNodes || [];
-        const hiddenEdges: GraphEdge[] = props.remainingEdges || [];
+        const remainingNodes: GraphNode[] = props.remainingNodes || [];
+        const remainingEdges: GraphEdge[] = props.remainingEdges || [];
+        const anchorId = props.anchorId;
+        const direction = props.direction;
         const limit = config.PROGRESSIVE_LOADING_LIMIT;
 
-        if (hiddenNodes.length === 0) return prev;
-
-        const nodesToShow = hiddenNodes.slice(0, limit);
-        const nodesUnknown = hiddenNodes.slice(limit);
-
-        // Edges to show: edges connecting nodesToShow ??
-        // We stored 'remainingEdges'. We need to filter those that connect to 'nodesToShow'.
-        // Connection is relative to Anchor usually.
-
-        // Actually, we just need to add the edges related to nodesToShow.
-        const idsToShow = new Set(nodesToShow.map((n) => n.id));
-        const edgesToShow = hiddenEdges.filter(
-          (e) => idsToShow.has(e.source) || idsToShow.has(e.target)
+        // 1. Remove the current group node and its edges
+        const filteredNodes = prev.nodes.filter((n) => n.id !== groupNode.id);
+        const filteredEdges = prev.edges.filter(
+          (e) => e.source !== groupNode.id && e.target !== groupNode.id,
         );
 
-        const edgesUnknown = hiddenEdges.filter(
-          (e) => !edgesToShow.includes(e)
+        // 2. Calculate current visible counts in expansion direction
+        const currentUpstreams = filteredNodes.filter((n) =>
+          filteredEdges.some((e) => e.source === n.id && e.target === anchorId),
+        ).length;
+        const currentDownstreams = filteredNodes.filter((n) =>
+          filteredEdges.some((e) => e.source === anchorId && e.target === n.id),
+        ).length;
+
+        // 3. Combine existing nodes with hidden items from group
+        const combinedNodes = [...filteredNodes, ...remainingNodes];
+        const combinedEdges = [...filteredEdges, ...remainingEdges];
+
+        // 4. Set new increased limits for the expansion direction
+        const options = {
+          upstreamLimit:
+            direction === "upstream"
+              ? currentUpstreams + limit
+              : currentUpstreams,
+          downstreamLimit:
+            direction === "downstream"
+              ? currentDownstreams + limit
+              : currentDownstreams,
+          globalLimit: limit,
+        };
+
+        // 5. Re-apply folding logic
+        const tempState = { nodes: combinedNodes, edges: combinedEdges };
+        const newState = applyProgressiveLoading(tempState, anchorId, options);
+        console.log(
+          "[useGraphData] Expanded group node. New visible count:",
+          newState.nodes.length,
         );
 
-        // Prepare new state
-        let nextNodes = prev.nodes.filter((n) => n.id !== groupNode.id); // Remove current group node
-        nextNodes.push(...nodesToShow);
-
-        let nextEdges = prev.edges.filter(
-          (e) => e.source !== groupNode.id && e.target !== groupNode.id
-        ); // Remove group edges
-        nextEdges.push(...edgesToShow);
-
-        // If still more nodes, add new group node
-        if (nodesUnknown.length > 0) {
-          const newGroupNode = createGroupNode(
-            nodesUnknown,
-            edgesUnknown,
-            props.anchorId,
-            props.direction
-          );
-          nextNodes.push(newGroupNode);
-
-          // Add edge to new group
-          if (props.direction === "upstream" || props.direction === "both") {
-            // Heuristic: check if any hidden edge targeted anchor
-            nextEdges.push({
-              source: newGroupNode.id,
-              target: props.anchorId,
-              type: "group-edge",
-            });
-          }
-          if (props.direction === "downstream" || props.direction === "both") {
-            nextEdges.push({
-              source: props.anchorId,
-              target: newGroupNode.id,
-              type: "group-edge",
-            });
-          }
-        }
-
-        const newState = { nodes: nextNodes, edges: nextEdges };
         setTimeout(() => pushToHistory(newState), 0);
         return newState;
       });
     },
-    [pushToHistory]
+    [pushToHistory],
   );
 
   const removeNode = useCallback(
     (nodeId: string) => {
-      setGraphData((prev) => {
+      setGraphData((prev: GraphState | null) => {
         if (!prev) return null;
         const newState = {
           nodes: prev.nodes.filter((n) => n.id !== nodeId),
           edges: prev.edges.filter(
-            (e) => e.source !== nodeId && e.target !== nodeId
+            (e) => e.source !== nodeId && e.target !== nodeId,
           ),
         };
         setTimeout(() => pushToHistory(newState), 0);
         return newState;
       });
     },
-    [pushToHistory]
+    [pushToHistory],
   );
 
   const restoreFromHistory = useCallback((state: GraphState | null) => {
@@ -343,6 +262,6 @@ export function useGraphData() {
     redo: handleRedo,
     canUndo,
     canRedo,
-    setGraphData, // Occasionally needed for direct manipulation
+    setGraphData,
   };
 }

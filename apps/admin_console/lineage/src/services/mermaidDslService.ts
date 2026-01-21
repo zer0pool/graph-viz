@@ -15,25 +15,44 @@ export class MermaidDslService {
    * Generates a shortened name for display in the graph nodes.
    */
   static getShortenedName(name: string, type: string): string {
-    if (type !== "table") return name;
+    if (!name) return "";
 
-    if (name.startsWith("s3://")) {
-      const parts = name.substring(5).split("/");
-      const bucketName = parts[0];
-      return `s3://${bucketName}`;
+    let displayName = name;
+
+    if (type === "table") {
+      if (name.startsWith("s3://")) {
+        const parts = name.substring(5).split("/");
+        const bucketName = parts[0];
+        displayName = `s3://${bucketName}`;
+      } else if (name.includes(".")) {
+        const parts = name.split(".");
+        displayName = parts[parts.length - 1];
+      } else if (name.includes("/")) {
+        const parts = name.split("/");
+        displayName = parts.filter((p) => p.length > 0).pop() || name;
+      }
     }
 
-    if (name.includes(".")) {
-      const parts = name.split(".");
-      return parts[parts.length - 1];
+    // Truncate if still too long (e.g. 25 chars)
+    const MAX_LENGTH = 25;
+    if (displayName.length > MAX_LENGTH) {
+      return displayName.substring(0, MAX_LENGTH - 3) + "...";
     }
 
-    if (name.includes("/")) {
-      const parts = name.split("/");
-      return parts.filter((p) => p.length > 0).pop() || name;
-    }
+    return displayName;
+  }
 
-    return name;
+  /**
+   * Heavily sanitize ID for Mermaid compatibility (must start with letter, only alphanumeric + underscore)
+   */
+  static sanitizeId(id: string): string {
+    // Replace all non-alphanumeric characters with underscores
+    let safe = id.replace(/[^a-zA-Z0-9]/g, "_");
+    // Ensure it doesn't start with a number
+    if (/^[0-9]/.test(safe)) {
+      safe = "n_" + safe;
+    }
+    return safe;
   }
 
   /**
@@ -52,7 +71,7 @@ export class MermaidDslService {
     dsl += "---\n";
     dsl += `flowchart ${orientation}\n`;
 
-    // 2. Style Section (Injectable Styles)
+    // 2. Style Section
     const graphStyles = [
       "  classDef assetNode fill:#FFFFFF,stroke:#D1D5DB,stroke-width:1px,color:#111827,rx:10,ry:10",
       "  classDef groupNode fill:#F8F9FA,stroke:#1A73E8,stroke-width:2px,stroke-dasharray: 5 5,color:#1A73E8,rx:20,ry:20",
@@ -63,19 +82,16 @@ export class MermaidDslService {
 
     // 3. Content Section (Nodes)
     graphData.nodes.forEach((node) => {
-      const safeId = node.id.replace(/:/g, "_");
+      const safeId = this.sanitizeId(node.id);
 
       if (node.type === "group") {
-        // Special rendering for Group Node
         const label = node.name || "... more";
-        // Simple pill shape
         dsl += `  ${safeId}("${label}")\n`;
         dsl += `  ${safeId}:::groupNode\n`;
       } else {
-        // Standard Asset Node
         const displayName = this.getShortenedName(
           node.label || node.name,
-          node.type
+          node.type,
         );
         const platform =
           (node as any).platform ||
@@ -83,30 +99,43 @@ export class MermaidDslService {
 
         const richLabel = `<b><font color='#2352DB' size='1'>●</font> ${displayName}</b><br/><hr/><sub>${node.type} | ${platform}</sub>`;
         const escapedLabel = richLabel.replace(/"/g, '\\"');
+        const tooltip = (node.label || node.name).replace(/"/g, '\\"');
 
-        dsl += `  ${safeId}@{ label: "${escapedLabel}" }\n`;
+        dsl += `  ${safeId}@{ label: "${escapedLabel}", tooltip: "${tooltip}" }\n`;
         dsl += `  ${safeId}:::assetNode\n`;
       }
     });
 
     // 4. Content Section (Edges)
     graphData.edges.forEach((edge) => {
-      const safeSource = edge.source.replace(/:/g, "_");
-      const safeTarget = edge.target.replace(/:/g, "_");
+      const safeSource = this.sanitizeId(edge.source);
+      const safeTarget = this.sanitizeId(edge.target);
       const sourceNode = graphData.nodes.find((n) => n.id === edge.source);
       const targetNode = graphData.nodes.find((n) => n.id === edge.target);
       let label = "";
 
-      if (sourceNode?.type === "table" && targetNode?.type === "job") {
-        label = "reads";
-      } else if (sourceNode?.type === "job" && targetNode?.type === "table") {
-        label = "writes";
+      // Label logic including group nodes
+      const isUpstreamGroup =
+        sourceNode?.type === "group" &&
+        sourceNode.properties?.direction === "upstream";
+      const isDownstreamGroup =
+        targetNode?.type === "group" &&
+        targetNode.properties?.direction === "downstream";
+
+      if (sourceNode?.type === "table" || isDownstreamGroup) {
+        if (targetNode?.type === "job" || isDownstreamGroup) label = "reads";
+      } else if (sourceNode?.type === "job" || isUpstreamGroup) {
+        if (targetNode?.type === "table" || isUpstreamGroup) label = "writes";
       }
 
       const arrow = label ? `-- ${label} -->` : "-->";
       dsl += `  ${safeSource} ${arrow} ${safeTarget}\n`;
     });
 
+    console.log(
+      "[MermaidDsl] Generated DSL (First 500 chars):\n",
+      dsl.substring(0, 500),
+    );
     return dsl;
   }
 }
