@@ -52,25 +52,60 @@ stop_component() {
     rm -f "$pid_file"
 }
 
-# Stop all components in reverse order
-echo -e "${BLUE}Stopping all components...${NC}\n"
+# Function to stop infrastructure
+stop_infra() {
+    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}  Stopping Infrastructure (Docker)${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    
+    cd "$PROJECT_ROOT"
+    docker compose stop mysql-db redis-cache
+    
+    echo -e "${GREEN}✓ Infrastructure stopped (Docker)${NC}"
+}
 
-stop_component "shell"
-stop_component "table-detail-viewer"
-stop_component "lineage"
-stop_component "backend"
+# Main
+MODE=${1:-all}
 
-# Also kill any remaining node/python processes on these ports
-echo -e "\n${BLUE}Cleaning up any remaining processes...${NC}"
+case $MODE in
+    infra)
+        stop_infra
+        ;;
+    backend)
+        stop_component "backend"
+        ;;
+    frontend)
+        stop_component "shell"
+        stop_component "mfe-catalog"
+        stop_component "mfe-lineage"
+        ;;
+    all)
+        # Stop everything in logical reverse order
+        stop_component "shell"
+        stop_component "mfe-catalog"
+        stop_component "mfe-lineage"
+        stop_component "backend"
+        stop_infra
+        ;;
+    *)
+        echo -e "${RED}Unknown mode: $MODE${NC}"
+        echo "Usage: $0 [infra|backend|frontend|all]"
+        exit 1
+        ;;
+esac
 
-for port in 5100 5101 5102 5003; do
-    pid=$(lsof -ti:$port 2>/dev/null || true)
-    if [ ! -z "$pid" ]; then
-        echo -e "${YELLOW}Killing process on port $port (PID: $pid)${NC}"
-        kill -9 $pid 2>/dev/null || true
-    fi
-done
+# Also kill any remaining node/python processes on these ports if stopping code
+if [ "$MODE" != "infra" ]; then
+    echo -e "\n${BLUE}Cleaning up any remaining processes...${NC}"
+    for port in 5100 5101 5102 5003; do
+        pid=$(lsof -ti:$port 2>/dev/null || true)
+        if [ ! -z "$pid" ]; then
+            echo -e "${YELLOW}Killing process on port $port (PID: $pid)${NC}"
+            kill -9 $pid 2>/dev/null || true
+        fi
+    done
+fi
 
 echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}  ✓ All components stopped${NC}"
+echo -e "${GREEN}  ✓ Selected components stopped${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"

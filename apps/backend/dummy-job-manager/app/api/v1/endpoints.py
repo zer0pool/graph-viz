@@ -26,9 +26,13 @@ def get_scheduling_lineage(
     page = filtered[offset:end]
     next_offset = end if end < total else None
 
-    return {
-        "status": "success",
+    return {        
         "result": page,
+        "input": {
+            "scheduling_type": scheduling_type,
+            "offset": offset,
+            "limit": limit
+        },
         "pagination": {
             "limit": limit,
             "offset": offset,
