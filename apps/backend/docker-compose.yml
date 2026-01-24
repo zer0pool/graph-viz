@@ -1,9 +1,9 @@
 services:
-  app-manager:
+  lineage-manager:
     build:
       context: ./lineage_manager
       dockerfile: deploy/docker/Dockerfile
-    container_name: app-manager
+    container_name: lineage-manager
     ports:
       - "${BACKEND_PORT:-5003}:5003"
     env_file:
@@ -36,7 +36,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
       MYSQL_USER: ${DB_USER:-ss_admin}
       MYSQL_PASSWORD: ${DB_PASSWORD:-admin_password}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
     ports:
       - "${DB_EXTERNAL_PORT:-33306}:3306"
     networks:
@@ -60,4 +60,5 @@ services:
 
 networks:
   backend-network:
+    name: lineage-platform-network
     driver: bridge

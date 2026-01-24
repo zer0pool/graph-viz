@@ -48,8 +48,10 @@ env:
   BASE_URL: "/admin-console"
   BACKEND_HOST: "http://lineage-manager.self-scheduling-dev1.svc.cluster.local:5003"
   ENABLE_AUTH: "false"
-  ENABLE_MFE_LINEAGE: "true"
-  ENABLE_MFE_CATALOG: "true"
+  ENABLE_LINEAGE_MFE: "true"
+  ENABLE_CATALOG_MFE: "true"
+  LINEAGE_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-lineage/remoteEntry.js"
+  CATALOG_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-catalog/remoteEntry.js"
   API_LOCATION_REGEX: "^(/admin-console)?/api"
   NAMESERVER: "10.7.176.10"
   # OIDC Configuration (Override via --set or separate values file)

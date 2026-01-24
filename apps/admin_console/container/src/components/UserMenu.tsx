@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../app/AuthContext";
+import { User } from "lucide-react";
 import "../styles/components/UserMenu.css";
 
 export const UserMenu: React.FC = () => {
@@ -38,16 +39,13 @@ export const UserMenu: React.FC = () => {
           className="user-chip"
           onClick={() => setShowProfile(!showProfile)}
         >
-          <img
-            id="user-avatar"
-            src={
-              user.picture ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user.name || user.email || user.sub
-              )}&background=1a73e8&color=fff`
-            }
-            alt="User profile"
-          />
+          {user.picture ? (
+            <img id="user-avatar" src={user.picture} alt="User profile" />
+          ) : (
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 mr-2">
+              <User className="w-4 h-4 text-gray-500" />
+            </div>
+          )}
           <span className="user-name">
             {user.name || user.preferred_username || user.email || user.sub}
           </span>
@@ -62,7 +60,7 @@ export const UserMenu: React.FC = () => {
               src={
                 user.picture ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user.name || user.email || user.sub
+                  user.name || user.email || user.sub,
                 )}&background=3b82f6&color=fff&size=64`
               }
               alt="Profile"

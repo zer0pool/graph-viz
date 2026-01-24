@@ -8,5 +8,6 @@ export const config = {
   // Use runtime config if available, fallback to build-time env
   API_BASE_URL:
     runtimeConfig.API_BASE_URL || (__API_BASE_URL__ as string) || "",
-  NODE_ENV: (__NODE_ENV__ as string) || "development",
+  BASE_URL: runtimeConfig.BASE_URL || "/admin-console",
+  NODE_ENV: import.meta.env.NODE_ENV || "development",
 };

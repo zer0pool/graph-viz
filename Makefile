@@ -94,7 +94,7 @@ backend-down:
 	docker compose -f apps/backend/docker-compose.yml down
 
 backend-rebuild:
-	docker compose -f apps/backend/docker-compose.yml up -d --build app-manager app-job-dummy
+	docker compose -f apps/backend/docker-compose.yml up -d --build lineage-manager app-job-dummy
 
 backend-logs:
 	docker compose -f apps/backend/docker-compose.yml logs -f
@@ -107,6 +107,7 @@ admin-down:
 
 admin-rebuild:
 	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app admin-mfe-lineage admin-mfe-catalog
+	docker system prune -f
 
 # (Internal/Secondary) Rebuild individual MFEs if needed
 admin-lineage-rebuild:

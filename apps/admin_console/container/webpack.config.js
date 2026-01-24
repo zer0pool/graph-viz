@@ -30,8 +30,9 @@ module.exports = {
     },
     proxy: [
       {
-        context: ["/api"],
-        target: "http://localhost:5003/lineage-manager",
+        context: ["/admin-console/api"],
+        target: "http://localhost:5003",
+        pathRewrite: { "^/admin-console/api": "/api" },
         changeOrigin: true,
         secure: false,
       },
@@ -78,6 +79,9 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "public/index.html"),
       filename: "index.html",
+      templateParameters: {
+        BASE_URL: isProd ? "${BASE_URL}" : "/admin-console",
+      },
     }),
     new CopyWebpackPlugin({
       patterns: [
@@ -130,7 +134,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "auto",
+    publicPath: isProd ? "auto" : "/admin-console/",
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[contenthash].js",
     chunkFilename: "[name].[contenthash].js",

@@ -29,7 +29,11 @@ if [ -z "$NAMESERVER" ]; then
 fi
 
 # Set default BACKEND_HOST if not provided
-export BACKEND_HOST="${BACKEND_HOST:-http://app-manager:5003}"
+export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
+
+# Set default MFE upstream hosts (for local Docker, use service names; for K8s, set via env)
+export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:80}"
+export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:80}"
 
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"
@@ -37,6 +41,8 @@ echo " - BASE_URL_PREFIX: ${BASE_URL_PREFIX:-'/' (root)}"
 echo " - API_REGEX: ${API_LOCATION_REGEX}"
 echo " - NAMESERVER: ${NAMESERVER}"
 echo " - BACKEND_HOST: ${BACKEND_HOST}"
+echo " - MFE_LINEAGE_UPSTREAM: ${MFE_LINEAGE_UPSTREAM}"
+echo " - MFE_CATALOG_UPSTREAM: ${MFE_CATALOG_UPSTREAM}"
 
 # 2. Environment Variable Injection
 echo "[Shell] Injecting runtime configuration..."

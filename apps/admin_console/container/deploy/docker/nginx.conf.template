@@ -20,6 +20,37 @@ server {
     access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
+    # Support for Iframe embedding (for Shell usage)
+    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000;" always;
+
+    # 6. MFE Proxying (Kubernetes only - routes to internal MFE services)
+    # PLACED HERE TO TAKE PRECEDENCE OVER STATIC FILE REGEX MATCHERS
+    location ~ ^$BASE_URL_PREFIX/mfe-lineage/ {
+        resolver $NAMESERVER valid=30s ipv6=off;
+        set $mfe_lineage_upstream $MFE_LINEAGE_UPSTREAM;
+        
+        rewrite ^$BASE_URL_PREFIX/mfe-lineage/(.*)$ /$1 break;
+        
+        proxy_pass $mfe_lineage_upstream;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    }
+
+    location ~ ^$BASE_URL_PREFIX/mfe-catalog/ {
+        resolver $NAMESERVER valid=30s ipv6=off;
+        set $mfe_catalog_upstream $MFE_CATALOG_UPSTREAM;
+        
+        rewrite ^$BASE_URL_PREFIX/mfe-catalog/(.*)$ /$1 break;
+        
+        proxy_pass $mfe_catalog_upstream;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    }
+
     # 2.1 Disable caching for Module Federation configs
     location ~* (remoteEntry\.js|config\.js)$ {
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
@@ -67,14 +98,14 @@ server {
     # 5. Subpath Redirect Block (e.g. /admin -> /admin/)
     $SUBPATH_REDIRECT_BLOCK
 
-    # 6. API Proxying
-    location ~ $API_LOCATION_REGEX {
+    # 7. API Proxying
+    location ~ ^(/admin-console)?/api {
         # Add detailed logging for debugging        
         access_log /var/log/nginx/api_access.log;
         error_log /var/log/nginx/api_error.log;
 
         resolver $NAMESERVER valid=30s ipv6=off;
-        # set $upstream http://app-manager:5003;
+        # set $upstream http://lineage-manager:5003;
         set $upstream $BACKEND_HOST;
         
         # Strip the prefix if it exists and ADD the backend root_path

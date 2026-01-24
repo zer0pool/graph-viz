@@ -239,3 +239,45 @@ class MermaidGraphResponse(BaseModel):
     nodes: List[GraphNode] = Field(..., description="List of graph nodes")
     edges: List[GraphEdge] = Field(..., description="List of graph edges")
     metadata: GraphMetadata = Field(..., description="Graph metadata")
+
+
+# ============================================================================
+# Audit / Operations Schemas
+# ============================================================================
+
+class AuditEvent(BaseModel):
+    id: str
+    description: str
+    status: Literal['SUCCESS', 'FAILED', 'TIMEOUT']
+    timestamp: str
+
+
+class AuditCommand(BaseModel):
+    id: str
+    timestamp: str
+    type: str = "COMMAND"
+    summary: str
+    actor: str
+    status: Literal['SUCCESS', 'PARTIAL', 'FAILED']
+    incidentId: Optional[str] = None
+    relatedInfo: Optional[str] = None
+    events: List[AuditEvent] = []
+
+
+# ============================================================================
+# User Management Schemas
+# ============================================================================
+
+class UserRole(str):
+    PM = "PM"
+    OPERATOR = "OPERATOR"
+    DEVELOPER = "DEVELOPER"
+
+
+class UserInfo(BaseModel):
+    id: str
+    name: str
+    email: str
+    roles: List[str]
+    department: str
+    lastActive: str
