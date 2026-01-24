@@ -50,6 +50,8 @@ env:
   ENABLE_AUTH: "false"
   ENABLE_MFE_LINEAGE: "true"
   ENABLE_MFE_CATALOG: "true"
+  API_LOCATION_REGEX: "^(/admin-console)?/api"
+  NAMESERVER: "10.7.176.10"
   # OIDC Configuration (Override via --set or separate values file)
   OIDC_AUTHORITY: "https://sts.secsso.net/adfs"
   OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"
