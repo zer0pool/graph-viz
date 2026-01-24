@@ -3,9 +3,11 @@ import logging
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
 
+from typing import List
 from lineage_manager.core.auth import require_authenticated_user
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.user_service import UserService
+from lineage_manager.api.v1.schemas import UserInfo
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,3 @@ def list_users():
         },
     ]
 
-
-from lineage_manager.api.v1.schemas import UserInfo
-from typing import List
