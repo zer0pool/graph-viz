@@ -34,6 +34,7 @@ echo " - BASE_URL: ${BASE_URL}"
 echo " - BASE_URL_PREFIX: ${BASE_URL_PREFIX:-'/' (root)}"
 echo " - API_REGEX: ${API_LOCATION_REGEX}"
 echo " - NAMESERVER: ${NAMESERVER}"
+echo " - BACKEND_HOST: ${BACKEND_HOST}"
 
 # 2. Environment Variable Injection
 echo "[Shell] Injecting runtime configuration..."
@@ -43,7 +44,7 @@ if [ -f /vars.sh ]; then
     . /vars.sh
 else
     # Fallback if file missing (local testing outside docker)
-    export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $ENABLE_LINEAGE_MFE $ENABLE_TABLE_DETAIL_MFE $LINEAGE_MFE_URL $TABLE_DETAIL_MFE_URL $NAMESERVER'
+    export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $ENABLE_LINEAGE_MFE $ENABLE_CATALOG_MFE $LINEAGE_MFE_URL $CATALOG_MFE_URL $NAMESERVER $BACKEND_HOST'
 fi
 
 # Inject into config.js

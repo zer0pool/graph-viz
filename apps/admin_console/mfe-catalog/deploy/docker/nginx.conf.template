@@ -65,11 +65,11 @@ server {
 
     # 6. API Proxying
     location ~ $API_LOCATION_REGEX {
-        resolver $NAMESERVER valid=30s;
-        set $upstream http://app-manager:5003;
+        resolver $NAMESERVER valid=30s ipv6=off;
+        set $upstream $BACKEND_HOST;
         
-        # Strip the prefix if it exists and ADD the backend root_path
-        rewrite ^($BASE_URL_PREFIX)?/api/(.*)$ /lineage-manager/api/$2 break;
+        # Strip the prefix if it exists
+        rewrite ^($BASE_URL_PREFIX)?/api/(.*)$ /api/$2 break;
 
         proxy_pass $upstream;
 

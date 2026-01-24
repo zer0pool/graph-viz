@@ -29,9 +29,9 @@ spec:
           protocol: TCP
         env:
         - name: API_BASE_URL
-          value: {{ $config.basePath | quote }}
+          value: "/admin-console"
         - name: BACKEND_HOST
-          value: {{ $.Values.backend.url }}
+          value: {{ $.Values.backend.url | quote }}
         - name: BASE_URL
           value: {{ $config.basePath }}
         {{- if eq $app "app" }}

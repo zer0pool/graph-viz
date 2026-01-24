@@ -34,6 +34,7 @@ echo " - BASE_URL: ${BASE_URL}"
 echo " - BASE_URL_PREFIX: ${BASE_URL_PREFIX:-'/' (root)}"
 echo " - API_REGEX: ${API_LOCATION_REGEX}"
 echo " - NAMESERVER: ${NAMESERVER}"
+echo " - BACKEND_HOST: ${BACKEND_HOST}"
 
 # 2. Environment Variable Injection
 echo "[MFE] Injecting runtime configuration..."

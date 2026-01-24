@@ -10,9 +10,9 @@ services:
     ports:
       - "${SHELL_PORT:-5100}:80"
     environment:
-      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - API_BASE_URL=/admin-console
       - BASE_URL=${BASE_URL:-/admin-console}
-      - BACKEND_HOST=http://app-manager:5003
+      - BACKEND_HOST=http://app-manager:5003/lineage-manager
       - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
       - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
       - ENABLE_MFE_LINEAGE=${ENABLE_MFE_LINEAGE:-true}
@@ -33,8 +33,9 @@ services:
     ports:
       - "${LINEAGE_PORT:-5101}:80"
     environment:
-      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - API_BASE_URL=/admin-console
       - BASE_URL=${LINEAGE_BASE_URL:-/mfe-lineage}
+      - BACKEND_HOST=http://app-manager:5003/lineage-manager
     networks:
       - admin-network
       - backend-network
@@ -50,8 +51,9 @@ services:
     ports:
       - "${TABLE_DETAIL_PORT:-5102}:80"
     environment:
-      - API_BASE_URL=http://localhost:5003/lineage-manager
+      - API_BASE_URL=/admin-console
       - BASE_URL=${CATALOG_BASE_URL:-/mfe-catalog}
+      - BACKEND_HOST=http://app-manager:5003/lineage-manager
     networks:
       - admin-network
       - backend-network
