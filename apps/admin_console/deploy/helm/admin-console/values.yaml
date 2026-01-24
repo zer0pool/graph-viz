@@ -50,7 +50,7 @@ mfeCatalog:
 
 # Backend API configuration
 backend:
-  url: http://lineage-manager:5003
+  url: http://lineage-manager.self-scheduling-dev1.svc.cluster.local:5003
 
 # Ingress configuration
 ingress:

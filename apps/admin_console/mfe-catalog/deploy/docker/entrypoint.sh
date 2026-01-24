@@ -10,20 +10,22 @@ if [ "$BASE_URL" = "/" ]; then
     export BASE_URL_PREFIX="" 
     export REDIRECT_COMMAND=""
     # For root, we just need to proxy /api
-    export API_LOCATION_REGEX="^/api"
+    export API_LOCATION_REGEX="${API_LOCATION_REGEX:-^/api}"
     export SUBPATH_REDIRECT_BLOCK="# No subpath redirect needed"
 else
     export BASE_URL_PREFIX="$BASE_URL"
     export REDIRECT_COMMAND="return 301 $BASE_URL/;"
     # For subpath, we proxy both /api and /subpath/api
-    export API_LOCATION_REGEX="^($BASE_URL)?/api"
+    export API_LOCATION_REGEX="${API_LOCATION_REGEX:-^($BASE_URL)?/api}"
     export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { return 301 $BASE_URL/; }"
 fi
 
-# Extract nameserver for Nginx resolver
-export NAMESERVER=$(grep -i '^nameserver' /etc/resolv.conf | head -n1 | cut -d ' ' -f2)
+# Extract nameserver for Nginx resolver if not provided
 if [ -z "$NAMESERVER" ]; then
-    export NAMESERVER="127.0.0.11" # Docker default
+    export NAMESERVER=$(grep -i '^nameserver' /etc/resolv.conf | head -n1 | cut -d ' ' -f2)
+    if [ -z "$NAMESERVER" ]; then
+        export NAMESERVER="127.0.0.11" # Docker default
+    fi
 fi
 
 # Set default BACKEND_HOST if not provided

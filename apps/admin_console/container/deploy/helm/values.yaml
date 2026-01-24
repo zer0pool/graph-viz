@@ -46,7 +46,7 @@ fullnameOverride: "admin-console-app"
 env:
   API_BASE_URL: "/admin-console"
   BASE_URL: "/admin-console"
-  BACKEND_HOST: "http://lineage-manager:5003"
+  BACKEND_HOST: "http://lineage-manager.self-scheduling-dev1.svc.cluster.local:5003"
   ENABLE_AUTH: "false"
   ENABLE_MFE_LINEAGE: "true"
   ENABLE_MFE_CATALOG: "true"
