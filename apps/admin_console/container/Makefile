@@ -15,7 +15,7 @@ else
   IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-console-app
 endif
 
-CHART_NAME := app
+CHART_NAME := admin-console-app
 CHART_PATH := ./deploy/helm
 IMAGE_TAG := latest
 
