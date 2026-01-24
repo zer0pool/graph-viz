@@ -3,8 +3,7 @@
 
 export const config = {
   // Fallback to localhost if window config is missing (for npm run dev)
-  API_BASE_URL:
-    (window as any).__APP_CONFIG__?.API_BASE_URL || "http://localhost:5003",
+  API_BASE_URL: (window as any).__APP_CONFIG__?.API_BASE_URL || "",
   BASE_URL: (
     (window as any).__APP_CONFIG__?.BASE_URL || "/admin-console"
   ).replace(/\/$/, ""),

@@ -50,16 +50,17 @@ mfeCatalog:
 
 # Backend API configuration
 backend:
-  url: http://lineage-manager:5003/lineage-manager
+  url: http://lineage-manager.default.svc.cluster.local:5003/lineage-manager
 
 # Ingress configuration
 ingress:
   enabled: true
-  className: nginx
+  className: gce
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: "self-scheduling"
   hosts:
-    - host: admin.example.com
+    - host: dev1-self-scheduling.di.atlas.samsung.com
       paths:
         - path: /admin-console
           pathType: Prefix
@@ -73,12 +74,28 @@ ingress:
   tls:
     - secretName: admin-console-tls
       hosts:
-        - admin.example.com
+        - dev1-self-scheduling.di.atlas.samsung.com
 
 # Service configuration
 service:
   type: ClusterIP
   port: 80
+
+# BackendConfig configuratino for Google Cloud Load Balacer
+backendConfig:
+  enabled: true
+  name: self-scheduling-backend
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 300
+  healthCheck:
+    checkIntervalSec: 5
+    timeoutSec: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /health
+    port: 80
 
 # Environment-specific overrides
 env: dev

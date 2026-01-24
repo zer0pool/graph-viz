@@ -29,7 +29,7 @@ spec:
           protocol: TCP
         env:
         - name: API_BASE_URL
-          value: ""
+          value: {{ $config.basePath | quote }}
         - name: BACKEND_HOST
           value: {{ $.Values.backend.url }}
         - name: BASE_URL

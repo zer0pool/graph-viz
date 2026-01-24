@@ -9,6 +9,11 @@ metadata:
     app: {{ $config.name }}
     chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
     release: {{ $.Release.Name }}
+  {{- if $.Values.backendConfig.enabled }}
+  annotations:
+    cloud.google.com/backend-config: '{"default": "{{ $.Values.backendConfig.name }}"}'
+    cloud.google.com/neg: '{"ingress": true}'
+  {{- end }}
 spec:
   type: {{ $.Values.service.type }}
   ports:

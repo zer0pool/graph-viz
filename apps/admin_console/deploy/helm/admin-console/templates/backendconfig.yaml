@@ -1,0 +1,23 @@
+{{- if .Values.backendConfig.enabled -}}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ .Values.backendConfig.name }}
+  labels:
+    app: {{ .Release.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  timeoutSec: {{ .Values.backendConfig.timeoutSec }}
+  connectionDraining:
+    drainingTimeoutSec: {{ .Values.backendConfig.connectionDraining.drainingTimeoutSec }}
+  healthCheck:
+    checkIntervalSec: {{ .Values.backendConfig.healthCheck.checkIntervalSec }}
+    timeoutSec: {{ .Values.backendConfig.healthCheck.timeoutSec }}
+    healthyThreshold: {{ .Values.backendConfig.healthCheck.healthyThreshold }}
+    unhealthyThreshold: {{ .Values.backendConfig.healthCheck.unhealthyThreshold }}
+    type: {{ .Values.backendConfig.healthCheck.type }}
+    requestPath: {{ .Values.backendConfig.healthCheck.requestPath }}
+    port: {{ .Values.backendConfig.healthCheck.port }}
+{{- end }}

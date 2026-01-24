@@ -12,6 +12,7 @@ services:
     environment:
       - API_BASE_URL=http://localhost:5003/lineage-manager
       - BASE_URL=${BASE_URL:-/admin-console}
+      - BACKEND_HOST=http://app-manager:5003
       - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
       - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
       - ENABLE_MFE_LINEAGE=${ENABLE_MFE_LINEAGE:-true}
