@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ViewMode } from "../../types";
 import { DetailLayout, Tab } from "../../components/DetailLayout";
 import { useJobOverview } from "../../hooks/useJobOverview";
@@ -9,6 +10,10 @@ import { JobRunHistory } from "../../components/job/JobRunHistory";
 import { JobRunTimeline } from "../../components/job/JobRunTimeline";
 import { JobRunDrawer } from "../../components/job/JobRunDrawer";
 import { JobRun } from "../../types/job";
+import { mockJobs } from "../../data/mockData";
+import { useMfeNavigate } from "../../utils/navigation";
+
+import { EntityContextLink } from "../../components/common/EntityContextLink";
 
 const JOB_TABS: Tab[] = [
   { id: "info", label: "Overview" },
@@ -22,6 +27,9 @@ export const JobDetailView: React.FC<{
 }> = ({ jobId, mode = "EMBEDDED" }) => {
   const [tab, setTab] = useState("info");
   const [selectedRun, setSelectedRun] = useState<JobRun | null>(null);
+
+  // Organic data for navigation links
+  const jobMeta = mockJobs.find((j) => j.id === jobId);
 
   // Hooks
   const { job, loading: loadingJob, error: errorJob } = useJobOverview(jobId);
@@ -49,7 +57,7 @@ export const JobDetailView: React.FC<{
   return (
     <>
       <DetailLayout
-        title={job?.name || jobId}
+        title={jobMeta?.name || job?.name || jobId}
         tabs={JOB_TABS}
         activeTab={tab}
         onTabChange={setTab}
@@ -58,6 +66,21 @@ export const JobDetailView: React.FC<{
         <div className="p-6">
           {tab === "info" && (
             <div className="space-y-6 animate-fade-in">
+              {/* Navigation Header for Demo */}
+              <div className="flex items-center gap-8 p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6">
+                <EntityContextLink
+                  title="Parent Project"
+                  label={jobMeta?.project || "N/A"}
+                  path={jobMeta ? `/projects/${jobMeta.projectId}` : "/"}
+                />
+                <div className="w-px h-8 bg-slate-200" />
+                <EntityContextLink
+                  title="Registered By"
+                  label={jobMeta?.owner || "N/A"}
+                  path={jobMeta ? `/users/${jobMeta.ownerId}` : "/"}
+                />
+              </div>
+
               <JobOverview
                 job={job || { id: jobId, name: jobId, status: "loading" }}
                 loading={loadingJob}

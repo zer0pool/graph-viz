@@ -1,72 +1,89 @@
-// This function dynamically loads a remote module
-export const loadRemote = (scope: string, url: string) => {
-  return new Promise<any>((resolve, reject) => {
-    const existingScript = document.getElementById(`remote-script-${scope}`);
+// 🔹 Types & Constants
+type InternalScriptElement = HTMLScriptElement & {
+  dataset: { status: string };
+};
+const TIMEOUT_MS = 10000;
+const POLL_INTERVAL_MS = 100;
 
-    const resolveContainer = () => {
+/**
+ * Dynamically loads a Webpack Remote module and initializes its container.
+ */
+export const loadRemote = (scope: string, url: string): Promise<any> => {
+  return new Promise<any>((resolve, reject) => {
+    const existingScript = document.getElementById(
+      `remote-script-${scope}`,
+    ) as InternalScriptElement;
+
+    // 1. Resolve logic: Extract from window and initialize if needed
+    const tryGetContainer = () => {
       // @ts-ignore
       const container = window[scope];
-      if (container) {
-        // @ts-ignore
-        if (!container.__initialized) {
-          try {
-            // @ts-ignore
-            container.init(__webpack_share_scopes__.default);
-            // @ts-ignore
-            container.__initialized = true;
-          } catch (e) {
-            console.error(`[Shell:loadRemote] Init failed for ${scope}:`, e);
-          }
+      if (!container) return null;
+
+      // @ts-ignore
+      if (!container.__initialized) {
+        try {
+          // @ts-ignore
+          container.init(__webpack_share_scopes__.default);
+          // @ts-ignore
+          container.__initialized = true;
+        } catch (e) {
+          console.error(`[Shell:loadRemote] Failed to init ${scope}:`, e);
         }
-        resolve(container);
-        return true;
       }
-      return false;
+      return container;
     };
 
-    // 1. If global already exists, resolve immediately
-    if (resolveContainer()) return;
-
-    // 2. If script exists but no global, it might be loading or failed
-    if (existingScript) {
-      console.warn(
-        `[Shell:loadRemote] Script for ${scope} already exists but global is missing. Waiting...`,
-      );
-      let attempts = 0;
-      const interval = setInterval(() => {
-        if (resolveContainer()) {
-          clearInterval(interval);
-        } else if (attempts++ > 100) {
-          // Max 10s wait
-          clearInterval(interval);
-          reject(
-            new Error(`Timed out waiting for global '${scope}' from ${url}`),
-          );
-        }
-      }, 100);
-      return;
+    // 2. Immediate resolution if already available
+    const availableContainer = tryGetContainer();
+    if (availableContainer) {
+      return resolve(availableContainer);
     }
 
-    // 3. New load
-    const script = document.createElement("script");
+    // 3. Helper: Watch an already-loading script for completion
+    const waitForGlobal = () => {
+      let elapsed = 0;
+      const interval = setInterval(() => {
+        const container = tryGetContainer();
+        if (container) {
+          clearInterval(interval);
+          resolve(container);
+        } else if (elapsed >= TIMEOUT_MS) {
+          clearInterval(interval);
+          reject(new Error(`Timeout waiting for global '${scope}' (${url})`));
+        }
+        elapsed += POLL_INTERVAL_MS;
+      }, POLL_INTERVAL_MS);
+    };
+
+    // 4. Handle Existing Script
+    if (existingScript) {
+      if (existingScript.dataset.status === "failed") {
+        console.warn(`[Shell:loadRemote] retrying failed load for ${scope}`);
+        existingScript.remove();
+      } else {
+        return waitForGlobal();
+      }
+    }
+
+    // 5. Inject New Script
+    const script = document.createElement("script") as InternalScriptElement;
     script.src = url;
     script.id = `remote-script-${scope}`;
     script.async = true;
-
-    console.log(`[Shell:loadRemote] Injecting script: ${url}`);
+    script.dataset.status = "loading";
 
     script.onload = () => {
-      if (!resolveContainer()) {
-        reject(
-          new Error(
-            `Global '${scope}' not found on window after script load from ${url}`,
-          ),
-        );
-      }
+      script.dataset.status = "loaded";
+      const container = tryGetContainer();
+      container
+        ? resolve(container)
+        : reject(new Error(`Global '${scope}' missing after load from ${url}`));
     };
 
     script.onerror = () => {
-      reject(new Error(`Failed to load remote script: ${url}`));
+      script.dataset.status = "failed";
+      reject(new Error(`Failed to load script: ${url}`));
     };
 
     document.head.appendChild(script);

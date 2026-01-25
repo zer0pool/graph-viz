@@ -17,6 +17,7 @@ const Diagnostics: React.FC = () => (
 
 import { AuditLanding } from "../views/landing/AuditLanding";
 import { UsersLanding } from "../views/landing/UsersLanding";
+import { UserDetail } from "../views/landing/UserDetail";
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-8 text-center">
@@ -74,37 +75,31 @@ export const AppRouter: React.FC<{
       {/* @ts-ignore */}
       {config.ENABLE_MFE_CATALOG && (
         <>
-          <Route
-            path="/jobs/*"
-            element={
-              <RemoteMount
-                key="catalog-jobs"
-                scope="tableDetailViewer"
-                module="./views"
-                url={config.CATALOG_MFE_URL}
-                mountProps={{ mode: "STANDALONE" }}
-                visible={true}
+          {/* Catalog MFE: Handles Jobs, Tables, and Projects */}
+          {/* @ts-ignore */}
+          {config.ENABLE_MFE_CATALOG &&
+            ["jobs", "tables", "projects"].map((domain) => (
+              <Route
+                key={`catalog-${domain}`}
+                path={`/${domain}/*`}
+                element={
+                  <RemoteMount
+                    key={`mount-${domain}`}
+                    scope="tableDetailViewer"
+                    module="./views"
+                    url={config.CATALOG_MFE_URL}
+                    mountProps={{ mode: "STANDALONE" }}
+                    visible={true}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/tables/*"
-            element={
-              <RemoteMount
-                key="catalog-tables"
-                scope="tableDetailViewer"
-                module="./views"
-                url={config.CATALOG_MFE_URL}
-                mountProps={{ mode: "STANDALONE" }}
-                visible={true}
-              />
-            }
-          />
+            ))}
         </>
       )}
 
       {/* Shell Managed Landing Pages */}
       <Route path="/users" element={<UsersLanding />} />
+      <Route path="/users/:userId" element={<UserDetail />} />
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/settings" element={<Placeholder title="Settings" />} />
     </Routes>

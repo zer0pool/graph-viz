@@ -1,4 +1,4 @@
-export type ViewMode = "EMBEDDED" | "PAGE";
+export type ViewMode = "EMBEDDED" | "PAGE" | "STANDALONE";
 
 export type Selection = {
   type: "job" | "table";

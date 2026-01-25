@@ -13,5 +13,5 @@ export const config = {
   BASE_URL: runtimeConfig.BASE_URL || "/admin-console",
   LINEAGE_MFE_URL:
     runtimeConfig.LINEAGE_MFE_URL || "http://localhost:5101/remoteEntry.js",
-  NODE_ENV: import.meta.env.NODE_ENV || "development",
+  NODE_ENV: (import.meta as any).env.NODE_ENV || "development",
 };

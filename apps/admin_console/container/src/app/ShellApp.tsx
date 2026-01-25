@@ -6,13 +6,34 @@ import { AppRouter } from "./Router";
 import { Drawer } from "../components/common/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { config } from "../config";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/global.css";
 import "../styles/tailwind.css";
 
-type DrawerState = null | {
-  type: "table" | "job";
-  tableName?: string;
-  jobId?: string;
+const MFE_NAVIGATE_EVENT = "mfe:navigate"; // Consistent with MFE side
+
+// 🔹 Navigation Sync Component: Listens for MFE events and updates Shell router
+const GlobalNavSync = () => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    const handleMfeNavigate = (e: any) => {
+      const { path } = e.detail;
+      if (path && path !== pathname) {
+        console.log(
+          `[Shell:NavSync] Syncing Shell route: ${pathname} -> ${path}`,
+        );
+        navigate(path);
+      }
+    };
+
+    window.addEventListener(MFE_NAVIGATE_EVENT, handleMfeNavigate);
+    return () =>
+      window.removeEventListener(MFE_NAVIGATE_EVENT, handleMfeNavigate);
+  }, [navigate, pathname]);
+
+  return null;
 };
 
 export const ShellApp = () => {
@@ -38,6 +59,7 @@ export const ShellApp = () => {
 
   return (
     <BrowserRouter basename={config.BASE_URL}>
+      <GlobalNavSync />
       <AppLayout
         onSelectGraphNode={(node) => {
           console.log("[Shell] Setting activeGraphNode:", node);
