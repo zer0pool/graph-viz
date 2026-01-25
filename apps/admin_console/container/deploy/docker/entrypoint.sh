@@ -28,12 +28,17 @@ if [ -z "$NAMESERVER" ]; then
     fi
 fi
 
-# Set default BACKEND_HOST if not provided
-export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
-
-# Set default MFE upstream hosts (for local Docker, use service names; for K8s, set via env)
-export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:5101}"
-export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:5102}"
+# Set default upstream hosts
+if [ -n "$K8S_NAMESPACE" ]; then
+    echo "[Shell] K8S_NAMESPACE detected: ${K8S_NAMESPACE}. Using FQDNs for upstreams."
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager.${K8S_NAMESPACE}.svc.cluster.local:5003}"
+    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage.${K8S_NAMESPACE}.svc.cluster.local:5101}"
+    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog.${K8S_NAMESPACE}.svc.cluster.local:5102}"
+else
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
+    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:5101}"
+    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:5102}"
+fi
 
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"

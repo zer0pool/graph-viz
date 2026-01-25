@@ -9,5 +9,7 @@ export const config = {
   API_BASE_URL:
     runtimeConfig.API_BASE_URL || (__API_BASE_URL__ as string) || "",
   BASE_URL: runtimeConfig.BASE_URL || "/admin-console",
+  LINEAGE_MFE_URL:
+    runtimeConfig.LINEAGE_MFE_URL || "http://localhost:5101/remoteEntry.js",
   NODE_ENV: import.meta.env.NODE_ENV || "development",
 };

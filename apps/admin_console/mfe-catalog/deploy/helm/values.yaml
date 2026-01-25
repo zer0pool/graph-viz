@@ -44,3 +44,4 @@ resources:
 
 env:
   NODE_ENV: "production"
+  LINEAGE_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-lineage/remoteEntry.js"
