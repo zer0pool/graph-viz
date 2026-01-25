@@ -24,8 +24,8 @@ server {
     add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000;" always;
 
     # 6. MFE Proxying (Kubernetes only - routes to internal MFE services)
-    # PLACED HERE TO TAKE PRECEDENCE OVER STATIC FILE REGEX MATCHERS
-    location ~ ^$BASE_URL_PREFIX/mfe-lineage/ {
+    # PLACED HERE TO TAKE PRECEDENCE OVER ANY REGEX MATCHERS
+    location ^~ $BASE_URL_PREFIX/mfe-lineage/ {
         resolver $NAMESERVER valid=30s ipv6=off;
         set $mfe_lineage_upstream $MFE_LINEAGE_UPSTREAM;
         
@@ -36,9 +36,13 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+
+        # Debug logs
+        access_log /var/log/nginx/mfe_access.log;
+        error_log /var/log/nginx/mfe_error.log debug;
     }
 
-    location ~ ^$BASE_URL_PREFIX/mfe-catalog/ {
+    location ^~ $BASE_URL_PREFIX/mfe-catalog/ {
         resolver $NAMESERVER valid=30s ipv6=off;
         set $mfe_catalog_upstream $MFE_CATALOG_UPSTREAM;
         
@@ -49,6 +53,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+
+        # Debug logs
+        access_log /var/log/nginx/mfe_access.log;
+        error_log /var/log/nginx/mfe_error.log debug;
     }
 
     # 2.1 Disable caching for Module Federation configs

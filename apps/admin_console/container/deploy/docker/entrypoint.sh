@@ -32,8 +32,8 @@ fi
 export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
 
 # Set default MFE upstream hosts (for local Docker, use service names; for K8s, set via env)
-export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:80}"
-export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:80}"
+export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:5101}"
+export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:5102}"
 
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"
