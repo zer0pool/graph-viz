@@ -17,7 +17,7 @@ server {
 
     # 2. Access logs: stdout for K8s logs, and a REAL file for internal tail -f debugging
     access_log /dev/stdout;
-    access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
+    access_log /tmp/lineage_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
     # Support for Iframe embedding (for Shell usage)

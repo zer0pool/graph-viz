@@ -12,9 +12,12 @@ export const config = {
     runtimeConfig.API_BASE_URL ||
     (import.meta as any).env.VITE_API_BASE_URL ||
     "",
+  BASE_URL: runtimeConfig.BASE_URL || "/admin-console",
+  CATALOG_MFE_URL:
+    runtimeConfig.CATALOG_MFE_URL || "http://localhost:5102/remoteEntry.js",
   DEBUG: isDev,
   // Progressive Loading Limit (default: 3)
   PROGRESSIVE_LOADING_LIMIT: Number(
-    (import.meta as any).env.VITE_PROGRESSIVE_LOADING_LIMIT || 3
+    (import.meta as any).env.VITE_PROGRESSIVE_LOADING_LIMIT || 3,
   ),
 };
