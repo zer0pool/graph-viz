@@ -19,6 +19,9 @@ export const RemoteMount: React.FC<Props> = ({
   mountProps,
   visible,
 }) => {
+  console.log(
+    `[Shell:RemoteMount] Rendering component for scope: ${scope}, visible: ${visible}`,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<null | (() => void)>(null);
   const mountedRef = useRef(false);
@@ -85,7 +88,13 @@ export const RemoteMount: React.FC<Props> = ({
           `[Shell:RemoteMount] Error loading/mounting ${scope}:`,
           err,
         );
-        setError(`Failed to load module: ${scope}`);
+        console.error(
+          `[Shell:RemoteMount] Stack trace:`,
+          err instanceof Error ? err.stack : "No stack trace",
+        );
+        setError(
+          `Failed to load module: ${scope}. Details: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     })();
 

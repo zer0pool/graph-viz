@@ -68,6 +68,8 @@ services:
   redis-cache:
     image: redis:alpine
     container_name: redis-cache
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     networks:
       - lineage-network
 

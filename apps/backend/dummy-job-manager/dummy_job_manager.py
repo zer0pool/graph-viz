@@ -11,6 +11,7 @@ from typing import Optional, List
 import json
 import os
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 
 app = FastAPI(
     title="Connected DAG Dummy Job Manager (Static JSON)",
@@ -18,6 +19,10 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+ 
+class SchedulingType(str, Enum):
+    SELF_TYPE = "SELF-TYPE"
+    REQUEST_TYPE = "REQUEST-TYPE"
 
 # Load Static Data on Startup
 ALL_DATA = []
@@ -48,7 +53,7 @@ class JobSelectorRequest(BaseModel):
 # =====================================================================
 @app.get("/api/v1/jobs/scheduling-lineage/")
 def get_scheduling_lineage(
-    scheduling_type: Optional[str] = Query(default=None),
+    scheduling_type: Optional[SchedulingType] = Query(default=None),
     offset: int = 0,
     limit: int = 100,
 ):
@@ -57,10 +62,7 @@ def get_scheduling_lineage(
     # Simple filtering based on internal 'type' field which matches scheduling_type
     filtered = ALL_DATA
     if scheduling_type:
-        # Our generator produced "SELF" and "REQUEST" types.
-        # But the API might receive "SELF-TYPE".
-        target_type = scheduling_type.replace("-TYPE", "")
-        filtered = [j for j in ALL_DATA if j.get("type") == target_type]
+        filtered = [j for j in ALL_DATA if j.get("type") == scheduling_type.value]
 
     total = len(filtered)
     end = offset + limit
@@ -70,6 +72,11 @@ def get_scheduling_lineage(
     return {
         "status": "success",
         "result": page,
+        "input": {
+            "scheduling_type": scheduling_type,
+            "offset": offset,
+            "limit": limit
+        },
         "pagination": {
             "limit": limit,
             "offset": offset,

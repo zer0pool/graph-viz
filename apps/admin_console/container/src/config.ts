@@ -7,9 +7,9 @@ export const config = {
   BASE_URL: (
     (window as any).__APP_CONFIG__?.BASE_URL || "/admin-console"
   ).replace(/\/$/, ""),
-  ENABLE_LINEAGE_MFE:
+  ENABLE_MFE_LINEAGE:
     (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
-  ENABLE_CATALOG_MFE:
+  ENABLE_MFE_CATALOG:
     (window as any).__APP_CONFIG__?.ENABLE_CATALOG_MFE !== "false",
   LINEAGE_MFE_URL:
     (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL ||

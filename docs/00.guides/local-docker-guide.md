@@ -12,7 +12,7 @@
 
 백엔드 로직과 데이터 저장소 계층을 포함합니다.
 
-- **app-manager**: 메인 API 서버 (FastAPI) - Port 5003
+- **lineage-manager**: 메인 API 서버 (FastAPI) - Port 5003
 - **db-mysql**: 데이터베이스 (MySQL 8) - Port 33306 (External)
 - **cache-redis**: 캐시 저장소 (Redis)
 - **app-job-dummy**: 가상 데이터 생성을 위한 워커
@@ -98,7 +98,7 @@ make admin-down
 
 ### CORS 설정
 
-백엔드(`app-manager`)는 기본적으로 `localhost:5100~5102` 포트의 요청만 허용합니다. 만약 다른 포트를 사용하시려면 `apps/backend/lineage_manager/.env` 파일의 `CORS_ALLOWED_ORIGINS`를 수정해야 합니다.
+백엔드(`lineage-manager`)는 기본적으로 `localhost:5100~5102` 포트의 요청만 허용합니다. 만약 다른 포트를 사용하시려면 `apps/backend/lineage_manager/.env` 파일의 `CORS_ALLOWED_ORIGINS`를 수정해야 합니다.
 
 ### 네트워크 구조
 

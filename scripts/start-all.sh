@@ -48,6 +48,18 @@ start_component() {
     echo -e "  Log: $LOG_DIR/$name.log"
 }
 
+# Start Infrastructure (Docker)
+start_infra() {
+    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}  Starting Infrastructure (Docker)${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    
+    cd "$PROJECT_ROOT"
+    docker compose up -d mysql-db redis-cache
+    
+    echo -e "${GREEN}✓ Infrastructure started (Docker)${NC}"
+}
+
 # Function to wait for port
 wait_for_port() {
     local port=$1
@@ -87,26 +99,26 @@ start_frontend() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
     
     # Lineage MFE
-    start_component "lineage" \
-        "$PROJECT_ROOT/apps/admin_console/lineage" \
+    start_component "mfe-lineage" \
+        "$PROJECT_ROOT/apps/admin_console/mfe-lineage" \
         "npm run dev" \
         "5101"
     
     sleep 2
     wait_for_port 5101
     
-    # Table Detail Viewer MFE
-    start_component "table-detail-viewer" \
-        "$PROJECT_ROOT/apps/admin_console/table-detail-viewer" \
+    # Catalog MFE
+    start_component "mfe-catalog" \
+        "$PROJECT_ROOT/apps/admin_console/mfe-catalog" \
         "npm run dev" \
         "5102"
     
     sleep 2
     wait_for_port 5102
     
-    # Shell
-    start_component "shell" \
-        "$PROJECT_ROOT/apps/admin_console/shell" \
+    # App
+    start_component "app" \
+        "$PROJECT_ROOT/apps/admin_console/container" \
         "npm run dev" \
         "5100"
     
@@ -124,6 +136,9 @@ echo "╚═══════════════════════�
 echo -e "${NC}"
 
 case $MODE in
+    infra)
+        start_infra
+        ;;
     backend)
         start_backend
         ;;
@@ -131,11 +146,13 @@ case $MODE in
         start_frontend
         ;;
     all)
+        start_infra
+        start_backend
         start_frontend
         ;;
     *)
         echo -e "${RED}Unknown mode: $MODE${NC}"
-        echo "Usage: $0 [backend|frontend|all]"
+        echo "Usage: $0 [infra|backend|frontend|all]"
         exit 1
         ;;
 esac
@@ -145,9 +162,10 @@ echo -e "${GREEN}  🚀 All components started!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 
 echo -e "📍 Access Points:"
-echo -e "   Shell:                ${BLUE}http://localhost:5100/lineage-manager${NC}"
-echo -e "   Table Detail Viewer:  ${BLUE}http://localhost:5102${NC}"
-echo -e "   Lineage:              ${BLUE}http://localhost:5101${NC}"
+echo -e "    All:     ${BLUE}http://localhost:5100/admin-console${NC}
+    Catalog:   ${BLUE}http://localhost:5102/mfe-catalog${NC}
+    Lineage:   ${BLUE}http://localhost:5101/mfe-lineage${NC}
+"
 
 echo -e "\n📝 Logs:"
 echo -e "   All logs: ${YELLOW}$LOG_DIR/${NC}"

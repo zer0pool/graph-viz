@@ -29,7 +29,7 @@ if [ -z "$NAMESERVER" ]; then
 fi
 
 # Set default BACKEND_HOST if not provided
-export BACKEND_HOST="${BACKEND_HOST:-http://app-manager:5003}"
+export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
 
 echo "[MFE] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"

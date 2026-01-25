@@ -39,7 +39,6 @@ class LineageRepository:
         return self._data
 
     def get_by_type(self, job_type: str) -> List[Dict[str, Any]]:
-        # job_type e.g. "SELF" or "REQUEST"
         return [j for j in self._data if j.get("type") == job_type]
 
     def get_by_id(self, job_id: str) -> Optional[Dict[str, Any]]:

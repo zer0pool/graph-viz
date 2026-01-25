@@ -15,7 +15,8 @@ const Diagnostics: React.FC = () => (
   </div>
 );
 
-import { AuditLanding, UsersLanding } from "../views/landing/Placeholders";
+import { AuditLanding } from "../views/landing/AuditLanding";
+import { UsersLanding } from "../views/landing/UsersLanding";
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-8 text-center">
@@ -28,67 +29,84 @@ export const AppRouter: React.FC<{
   onSelectNode: (event: any) => void;
   activeGraphNode: any;
   selection?: any;
-}> = ({ onSelectNode, activeGraphNode, selection }) => (
-  <Routes>
-    <Route path="/" element={<Placeholder title="Dashboard" />} />
-    <Route path="/diag" element={<Diagnostics />} />
-    <Route path="/authorized" element={<AuthCallback />} />
-    {/* Lineage MFE */}
-    {config.ENABLE_MFE_LINEAGE && (
-      <Route
-        path="/lineage/*"
-        element={
-          <RemoteMount
-            key="lineage"
-            scope="lineage"
-            module="./index"
-            url={config.LINEAGE_MFE_URL}
-            mountProps={{
-              onSelect: onSelectNode,
-              rootNode: activeGraphNode,
-              initialSelection: selection,
-            }}
-            visible={true}
+}> = ({ onSelectNode, activeGraphNode, selection }) => {
+  const location = require("react-router-dom").useLocation();
+  console.log("[Shell:Router] Current Location:", location.pathname);
+  console.log("[Shell:Router] Rendering AppRouter. Config:", {
+    // @ts-ignore
+    ENABLE_MFE_LINEAGE: config.ENABLE_MFE_LINEAGE,
+    // @ts-ignore
+    ENABLE_MFE_CATALOG: config.ENABLE_MFE_CATALOG,
+    // @ts-ignore
+    LINEAGE_MFE_URL: config.LINEAGE_MFE_URL,
+    // @ts-ignore
+    CATALOG_MFE_URL: config.CATALOG_MFE_URL,
+  });
+
+  return (
+    <Routes>
+      <Route path="/" element={<Placeholder title="Dashboard" />} />
+      <Route path="/diag" element={<Diagnostics />} />
+      <Route path="/authorized" element={<AuthCallback />} />
+      {/* Lineage MFE */}
+      {/* @ts-ignore */}
+      {config.ENABLE_MFE_LINEAGE && (
+        <Route
+          path="/lineage/*"
+          element={
+            <RemoteMount
+              key="lineage"
+              scope="lineage"
+              module="./index"
+              url={config.LINEAGE_MFE_URL}
+              mountProps={{
+                onSelect: onSelectNode,
+                rootNode: activeGraphNode,
+                initialSelection: selection,
+              }}
+              visible={true}
+            />
+          }
+        />
+      )}
+
+      {/* Table/Job Detail Viewer MFE - Landing & Detail */}
+      {/* @ts-ignore */}
+      {config.ENABLE_MFE_CATALOG && (
+        <>
+          <Route
+            path="/jobs/*"
+            element={
+              <RemoteMount
+                key="catalog-jobs"
+                scope="tableDetailViewer"
+                module="./views"
+                url={config.CATALOG_MFE_URL}
+                mountProps={{ mode: "STANDALONE" }}
+                visible={true}
+              />
+            }
           />
-        }
-      />
-    )}
+          <Route
+            path="/tables/*"
+            element={
+              <RemoteMount
+                key="catalog-tables"
+                scope="tableDetailViewer"
+                module="./views"
+                url={config.CATALOG_MFE_URL}
+                mountProps={{ mode: "STANDALONE" }}
+                visible={true}
+              />
+            }
+          />
+        </>
+      )}
 
-    {/* Table/Job Detail Viewer MFE - Landing & Detail */}
-    {config.ENABLE_MFE_CATALOG && (
-      <>
-        <Route
-          path="/jobs/*"
-          element={
-            <RemoteMount
-              key="tableDetailViewer-jobs"
-              scope="tableDetailViewer"
-              module="./views"
-              url={config.CATALOG_MFE_URL}
-              mountProps={{ mode: "STANDALONE" }}
-              visible={true}
-            />
-          }
-        />
-        <Route
-          path="/tables/*"
-          element={
-            <RemoteMount
-              key="tableDetailViewer-tables"
-              scope="tableDetailViewer"
-              module="./views"
-              url={config.CATALOG_MFE_URL}
-              mountProps={{ mode: "STANDALONE" }}
-              visible={true}
-            />
-          }
-        />
-      </>
-    )}
-
-    {/* Shell Managed Landing Pages */}
-    <Route path="/users" element={<UsersLanding />} />
-    <Route path="/audit" element={<AuditLanding />} />
-    <Route path="/settings" element={<Placeholder title="Settings" />} />
-  </Routes>
-);
+      {/* Shell Managed Landing Pages */}
+      <Route path="/users" element={<UsersLanding />} />
+      <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/settings" element={<Placeholder title="Settings" />} />
+    </Routes>
+  );
+};

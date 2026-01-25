@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from lineage_manager.api.v1.endpoints import auth as auth_ep
 from lineage_manager.api.v1.endpoints import web as web_ep
+from lineage_manager.api.v1.endpoints import audit as audit_ep
 from lineage_manager.api.v1.endpoints import events as events_ep
 from lineage_manager.api.v1.endpoints import expand as expand_ep
 from lineage_manager.api.v1.endpoints import graph, jobs
@@ -148,6 +149,7 @@ def create_app() -> GraphApp:
     app.include_router(users_ep.router)
     app.include_router(auth_ep.router)
     app.include_router(web_ep.router)
+    app.include_router(audit_ep.router)
 
     return app
 

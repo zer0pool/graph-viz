@@ -34,8 +34,10 @@ const JobLanding = () => (
   </div>
 );
 
+import { config } from "./config";
+
 export const ViewApp = () => (
-  <BrowserRouter basename="/admin-console">
+  <BrowserRouter basename={config.BASE_URL}>
     <Routes>
       <Route index element={<div className="p-8">Please select a view</div>} />
       <Route path="jobs" element={<JobLanding />} />

@@ -4,10 +4,11 @@ import { createRoot } from "react-dom/client";
 import { ViewApp } from "./ViewApp";
 import { ApiProvider } from "./components/ApiContext";
 
-export function mount(el: HTMLElement) {
+export function mount(el: HTMLElement, props: any) {
   try {
+    console.log("[TableDetailViewer:viewMount] Mounting with props:", props);
     const root = createRoot(el);
-    const auth = {
+    const auth = props?.auth || {
       user: null,
       getToken: async () => null,
       fetchWithAuth: async (url: string, init?: RequestInit) =>

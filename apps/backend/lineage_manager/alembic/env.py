@@ -6,11 +6,12 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Ensure the 'src' directory is on sys.path so that 'lineage_manager' can be imported
+# Ensure the parent directory is on sys.path so that 'lineage_manager' can be imported
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-SRC_DIR = os.path.dirname(CURRENT_DIR)
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
+PACKAGE_DIR = os.path.dirname(CURRENT_DIR)
+PARENT_DIR = os.path.dirname(PACKAGE_DIR)
+if PARENT_DIR not in sys.path:
+    sys.path.insert(0, PARENT_DIR)
 
 from lineage_manager.core.config import get_settings
 

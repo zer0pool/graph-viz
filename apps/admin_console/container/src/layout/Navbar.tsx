@@ -30,12 +30,18 @@ export const Navbar: React.FC<{
         </button>
 
         {/* Logo & Brand */}
-        <a href="./" className="flex items-center no-underline text-inherit">
+        <a
+          href={`${config.BASE_URL}/`}
+          className="flex items-center gap-3 no-underline text-inherit select-none"
+        >
           <img
-            src="images/logo.png"
-            alt="Pipeline Ops Console"
-            className="h-9 object-contain"
+            src={`${config.BASE_URL}/images/control-tower.png`}
+            alt="OPS Console"
+            className="h-10 w-10 object-contain"
           />
+          <span className="font-medium text-lg whitespace-nowrap tracking-tight">
+            OPS Console
+          </span>
         </a>
       </div>
 
