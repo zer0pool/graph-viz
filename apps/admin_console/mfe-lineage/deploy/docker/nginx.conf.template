@@ -39,6 +39,11 @@ server {
     }
 
     location $BASE_URL_PREFIX/ {
+        # Satisfy GCP/GKE Health Checkers which expect 200 OK on the subpath
+        if ($http_user_agent ~* "GoogleHC") {
+            access_log off;
+            return 200 "healthy";
+        }
         # Rewrite subpath prefix away for internal file lookup
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
         try_files $uri $uri/ /index.html;
@@ -55,14 +60,8 @@ server {
         try_files $uri /index.html;
     }
 
-    # Dedicated Health Check endpoint
-    location = /healthz {
-        access_log off;
-        return 200 "OK";
-    }
-
-    # GCP Health Check endpoint
-    location = /health {
+    # Dedicated Health Check endpoints
+    location ~ ^/(healthz|health|healthcheck)$ {
         access_log off;
         return 200 "OK";
     }
