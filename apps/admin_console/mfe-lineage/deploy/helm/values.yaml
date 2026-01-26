@@ -29,7 +29,7 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /healthz
+    path: /
     port: http
   initialDelaySeconds: 5
   periodSeconds: 10
