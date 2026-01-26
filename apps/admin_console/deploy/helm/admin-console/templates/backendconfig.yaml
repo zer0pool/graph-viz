@@ -12,6 +12,7 @@ spec:
   timeoutSec: {{ .Values.backendConfig.timeoutSec }}
   connectionDraining:
     drainingTimeoutSec: {{ .Values.backendConfig.connectionDraining.drainingTimeoutSec }}
+  {{- if .Values.backendConfig.healthCheck.type }}
   healthCheck:
     checkIntervalSec: {{ .Values.backendConfig.healthCheck.checkIntervalSec }}
     timeoutSec: {{ .Values.backendConfig.healthCheck.timeoutSec }}
@@ -20,4 +21,5 @@ spec:
     type: {{ .Values.backendConfig.healthCheck.type }}
     requestPath: {{ .Values.backendConfig.healthCheck.requestPath }}
     port: {{ .Values.backendConfig.healthCheck.port }}
+  {{- end }}
 {{- end }}

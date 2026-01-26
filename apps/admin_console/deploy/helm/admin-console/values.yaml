@@ -76,6 +76,11 @@ ingress:
       hosts:
         - dev1-self-scheduling.di.atlas.samsung.com
 
+# Service Account configuration
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
 # Service configuration
 service:
   type: ClusterIP
@@ -83,19 +88,12 @@ service:
 
 # BackendConfig configuratino for Google Cloud Load Balacer
 backendConfig:
-  enabled: true
+  enabled: false
   name: self-scheduling-backend
   timeoutSec: 30
   connectionDraining:
     drainingTimeoutSec: 300
-  healthCheck:
-    checkIntervalSec: 5
-    timeoutSec: 5
-    healthyThreshold: 2
-    unhealthyThreshold: 2
-    type: HTTP
-    requestPath: /health
-    port: 80
+  healthCheck: {}
 
 # Environment-specific overrides
 env: dev

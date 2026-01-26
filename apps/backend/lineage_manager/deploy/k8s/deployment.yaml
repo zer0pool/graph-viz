@@ -46,7 +46,7 @@ spec:
           value: "asia-northeast3"
         # Job Manager API
         - name: APP_JOB_MANAGER_URL
-          value: "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+          value: "http://job-manager:5001"
         # Database credentials (from secret)
         - name: DB_NAME
           value: "lineage_manager"

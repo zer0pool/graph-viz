@@ -20,8 +20,10 @@ import {
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { datasetsData } from "./data";
+import { useMfeNavigate } from "../../utils/navigation";
 
 export function DatasetsTable() {
+  const navigate = useMfeNavigate();
   // Calculate max size for relative bars
   const maxSize = Math.max(...datasetsData.map((d) => d.sizeBytes));
 
@@ -110,8 +112,12 @@ export function DatasetsTable() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/tables/${dataset.name}`}>View</Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/tables/${dataset.name}`)}
+                  >
+                    View
                   </Button>
                 </TableCell>
               </TableRow>

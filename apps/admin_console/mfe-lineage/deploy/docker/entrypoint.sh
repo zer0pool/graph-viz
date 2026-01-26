@@ -14,10 +14,9 @@ if [ "$BASE_URL" = "/" ]; then
     export SUBPATH_REDIRECT_BLOCK="# No subpath redirect needed"
 else
     export BASE_URL_PREFIX="$BASE_URL"
-    export REDIRECT_COMMAND="return 301 $BASE_URL/;"
-    # For subpath, we proxy both /api and /subpath/api
+    export REDIRECT_COMMAND="return 301 ${BASE_URL}/;"
     export API_LOCATION_REGEX="${API_LOCATION_REGEX:-^($BASE_URL)?/api}"
-    export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { return 301 $BASE_URL/; }"
+    export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { if (\$loggable = 0) { access_log off; return 200 'healthy'; } return 301 ${BASE_URL}/; }"
 fi
 
 # Extract nameserver for Nginx resolver if not provided
@@ -28,8 +27,13 @@ if [ -z "$NAMESERVER" ]; then
     fi
 fi
 
-# Set default BACKEND_HOST if not provided
-export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
+# Set default BACKEND_HOST
+if [ -n "$K8S_NAMESPACE" ]; then
+    echo "[MFE] K8S_NAMESPACE detected: ${K8S_NAMESPACE}. Using FQDN for BACKEND_HOST."
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager.${K8S_NAMESPACE}.svc.cluster.local:5003}"
+else
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
+fi
 
 echo "[MFE] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"
@@ -40,7 +44,7 @@ echo " - BACKEND_HOST: ${BACKEND_HOST}"
 
 # 2. Environment Variable Injection
 echo "[MFE] Injecting runtime configuration..."
-export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $NAMESERVER $BACKEND_HOST'
+export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $NAMESERVER $BACKEND_HOST $CATALOG_MFE_URL'
 
 # Inject into config.js
 envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/nginx/html/config.js

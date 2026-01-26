@@ -14,10 +14,9 @@ if [ "$BASE_URL" = "/" ]; then
     export SUBPATH_REDIRECT_BLOCK="# No subpath redirect needed"
 else
     export BASE_URL_PREFIX="$BASE_URL"
-    export REDIRECT_COMMAND="return 301 $BASE_URL/;"
-    # For subpath, we proxy both /api and /subpath/api
+    export REDIRECT_COMMAND="return 301 ${BASE_URL}/;"
     export API_LOCATION_REGEX="${API_LOCATION_REGEX:-^($BASE_URL)?/api}"
-    export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { return 301 $BASE_URL/; }"
+    export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { if (\$loggable = 0) { access_log off; return 200 'healthy'; } return 301 ${BASE_URL}/; }"
 fi
 
 # Extract nameserver for Nginx resolver if not provided
@@ -28,12 +27,17 @@ if [ -z "$NAMESERVER" ]; then
     fi
 fi
 
-# Set default BACKEND_HOST if not provided
-export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
-
-# Set default MFE upstream hosts (for local Docker, use service names; for K8s, set via env)
-export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:80}"
-export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:80}"
+# Set default upstream hosts
+if [ -n "$K8S_NAMESPACE" ]; then
+    echo "[Shell] K8S_NAMESPACE detected: ${K8S_NAMESPACE}. Using FQDNs for upstreams."
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager.${K8S_NAMESPACE}.svc.cluster.local:5003}"
+    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage.${K8S_NAMESPACE}.svc.cluster.local:5101}"
+    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog.${K8S_NAMESPACE}.svc.cluster.local:5102}"
+else
+    export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
+    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:80}"
+    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:80}"
+fi
 
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"

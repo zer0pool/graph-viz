@@ -1,3 +1,9 @@
+map $http_user_agent $loggable {
+    ~*GoogleHC    0;
+    ~*kube-probe  0;
+    default       1;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -16,16 +22,16 @@ server {
     index index.html;
 
     # 2. Access logs: stdout for K8s logs, and a REAL file for internal tail -f debugging
-    access_log /dev/stdout;
-    access_log /tmp/shell_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
+    access_log /dev/stdout combined if=$loggable;
+    access_log /tmp/shell_access.log combined if=$loggable; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
     # Support for Iframe embedding (for Shell usage)
     add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000;" always;
 
     # 6. MFE Proxying (Kubernetes only - routes to internal MFE services)
-    # PLACED HERE TO TAKE PRECEDENCE OVER STATIC FILE REGEX MATCHERS
-    location ~ ^$BASE_URL_PREFIX/mfe-lineage/ {
+    # PLACED HERE TO TAKE PRECEDENCE OVER ANY REGEX MATCHERS
+    location ^~ $BASE_URL_PREFIX/mfe-lineage/ {
         resolver $NAMESERVER valid=30s ipv6=off;
         set $mfe_lineage_upstream $MFE_LINEAGE_UPSTREAM;
         
@@ -36,9 +42,13 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+
+        # Debug logs
+        access_log /var/log/nginx/mfe_access.log;
+        error_log /var/log/nginx/mfe_error.log debug;
     }
 
-    location ~ ^$BASE_URL_PREFIX/mfe-catalog/ {
+    location ^~ $BASE_URL_PREFIX/mfe-catalog/ {
         resolver $NAMESERVER valid=30s ipv6=off;
         set $mfe_catalog_upstream $MFE_CATALOG_UPSTREAM;
         
@@ -49,6 +59,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+
+        # Debug logs
+        access_log /var/log/nginx/mfe_access.log;
+        error_log /var/log/nginx/mfe_error.log debug;
     }
 
     # 2.1 Disable caching for Module Federation configs
@@ -67,6 +81,11 @@ server {
     }
 
     location $BASE_URL_PREFIX/ {
+        # Satisfy GCP/GKE Health Checkers which expect 200 OK on the subpath
+        if ($loggable = 0) {
+            access_log off;
+            return 200 "healthy";
+        }
         # Rewrite subpath prefix away for internal file lookup
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
         try_files $uri $uri/ /index.html;
@@ -75,7 +94,7 @@ server {
     # 4. Landing Page & Health Check Logic
     location = / {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK
-        if ($http_user_agent ~* "GoogleHC") {
+        if ($loggable = 0) {
             access_log off;
             return 200 "healthy";
         }
@@ -83,14 +102,8 @@ server {
         try_files $uri /index.html;
     }
 
-    # Dedicated Health Check endpoint
-    location = /healthz {
-        access_log off;
-        return 200 "OK";
-    }
-
-    # GCP Health Check endpoint
-    location = /health {
+    # Dedicated Health Check endpoints
+    location ~ ^/(healthz|health|healthcheck)$ {
         access_log off;
         return 200 "OK";
     }

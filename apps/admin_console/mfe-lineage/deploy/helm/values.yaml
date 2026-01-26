@@ -17,7 +17,7 @@ service:
   port: 5101
   targetPort: 80
   annotations:
-    cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
+    # cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
     cloud.google.com/neg: '{"ingress": true}'
 
 livenessProbe:
@@ -29,19 +29,21 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /healthz
+    path: /
     port: http
   initialDelaySeconds: 5
   periodSeconds: 10
 
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
     cpu: 100m
     memory: 128Mi
 
 env:
-  # Standalone configuration if needed, or environment specific vars
   NODE_ENV: "production"
+  BASE_URL: "/admin-console/mfe-lineage"
+  API_BASE_URL: "/admin-console"
+  CATALOG_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-catalog/remoteEntry.js"

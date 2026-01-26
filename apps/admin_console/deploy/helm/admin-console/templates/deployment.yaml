@@ -19,6 +19,7 @@ spec:
       labels:
         app: {{ $config.name }}
     spec:
+      serviceAccountName: {{ $.Values.serviceAccount.name }}
       containers:
       - name: {{ $config.name }}
         image: "{{ $.Values.image.registry }}/{{ $config.image }}:{{ $.Values.image.tag }}"
@@ -56,7 +57,7 @@ spec:
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5
