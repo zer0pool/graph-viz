@@ -76,6 +76,11 @@ ingress:
       hosts:
         - dev1-self-scheduling.di.atlas.samsung.com
 
+# Service Account configuration
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
 # Service configuration
 service:
   type: ClusterIP

@@ -60,7 +60,12 @@ env:
   ENV_STATE: "dev"
   LOG_LEVEL: "INFO"
   APP_REQUIRE_AUTHENTICATION: "false"
-  APP_JOB_MANAGER_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/job-manager"
+  APP_JOB_MANAGER_URL: "http://self-scheduling-backend:5001"
+
+  # Redis Settings
+  REDIS_ENABLED: "true"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
 
   # GCP Settings
   GCP_PROJECT: "sec-bdp-dev"

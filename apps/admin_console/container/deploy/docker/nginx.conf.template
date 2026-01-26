@@ -82,7 +82,7 @@ server {
 
     location $BASE_URL_PREFIX/ {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK on the subpath
-        if ($http_user_agent ~* "(GoogleHC|kube-probe)") {
+        if ($loggable = 0) {
             access_log off;
             return 200 "healthy";
         }
@@ -94,7 +94,7 @@ server {
     # 4. Landing Page & Health Check Logic
     location = / {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK
-        if ($http_user_agent ~* "(GoogleHC|kube-probe)") {
+        if ($loggable = 0) {
             access_log off;
             return 200 "healthy";
         }
