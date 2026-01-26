@@ -14,10 +14,10 @@ if [ "$BASE_URL" = "/" ]; then
     export SUBPATH_REDIRECT_BLOCK="# No subpath redirect needed"
 else
     export BASE_URL_PREFIX="$BASE_URL"
-    export REDIRECT_COMMAND="return 301 $BASE_URL/;"
-    # For subpath, we proxy both /api and /subpath/api
-    export API_LOCATION_REGEX="${API_LOCATION_REGEX:-^($BASE_URL)?/api}"
-    export SUBPATH_REDIRECT_BLOCK="location = $BASE_URL { return 301 $BASE_URL/; }"
+    # Use if blocks for conditional logic instead of simple return to avoid logging redirects for health checkers
+    export REDIRECT_COMMAND="if (\$http_user_agent ~* \"(GoogleHC|kube-probe)\") { access_log off; return 200 \"healthy\"; } return 301 \$BASE_URL/;"
+    export API_LOCATION_REGEX="\${API_LOCATION_REGEX:-^(\$BASE_URL)?/api}"
+    export SUBPATH_REDIRECT_BLOCK=\"location = \$BASE_URL { if (\$http_user_agent ~* \\\"(GoogleHC|kube-probe)\\\") { access_log off; return 200 \\\"healthy\\\"; } return 301 \$BASE_URL/; }\"
 fi
 
 # Extract nameserver for Nginx resolver if not provided

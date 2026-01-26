@@ -1,3 +1,9 @@
+map $http_user_agent $loggable {
+    ~*GoogleHC    0;
+    ~*kube-probe  0;
+    default       1;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -16,8 +22,8 @@ server {
     index index.html;
 
     # 2. Access logs: stdout for K8s logs, and a REAL file for internal tail -f debugging
-    access_log /dev/stdout;
-    access_log /tmp/lineage_access.log; # /var/log/nginx와 겹치지 않는 진짜 파일
+    access_log /dev/stdout combined if=$loggable;
+    access_log /tmp/lineage_access.log combined if=$loggable; # /var/log/nginx와 겹치지 않는 진짜 파일
     error_log /dev/stderr warn;
 
     # Support for Iframe embedding (for Shell usage)
@@ -40,7 +46,7 @@ server {
 
     location $BASE_URL_PREFIX/ {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK on the subpath
-        if ($http_user_agent ~* "GoogleHC") {
+        if ($http_user_agent ~* "(GoogleHC|kube-probe)") {
             access_log off;
             return 200 "healthy";
         }
@@ -52,7 +58,7 @@ server {
     # 4. Landing Page & Health Check Logic
     location = / {
         # Satisfy GCP/GKE Health Checkers which expect 200 OK
-        if ($http_user_agent ~* "GoogleHC") {
+        if ($http_user_agent ~* "(GoogleHC|kube-probe)") {
             access_log off;
             return 200 "healthy";
         }

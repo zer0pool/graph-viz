@@ -16,7 +16,7 @@ service:
   port: 5100
   targetPort: 80
   annotations:
-    cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
+    # cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
     cloud.google.com/neg: '{"ingress": true}'
 
 livenessProbe:

@@ -9,11 +9,12 @@ metadata:
     app: {{ $config.name }}
     chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
     release: {{ $.Release.Name }}
-  {{- if $.Values.backendConfig.enabled }}
   annotations:
+    {{- if $.Values.backendConfig.enabled }}
     cloud.google.com/backend-config: '{"default": "{{ $.Values.backendConfig.name }}"}'
+    {{- end }}
+    # cloud.google.com/backend-config: '{"default": "self-scheduling-backend"}'
     cloud.google.com/neg: '{"ingress": true}'
-  {{- end }}
 spec:
   type: {{ $.Values.service.type }}
   ports:

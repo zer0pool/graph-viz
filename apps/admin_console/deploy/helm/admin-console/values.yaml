@@ -83,7 +83,7 @@ service:
 
 # BackendConfig configuratino for Google Cloud Load Balacer
 backendConfig:
-  enabled: true
+  enabled: false
   name: self-scheduling-backend
   timeoutSec: 30
   connectionDraining:
