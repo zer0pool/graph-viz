@@ -70,7 +70,7 @@
   "name": "일간 정산 작업",
   "metadata": {
     "project": "finance-dept",
-    "owner": "admin@company.com"
+    "owner": "owner_01"
   },
   "upstreams": [{"name": "raw.sales_transaction"}],
   "downstreams": [{"name": "mart.daily_revenue"}]
@@ -80,12 +80,15 @@
 ### 1단계: 노드 및 검색 인덱스 생성
 1.  **`graph_node`**: `job_id`를 `name`으로 하여 'job' 타입 노드 생성 (또는 업데이트).
 2.  **`graph_node` (Table)**: 입력/출력 테이블들에 대해 'table' 타입 노드들 생성.
-3.  **`job_node`**: 해당 Job의 `node_id`와 함께 `project_id`('finance-dept'), `owner_id`('admin@company.com') 저장.
+3.  **`job_node`**: 해당 Job의 `node_id`와 함께 `project_id`('finance-dept'), `owner_id`('owner_01') 저장.
+    - `owner_id`는 이메일 형식이 아닌 고유 ID 형식(예: `owner_01`)이며, 시스템 전체에 20종의 유니크한 오너가 존재합니다.
+    - `project_id`는 오직 `metadata.project` 필드에서만 추출합니다. (labels 등 다른 곳은 참조하지 않음)
 4.  **`table_node`**: 각 테이블 노드의 데이터셋과 테이블명 파싱하여 저장.
+    - **순환 관계 방지**: 모든 데이터 흐름은 `Upstream -> Job -> Downstream` 방향으로 흐르며, 순환(Cycle)이 발생하지 않도록 설계 및 검증되었습니다.
 
 ### 2단계: 마스터 정보 확인
 5.  **`project`**: 'finance-dept' 프로젝트가 없다면 기본 정보로 자동 생성.
-6.  **`user_account`**: 'admin@company.com' 사용자가 없다면 카탈로그 유저로 우선 등록 (이후 실제 사용자가 SSO 로그인 시 `sub`가 업데이트되며 병합됨).
+6.  **`user_account`**: 'owner_01' 사용자가 없다면 카탈로그 유저로 우선 등록 (이후 실제 사용자가 SSO 로그인 시 `sub`가 업데이트되며 병합됨).
 
 ### 3단계: 관계 및 계층 정보 구축
 7.  **`graph_edge`**:

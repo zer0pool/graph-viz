@@ -80,7 +80,10 @@ class UserService:
                 "department": user.department,
                 "status": user.status,
             },
-            "summary": stats
+            "summary": {
+                **stats,
+                "project_count": len(self.uow.users.list_user_projects(user_id))
+            }
         }
 
     def get_user_jobs(self, user_id: str, limit: int = 20, offset: int = 0) -> Dict:
@@ -112,17 +115,32 @@ class UserService:
             "offset": offset
         }
     
+    def get_user_projects(self, user_id: str) -> Dict:
+        """List projects a user belongs to."""
+        projects = self.uow.users.list_user_projects(user_id)
+        
+        return {
+            "projects": [
+                {
+                    "project_id": p.project_id,
+                    "display_name": p.display_name,
+                    "status": p.status
+                }
+                for p in projects
+            ],
+            "total": len(projects)
+        }
+
     def _format_job(self, node, meta) -> Dict:
         """Format job for API response."""
         properties = meta.properties or {}
         
         return {
-            "node_id": node.id,
             "job_id": node.name,
+            "node_id": node.id,
+            "running_status": properties.get("status", "unknown"),
+            "owner": meta.owner_id,
             "job_name": properties.get("display_name", node.name),
-            "project_id": meta.project_id,
-            "owner_id": meta.owner_id,
-            "status": properties.get("status", "unknown"),
             "enabled": properties.get("enabled", True)
         }
 

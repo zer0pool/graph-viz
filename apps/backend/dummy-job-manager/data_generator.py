@@ -63,16 +63,24 @@ ALL_REAL_TABLES = [
     "bigquery-public-data.baseball.games_wide",
     "bigquery-public-data.baseball.schedules",
     "bigquery-public-data.chicago_taxi_trips.taxi_trips",
-    "bigquery-public-data.covid19_open_data.covid19_open_data"
+    "bigquery-public-data.covid19_open_data.covid19_open_data",
+    
+    # Group 6 (Outputs of L5 - Terminal)
+    "bigquery-public-data.austin_bikeshare.bikeshare_stations_summary",
+    "bigquery-public-data.bitcoin_blockchain.blocks_summary",
+    "bigquery-public-data.hacker_news.stories_summary",
+    "bigquery-public-data.github_repos.commits_summary",
+    "bigquery-public-data.census_bureau_acs.censustract_summary"
 ]
 
-# Split into 5 distinct sets
+# Split into distinct sets
 TABLE_GROUPS = {
     1: ALL_REAL_TABLES[0:10],
     2: ALL_REAL_TABLES[10:20],
     3: ALL_REAL_TABLES[20:30],
     4: ALL_REAL_TABLES[30:40],
-    5: ALL_REAL_TABLES[40:50]
+    5: ALL_REAL_TABLES[40:50],
+    6: ALL_REAL_TABLES[50:55]
 }
 
 # =============================================================================
@@ -136,7 +144,7 @@ def generate_jobs_for_type(type_name):
         # Job L4: reads Group 4, writes Group 5
         # Job L5: reads Group 5, writes (some terminal output, maybe randomly generated based on Group 5 names)
         
-        output_group = TABLE_GROUPS[layer + 1] if layer < 5 else TABLE_GROUPS[5] 
+        output_group = TABLE_GROUPS[layer + 1]
         
         for i in range(count):
             job_id = f"{type_name}_L{layer}_JOB_{i:03d}"
@@ -216,9 +224,8 @@ def generate_jobs_for_type(type_name):
                 
             downstreams = [format_dependency(out_name, is_upstream=False)]
 
-            # Metadata
-            # NEW: Diversified owners and projects
-            owners = ["generated_script", "admin@google.com", "data-engineer@google.com", "bi-analyst@google.com"]
+            # NEW: Diversified owners (20 varieties) and projects
+            owners = [f"owner_{i:02d}" for i in range(1, 21)]
             projects = ["default-project", "ecommerce-analytics", "infrastructure-monitoring", "customer-growth"]
             
             selected_owner = random.choice(owners)
@@ -228,8 +235,7 @@ def generate_jobs_for_type(type_name):
                 "layer": str(layer),
                 "type": type_name,
                 "env": random.choice(["prod", "dev", "test"]),
-                "team": random.choice(["data", "bi", "ml", "platform"]),
-                "project": selected_project # Also add to labels for safety
+                "team": random.choice(["data", "bi", "ml", "platform"])
             }
 
             jobs.append({

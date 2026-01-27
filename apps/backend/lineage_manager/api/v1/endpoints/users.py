@@ -99,3 +99,17 @@ def list_user_jobs(
         logger.error(f"Failed to list user jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/{user_id}/projects")
+@inject
+def list_user_projects(
+    user_id: str,
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
+):
+    """
+    List projects a user belongs to.
+    """
+    try:
+        return user_service.get_user_projects(user_id)
+    except Exception as e:
+        logger.error(f"Failed to list user projects: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

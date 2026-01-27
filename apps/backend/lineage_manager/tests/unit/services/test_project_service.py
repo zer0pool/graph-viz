@@ -16,6 +16,7 @@ class TestProjectService:
         uow = Mock()
         uow.job_node = Mock()
         uow.project = Mock()
+        uow.users = Mock()
         return uow
     
     @pytest.fixture
@@ -45,6 +46,21 @@ class TestProjectService:
         
         mock_uow.project.get.assert_called_once_with("test-project")
         mock_uow.job_node.get_project_stats.assert_called_once_with("test-project")
+
+    def test_get_project_summary(self, service, mock_uow):
+        """Test getting project summary."""
+        mock_project = Mock(spec=Project)
+        mock_project.project_id = "test-project"
+        mock_project.display_name = "Test Project"
+        
+        mock_uow.project.get.return_value = mock_project
+        mock_uow.job_node.get_project_stats.return_value = {"jobs": 42}
+        
+        result = service.get_project_summary("test-project")
+        
+        assert result["project_id"] == "test-project"
+        assert result["display_name"] == "Test Project"
+        assert result["stats"]["jobs"] == 42
     
     def test_get_project_detail_creates_placeholder(self, service, mock_uow):
         """Test creating placeholder for non-existent project."""
@@ -98,11 +114,27 @@ class TestProjectService:
         assert result["total"] == 3
         assert len(result["jobs"]) == 3
         assert result["jobs"][0]["job_id"] == "job_0"
-        assert result["jobs"][0]["project_id"] == "test-project"
+        assert result["jobs"][0]["running_status"] == "RUNNING"
+        assert result["jobs"][0]["owner"] == "user_0"
         
         mock_uow.job_node.find_by_project.assert_called_once_with(
             "test-project", 20, 0
         )
+
+    def test_list_project_users(self, service, mock_uow):
+        """Test listing users in a project."""
+        mock_user = Mock()
+        mock_user.user_id = "user_1"
+        mock_user.name = "User One"
+        mock_user.department = "Data"
+        
+        mock_uow.users.find_by_project.return_value = [mock_user]
+        
+        result = service.list_project_users("test-project")
+        
+        assert result["total"] == 1
+        assert result["users"][0]["user_id"] == "user_1"
+        assert result["users"][0]["department"] == "Data"
     
     def test_list_all_projects(self, service, mock_uow):
         """Test listing all projects."""
@@ -142,9 +174,8 @@ class TestProjectService:
         assert formatted["node_id"] == 123
         assert formatted["job_id"] == "test_job"
         assert formatted["job_name"] == "My Test Job"
-        assert formatted["project_id"] == "my-project"
-        assert formatted["owner_id"] == "my-user"
-        assert formatted["status"] == "COMPLETED"
+        assert formatted["running_status"] == "COMPLETED"
+        assert formatted["owner"] == "my-user"
         assert formatted["enabled"] is False
     
     def test_generate_display_name(self, service):

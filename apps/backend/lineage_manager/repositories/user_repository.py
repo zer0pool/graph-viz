@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 
-from lineage_manager.models import UserAccount
+from lineage_manager.models import UserAccount, ProjectUser, Project
 from lineage_manager.models.user_account import UserRole
 from lineage_manager.repositories.base_repository import BaseRepository
 
@@ -97,6 +97,24 @@ class UserRepository(BaseRepository):
             self.session.add(user)
             self.session.flush()
             return user
+
+    def find_by_project(self, project_id: str) -> List[UserAccount]:
+        """Find all users belonging to a project."""
+        return (
+            self.session.query(UserAccount)
+            .join(ProjectUser, UserAccount.user_id == ProjectUser.user_id)
+            .filter(ProjectUser.project_id == project_id)
+            .all()
+        )
+
+    def list_user_projects(self, user_id: str) -> List[Project]:
+        """List all projects a user belongs to."""
+        return (
+            self.session.query(Project)
+            .join(ProjectUser, Project.project_id == ProjectUser.project_id)
+            .filter(ProjectUser.user_id == user_id)
+            .all()
+        )
 
     def clear_catalog_users(self):
         """Clear all entries from user table (DANGEROUS)."""
