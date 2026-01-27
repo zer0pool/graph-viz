@@ -38,20 +38,45 @@ class RealBigQueryService:
             history_table: Name of the table containing load history data
         """
         self.history_table = history_table
+        self._history_location = None
+
+    def _get_history_location(self, client: "bigquery.Client") -> str:
+        """Fetch and cache the location of the history table.
+        
+        Args:
+            client: Authenticated BigQuery client
+            
+        Returns:
+            Location string (e.g., 'US', 'asia-northeast1') or None
+        """
+        if self._history_location is None:
+            try:
+                logger.info(f"Detecting location for history table: {self.history_table}")
+                table = client.get_table(self.history_table)
+                self._history_location = table.location
+                logger.info(f"History table location: {self._history_location}")
+            except Exception as e:
+                logger.warning(f"Could not determine location for {self.history_table}: {e}")
+                # Don't set self._history_location to stay None so it can retry or let BQ handle it
+                return None
+        return self._history_location
 
     def _ensure_client(self):
         """Create BigQuery client using environment credentials.
         
         Returns:
             bigquery.Client instance
-            
-        Raises:
-            RuntimeError: If google-cloud-bigquery is not installed
         """
         if bigquery is None:
             raise RuntimeError("google-cloud-bigquery is not installed")
-        # Client uses environment credentials (GOOGLE_APPLICATION_CREDENTIALS) or default ADC
-        return bigquery.Client()
+            
+        # Extract project ID from history table path if possible
+        project_id = None
+        parts = self.history_table.split(".")
+        if len(parts) >= 1:
+            project_id = parts[0]
+            
+        return bigquery.Client(project=project_id)
 
     def get_table_schema(self, full_name: str) -> List[Dict[str, Any]]:
         """Fetch the schema (columns) for a BigQuery table.
@@ -184,8 +209,9 @@ class RealBigQueryService:
                 bigquery.ScalarQueryParameter("days", "INT64", int(days)),
             ]
         )
-
-        query_job = client.query(query, job_config=job_config)
+        
+        location = self._get_history_location(client)
+        query_job = client.query(query, job_config=job_config, location=location)
         rows = list(query_job.result())
 
         from collections import defaultdict
@@ -311,7 +337,8 @@ class RealBigQueryService:
         )
         
         logger.debug(f"Executing BQ query with params: project={project_id}, dataset={dataset_id}, table={table_id}")
-        query_job = client.query(query, job_config=job_config)
+        location = self._get_history_location(client)
+        query_job = client.query(query, job_config=job_config, location=location)
         
         results = []
         for row in query_job.result():

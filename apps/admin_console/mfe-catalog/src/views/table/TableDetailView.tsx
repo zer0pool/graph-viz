@@ -29,7 +29,7 @@ export const TableDetailView: React.FC<{
     setLoadedTabs((prev) => new Set(prev).add(newTab));
   };
 
-  // Hooks - now only active if their tab was ever opened
+  // Hooks
   const { table, loading: loadingInfo } = useTableOverview(tableName);
 
   const { schema, loading: loadingSchema } = useTableSchema(
@@ -40,27 +40,35 @@ export const TableDetailView: React.FC<{
     loadedTabs.has("timeliness") ? tableName : ""
   );
 
+  // Lineage is needed for metrics in Overview and for the Lineage tab itself
   const { lineage, loading: loadingLineage } = useTableLineage(
-    loadedTabs.has("lineage") ? tableName : ""
+    (loadedTabs.has("lineage") || tab === "info") ? tableName : ""
   );
 
   return (
     <DetailLayout
-      title={`Table: ${table?.name || tableName}`}
+      title={table?.name || tableName.split('.').pop() || tableName}
       tabs={TABLE_TABS}
       activeTab={tab}
       onTabChange={handleTabChange}
       mode={mode}
+      owner={table?.owner}
     >
-      <div className="p-6">
+      <div className="h-full overflow-y-auto p-6">
         {tab === "info" && (
           <TableOverview
             table={table || ({ id: tableName, name: tableName } as any)}
             loading={loadingInfo}
+            writerCount={lineage?.metrics.upstream_job_count}
+            readerCount={lineage?.metrics.downstream_job_count}
           />
         )}
         {tab === "lineage" && (
-          <TableLineage lineage={lineage} loading={loadingLineage} />
+          <TableLineage 
+            lineage={lineage} 
+            loading={loadingLineage} 
+            tableName={tableName}
+          />
         )}
         {tab === "schema" && (
           <TableSchema
@@ -70,8 +78,9 @@ export const TableDetailView: React.FC<{
         )}
         {tab === "timeliness" && (
           <TableTimeliness
-            history={timeliness?.history || []}
+            data={timeliness}
             loading={loadingTime}
+            tableName={tableName}
           />
         )}
       </div>

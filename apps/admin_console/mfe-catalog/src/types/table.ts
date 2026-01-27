@@ -23,12 +23,38 @@ export interface TableLineageRelation {
   name: string;
   type: "job" | "table";
   status?: string;
-  relation_type?: "source" | "sink" | "trigger";
+  relation_type?: string;
+}
+
+export interface TableLineageMetrics {
+  root_count: number;
+  leaf_count: number;
+  upstream_table_count: number;
+  downstream_table_count: number;
+  upstream_job_count: number;
+  downstream_job_count: number;
+  depth: {
+    upstream: number;
+    downstream: number;
+  };
 }
 
 export interface TableLineageSummary {
-  upstreams: TableLineageRelation[];
-  downstreams: TableLineageRelation[];
+  metrics: TableLineageMetrics;
+  upstream: {
+    root_tables: string[];
+    tables: string[];
+    jobs: string[];
+  };
+  downstream: {
+    leaf_tables: string[];
+    tables: string[];
+    jobs: string[];
+  };
+  paths: {
+    preview: string[][];
+    full: string[][];
+  };
 }
 
 export interface TableLineageResponse {
@@ -49,11 +75,26 @@ export interface TableSchemaResponse {
 }
 
 export interface TableTimelinessData {
-  timestamp: string;
-  row_count: number;
-  data_freshness_lag?: number;
+  date: string;
+  period: string;
+  status: string;
+  success_count: number;
+  fail_count: number;
+  rate: number;
+}
+
+export interface HourlyTimelinessData {
+  hour: string;
+  state: string;
+  interval_start: string;
+  interval_end: string;
 }
 
 export interface TableTimelinessResponse {
-  history: TableTimelinessData[];
+  daily_summary: TableTimelinessData[];
+  hourly_detail: Record<string, HourlyTimelinessData[]>;
+  time_range: {
+    start: string;
+    end: string;
+  };
 }
