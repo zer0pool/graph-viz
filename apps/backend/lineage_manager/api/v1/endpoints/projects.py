@@ -42,6 +42,22 @@ def list_projects(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{project_id}/summary")
+@inject
+def get_project_summary(
+    project_id: str,
+    svc: ProjectService = Depends(Provide[GraphContainer.graph.project_service]),
+):
+    """
+    Get project summary statistics.
+    """
+    try:
+        return svc.get_project_summary(project_id)
+    except Exception as e:
+        logger.error(f"Failed to get project summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{project_id}")
 @inject
 def get_project_detail(
@@ -93,4 +109,18 @@ def list_project_jobs(
         )
     except Exception as e:
         logger.error(f"Failed to list project jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/{project_id}/users")
+@inject
+def list_project_users(
+    project_id: str,
+    svc: ProjectService = Depends(Provide[GraphContainer.graph.project_service]),
+):
+    """
+    List users associated with a project.
+    """
+    try:
+        return svc.list_project_users(project_id)
+    except Exception as e:
+        logger.error(f"Failed to list project users: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -14,6 +14,19 @@ class ProjectService:
     def __init__(self, uow: GraphUnitOfWork):
         self.uow = uow
     
+    def get_project_summary(self, project_id: str) -> Dict:
+        """
+        Get project detail summary.
+        """
+        project = self._get_project_or_create_placeholder(project_id)
+        stats = self._get_project_statistics(project_id)
+        
+        return {
+            "project_id": project.project_id,
+            "display_name": project.display_name,
+            "stats": stats
+        }
+    
     def get_project_detail(self, project_id: str) -> Dict:
         """
         Get project detail with summary statistics.
@@ -63,6 +76,24 @@ class ProjectService:
             "total": total,
             "limit": limit,
             "offset": offset
+        }
+    
+    def list_project_users(self, project_id: str) -> Dict:
+        """
+        List users in a project.
+        """
+        users = self.uow.users.find_by_project(project_id)
+        
+        return {
+            "users": [
+                {
+                    "user_id": u.user_id,
+                    "name": u.name,
+                    "department": u.department
+                }
+                for u in users
+            ],
+            "total": len(users)
         }
     
     def list_all_projects(self, limit: int = 100) -> List[Dict]:
@@ -121,12 +152,11 @@ class ProjectService:
         properties = meta.properties or {}
         
         return {
-            "node_id": node.id,
             "job_id": node.name,
+            "node_id": node.id,
+            "running_status": properties.get("status", "unknown"),
+            "owner": meta.owner_id,
             "job_name": properties.get("display_name", node.name),
-            "project_id": meta.project_id,
-            "owner_id": meta.owner_id,
-            "status": properties.get("status", "unknown"),
             "enabled": properties.get("enabled", True)
         }
     
