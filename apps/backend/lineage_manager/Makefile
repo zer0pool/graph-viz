@@ -82,6 +82,19 @@ lint:
 format:
 	PYTHONPATH=.. $(VENV)/bin/python -m black lineage_manager/ $(TESTS_DIR)/
 
+# Docker Compose
+up:
+	docker compose -f ../docker-compose.yml up -d
+
+down:
+	docker compose -f ../docker-compose.yml down
+
+rebuild:
+	docker compose -f ../docker-compose.yml up -d --build
+
+logs:
+	docker compose -f ../docker-compose.yml logs -f
+
 clean:
 	rm -rf $(VENV) __pycache__ .pytest_cache
 	find . -type d -name __pycache__ -exec rm -r {} +

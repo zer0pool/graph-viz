@@ -13,6 +13,7 @@ from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_sync_service import GraphSyncService
 from lineage_manager.services.graph_initializer import GraphInitializerService
+from lineage_manager.services.project_service import ProjectService
 
 
 class GraphContainer(containers.DeclarativeContainer):
@@ -65,4 +66,10 @@ class GraphContainer(containers.DeclarativeContainer):
         command_service=command_service,
         query_service=query_service,
         initializer_service=initializer_service,
+    )
+    
+    # Project Service (for project/user search)
+    project_service = providers.Factory(
+        ProjectService,
+        uow=write_uow,
     )

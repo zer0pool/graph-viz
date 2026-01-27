@@ -35,21 +35,22 @@ class ApplicationContainer(containers.DeclarativeContainer):
     # Job domain (no dependencies needed - uses settings directly)
     job = providers.Container(JobContainer)
     
-    # User domain (needs database from core)
-    user = providers.Container(
-        UserContainer,
-        core=core,
-    )
-    
-    # BigQuery domain (no dependencies needed)
-    bigquery = providers.Container(BigQueryContainer)
-    
     # Graph domain (needs database from core, adapter from job)
     graph = providers.Container(
         GraphDomainContainer,
         core=core,
         job=job,
     )
+
+    # User domain (needs database from core and graph UoW)
+    user = providers.Container(
+        UserContainer,
+        core=core,
+        graph=graph,
+    )
+    
+    # BigQuery domain (no dependencies needed)
+    bigquery = providers.Container(BigQueryContainer)
 
     # Table domain (needs graph services and bigquery service)
     table = providers.Container(

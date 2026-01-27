@@ -41,73 +41,61 @@ def get_me(
     return profile
 
 
-@router.get("/", response_model=List[UserInfo])
-def list_users():
-    """Returns a list of dummy users matching Figma design."""
-    return [
-        {
-            "id": "user-001",
-            "name": "John Doe",
-            "email": "john.doe@company.com",
-            "roles": ["PM", "OPERATOR"],
-            "department": "Data Engineering",
-            "lastActive": "2026-01-18 09:30",
-        },
-        {
-            "id": "user-002",
-            "name": "Jane Smith",
-            "email": "jane.smith@company.com",
-            "roles": ["DEVELOPER", "OPERATOR"],
-            "department": "Analytics",
-            "lastActive": "2026-01-18 08:15",
-        },
-        {
-            "id": "user-003",
-            "name": "Mike Johnson",
-            "email": "mike.johnson@company.com",
-            "roles": ["PM"],
-            "department": "Business Intelligence",
-            "lastActive": "2026-01-17 16:45",
-        },
-        {
-            "id": "user-004",
-            "name": "Sarah Williams",
-            "email": "sarah.williams@company.com",
-            "roles": ["PM", "OPERATOR", "DEVELOPER"],
-            "department": "Data Engineering",
-            "lastActive": "2026-01-18 10:00",
-        },
-        {
-            "id": "user-005",
-            "name": "Tom Brown",
-            "email": "tom.brown@company.com",
-            "roles": ["OPERATOR"],
-            "department": "Operations",
-            "lastActive": "2026-01-18 09:50",
-        },
-        {
-            "id": "user-006",
-            "name": "Emily Davis",
-            "email": "emily.davis@company.com",
-            "roles": ["PM", "DEVELOPER"],
-            "department": "Analytics",
-            "lastActive": "2026-01-17 14:20",
-        },
-        {
-            "id": "user-007",
-            "name": "David Wilson",
-            "email": "david.wilson@company.com",
-            "roles": ["PM"],
-            "department": "Finance",
-            "lastActive": "2026-01-18 07:30",
-        },
-        {
-            "id": "user-008",
-            "name": "Lisa Garcia",
-            "email": "lisa.garcia@company.com",
-            "roles": ["OPERATOR", "DEVELOPER"],
-            "department": "Data Engineering",
-            "lastActive": "2026-01-18 09:15",
-        },
-    ]
+@router.get("/")
+@inject
+def list_users(
+    limit: int = 100,
+    offset: int = 0,
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
+):
+    """List users from catalog."""
+    try:
+        return user_service.list_users(limit=limit, offset=offset)
+    except Exception as e:
+        logger.error(f"Failed to list users: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{user_id}")
+@inject
+def get_user_detail(
+    user_id: str,
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
+):
+    """Get user detail with summary stats."""
+    try:
+        return user_service.get_user_detail(user_id)
+    except Exception as e:
+        logger.error(f"Failed to get user detail: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{user_id}/jobs")
+@inject
+def list_user_jobs(
+    user_id: str,
+    limit: int = 20,
+    offset: int = 0,
+    user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
+):
+    """
+    List jobs owned by a user.
+    
+    Args:
+        user_id: User identifier
+        limit: Maximum number of results
+        offset: Offset for pagination
+        
+    Returns:
+        Jobs list with pagination info
+    """
+    try:
+        return user_service.get_user_jobs(
+            user_id=user_id,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"Failed to list user jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

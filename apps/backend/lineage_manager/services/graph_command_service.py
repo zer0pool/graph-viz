@@ -145,19 +145,34 @@ class GraphCommandService:
         
         ⚠️ Does NOT commit - caller must wrap with transaction.
         """
+        from sqlalchemy import text
         uow = self.uow
         logger.info("Starting graph reset - clearing all graph data")
-        # Order matters: closure → edge → job_table_link → job → table
-        uow.closures.clear_all()
-        uow.edges.clear_all()
-        uow.job_table_links.clear_all()
-        uow.jobs.clear_all()
-        uow.tables.clear_all()
         
-        # Clear health stats and other caches
-        self._invalidate_all_caches()
-        
-        logger.info("Graph reset completed: all graph data cleared.")
+        # Disable FK checks for TRUNCATE to work and be fast
+        uow.db.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+        try:
+            # Order matters: closure → edge → job_table_link → job → table
+            uow.closures.clear_all()
+            uow.edges.clear_all()
+            uow.job_table_links.clear_all()
+            uow.jobs.clear_all()
+            uow.tables.clear_all()
+            
+            # Clear new meta tables
+            uow.job_node.clear_all()
+            uow.table_node.clear_all()
+            # NOTE: We specifically DO NOT clear uow.project and uow.users.
+            # These tables contain administrative data (SSO users, permissions)
+            # that must persist across graph initializations.
+            
+            # Clear health stats and other caches
+            self._invalidate_all_caches()
+            
+            logger.info("Graph reset completed: all graph data cleared.")
+        finally:
+            uow.db.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+            
         return {
             "status": "success",
             "message": "Graph reset complete: all graph data cleared.",
@@ -502,7 +517,54 @@ class GraphCommandService:
         self._create_upstream_relationships(job, input_table_ids, compute_closure=compute_closure)
         self._create_downstream_relationships(job, output_table_ids, compute_closure=compute_closure)
         
+        # 5. Populate Search & Catalog Tables (JobNode/TableNode/Project)
+        metadata = lineage.metadata or {}
+        project_id = metadata.get("project", "default-project")
+        owner_id = metadata.get("owner", "unknown-owner")
+        
+        # Ensure Project exists in catalog
+        self.uow.project.create_or_update(
+            project_id=project_id,
+            display_name=project_id.replace("-", " ").replace("_", " ").title()
+        )
+        
+        # Ensure User exists in catalog
+        self.uow.users.create_or_update_catalog_user(
+            user_id=owner_id,
+            name=owner_id.split('@')[0].replace('.', ' ').title()
+        )
+        
+        # Populate JobNode for search
+        self.uow.job_node.create_or_update(
+            node_id=job.id,
+            project_id=project_id,
+            owner_id=owner_id,
+            properties=job_props
+        )
+        
+        # Populate TableNodes for search
+        all_table_nodes = []
+        # Reuse nodes from previous steps
+        # This is a bit inefficient to fetch again, but ensures consistency
+        for name in seen_upstreams.union(seen_downstreams):
+            tbl = self.uow.tables.get_by_full_name(name)
+            if tbl:
+                dataset, table_only = self._parse_table_name(name)
+                self.uow.table_node.create_or_update(
+                    node_id=tbl.id,
+                    dataset=dataset,
+                    table_name=table_only,
+                    properties=tbl.properties or {}
+                )
+
         return job.id
+
+    def _parse_table_name(self, full_name: str) -> tuple[str, str]:
+        """Parse table name into dataset and table_name."""
+        parts = full_name.split(".")
+        if len(parts) >= 2:
+            return parts[-2], parts[-1]
+        return "default", full_name
 
     def rebuild_closure(self):
         """Delegate rebuild_closure to the repository via UOW"""

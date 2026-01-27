@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 # Ensure models are imported so tables are registered on Base.metadata
-from ..models import graph_closure, graph_edge, graph_node
+from ..models import GraphClosure, GraphEdge, GraphNode, JobNode, TableNode, Project, ProjectUser
 from ..models.base import Base
 from .config import get_settings
 

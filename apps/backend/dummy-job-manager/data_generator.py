@@ -217,11 +217,19 @@ def generate_jobs_for_type(type_name):
             downstreams = [format_dependency(out_name, is_upstream=False)]
 
             # Metadata
+            # NEW: Diversified owners and projects
+            owners = ["generated_script", "admin@google.com", "data-engineer@google.com", "bi-analyst@google.com"]
+            projects = ["default-project", "ecommerce-analytics", "infrastructure-monitoring", "customer-growth"]
+            
+            selected_owner = random.choice(owners)
+            selected_project = random.choice(projects)
+
             labels = {
                 "layer": str(layer),
                 "type": type_name,
                 "env": random.choice(["prod", "dev", "test"]),
-                "team": random.choice(["data", "bi", "ml", "platform"])
+                "team": random.choice(["data", "bi", "ml", "platform"]),
+                "project": selected_project # Also add to labels for safety
             }
 
             jobs.append({
@@ -238,7 +246,8 @@ def generate_jobs_for_type(type_name):
                 },
                 "governance": {"include_pii": random.choice([True, False])},
                 "metadata": {
-                    "owner": "generated_script",
+                    "owner": selected_owner,
+                    "project": selected_project,
                     "labels": labels,
                     "lifecycle_status": "DEPLOYED"
                 }
@@ -247,7 +256,7 @@ def generate_jobs_for_type(type_name):
     return jobs
 
 # Generate
-result_data = generate_jobs_for_type("SELF") + generate_jobs_for_type("REQUEST")
+result_data = generate_jobs_for_type("SELF-TYPE") + generate_jobs_for_type("REQUEST-TYPE")
 
 # Wrap in structure
 final_json = {

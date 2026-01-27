@@ -129,8 +129,7 @@ class GraphSyncService:
 
     async def sync_from_job_manager(self, reset: bool = False) -> Dict[str, Any]:
         """Sync graph by fetching all jobs from Job Manager."""
-        if reset:
-            self.command_service.reset_graph()
+        # reset=True logic is handled inside initializer_service.initialize()
         result = await self.initializer_service.initialize()
         GraphSyncService._last_sync_result = result
         return result
