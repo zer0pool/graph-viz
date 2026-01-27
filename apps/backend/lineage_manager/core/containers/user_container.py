@@ -16,6 +16,7 @@ class UserContainer(containers.DeclarativeContainer):
     
     # Dependencies from CoreContainer (for database session)
     core = providers.DependenciesContainer()
+    graph = providers.DependenciesContainer()  # For graph UoW
     
     # Unit of Work
     uow = providers.Factory(
@@ -23,8 +24,9 @@ class UserContainer(containers.DeclarativeContainer):
         db=core.session_factory,
     )
     
-    # Service with direct repository injection
+    # Service with graph_uow for job queries
     user_service = providers.Factory(
         UserService,
         uow=uow,
+        graph_uow=graph.write_uow,
     )

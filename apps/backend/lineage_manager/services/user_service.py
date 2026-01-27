@@ -1,14 +1,18 @@
+import logging
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from lineage_manager.core.auth import serialize_user
-from lineage_manager.core.uow import UserUnitOfWork
-from lineage_manager.models import GraphUserAccount
+from lineage_manager.core.uow import UserUnitOfWork, GraphUnitOfWork
+from lineage_manager.models import UserAccount
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
-    def __init__(self, uow: UserUnitOfWork):
+    def __init__(self, uow: UserUnitOfWork, graph_uow: GraphUnitOfWork = None):
         self.uow = uow
+        self.graph_uow = graph_uow  # For job queries
 
     def record_login(self, claims: Dict[str, Any]) -> Dict[str, Any]:
         """Create or update the user profile whenever a login succeeds."""
@@ -28,10 +32,97 @@ class UserService:
                 "name": user.name,
                 "email": user.email,                
                 "roles": user.roles or [],
-                "dept": user.dept,
+                "department": user.department,
                 "last_login_at": (
                     user.last_login_at.isoformat() if user.last_login_at else None
                 ),
             },          
+        }
+    
+    def list_users(self, limit: int = 100, offset: int = 0) -> Dict:
+        """List users from catalog."""
+        # This would ideally come from the User catalog table
+        users = self.uow.users.session.query(UserAccount).limit(limit).offset(offset).all()
+        return {
+            "users": [
+                {
+                    "user_id": u.user_id,
+                    "name": u.name,
+                    "email": u.email,
+                    "department": u.department,
+                    "status": u.status,
+                }
+                for u in users
+            ],
+            "total": len(users)
+        }
+
+    def get_user_detail(self, user_id: str) -> Dict:
+        """Get user detail with summary statistics."""
+        user = self.uow.users.get_catalog_user(user_id)
+        if not user:
+            # Create a placeholder user if requested but not found in catalog
+            user = self.uow.users.create_or_update_catalog_user(
+                user_id=user_id,
+                name=user_id.split('@')[0].replace('.', ' ').title()
+            )
+            
+        # Get statistics (owned jobs)
+        stats = {"owned_jobs": 0}
+        if self.graph_uow:
+            stats = self.graph_uow.job_node.get_owner_stats(user_id)
+            
+        return {
+            "user": {
+                "user_id": user.user_id,
+                "email": user.email,
+                "name": user.name,
+                "department": user.department,
+                "status": user.status,
+            },
+            "summary": stats
+        }
+
+    def get_user_jobs(self, user_id: str, limit: int = 20, offset: int = 0) -> Dict:
+        """
+        List jobs owned by a user.
+        
+        Args:
+            user_id: User identifier
+            limit: Maximum number of results
+            offset: Offset for pagination
+            
+        Returns:
+            Jobs list with pagination info
+        """
+        if not self.graph_uow:
+            logger.warning("GraphUnitOfWork not available for job queries")
+            return {"jobs": [], "total": 0, "limit": limit, "offset": offset}
+        
+        results, total = self.graph_uow.job_node.find_by_owner(
+            user_id, limit, offset
+        )
+        
+        jobs = [self._format_job(node, meta) for node, meta in results]
+        
+        return {
+            "jobs": jobs,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    
+    def _format_job(self, node, meta) -> Dict:
+        """Format job for API response."""
+        properties = meta.properties or {}
+        
+        return {
+            "node_id": node.id,
+            "job_id": node.name,
+            "job_name": properties.get("display_name", node.name),
+            "project_id": meta.project_id,
+            "owner_id": meta.owner_id,
+            "status": properties.get("status", "unknown"),
+            "enabled": properties.get("enabled", True)
         }
 

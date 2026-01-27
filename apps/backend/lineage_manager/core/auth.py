@@ -169,11 +169,12 @@ bearer_scheme = HTTPBearer(auto_error=False)
 def serialize_user(claims: Dict[str, Any], db_user) -> Dict[str, Any]:
     merged = {
         "sub": claims.get("sub"),
-        "loginId": claims.get("loginId"),
+        "login_id": claims.get("loginId") or getattr(db_user, "login_id", None),
         "email": claims.get("email") or getattr(db_user, "email", None),
         "name": claims.get("name") or getattr(db_user, "name", None),
         "roles": claims.get("roles") or getattr(db_user, "roles", []) or [],
-        "dept": claims.get("dept") or getattr(db_user, "dept", None),
+        "department": claims.get("dept") or getattr(db_user, "department", None),
+        "user_id": getattr(db_user, "user_id", None)
     }
     return merged
 

@@ -14,6 +14,7 @@ from lineage_manager.api.v1.endpoints import events as events_ep
 from lineage_manager.api.v1.endpoints import expand as expand_ep
 from lineage_manager.api.v1.endpoints import graph, jobs
 from lineage_manager.api.v1.endpoints import lineage as lineage_ep
+from lineage_manager.api.v1.endpoints import projects as projects_ep  # New
 from lineage_manager.api.v1.endpoints import search as search_ep
 from lineage_manager.api.v1.endpoints import sync as sync_ep
 from lineage_manager.api.v1.endpoints import tables as tables_ep
@@ -104,8 +105,23 @@ def create_app() -> GraphApp:
             auth_ep,
             web_ep,
             users_ep,
+            projects_ep,  # New
         ]
     )
+
+    # Run Alembic migrations before database initialization
+    # try:
+    #     logger.info("Running Alembic migrations...")
+    #     from alembic.config import Config
+    #     from alembic import command
+    #     import os
+    #     
+    #     # Get alembic.ini path
+    #     alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
+    #     command.upgrade(alembic_cfg, "head")
+    #     logger.info("Alembic migrations completed successfully")
+    # except Exception as e:
+    #     logger.warning(f"Alembic migration failed (may be already up to date): {e}")
 
     # Initialize database
     try:
@@ -147,6 +163,7 @@ def create_app() -> GraphApp:
     app.include_router(sync_ep.router)
     app.include_router(events_ep.router)
     app.include_router(users_ep.router)
+    app.include_router(projects_ep.router)  # New
     app.include_router(auth_ep.router)
     app.include_router(web_ep.router)
     app.include_router(audit_ep.router)

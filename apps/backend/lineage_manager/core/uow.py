@@ -8,16 +8,14 @@ from lineage_manager.repositories.job_table_link_repository import (
 )
 from lineage_manager.repositories.table_repository import TableRepository
 from lineage_manager.repositories.user_repository import UserRepository
+from lineage_manager.repositories.job_node_repository import JobNodeRepository
+from lineage_manager.repositories.table_node_repository import TableNodeRepository
+from lineage_manager.repositories.project_repository import ProjectRepository
 
 
 class BaseUnitOfWork:
     """
     Base Unit of Work with common transaction methods.
-    
-    Transaction Policy:
-    - Orchestrator services use `with uow.transactional():` 
-    - Command services must NOT use context manager (will raise RuntimeError)
-    - Query services use ReadOnlyUnitOfWork
     """
     
     def __init__(self, db: Session):
@@ -27,27 +25,19 @@ class BaseUnitOfWork:
     def transactional(self):
         """
         Explicitly mark this UoW as transactional context.
-        Only Orchestrator services should call this.
-        
-        Usage:
-            with uow.transactional():
-                # operations that will be committed
         """
-        # Temporarily re-enable context manager for orchestrators
         class TransactionalContext:
             def __init__(self, uow):
                 self.uow = uow
                 self._original_allow_context = None
             
             def __enter__(self):
-                # Save original state and enable context manager
                 self._original_allow_context = getattr(self.uow, '_allow_context', True)
                 self.uow._allow_context = True
                 return self.uow.__enter__()
             
             def __exit__(self, exc_type, exc_val, exc_tb):
                 result = self.uow.__exit__(exc_type, exc_val, exc_tb)
-                # Restore original state
                 self.uow._allow_context = self._original_allow_context
                 return result
         
@@ -66,17 +56,13 @@ class BaseUnitOfWork:
         self.db.close()
     
     def __enter__(self):
-        """Context manager entry - checks if allowed."""
         if not getattr(self, '_allow_context', True):
             raise RuntimeError(
-                f"{self.__class__.__name__} context manager is disabled. "
-                "This service must not manage transactions. "
-                "Use Orchestrator service instead."
+                f"{self.__class__.__name__} context manager is disabled."
             )
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit with automatic commit/rollback."""
         if exc_type:
             self.rollback()
         else:
@@ -87,17 +73,22 @@ class BaseUnitOfWork:
 class GraphUnitOfWork(BaseUnitOfWork):
     """
     Unit of Work for Graph domain (write operations).
-    
-    Provides access to graph-related repositories for mutation operations.
     """
 
     def __init__(self, db: Session):
         super().__init__(db)
+        # Graph repositories
         self.jobs = JobRepository(db)
         self.tables = TableRepository(db)
         self.job_table_links = JobTableLinkRepository(db)
         self.edges = GraphEdgeRepository(db)
         self.closures = ClosureRepository(db)
+        
+        # Search & Metadata repositories (Catalog)
+        self.job_node = JobNodeRepository(db)
+        self.table_node = TableNodeRepository(db)
+        self.project = ProjectRepository(db)
+        self.users = UserRepository(db)
 
 
 class UserUnitOfWork(BaseUnitOfWork):
@@ -108,26 +99,22 @@ class UserUnitOfWork(BaseUnitOfWork):
         super().__init__(db)
         self.users = UserRepository(db)
         
+
 class ReadOnlyUnitOfWork:
     """
     Read-only Unit of Work (no commit/rollback).
-    
-    Uses autocommit session for read-only queries.
     """
     
     def __init__(self, db: Session):
         self.db = db
     
     def close(self):
-        """Close the database session."""
         self.db.close()
     
     def __enter__(self):
-        """Context manager entry."""
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
         self.close()
 
 
@@ -141,3 +128,9 @@ class GraphReadOnlyUnitOfWork(ReadOnlyUnitOfWork):
         self.job_table_links = JobTableLinkRepository(db)
         self.edges = GraphEdgeRepository(db)
         self.closures = ClosureRepository(db)
+        
+        # Search repositories
+        self.job_node = JobNodeRepository(db)
+        self.table_node = TableNodeRepository(db)
+        self.project = ProjectRepository(db)
+        self.users = UserRepository(db)

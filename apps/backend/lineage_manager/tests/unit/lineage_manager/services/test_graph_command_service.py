@@ -17,6 +17,11 @@ class TestGraphCommandServiceUoW:
         uow.job_table_links = MagicMock()
         uow.edges = MagicMock()
         uow.closures = MagicMock()
+        uow.db = MagicMock()
+        uow.job_node = MagicMock()
+        uow.table_node = MagicMock()
+        uow.project = MagicMock()
+        uow.users = MagicMock()
         
         # Mock context manager behavior
         uow.__enter__.return_value = uow
@@ -110,6 +115,12 @@ class TestGraphCommandServiceUoW:
             
             mock_uow.closures.clear_all.assert_called()
             mock_uow.edges.clear_all.assert_called()
+            mock_uow.job_node.clear_all.assert_called()
+            mock_uow.table_node.clear_all.assert_called()
+            
+            # verify we DON'T clear administrative tables
+            mock_uow.project.clear_all.assert_not_called()
+            mock_uow.users.clear_catalog_users.assert_not_called()
 
     def test_set_table_dependency_does_not_use_uow_context(self, service, mock_uow):
         table_name = "t1"

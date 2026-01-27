@@ -35,6 +35,11 @@ db_user = os.environ.get("DB_USER", "$db_user")
 db_password = os.environ.get("DB_PASSWORD", "$db_password")
 
 try:
+    import socket
+    print(f"[mysql_ready] Attempting to resolve {db_host}...", file=sys.stdout)
+    ip = socket.gethostbyname(db_host)
+    print(f"[mysql_ready] {db_host} resolved to {ip}", file=sys.stdout)
+    
     conn = pymysql.connect(
         db=db_name,
         user=db_user,
@@ -46,6 +51,9 @@ try:
     print(f"[mysql_ready] MySQL connection successful to {db_host}:{db_port}/{db_name}", file=sys.stdout)
     conn.close()
     sys.exit(0)
+except socket.gaierror as e:
+    print(f"[mysql_ready] DNS resolution failed for {db_host}: {e}", file=sys.stderr)
+    sys.exit(1)
 except pymysql.Error as e:
     print(f"[mysql_ready] MySQL connection error: {e}", file=sys.stderr)
     sys.exit(1)
