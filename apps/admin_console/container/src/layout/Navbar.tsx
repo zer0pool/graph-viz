@@ -25,6 +25,11 @@ export const Navbar: React.FC<{
     }
   };
 
+  const handleSearch = (query: string) => {
+    // Navigate to users page with the search query as owner search
+    navigate(`/users?q=${encodeURIComponent(query)}`);
+  };
+
   return (
     <header className="h-navbar flex items-center justify-between px-[18px] bg-white border-b border-border shadow-sm z-[100] gap-[18px] shrink-0">
       <div className="flex items-center gap-4">
@@ -54,7 +59,7 @@ export const Navbar: React.FC<{
       </div>
 
       {/* Search Bar - Extracted */}
-      <SearchBox onSelectSuggestion={handleSelectSuggestion} />
+      <SearchBox onSelectSuggestion={handleSelectSuggestion} onSearch={handleSearch} />
 
       {/* User Controls - Extracted */}
       <UserMenu />

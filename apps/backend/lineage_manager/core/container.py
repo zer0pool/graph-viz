@@ -33,8 +33,8 @@ class ApplicationContainer(containers.DeclarativeContainer):
     # Domain containers
     # ─────────────────────────────────────────────────────
     
-    # Job domain (no dependencies needed - uses settings directly)
-    job = providers.Container(JobContainer)
+    # Job domain (needs core database)
+    job = providers.Container(JobContainer, core=core)
     
     # Graph domain (needs database from core, adapter from job)
     graph = providers.Container(
