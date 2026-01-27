@@ -59,7 +59,7 @@ class TestGraphQueryService:
         assert result["status"] == "success"
         assert len(result["jobs"]) == 1
         assert result["jobs"][0]["name"] == "job1"
-        assert result["jobs"][0]["trigger"] is True
+        assert result["jobs"][0]["dependency_type"] == "HARD"
 
     def test_get_table_lineage_hierarchy(self, service, mock_uow):
         mock_uow.tables.get_by_full_name.return_value = MagicMock(id="t1", full_name="table1")

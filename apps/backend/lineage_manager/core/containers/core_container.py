@@ -8,7 +8,7 @@ Uses get_settings() directly for configuration.
 from dependency_injector import containers, providers
 
 from lineage_manager.core.config import get_settings
-from lineage_manager.core.database import Database, db
+from lineage_manager.core.database import Database
 from lineage_manager.core.auth import OIDCProviderClient
 
 
@@ -23,9 +23,9 @@ class CoreContainer(containers.DeclarativeContainer):
     database = providers.Singleton(Database)
     
     # Session factories
-    session_factory = providers.Singleton(lambda: db.session_factory)
-    write_session_factory = providers.Singleton(lambda: db.write_session_factory)
-    read_session_factory = providers.Singleton(lambda: db.read_session_factory)
+    session_factory = providers.Singleton(lambda db_inst: db_inst.session_factory, database)
+    write_session_factory = providers.Singleton(lambda db_inst: db_inst.write_session_factory, database)
+    read_session_factory = providers.Singleton(lambda db_inst: db_inst.read_session_factory, database)
     
     # Authentication - uses settings directly
     oidc_provider = providers.Singleton(

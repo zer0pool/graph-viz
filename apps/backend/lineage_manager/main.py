@@ -110,7 +110,7 @@ def create_app() -> GraphApp:
     # Initialize database
     try:
         logger.info("Initializing database connection...")
-        db_instance = Database()
+        db_instance = app_container.core.database()
 
         # Test database connection
         if not db_instance.test_connection():
