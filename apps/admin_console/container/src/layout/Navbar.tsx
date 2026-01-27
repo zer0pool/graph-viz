@@ -12,9 +12,17 @@ export const Navbar: React.FC<{
   const navigate = useNavigate();
 
   const handleSelectSuggestion = (suggestion: any) => {
-    // Navigate to lineage page
-    onSelectGraphNode({ type: suggestion.type, id: suggestion.id });
-    navigate("/lineage");
+    if (suggestion.type === "table") {
+      navigate(`/tables/${encodeURIComponent(suggestion.id)}`);
+    } else if (suggestion.type === "job") {
+      navigate(`/jobs/${encodeURIComponent(suggestion.id)}`);
+    } else if (suggestion.type === "owner") {
+      navigate(`/users/${encodeURIComponent(suggestion.id)}`);
+    } else {
+      // Fallback or other types (navigate to lineage as before if needed)
+      onSelectGraphNode({ type: suggestion.type, id: suggestion.id });
+      navigate("/lineage");
+    }
   };
 
   return (

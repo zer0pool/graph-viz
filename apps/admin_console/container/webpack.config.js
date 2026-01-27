@@ -92,6 +92,7 @@ module.exports = {
           noErrorOnMissing: true,
         },
         { from: "public/config.template.js", to: "config.template.js" },
+        { from: "public/config.js", to: "config.js", noErrorOnMissing: true },
       ],
     }),
     new ModuleFederationPlugin({

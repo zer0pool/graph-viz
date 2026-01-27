@@ -19,6 +19,7 @@ from lineage_manager.api.v1.endpoints import search as search_ep
 from lineage_manager.api.v1.endpoints import sync as sync_ep
 from lineage_manager.api.v1.endpoints import tables as tables_ep
 from lineage_manager.api.v1.endpoints import users as users_ep
+from lineage_manager.api.v1.endpoints import analytics as analytics_ep
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.core.database import Database
@@ -106,6 +107,7 @@ def create_app() -> GraphApp:
             web_ep,
             users_ep,
             projects_ep,  # New
+            analytics_ep,
         ]
     )
 
@@ -167,6 +169,7 @@ def create_app() -> GraphApp:
     app.include_router(auth_ep.router)
     app.include_router(web_ep.router)
     app.include_router(audit_ep.router)
+    app.include_router(analytics_ep.router)
 
     return app
 
