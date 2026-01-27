@@ -50,7 +50,9 @@ export const ShellApp = () => {
   const [selection, setSelection] = useState<any>(null); // 그래프 클릭 노드
   const [drawerOpen, setDrawerOpen] = useState(false); // Drawer 열림 상태
 
-  console.log("[Shell] Current activeGraphNode:", activeGraphNode);
+  React.useEffect(() => {
+    console.log("[ShellApp] State Update - activeGraphNode:", activeGraphNode);
+  }, [activeGraphNode]);
 
   const handleNodeSelection = React.useCallback((event: any) => {
     console.log("[Shell] Node selected in graph:", event);
@@ -78,6 +80,7 @@ export const ShellApp = () => {
         <AppRouter
           onSelectNode={handleNodeSelection}
           activeGraphNode={activeGraphNode}
+          onSetRootNode={setActiveGraphNode}
           selection={selection} // PROPAGATE selection
         />
       </AppLayout>

@@ -25,13 +25,17 @@ export const RemoteMount: React.FC<Props> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<null | (() => void)>(null);
   const mountedRef = useRef(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const auth = useAuth(); // Get full auth client
 
+  // 🔹 Keep latest props in a ref for the async mount call
+  const propsRef = useRef(mountProps);
+  useEffect(() => {
+    propsRef.current = mountProps;
+  }, [mountProps]);
+
   // 🔹 Stabilize authClient reference for MFE
-  // MFEs don't need a re-mount if the auth object reference changes slightly (e.g. from context re-calc)
-  // but they might need the latest one. We'll pass the stable one and update refs if needed,
-  // but for now, the main goal is preventing re-mount.
   const authRef = useRef<AuthClient>(auth);
   useEffect(() => {
     authRef.current = auth;
@@ -69,19 +73,23 @@ export const RemoteMount: React.FC<Props> = ({
 
         if (typeof mount !== "function") {
           throw new Error(
-            `Module ${module} does not export a 'mount' function. Exports: ${Object.keys(
-              moduleExports,
-            ).join(", ")}`,
+            `Module ${module} does not export a 'mount' function.`,
           );
         }
 
+        // Use the LATEST props available at mount time
+        const latestProps = propsRef.current;
+        console.log(`[Shell:RemoteMount] Calling mount() for ${scope} with latestProps:`, latestProps);
+
         cleanupRef.current = mount(containerRef.current!, {
-          ...(mountProps ?? {}),
-          initialSelection: mountProps,
+          ...(latestProps ?? {}),
+          initialSelection: latestProps,
           eventTarget: containerRef.current,
           auth: authRef.current, // Inject Auth Client
         });
+        
         mountedRef.current = true;
+        setIsMounted(true);
         console.log(`[Shell:RemoteMount] Mount successful for ${scope}`);
       } catch (err) {
         console.error(
@@ -116,22 +124,25 @@ export const RemoteMount: React.FC<Props> = ({
       } finally {
         cleanupRef.current = null;
         mountedRef.current = false;
+        setIsMounted(false);
       }
     };
-  }, [scope, url, module]); // Removed authClient from deps to prevent re-mounts
+  }, [scope, url, module]);
 
-  // 🔹 props 변경 (지금은 noop, 이후 확장)
+  // 🔹 props 변경 전파 (mount 이후에만)
   useEffect(() => {
-    if (!mountedRef.current) return;
+    if (!isMounted) return;
     if (!mountProps) return;
+
+    console.log(`[Shell:RemoteMount] Propagating props change to ${scope}:`, mountProps);
 
     // MFE로 selection 변경 이벤트 전달
     const event = new CustomEvent("mfe:selection", {
-      detail: { ...mountProps }, // ⭐ 반드시 detail 로 감싸기
+      detail: { ...mountProps },
     });
 
     containerRef.current?.dispatchEvent(event);
-  }, [mountProps]);
+  }, [isMounted, mountProps, scope]);
 
   if (error) {
     return (

@@ -22,7 +22,8 @@ export class ApiClient {
     if (!res.ok) {
       throw new Error(`API Request failed: ${res.status} ${res.statusText}`);
     }
-    return res.json();
+    const data = await res.json();
+    return data.result !== undefined ? data.result : data;
   }
 
   // --- Job Endpoints ---
@@ -40,9 +41,8 @@ export class ApiClient {
   // --- Table Endpoints ---
 
   async fetchTableDetail(tableName: string): Promise<TableDetail> {
-    // Using 'details' as per legacy code analysis (fetchTableDetails)
     return this.request<TableDetail>(
-      `/api/v1/tables/${encodeURIComponent(tableName)}/details`
+      `/api/v1/tables/${encodeURIComponent(tableName)}/detail`
     );
   }
 
@@ -55,9 +55,9 @@ export class ApiClient {
   async fetchTableTimeliness(
     tableName: string,
     days: number = 7
-  ): Promise<TableTimelinessResponse> {
+  ): Promise<any> {
     const params = new URLSearchParams({ days: String(days) });
-    return this.request<TableTimelinessResponse>(
+    return this.request<any>(
       `/api/v1/tables/${encodeURIComponent(
         tableName
       )}/timelines?${params.toString()}`
@@ -68,7 +68,6 @@ export class ApiClient {
     tableName: string,
     options: { maxRoots?: number; maxLeaves?: number } = {}
   ): Promise<any> {
-    // TODO: Define LineageSummary type
     const params = new URLSearchParams();
     if (options.maxRoots) params.set("max_roots", String(options.maxRoots));
     if (options.maxLeaves) params.set("max_leaves", String(options.maxLeaves));

@@ -57,7 +57,7 @@ export const useTracker = () => {
     // 3. Send to Backend (Remote Analytics)
     const trackRemote = async () => {
       try {
-        await fetch(`${config.BACKEND_HOST}/api/v1/analytics/track`, {
+        await fetch(`${config.API_BASE_URL}/api/v1/analytics/track`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

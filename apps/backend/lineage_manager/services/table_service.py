@@ -101,12 +101,8 @@ class TableService:
                 },
             }
 
-        # Metadata fallback logic: query the history table instead of the requested table
-        target_path = self.bigquery_service.get_history_table_path()
         try:
-            details = self.bigquery_service.get_table_detail(target_path)
-            # Patch identity to maintain UI consistency
-            details["full_name"] = table_name
+            details = self.bigquery_service.get_table_detail(table_name)
             return {"status": "success", "result": details}
         except Exception as e:
             logger.error(f"Failed to fetch table details for {table_name}: {e}")

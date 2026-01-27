@@ -1,5 +1,6 @@
 import React from "react";
 import { JobDetail, JobNodeRelation } from "../../types/job";
+import { useNavigate } from "react-router-dom";
 
 interface JobLineageProps {
   job: JobDetail;
@@ -7,6 +8,7 @@ interface JobLineageProps {
 }
 
 export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
+  const navigate = useNavigate();
   if (loading) {
     return (
       <div className="p-8 text-center animate-pulse">
@@ -112,6 +114,23 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
           )}
         </div>
       </section>
+
+      {/* View Full Graph Footer */}
+      <div className="mt-12 bg-[#f8f9fa] border border-[#dadce0] rounded-xl p-6 flex items-center justify-between">
+         <div className="flex items-center gap-4">
+           <div className="w-12 h-12 bg-[#e8f0fe] rounded-full flex items-center justify-center text-xl shadow-sm">🕸️</div>
+           <div>
+             <h4 className="text-sm font-bold text-[#202124]">Interactive Lineage Explorer</h4>
+             <p className="text-xs text-[#5f6368]">Explore the complete run dependency and data lineage for this job.</p>
+           </div>
+         </div>
+         <button 
+          onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.id)}`)}
+          className="text-xs font-bold text-white bg-[#1a73e8] hover:bg-[#1765cc] px-8 py-3 rounded shadow-md transition-all uppercase tracking-widest"
+        >
+          View Full Graph
+        </button>
+      </div>
     </div>
   );
 };

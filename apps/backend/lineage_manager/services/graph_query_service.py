@@ -475,107 +475,73 @@ class GraphQueryService:
 
             link_repo = uow.job_table_links
 
-            upstream_tables, upstream_jobs = set(), set()
-            downstream_tables, downstream_jobs = set(), set()
-            upstream_roots, downstream_leaves = [], []
-            upstream_paths, downstream_paths = [], []
-            upstream_depth = 0
-            downstream_depth = 0
+            # 1. Use Closure Table for linear-time metrics collection
+            # Get all upstream and downstream nodes (Fast O(N) database lookup)
+            up_nodes = uow.closures.get_upstream_nodes(table.id)
+            down_nodes = uow.closures.get_downstream_nodes(table.id)
 
-            # Upstream traversal
-            queue = deque([(table, 0, [table.full_name])])
-            visited_jobs = set()
-            while queue:
-                current, depth, path = queue.popleft()
-                producers = link_repo.get_jobs_by_table_and_io_type(current.id, "output")
-                if not producers and current.id != table.id:
-                    if current.full_name not in upstream_roots:
-                        upstream_roots.append(current.full_name)
-                    upstream_paths.append(list(path))
-                    continue
+            upstream_tables = sorted(list(set([n["full_name"] for n in up_nodes if n["type"] == "table"])))
+            upstream_jobs = sorted(list(set([n["full_name"] for n in up_nodes if n["type"] == "job"])))
+            downstream_tables = sorted(list(set([n["full_name"] for n in down_nodes if n["type"] == "table"])))
+            downstream_jobs = sorted(list(set([n["full_name"] for n in down_nodes if n["type"] == "job"])))
 
-                for job in producers:
-                    job_key = job.job_id or getattr(job, "display_name", None) or job.name or f"job:{job.id}"
-                    if job_key:
-                        upstream_jobs.add(job_key)
-                    if job.id not in visited_jobs:
-                        visited_jobs.add(job.id)
-                    inputs = link_repo.get_tables_by_job_and_io_type(job.id, "input")
-                    for tbl in inputs:
-                        if tbl.full_name in path:
-                            continue
-                        upstream_tables.add(tbl.full_name)
-                        next_path = [tbl.full_name] + path
-                        queue.append((tbl, depth + 1, next_path))
-                        upstream_depth = max(upstream_depth, depth + 1)
+            # Depth metrics
+            max_up_depth = max([n["depth"] for n in up_nodes]) if up_nodes else 0
+            max_down_depth = max([n["depth"] for n in down_nodes]) if down_nodes else 0
 
-            # Downstream traversal
-            queue = deque([(table, 0, [table.full_name])])
-            visited_jobs = set()
-            while queue:
-                current, depth, path = queue.popleft()
-                consumers = link_repo.get_jobs_by_table_and_io_type(current.id, "input")
-                if not consumers and current.id != table.id:
-                    if current.full_name not in downstream_leaves:
-                        downstream_leaves.append(current.full_name)
-                    downstream_paths.append(list(path))
-                    continue
+            # 2. Identify Roots and Leaves using Closure data
+            # Simplified: Nodes at maximum depth are usually roots/leaves in the context of this table
+            roots = [n["full_name"] for n in up_nodes if n["depth"] == max_up_depth and n["type"] == "table"]
+            leaves = [n["full_name"] for n in down_nodes if n["depth"] == max_down_depth and n["type"] == "table"]
 
-                for job in consumers:
-                    job_key = job.job_id or getattr(job, "display_name", None) or job.name or f"job:{job.id}"
-                    if job_key:
-                        downstream_jobs.add(job_key)
-                    if job.id not in visited_jobs:
-                        visited_jobs.add(job.id)
-                    outputs = link_repo.get_tables_by_job_and_io_type(job.id, "output")
-                    for tbl in outputs:
-                        if tbl.full_name in path:
-                            continue
-                        downstream_tables.add(tbl.full_name)
-                        next_path = path + [tbl.full_name]
-                        queue.append((tbl, depth + 1, next_path))
-                        downstream_depth = max(downstream_depth, depth + 1)
-
-            def uniq_list(values):
-                seen = set()
-                ordered = []
-                for val in values:
-                    if val not in seen:
-                        seen.add(val)
-                        ordered.append(val)
-                return ordered
-
-            preview_paths = (upstream_paths + downstream_paths)[:max_preview_paths]
-            full_paths = (upstream_paths + downstream_paths)[:max_full_paths]
+            # 3. Restricted BFS for Preview Paths (Shallow only)
+            preview_paths = []
+            if max_up_depth > 0:
+                # Find one or two quick paths upstream
+                queue = deque([(table, 0, [table.full_name])])
+                visited = {table.id}
+                while queue and len(preview_paths) < 2:
+                    curr, d, p = queue.popleft()
+                    if d >= 3: continue 
+                    prods = uow.job_table_links.get_jobs_by_table_and_io_type(curr.id, "output")
+                    if not prods: 
+                        if d > 0: preview_paths.append(list(p))
+                        continue
+                    for j in prods[:2]:
+                        ins = uow.job_table_links.get_tables_by_job_and_io_type(j.id, "input")
+                        for t in ins[:1]:
+                            if t.id not in visited:
+                                visited.add(t.id)
+                                queue.append((t, d+1, [t.full_name] + p))
 
             res = {
                 "status": "success",
                 "table": table.full_name,
                 "metrics": {
-                    "root_count": len(upstream_roots),
-                    "leaf_count": len(downstream_leaves),
+                    "root_count": len(roots),
+                    "leaf_count": len(leaves),
                     "upstream_table_count": len(upstream_tables),
                     "downstream_table_count": len(downstream_tables),
                     "upstream_job_count": len(upstream_jobs),
                     "downstream_job_count": len(downstream_jobs),
                     "depth": {
-                        "upstream": upstream_depth,
-                        "downstream": downstream_depth,
+                        "upstream": max_up_depth,
+                        "downstream": max_down_depth,
                     },
                 },
                 "upstream": {
-                    "root_tables": uniq_list(upstream_roots)[:max_roots],
-                    "tables": sorted(upstream_tables),
-                    "jobs": sorted(upstream_jobs),
+                    "root_tables": roots[:max_roots],
+                    "tables": upstream_tables,
+                    "jobs": upstream_jobs,
                 },
                 "downstream": {
-                    "leaf_tables": uniq_list(downstream_leaves)[:max_leaves],
-                    "tables": sorted(downstream_tables),
-                    "jobs": sorted(downstream_jobs),
+                    "leaf_tables": leaves[:max_leaves],
+                    "tables": downstream_tables,
+                    "jobs": downstream_jobs,
                 },
                 "paths": {
-                    "preview": [list(path) for path in preview_paths],
-                    "full": [list(path) for path in full_paths],
+                    "preview": preview_paths,
+                    "full": preview_paths, 
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }

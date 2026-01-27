@@ -37,7 +37,7 @@ export const useAnalyticsData = () => {
   const fetchTopVisited = useCallback(async () => {
     setLoadingTop(true);
     try {
-      const response = await fetch(`${config.BACKEND_HOST}/api/v1/analytics/top-visited`);
+      const response = await fetch(`${config.API_BASE_URL}/api/v1/analytics/top-visited`);
       
       if (!response.ok) {
          // Silently fail for UI if analytics is down, but log warning

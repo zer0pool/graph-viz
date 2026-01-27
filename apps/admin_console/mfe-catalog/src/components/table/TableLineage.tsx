@@ -1,156 +1,109 @@
 import React from "react";
-import { TableLineageSummary, TableLineageRelation } from "../../types/table";
+import { TableLineageSummary } from "../../types/table";
+import { useNavigate } from "react-router-dom";
 
 interface TableLineageProps {
   lineage: TableLineageSummary | null;
   loading: boolean;
+  tableName: string;
 }
 
 export const TableLineage: React.FC<TableLineageProps> = ({
   lineage,
   loading,
+  tableName,
 }) => {
+  const navigate = useNavigate();
+
   if (loading) {
     return (
-      <div className="p-8 text-center animate-pulse">
-        <div className="flex flex-col items-center space-y-6">
-          <div className="h-24 w-full bg-gray-100 rounded-xl"></div>
-          <div className="h-8 w-8 text-gray-300">⬇️</div>
-          <div className="h-24 w-full bg-gray-100 rounded-xl"></div>
-        </div>
+      <div className="bg-white rounded-lg border border-[#dadce0] p-12 h-64 flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#e8f0fe] border-t-[#1a73e8] rounded-full animate-spin"></div>
+        <span className="text-sm text-[#5f6368] font-medium tracking-wider uppercase">Loading Lineage Data...</span>
       </div>
     );
   }
 
-  const upstreams = lineage?.upstreams || [];
-  const downstreams = lineage?.downstreams || [];
+  const metrics = lineage?.metrics;
 
   return (
-    <div className="space-y-12 animate-fade-in py-4">
-      {/* Upstream Section (Producers) */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">🏭</span>
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-            Upstream Producers
-          </h3>
-          <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full">
-            {upstreams.length}
-          </span>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Upstream Summary */}
+        <div className="bg-white rounded-lg border border-[#dadce0] p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-[#f1f3f4]">
+            <span className="text-xl">🏗️</span>
+            <div>
+              <h3 className="text-sm font-bold text-[#202124] uppercase tracking-wider">Upstream Summary</h3>
+              <p className="text-[10px] text-[#5f6368]">Impact and sources providing data to this table.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-y-8">
+            <MetricItem label="Upstream Tables" value={metrics?.upstream_table_count} icon="📊" />
+            <MetricItem label="Producer Jobs" value={metrics?.upstream_job_count} icon="⚙️" />
+            <MetricItem label="Max Depth" value={metrics?.depth.upstream} icon="📏" />
+            <MetricItem label="Root Tables" value={metrics?.root_count} icon="🌳" />
+          </div>
         </div>
 
-        {upstreams.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
-            {upstreams.map((rel) => (
-              <RelationRow key={rel.id} relation={rel} direction="in" />
-            ))}
+        {/* Downstream Summary */}
+        <div className="bg-white rounded-lg border border-[#dadce0] p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-[#f1f3f4]">
+            <span className="text-xl">🚀</span>
+            <div>
+              <h3 className="text-sm font-bold text-[#202124] uppercase tracking-wider">Downstream Summary</h3>
+              <p className="text-[10px] text-[#5f6368]">Impact and consumers reading from this table.</p>
+            </div>
           </div>
-        ) : (
-          <div className="p-8 border-2 border-dashed border-gray-100 rounded-xl text-center">
-            <p className="text-sm text-gray-400 italic font-medium">
-              No upstream producers detected for this table.
-            </p>
+          
+          <div className="grid grid-cols-2 gap-y-8">
+            <MetricItem label="Downstream Tables" value={metrics?.downstream_table_count} icon="📊" />
+            <MetricItem label="Consumer Jobs" value={metrics?.downstream_job_count} icon="⚙️" />
+            <MetricItem label="Max Depth" value={metrics?.depth.downstream} icon="📏" />
+            <MetricItem label="Leaf Tables" value={metrics?.leaf_count} icon="🍃" />
           </div>
-        )}
-      </section>
-
-      {/* Visual Bridge */}
-      <div className="flex justify-center py-2">
-        <div className="h-8 w-px bg-gradient-to-b from-blue-200 to-indigo-200"></div>
+        </div>
       </div>
 
-      {/* Downstream Section (Consumers) */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">🏃‍♂️</span>
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-            Downstream Consumers
-          </h3>
-          <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full">
-            {downstreams.length}
-          </span>
-        </div>
-
-        {downstreams.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
-            {downstreams.map((rel) => (
-              <RelationRow key={rel.id} relation={rel} direction="out" />
-            ))}
-          </div>
-        ) : (
-          <div className="p-8 border-2 border-dashed border-gray-100 rounded-xl text-center">
-            <p className="text-sm text-gray-400 italic font-medium">
-              This table has no downstream consumers.
-            </p>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-};
-
-const RelationRow: React.FC<{
-  relation: TableLineageRelation;
-  direction: "in" | "out";
-}> = ({ relation, direction }) => {
-  const isJob = relation.type === "job";
-  return (
-    <div className="group flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
-      <div className="flex items-center gap-4">
-        <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
-            isJob ? "bg-indigo-50 text-indigo-600" : "bg-blue-50 text-blue-600"
-          }`}
+      <div className="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-6 flex items-center justify-between">
+         <div className="flex items-center gap-4">
+           <div className="w-12 h-12 bg-[#e8f0fe] rounded-full flex items-center justify-center text-xl shadow-sm">🕸️</div>
+           <div>
+             <h4 className="text-sm font-bold text-[#202124]">Interactive Lineage Explorer</h4>
+             <p className="text-xs text-[#5f6368]">Open the full graph to navigate through all connected components across the entire workspace.</p>
+           </div>
+         </div>
+         <button 
+          onClick={() => navigate(`/lineage/${encodeURIComponent(tableName)}`)}
+          className="text-xs font-bold text-white bg-[#1a73e8] hover:bg-[#1765cc] px-8 py-3 rounded shadow-md transition-all uppercase tracking-widest"
         >
-          {isJob ? "⚙️" : "📊"}
-        </div>
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-              {relation.name}
-            </span>
-            {relation.status && (
-              <span
-                className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${
-                  relation.status === "success" ||
-                  relation.status === "completed"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-amber-100 text-amber-700"
-                }`}
-              >
-                {relation.status}
-              </span>
-            )}
-          </div>
-          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
-            <span>{relation.type}</span>
-            {relation.relation_type && (
-              <>
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                <span className="text-blue-500">{relation.relation_type}</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-        <button className="p-2 hover:bg-blue-50 rounded-full text-blue-600 transition-colors">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
+          View Full Graph
         </button>
       </div>
     </div>
   );
 };
+
+const MetricItem: React.FC<{ label: string; value?: number; icon: string }> = ({ label, value = 0, icon }) => (
+  <div className="flex flex-col">
+    <span className="text-[10px] font-bold text-[#5f6368] uppercase tracking-widest mb-2 flex items-center gap-1.5">
+       <span className="opacity-60">{icon}</span> {label}
+    </span>
+    <span className="text-2xl font-medium text-[#202124]">{value}</span>
+  </div>
+);
+
+const NodeBox: React.FC<{ type: string; name: string; color?: string }> = ({ name }) => (
+  <div className={`p-4 bg-[#e8f0fe] border border-[#d2e3fc] rounded-lg flex items-center gap-3 hover:shadow-md transition-all cursor-default`}>
+    <div className={`w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm shadow-sm`}>
+      ⚙️
+    </div>
+    <div className="flex flex-col">
+      <span className="text-[9px] font-bold text-[#174ea6] uppercase tracking-widest">Job Node</span>
+      <span className="text-xs font-bold text-[#174ea6] truncate max-w-[120px]">
+        {name.split(':').pop()}
+      </span>
+    </div>
+  </div>
+);
