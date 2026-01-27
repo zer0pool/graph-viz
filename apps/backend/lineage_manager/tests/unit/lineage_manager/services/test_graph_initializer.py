@@ -71,7 +71,7 @@ class TestGraphInitializerService:
         # If we make register_lineage_job raise an error, the batch block will exit.
         
         call_count = 0
-        def side_effect(job):
+        def side_effect(job, compute_closure=True):
             nonlocal call_count
             call_count += 1
             if call_count == 1: # Batch attempt first job

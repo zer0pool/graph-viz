@@ -100,5 +100,6 @@ class Database:
             return False
 
 
-# Global database instance
-db = Database()
+# Global database instance - REMOVED to prevent session registry duplication.
+# Use app_container.core.database() instead.
+# db = Database()

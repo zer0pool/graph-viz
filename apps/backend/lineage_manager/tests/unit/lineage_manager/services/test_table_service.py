@@ -42,11 +42,12 @@ class TestTableService:
         assert result == {"status": "success"}
 
     def test_get_table_dependencies_external(self, service, mock_query_service):
+        mock_query_service.get_table_dependencies.return_value = {"status": "success", "count": 0}
         result = service.get_table_dependencies("s3://bucket/path")
         
         assert result["status"] == "success"
         assert result["count"] == 0
-        mock_query_service.get_table_dependencies.assert_not_called()
+        mock_query_service.get_table_dependencies.assert_called_once_with("s3://bucket/path")
 
     def test_get_table_dependencies_internal(self, service, mock_query_service):
         mock_query_service.get_table_dependencies.return_value = {"status": "success"}
@@ -105,6 +106,7 @@ class TestTableService:
         assert result["result"]["full_name"] == "gs://bucket/path"
 
     def test_get_table_details_demo_fallback(self, service, mock_bigquery_service):
+        mock_bigquery_service.get_history_table_path.return_value = "gizmopool.test_data.table_load_history"
         mock_bigquery_service.get_table_detail.return_value = {"full_name": "demo_table", "description": "demo"}
         
         result = service.get_table_details("real_table")
