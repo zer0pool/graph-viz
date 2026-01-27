@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, RefreshCw, Save, X } from "lucide-react";
 import { config } from "../../config";
+import { SummaryGrid, MetricData } from "../../components/common/SummaryGrid";
+
 
 // --- Types ---
 type Role = "PM" | "OPERATOR" | "DEVELOPER";
@@ -126,6 +128,15 @@ export const UsersLanding: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <SummaryGrid 
+        metrics={[
+          { type: "total_users", value: users.length, subtext: "Total accounts" },
+          { type: "active_users", value: users.length - 2, subtext: "Active recently" },
+          { type: "privileged_users", value: users.filter(u => u.roles.includes("PM") || u.roles.includes("OPERATOR")).length, subtext: "High level access" },
+          { type: "inactive_users", value: 2, subtext: "No activity > 30d", status: "warning" },
+        ]}
+      />
 
       {/* Users Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

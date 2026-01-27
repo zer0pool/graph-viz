@@ -1,5 +1,5 @@
 window.__APP_CONFIG__ = {
-  API_BASE_URL: "/api",
+  API_BASE_URL: "/admin-console",
   BASE_URL: "/admin-console",
   ENABLE_LINEAGE_MFE: "true",
   ENABLE_CATALOG_MFE: "true",

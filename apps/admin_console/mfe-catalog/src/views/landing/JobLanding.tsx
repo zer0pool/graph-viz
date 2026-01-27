@@ -1,6 +1,7 @@
 import React from "react";
 import { mockJobs } from "../../data/mockData";
 import { useMfeNavigate } from "../../utils/navigation";
+import { JobSummary } from "../../components/JobSummary";
 
 export const JobLanding: React.FC = () => {
   const navigate = useMfeNavigate();
@@ -21,9 +22,11 @@ export const JobLanding: React.FC = () => {
   return (
     <div className="p-6">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Batch Jobs</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Job Monitoring</h1>
         <p className="text-slate-500">Monitor and manage all data pipelines</p>
       </header>
+
+      <JobSummary />
 
       <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
         <table className="w-full text-left border-collapse">

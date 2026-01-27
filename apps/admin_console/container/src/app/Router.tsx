@@ -18,6 +18,7 @@ const Diagnostics: React.FC = () => (
 import { AuditLanding } from "../views/landing/AuditLanding";
 import { UsersLanding } from "../views/landing/UsersLanding";
 import { UserDetail } from "../views/landing/UserDetail";
+import { DashboardLanding } from "../views/landing/DashboardLanding";
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-8 text-center">
@@ -46,7 +47,7 @@ export const AppRouter: React.FC<{
 
   return (
     <Routes>
-      <Route path="/" element={<Placeholder title="Dashboard" />} />
+      <Route path="/" element={<DashboardLanding />} />
       <Route path="/diag" element={<Diagnostics />} />
       <Route path="/authorized" element={<AuthCallback />} />
       {/* Lineage MFE */}
