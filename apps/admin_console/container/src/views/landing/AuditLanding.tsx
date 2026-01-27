@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { config } from "../../config";
+import { SummaryGrid, MetricData } from "../../components/common/SummaryGrid";
 
 // --- Types (Matched with Backend Schemas) ---
 type CommandStatus = "SUCCESS" | "PARTIAL" | "FAILED";
@@ -199,20 +200,29 @@ export const AuditLanding: React.FC = () => {
         </div>
       </div>
 
+      <SummaryGrid 
+        metrics={[
+          { type: "total_commands", value: commands.length, subtext: "Total recorded" },
+          { type: "success_ops", value: commands.filter(c => c.status === "SUCCESS").length, subtext: "Completed successfully" },
+          { type: "failed_ops", value: commands.filter(c => c.status === "FAILED").length, subtext: "Execution errors", status: "critical" },
+          { type: "sla_breach", value: 2, subtext: "Delayed commands", status: "warning" },
+        ]}
+      />
+
       {/* Filters */}
       <Card className="bg-white">
         <div className="p-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">Filters</h3>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="flex flex-nowrap items-end gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {/* Type Filter */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[140px] flex-shrink-0">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Type
               </label>
               <select
-                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
               >
@@ -222,12 +232,12 @@ export const AuditLanding: React.FC = () => {
             </div>
 
             {/* Status Filter */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[140px] flex-shrink-0">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Status
               </label>
               <select
-                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -239,12 +249,12 @@ export const AuditLanding: React.FC = () => {
             </div>
 
             {/* Actor Filter */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[160px] flex-shrink-0">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Actor
               </label>
               <select
-                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                 value={actorFilter}
                 onChange={(e) => setActorFilter(e.target.value)}
               >
@@ -256,12 +266,12 @@ export const AuditLanding: React.FC = () => {
             </div>
 
             {/* Date Range Filter */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[140px] flex-shrink-0">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Date Range
               </label>
               <select
-                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 py-1.5 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               >
@@ -272,7 +282,7 @@ export const AuditLanding: React.FC = () => {
             </div>
 
             {/* Search */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[200px] flex-1 flex-shrink-0">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Search
               </label>
