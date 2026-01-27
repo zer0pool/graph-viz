@@ -15,6 +15,7 @@ const LineageRouteWrapper: React.FC<{
   const rest = params["*"];
 
   useEffect(() => {
+    console.log("[Shell:LineageWrapper] rest param changed:", rest);
     if (rest) {
       const decoded = decodeURIComponent(rest);
       let type = "table";
@@ -26,9 +27,14 @@ const LineageRouteWrapper: React.FC<{
         id = parts[1];
       }
 
+      console.log("[Shell:LineageWrapper] Parsed entity:", { type, id }, "Current active:", activeGraphNode);
+
       // Check if current active node is already this one to avoid loops
       if (!activeGraphNode || activeGraphNode.id !== id || activeGraphNode.type !== type) {
+        console.log("[Shell:LineageWrapper] Requesting root node update to:", id);
         onSetRootNode({ type, id });
+      } else {
+        console.log("[Shell:LineageWrapper] Entity already matches activeGraphNode, skipping update.");
       }
     }
   }, [rest, activeGraphNode, onSetRootNode]);
