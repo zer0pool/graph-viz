@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.audit_service import AuditService
 from lineage_manager.services.command_execution_service import CommandExecutionService
-from lineage_manager.api.v1.auth import require_authenticated_user
+from lineage_manager.core.auth import require_authenticated_user
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
 

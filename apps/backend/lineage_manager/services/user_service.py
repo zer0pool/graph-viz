@@ -39,10 +39,25 @@ class UserService:
             },          
         }
     
-    def list_users(self, limit: int = 100, offset: int = 0) -> Dict:
+    def list_users(self, q: str = None, limit: int = 10, offset: int = 0) -> Dict:
         """List users from catalog."""
-        # This would ideally come from the User catalog table
-        users = self.uow.users.session.query(UserAccount).limit(limit).offset(offset).all()
+        query = self.uow.users.session.query(UserAccount)
+        
+        if q:
+            from sqlalchemy import or_
+            pattern = f"%{q.lower()}%"
+            query = query.filter(
+                or_(
+                    UserAccount.name.ilike(pattern),
+                    UserAccount.email.ilike(pattern),
+                    UserAccount.user_id.ilike(pattern),
+                    UserAccount.department.ilike(pattern)
+                )
+            )
+        
+        total = query.count()
+        users = query.order_by(UserAccount.name).limit(limit).offset(offset).all()
+        
         return {
             "users": [
                 {
@@ -54,7 +69,9 @@ class UserService:
                 }
                 for u in users
             ],
-            "total": len(users)
+            "total": total,
+            "limit": limit,
+            "offset": offset
         }
 
     def get_user_detail(self, user_id: str) -> Dict:

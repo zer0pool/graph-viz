@@ -1,7 +1,7 @@
 import logging
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from typing import List
 from lineage_manager.core.auth import require_authenticated_user
@@ -44,13 +44,14 @@ def get_me(
 @router.get("/")
 @inject
 def list_users(
-    limit: int = 100,
+    q: str = Query(None),
+    limit: int = 10,
     offset: int = 0,
     user_service: UserService = Depends(Provide[GraphContainer.user.user_service]),
 ):
     """List users from catalog."""
     try:
-        return user_service.list_users(limit=limit, offset=offset)
+        return user_service.list_users(q=q, limit=limit, offset=offset)
     except Exception as e:
         logger.error(f"Failed to list users: {e}")
         raise HTTPException(status_code=500, detail=str(e))

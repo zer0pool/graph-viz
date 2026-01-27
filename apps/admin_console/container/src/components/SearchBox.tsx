@@ -10,9 +10,10 @@ interface SearchSuggestion {
 
 interface SearchBoxProps {
   onSelectSuggestion: (suggestion: SearchSuggestion) => void;
+  onSearch?: (query: string) => void;
 }
 
-export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion }) => {
+export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion, onSearch }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -113,7 +114,15 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion }) => {
       />
       <button
         id="loadBtn"
-        onClick={() => searchQuery && handleSearch(searchQuery)}
+        onClick={() => {
+          if (searchQuery) {
+            if (onSearch) {
+              onSearch(searchQuery);
+            } else {
+              handleSearch(searchQuery);
+            }
+          }
+        }}
       >
         Search
       </button>
