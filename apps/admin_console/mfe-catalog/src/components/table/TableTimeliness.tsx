@@ -6,6 +6,8 @@ interface TableTimelinessProps {
   data: TableTimelinessResponse | null;
   loading?: boolean;
   tableName: string;
+  days: number;
+  onDaysChange: (days: number) => void;
 }
 
 const STATE_COLORS: Record<string, string> = {
@@ -22,6 +24,8 @@ const STATE_COLORS: Record<string, string> = {
 export const TableTimeliness: React.FC<TableTimelinessProps> = ({
   data,
   loading,
+  days,
+  onDaysChange,
 }) => {
   // 1. All hooks must be at the top level
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -56,7 +60,11 @@ export const TableTimeliness: React.FC<TableTimelinessProps> = ({
         type: "category",
         data: dates,
         axisLine: { lineStyle: { color: "#dadce0" } },
-        axisLabel: { color: "#5f6368", fontSize: 10 },
+        axisLabel: { 
+          color: "#5f6368", 
+          fontSize: 10,
+          rotate: dailyHistory.length > 10 ? 45 : 0
+        },
       },
       yAxis: { show: false },
       tooltip: {
@@ -132,35 +140,46 @@ export const TableTimeliness: React.FC<TableTimelinessProps> = ({
     );
   }
 
-  if (dailyHistory.length === 0) {
-    return (
-        <div className="p-16 text-center bg-white border border-[#dadce0] rounded-lg shadow-sm">
-          <div className="text-4xl mb-4">📈</div>
-          <h4 className="text-[#202124] font-medium mb-1 uppercase tracking-widest text-xs">
-            No Timeliness Data
-          </h4>
-          <p className="text-[#5f6368] text-sm">
-            Activity history is not available for this table.
-          </p>
-        </div>
-    );
-  }
-
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="bg-white rounded-lg border border-[#dadce0] p-8 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-sm font-bold text-[#5f6368] uppercase tracking-widest">Timeliness Overview</h3>
-          <span className="text-xs text-[#1a73e8] font-medium bg-[#e8f0fe] px-3 py-1 rounded-full border border-[#d2e3fc]">Load History</span>
+          <div className="flex items-center bg-[#f1f3f4] rounded-lg p-1">
+             <button 
+                onClick={() => onDaysChange(7)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${days === 7 ? 'bg-white text-[#1a73e8] shadow-sm' : 'text-[#5f6368] hover:text-[#202124]'}`}
+             >
+               7d
+             </button>
+             <button 
+                onClick={() => onDaysChange(14)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${days === 14 ? 'bg-white text-[#1a73e8] shadow-sm' : 'text-[#5f6368] hover:text-[#202124]'}`}
+             >
+               14d
+             </button>
+          </div>
         </div>
         
-        <div className="h-48">
-          <ReactECharts 
-            option={dailyOption} 
-            onEvents={onEvents}
-            style={{ height: '100%', width: '100%' }} 
-          />
-        </div>
+        {dailyHistory.length === 0 ? (
+          <div className="p-16 text-center bg-[#f8f9fa] border border-dashed border-[#dadce0] rounded-lg">
+            <div className="text-4xl mb-4">📈</div>
+            <h4 className="text-[#202124] font-medium mb-1 uppercase tracking-widest text-xs">
+              No Data Found
+            </h4>
+            <p className="text-[#5f6368] text-sm">
+              No activity records for the last {days} days.
+            </p>
+          </div>
+        ) : (
+          <div className="h-48">
+            <ReactECharts 
+              option={dailyOption} 
+              onEvents={onEvents}
+              style={{ height: '100%', width: '100%' }} 
+            />
+          </div>
+        )}
       </div>
 
       {selectedDay && (

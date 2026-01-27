@@ -23,6 +23,7 @@ export const TableDetailView: React.FC<{
 }> = ({ tableName, mode = "EMBEDDED" }) => {
   const [tab, setTab] = useState("info");
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(["info"]));
+  const [timelineDays, setTimelineDays] = useState(7);
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab);
@@ -37,7 +38,8 @@ export const TableDetailView: React.FC<{
   );
 
   const { timeliness, loading: loadingTime } = useTableTimeliness(
-    loadedTabs.has("timeliness") ? tableName : ""
+    loadedTabs.has("timeliness") ? tableName : "",
+    timelineDays
   );
 
   // Lineage is needed for metrics in Overview and for the Lineage tab itself
@@ -81,6 +83,8 @@ export const TableDetailView: React.FC<{
             data={timeliness}
             loading={loadingTime}
             tableName={tableName}
+            days={timelineDays}
+            onDaysChange={setTimelineDays}
           />
         )}
       </div>

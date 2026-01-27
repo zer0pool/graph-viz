@@ -78,6 +78,7 @@ export const ShellApp = () => {
         <AppRouter
           onSelectNode={handleNodeSelection}
           activeGraphNode={activeGraphNode}
+          onSetRootNode={setActiveGraphNode}
           selection={selection} // PROPAGATE selection
         />
       </AppLayout>

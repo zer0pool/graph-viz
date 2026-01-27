@@ -14,32 +14,50 @@ const routeLabels: Record<string, string> = {
   diag: "Diagnostics",
 };
 
+import { Database, Settings, GitBranch, User, Bell, LayoutDashboard } from "lucide-react";
+
+const iconMap: Record<string, any> = {
+  jobs: Settings,
+  tables: Database,
+  lineage: GitBranch,
+  users: User,
+  audit: Bell,
+  dashboard: LayoutDashboard,
+};
+
 export const Breadcrumbs = () => {
   const location = useLocation();
   const pathnames = location.pathname.split("/").filter((x) => x);
 
-  // If we are on dashboard, maybe just "Console > Dashboard" or just "Console"
   const breadcrumbs: { label: string; path: string; icon?: any }[] = [
     { label: "Console", path: "/", icon: Home },
   ];
 
   pathnames.forEach((value, index) => {
-    const last = index === pathnames.length - 1;
+    const prevValue = index > 0 ? pathnames[index - 1] : null;
     const to = `/${pathnames.slice(0, index + 1).join("/")}`;
-
-    // Check if it's a known route or a dynamic ID
+    
     let label = routeLabels[value] || value;
+    let Icon = iconMap[value];
 
-    // Special handling for detail pages if needed (e.g. if previous was 'jobs' or 'tables')
-    // But for now, using the value itself as ID is fine.
+    // Identify if current value is an ID based on context
+    if (prevValue === 'jobs' || prevValue === 'tables' || prevValue === 'lineage') {
+       // It's an ID
+       if (prevValue === 'jobs') Icon = Settings;
+       if (prevValue === 'tables') Icon = Database;
+       if (prevValue === 'lineage') Icon = GitBranch;
+       
+       // Shorten if it's too long for the breadcrumb
+       if (label.length > 20) {
+          label = label.split('.').pop() || label;
+       }
+    }
 
-    breadcrumbs.push({ label, path: to, icon: null });
+    breadcrumbs.push({ label, path: to, icon: Icon });
   });
 
   if (breadcrumbs.length === 1 && location.pathname === "/") {
     breadcrumbs[0].label = "Dashboard";
-  } else if (breadcrumbs.length === 1) {
-      // This case might be unnecessary if split filter works, but safe guard
   }
 
   return (

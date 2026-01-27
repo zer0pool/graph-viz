@@ -1,9 +1,53 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Routes, Route, useParams } from "react-router-dom";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { AuthCallback } from "./AuthCallback";
 import { config } from "../config";
 import "../styles/app/Router.css";
+
+const LineageRouteWrapper: React.FC<{
+  onSelectNode: (event: any) => void;
+  activeGraphNode: any;
+  onSetRootNode: (node: any) => void;
+  selection?: any;
+}> = ({ onSelectNode, activeGraphNode, onSetRootNode, selection }) => {
+  const params = useParams();
+  const rest = params["*"];
+
+  useEffect(() => {
+    if (rest) {
+      const decoded = decodeURIComponent(rest);
+      let type = "table";
+      let id = decoded;
+      
+      if (decoded.includes(":")) {
+        const parts = decoded.split(":");
+        type = parts[0] as any;
+        id = parts[1];
+      }
+
+      // Check if current active node is already this one to avoid loops
+      if (!activeGraphNode || activeGraphNode.id !== id || activeGraphNode.type !== type) {
+        onSetRootNode({ type, id });
+      }
+    }
+  }, [rest, activeGraphNode, onSetRootNode]);
+
+  return (
+    <RemoteMount
+      key="lineage"
+      scope="lineage"
+      module="./index"
+      url={config.LINEAGE_MFE_URL}
+      mountProps={{
+        onSelect: onSelectNode,
+        rootNode: activeGraphNode,
+        initialSelection: selection,
+      }}
+      visible={true}
+    />
+  );
+};
 
 const Diagnostics: React.FC = () => (
   <div className="diagnostics-container">
@@ -30,21 +74,11 @@ const Placeholder: React.FC<{ title: string }> = ({ title }) => (
 export const AppRouter: React.FC<{
   onSelectNode: (event: any) => void;
   activeGraphNode: any;
+  onSetRootNode: (node: any) => void;
   selection?: any;
-}> = ({ onSelectNode, activeGraphNode, selection }) => {
+}> = ({ onSelectNode, activeGraphNode, onSetRootNode, selection }) => {
   const location = require("react-router-dom").useLocation();
-  console.log("[Shell:Router] Current Location:", location.pathname);
-  console.log("[Shell:Router] Rendering AppRouter. Config:", {
-    // @ts-ignore
-    ENABLE_MFE_LINEAGE: config.ENABLE_MFE_LINEAGE,
-    // @ts-ignore
-    ENABLE_MFE_CATALOG: config.ENABLE_MFE_CATALOG,
-    // @ts-ignore
-    LINEAGE_MFE_URL: config.LINEAGE_MFE_URL,
-    // @ts-ignore
-    CATALOG_MFE_URL: config.CATALOG_MFE_URL,
-  });
-
+  
   return (
     <Routes>
       <Route path="/" element={<DashboardLanding />} />
@@ -56,17 +90,11 @@ export const AppRouter: React.FC<{
         <Route
           path="/lineage/*"
           element={
-            <RemoteMount
-              key="lineage"
-              scope="lineage"
-              module="./index"
-              url={config.LINEAGE_MFE_URL}
-              mountProps={{
-                onSelect: onSelectNode,
-                rootNode: activeGraphNode,
-                initialSelection: selection,
-              }}
-              visible={true}
+            <LineageRouteWrapper 
+              onSelectNode={onSelectNode}
+              activeGraphNode={activeGraphNode}
+              onSetRootNode={onSetRootNode}
+              selection={selection}
             />
           }
         />
