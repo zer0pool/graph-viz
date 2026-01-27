@@ -7,6 +7,7 @@ from .table_node import TableNode
 from .project import Project
 from .project_user import ProjectUser
 from .user_account import UserAccount
+from .audit_log import AuditLog
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "Project",
     "ProjectUser",
     "UserAccount",
+    "AuditLog",
 ]

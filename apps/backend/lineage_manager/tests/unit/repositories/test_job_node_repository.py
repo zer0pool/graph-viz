@@ -200,3 +200,27 @@ class TestJobNodeRepository:
         stats = repo.get_owner_stats("stats-user")
         
         assert stats["owned_jobs"] == 5
+
+    def test_list_all_jobs(self, db_session):
+        """Test listing all jobs with sort."""
+        repo = JobNodeRepository(db_session)
+        
+        # Create jobs
+        for i in range(5):
+            node = GraphNode(node_type="job", name=f"job_{i}")
+            db_session.add(node)
+            db_session.flush()
+            
+            repo.create_or_update(
+                node_id=node.id,
+                project_id="test-project",
+                owner_id="test-user"
+            )
+        db_session.commit()
+        
+        results, total = repo.list_all_jobs(limit=3, offset=0)
+        
+        assert total == 5
+        assert len(results) == 3
+        # Sorting check not easy with sqlite without explicit dates, 
+        # but updated_at is auto-set. Assuming implementation relies on DB default.

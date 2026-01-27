@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Set
 
 from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
 from lineage_manager.api.v1.schemas import JobRegister
@@ -68,6 +69,116 @@ class GraphSyncService:
         except Exception as e:
             logger.error(f"sync_job_from_manager failed: {e}")
             return {"status": "error", "message": str(e)}
+
+    async def refresh_job(self, job_id: str) -> Dict[str, Any]:
+        """
+        Smart sync: Fetch job, compare with DB, and apply minimal updates.
+        """
+        try:
+            lineage = await self._fetch_remote_job(job_id)
+            action, synced_at = self._process_job_sync(job_id, lineage)
+
+            return {
+                "status": "success",
+                "job_id": job_id,
+                "action": action,
+                "synced_at": synced_at.isoformat()
+            }
+        except ValueError as e:
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            logger.error(f"refresh_job failed for {job_id}: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _fetch_remote_job(self, job_id: str) -> SchedulingLineage:
+        """Fetch and validate job from Job Manager."""
+        jd = await self.job_manager.get_job(job_id)
+        if not jd:
+            raise ValueError(f"Job '{job_id}' not found in manager")
+            
+        try:
+            return SchedulingLineage.model_validate(jd)
+        except Exception as e:
+            raise ValueError(f"Invalid job format: {e}") from e
+
+    def _process_job_sync(self, job_id: str, lineage: SchedulingLineage) -> Tuple[str, datetime]:
+        """Compare state and apply necessary updates within transaction."""
+        uow = self.uow
+        existing_job = uow.jobs.get(job_id)
+        
+        if not existing_job:
+            action = "create"
+            with uow.transactional():
+                self.command_service.register_lineage_job(lineage)
+            return action, datetime.utcnow()
+
+        is_structural, is_meta = self._calculate_job_diff(existing_job, lineage)
+        action = self._determine_sync_action(is_structural, is_meta)
+        
+        with uow.transactional():
+            self._apply_sync_update(action, existing_job, lineage)
+            
+        return action, datetime.utcnow()
+
+    def _determine_sync_action(self, is_structural: bool, is_meta: bool) -> str:
+        if is_structural:
+            return "full_sync"
+        if is_meta:
+            return "meta_sync"
+        return "touch"
+
+    def _apply_sync_update(self, action: str, existing_job: Any, lineage: SchedulingLineage):
+        """Dispatch update based on action type."""
+        if action == "full_sync":
+            self.command_service.register_lineage_job(lineage)
+        elif action == "meta_sync":
+            self.command_service.update_job_metadata(existing_job, lineage)
+            self.command_service.touch_job_timestamp(existing_job)
+        else:  # touch
+            self.command_service.touch_job_timestamp(existing_job)
+
+    def _calculate_job_diff(self, existing_job: Any, new_lineage: SchedulingLineage) -> Tuple[bool, bool]:
+        """Compare existing job node with new lineage payload."""
+        # 1. Structural Check
+        if self._has_structural_changes(existing_job, new_lineage):
+            return True, True # Meta change implied if structure changes
+            
+        # 2. Metadata Check
+        has_meta = self._has_metadata_changes(existing_job, new_lineage)
+        return False, has_meta
+
+    def _has_structural_changes(self, existing_job: Any, new_lineage: SchedulingLineage) -> bool:
+        existing_props = existing_job.job_metadata or {}
+        
+        new_ups = self._get_edge_names_from_lineage(new_lineage.upstreams)
+        old_ups = self._get_edge_names_from_props(existing_props.get("upstreams", []))
+        
+        if new_ups != old_ups:
+            return True
+
+        new_downs = self._get_edge_names_from_lineage(new_lineage.downstreams)
+        old_downs = self._get_edge_names_from_props(existing_props.get("downstreams", []))
+        
+        return new_downs != old_downs
+
+    def _has_metadata_changes(self, existing_job: Any, new_lineage: SchedulingLineage) -> bool:
+        existing_props = existing_job.job_metadata or {}
+        current_props = self.command_service._extract_job_properties(new_lineage)
+        
+        exclude_keys = {"upstreams", "downstreams", "updated_at"}
+        
+        for key, new_val in current_props.items():
+            if key in exclude_keys:
+                continue
+            if new_val != existing_props.get(key):
+                return True
+        return False
+
+    def _get_edge_names_from_lineage(self, edges: List[Any]) -> Set[str]:
+        return {e.name for e in edges}
+
+    def _get_edge_names_from_props(self, props_list: List[Dict]) -> Set[str]:
+        return {item.get("name") for item in props_list if item.get("name")}
 
     async def sync_node(self, node_type: str, node_db_id: int) -> Dict[str, Any]:
         """Sync a node (job or table) by re-fetching from Manager."""

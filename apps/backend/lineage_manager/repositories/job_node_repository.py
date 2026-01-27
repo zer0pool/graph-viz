@@ -127,3 +127,18 @@ class JobNodeRepository(BaseRepository):
             {"project_id": r.project_id, "job_count": r.job_count}
             for r in results
         ]
+
+    def list_all_jobs(self, limit: int = 20, offset: int = 0) -> Tuple[List[Tuple[GraphNode, JobNode]], int]:
+        """
+        List all jobs sorted by recently updated.
+        """
+        query = (
+            self.session.query(GraphNode, JobNode)
+            .join(JobNode, GraphNode.id == JobNode.node_id)
+            .order_by(JobNode.updated_at.desc())
+        )
+        
+        total = query.count()
+        results = query.limit(limit).offset(offset).all()
+        
+        return results, total
