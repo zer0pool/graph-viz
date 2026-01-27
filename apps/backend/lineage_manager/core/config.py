@@ -32,6 +32,8 @@ class RedisSettings(BaseSettings):
     db: int = 0
     default_ttl: int = 60
     enabled: bool = False
+    analytics_retention_hours: int = 24
+    analytics_window_hours: int = 4
     
     model_config = SettingsConfigDict(
         env_file=".env",

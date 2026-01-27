@@ -3,7 +3,7 @@ import { config } from "../config";
 import "../styles/components/SearchBox.css";
 
 interface SearchSuggestion {
-  type: "job" | "table";
+  type: "job" | "table" | "owner";
   id: string;
   name: string;
 }
@@ -68,6 +68,16 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion }) => {
             type: "table" as const,
             id: table.table_name || table.name || table.id,
             name: table.table_name || table.name || table.id,
+          });
+        });
+      }
+
+      if (data.owners) {
+        data.owners.forEach((owner: string) => {
+          results.push({
+            type: "owner" as const,
+            id: owner,
+            name: owner,
           });
         });
       }

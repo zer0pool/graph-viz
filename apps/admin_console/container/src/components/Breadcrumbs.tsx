@@ -36,8 +36,10 @@ export const Breadcrumbs = () => {
     breadcrumbs.push({ label, path: to, icon: null });
   });
 
-  if (breadcrumbs.length === 1) {
-    breadcrumbs.push({ label: "Dashboard", path: "/", icon: null });
+  if (breadcrumbs.length === 1 && location.pathname === "/") {
+    breadcrumbs[0].label = "Dashboard";
+  } else if (breadcrumbs.length === 1) {
+      // This case might be unnecessary if split filter works, but safe guard
   }
 
   return (

@@ -50,19 +50,40 @@ const getRoleBadgeVariant = (role: Role) => {
 export const UsersLanding: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`${config.API_BASE_URL}/api/v1/users/`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`${config.API_BASE_URL}/api/v1/users/`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
-      setUsers(data);
-    } catch (error) {
+      
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+        console.warn("Received non-array user data");
+      }
+    } catch (error: any) {
       console.error("Error fetching users:", error);
+      setUsers([]); // Default to empty
+      if (error.name === 'AbortError') {
+         setError("Failed to get users (Timeout 5s)");
+      } else {
+         setError("Failed to get users");
+      }
     } finally {
       setLoading(false);
     }
@@ -99,12 +120,12 @@ export const UsersLanding: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(
+  const filteredUsers = Array.isArray(users) ? users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.department.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  ) : [];
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
@@ -131,10 +152,27 @@ export const UsersLanding: React.FC = () => {
 
       <SummaryGrid 
         metrics={[
-          { type: "total_users", value: users.length, subtext: "Total accounts" },
-          { type: "active_users", value: users.length - 2, subtext: "Active recently" },
-          { type: "privileged_users", value: users.filter(u => u.roles.includes("PM") || u.roles.includes("OPERATOR")).length, subtext: "High level access" },
-          { type: "inactive_users", value: 2, subtext: "No activity > 30d", status: "warning" },
+          { 
+            type: "total_users", 
+            value: loading ? "-" : error || !Array.isArray(users) ? "N/A" : users.length, 
+            subtext: "Total accounts" 
+          },
+          { 
+            type: "active_users", 
+            value: loading ? "-" : error || !Array.isArray(users) ? "N/A" : Math.max(0, users.length - 2), 
+            subtext: "Active recently" 
+          },
+          { 
+            type: "privileged_users", 
+            value: loading ? "-" : error || !Array.isArray(users) ? "N/A" : users.filter(u => u.roles.includes("PM") || u.roles.includes("OPERATOR")).length, 
+            subtext: "High level access" 
+          },
+          { 
+            type: "inactive_users", 
+            value: loading ? "-" : error ? "N/A" : 2, 
+            subtext: "No activity > 30d", 
+            status: "warning" 
+          },
         ]}
       />
 
@@ -172,7 +210,19 @@ export const UsersLanding: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                    Loading users...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-red-500 bg-red-50">
+                    {error}
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}

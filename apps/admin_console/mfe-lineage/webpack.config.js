@@ -112,7 +112,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "auto",
+    publicPath: isProd ? "auto" : "http://localhost:5101/",
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[contenthash].js",
     chunkFilename: "[name].[contenthash].js",

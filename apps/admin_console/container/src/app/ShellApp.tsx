@@ -7,6 +7,7 @@ import { Drawer } from "../components/common/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { config } from "../config";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTracker } from "../hooks/useTracker";
 import "../styles/global.css";
 import "../styles/tailwind.css";
 
@@ -36,7 +37,14 @@ const GlobalNavSync = () => {
   return null;
 };
 
+// 🔹 Visit Tracker Component: Must be inside BrowserRouter
+const VisitTracker = () => {
+  useTracker();
+  return null;
+};
+
 export const ShellApp = () => {
+
   // 🟢 Step 4: 진짜 Shell에 재결합
   const [activeGraphNode, setActiveGraphNode] = useState<any>(null); // 검색 선정 노드
   const [selection, setSelection] = useState<any>(null); // 그래프 클릭 노드
@@ -60,6 +68,7 @@ export const ShellApp = () => {
   return (
     <BrowserRouter basename={config.BASE_URL}>
       <GlobalNavSync />
+      <VisitTracker />
       <AppLayout
         onSelectGraphNode={(node) => {
           console.log("[Shell] Setting activeGraphNode:", node);
