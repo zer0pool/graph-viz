@@ -14,6 +14,7 @@ from lineage_manager.core.containers.user_container import UserContainer
 from lineage_manager.core.containers.bigquery_container import BigQueryContainer
 from lineage_manager.core.containers.table_container import TableContainer
 from lineage_manager.core.containers.graph_container import GraphContainer as GraphDomainContainer
+from lineage_manager.core.containers.audit_container import AuditContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
@@ -57,6 +58,13 @@ class ApplicationContainer(containers.DeclarativeContainer):
         TableContainer,
         graph=graph,
         bigquery=bigquery,
+    )
+    
+    # Audit domain (needs core database and graph services)
+    audit = providers.Container(
+        AuditContainer,
+        core=core,
+        graph=graph,
     )
 
 

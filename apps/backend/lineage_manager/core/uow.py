@@ -11,6 +11,7 @@ from lineage_manager.repositories.user_repository import UserRepository
 from lineage_manager.repositories.job_node_repository import JobNodeRepository
 from lineage_manager.repositories.table_node_repository import TableNodeRepository
 from lineage_manager.repositories.project_repository import ProjectRepository
+from lineage_manager.repositories.audit_repository import AuditRepository
 
 
 class BaseUnitOfWork:

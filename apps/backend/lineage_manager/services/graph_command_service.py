@@ -139,6 +139,35 @@ class GraphCommandService:
             "updated": updates,
             "message": f"Job '{job_id}' updated successfully.",
         }
+
+    def update_job_metadata(self, job_node: Any, lineage: SchedulingLineage):
+        """
+        Update only metadata for an existing job node.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        """
+        new_props = self._extract_job_properties(lineage)
+        
+        # Update flat properties on the JobNode/Search Node as well if needed
+        # But primarily update the main 'job' table's metadata JSON
+        job_node.job_metadata = new_props
+        
+        # Also sync to JobNode for search
+        self.uow.job_node.create_or_update(
+            node_id=job_node.id,
+            project_id=new_props.get("project") or "default-project",
+            owner_id=new_props.get("owner") or "unknown-owner",
+            properties=new_props
+        )
+
+    def touch_job_timestamp(self, job_node: Any):
+        """
+        Update the updated_at timestamp for a job.
+        
+        ⚠️ Does NOT commit - caller must wrap with transaction.
+        """
+        from datetime import datetime
+        job_node.updated_at = datetime.utcnow()
     def reset_graph(self):
         """
         Delete all graph-related table data.

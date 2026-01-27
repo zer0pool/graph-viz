@@ -11,6 +11,7 @@ from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.job_service import JobService
+from lineage_manager.services.graph_sync_service import GraphSyncService
 from lineage_manager.api.v1.schemas import JobUpdateRequest
 
 AUTH_DEPS = [Depends(require_authenticated_user)]
@@ -20,6 +21,26 @@ router = APIRouter(
     tags=["Jobs"],
     dependencies=AUTH_DEPS,
 )
+
+
+
+@router.get("")
+@inject
+def list_jobs(
+    limit: int = 20,
+    offset: int = 0,
+    svc: JobService = Depends(Provide[GraphContainer.job.job_service]),
+):
+    """
+    List jobs with pagination (sorted by recently updated).
+    """
+    try:
+        return svc.list_jobs(limit=limit, offset=offset)
+    except Exception as e:
+        # logger.error is not defined in this file, use print for now or import logging if available
+        # It seems logger is usually defined at top level but was missing in view_file.
+        # Let's assume standard error handling
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{job_id}")
@@ -160,3 +181,20 @@ async def get_job_run_history(
 ):
     """Fetch run history from Job Manager via service layer."""
     return await job_service.get_run_history(job_id)
+
+@router.post("/{job_id}/sync")
+@inject
+async def sync_job(
+    job_id: str,
+    sync_service: GraphSyncService = Depends(Provide[GraphContainer.graph.sync_service]),
+):
+    """
+    Force sync a job from the source Job Manager.
+    """
+    clean_job_id = job_id.replace("job:", "")
+    result = await sync_service.refresh_job(clean_job_id)
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("message"))
+        
+    return result
