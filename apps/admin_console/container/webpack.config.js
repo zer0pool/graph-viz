@@ -15,6 +15,7 @@ module.exports = {
     port: 5100,
     historyApiFallback: {
       index: "/admin-console/index.html",
+      disableDotRule: true, // Fix for routes with dots (e.g. emails, table names)
     },
     hot: false,
     liveReload: false,

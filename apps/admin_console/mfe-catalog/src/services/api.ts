@@ -38,6 +38,20 @@ export class ApiClient {
     );
   }
 
+  async fetchProjectJobs(
+    projectId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+    return this.request<any>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/jobs?${params.toString()}`
+    );
+  }
+
   // --- Table Endpoints ---
 
   async fetchTableDetail(tableName: string): Promise<TableDetail> {

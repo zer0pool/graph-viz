@@ -125,7 +125,7 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
            </div>
          </div>
          <button 
-          onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.id)}`)}
+          onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.job_id || job.id)}`)}
           className="text-xs font-bold text-white bg-[#1a73e8] hover:bg-[#1765cc] px-8 py-3 rounded shadow-md transition-all uppercase tracking-widest"
         >
           View Full Graph
