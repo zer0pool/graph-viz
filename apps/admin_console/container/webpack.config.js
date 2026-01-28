@@ -9,6 +9,7 @@ const isProd = process.env.NODE_ENV === "production";
 module.exports = {
   entry: "./src/main.tsx",
   mode: isProd ? "production" : "development",
+  devtool: "source-map",
 
   devServer: {
     port: 5100,

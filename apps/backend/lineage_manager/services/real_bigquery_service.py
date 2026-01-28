@@ -226,6 +226,8 @@ class RealBigQueryService:
                 d_str = d.isoformat()
             else:
                 d_str = str(d)
+                if len(d_str) == 8:
+                    d_str = f"{d_str[:4]}-{d_str[4:6]}-{d_str[6:]}"
                 
             hour = int(r.get("hour") or 0)
             date_hours[d_str].add(hour)

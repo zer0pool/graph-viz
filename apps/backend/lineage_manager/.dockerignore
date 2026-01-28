@@ -11,9 +11,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.pytest_cache/
-.vscode/
+.pytest_cache
+.vscode
 *.swp
 .DS_Store
 logs/
 pids/
+.env

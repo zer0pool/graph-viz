@@ -339,7 +339,7 @@ class GraphQueryService:
                 }
                 for table in tables
             ],
-            "owners": owners,
+            "owners": [o["name"] for o in owners],
         }
 
     def get_table_dependencies(self, table_name: str):
