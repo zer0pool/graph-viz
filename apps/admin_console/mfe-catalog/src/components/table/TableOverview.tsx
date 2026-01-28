@@ -58,6 +58,7 @@ export const TableOverview: React.FC<TableOverviewProps> = ({
             <InfoItem label="Location" value={table.storage_info?.location} icon="📍" />
             <InfoItem label="Format" value={table.storage_info?.format} icon="📄" />
             <InfoItem label="Created" value={formatDate(table.created_at)} icon="📅" />
+            <InfoItem label="Modified" value={formatDate(table.updated_at || (table as any).modified)} icon="🕒" />
           </div>
 
           <div>

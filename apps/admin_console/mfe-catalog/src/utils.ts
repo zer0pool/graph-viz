@@ -32,7 +32,25 @@ export const formatDate = (value: any): string => {
   try {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toISOString().split("T")[0];
+
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // YYYY-MM-DD format
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    if (diffDays > 7) {
+      return dateStr;
+    }
+
+    // HH:MM format
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+    return `${dateStr} ${hh}:${min}`;
   } catch (err) {
     return value;
   }
