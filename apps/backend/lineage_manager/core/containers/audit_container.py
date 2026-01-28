@@ -20,7 +20,7 @@ class AuditContainer(containers.DeclarativeContainer):
     # Audit Service (uses its own database session)
     audit_service = providers.Factory(
         AuditService,
-        db=core.db,
+        db=core.write_session_factory,
     )
     
     # Command Execution Service (orchestrates graph commands + audit logging)

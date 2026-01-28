@@ -17,9 +17,8 @@ class AuditService:
     Uses its own session management, separate from Graph domain.
     """
 
-    def __init__(self, db: Session):
-        self.repository = AuditRepository(db)
-        self.db = db
+    def __init__(self, db):
+        self.session_factory = db
 
     def log_command(
         self,
@@ -31,62 +30,66 @@ class AuditService:
         error_message: str = None
     ) -> AuditLog:
         """Log a command execution."""
-        try:
-            log_entry = self.repository.log_command(
-                command_type=command_type,
-                target_id=target_id,
-                performed_by=performed_by,
-                status=status,
-                payload=payload,
-                error_message=error_message
-            )
-            self.db.commit()
-            return log_entry
-        except Exception as e:
-            logger.error(f"Failed to log audit: {e}")
-            self.db.rollback()
-            raise
+        with self.session_factory() as session:
+            try:
+                repository = AuditRepository(session)
+                log_entry = repository.log_command(
+                    command_type=command_type,
+                    target_id=target_id,
+                    performed_by=performed_by,
+                    status=status,
+                    payload=payload,
+                    error_message=error_message
+                )
+                session.commit()
+                return log_entry
+            except Exception as e:
+                logger.error(f"Failed to log audit: {e}")
+                session.rollback()
+                raise
 
     def list_commands(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """
         List audit commands in format expected by frontend.
         Maps AuditLog to AuditCommand interface.
         """
-        logs = self.repository.list_logs(limit=limit, offset=offset)
-        
-        commands = []
-        for log in logs:
-            # Generate summary from command type and target
-            summary = self._generate_summary(log.command_type, log.target_id, log.payload)
+        with self.session_factory() as session:
+            repository = AuditRepository(session)
+            logs = repository.list_logs(limit=limit, offset=offset)
             
-            # Create single event from log entry
-            events = [{
-                "id": f"{log.id}-event-1",
-                "description": summary,
-                "status": log.status if log.status != "PARTIAL" else "SUCCESS",
-                "timestamp": log.visited_at.strftime("%H:%M:%S")
-            }]
-            
-            # Add error event if failed
-            if log.status == "FAILED" and log.error_message:
-                events.append({
-                    "id": f"{log.id}-event-error",
-                    "description": f"Error: {log.error_message}",
-                    "status": "FAILED",
+            commands = []
+            for log in logs:
+                # Generate summary from command type and target
+                summary = self._generate_summary(log.command_type, log.target_id, log.payload)
+                
+                # Create single event from log entry
+                events = [{
+                    "id": f"{log.id}-event-1",
+                    "description": summary,
+                    "status": log.status if log.status != "PARTIAL" else "SUCCESS",
                     "timestamp": log.visited_at.strftime("%H:%M:%S")
+                }]
+                
+                # Add error event if failed
+                if log.status == "FAILURE" and log.error_message:
+                    events.append({
+                        "id": f"{log.id}-event-error",
+                        "description": f"Error: {log.error_message}",
+                        "status": "FAILED",
+                        "timestamp": log.visited_at.strftime("%H:%M:%S")
+                    })
+                
+                commands.append({
+                    "id": str(log.id),
+                    "timestamp": log.visited_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "type": log.command_type,
+                    "summary": summary,
+                    "actor": log.performed_by,
+                    "status": log.status,
+                    "events": events
                 })
             
-            commands.append({
-                "id": str(log.id),
-                "timestamp": log.visited_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "type": log.command_type,
-                "summary": summary,
-                "actor": log.performed_by,
-                "status": log.status,
-                "events": events
-            })
-        
-        return commands
+            return commands
 
     def _generate_summary(self, command_type: str, target_id: str, payload_json: str) -> str:
         """Generate human-readable summary from command details."""
