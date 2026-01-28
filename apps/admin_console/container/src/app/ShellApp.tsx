@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AppLayout } from "../layout/AppLayout";
 import { AuthProvider } from "./AuthContext";
 import { AppRouter } from "./Router";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { Drawer } from "../components/common/Drawer";
 import { RemoteMount } from "../mfe/RemoteMount";
 import { config } from "../config";
@@ -71,32 +72,34 @@ export const ShellApp = () => {
     <BrowserRouter basename={config.BASE_URL}>
       <GlobalNavSync />
       <VisitTracker />
-      <AppLayout
-        onSelectGraphNode={(node) => {
-          console.log("[Shell] Setting activeGraphNode:", node);
-          setActiveGraphNode(node);
-        }}
-      >
-        <AppRouter
-          onSelectNode={handleNodeSelection}
-          activeGraphNode={activeGraphNode}
-          onSetRootNode={setActiveGraphNode}
-          selection={selection} // PROPAGATE selection
-        />
-      </AppLayout>
-
-      {/* Connector: selection -> Detail MFE */}
-      {config.ENABLE_MFE_CATALOG && (
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <RemoteMount
-            scope="tableDetailViewer"
-            module="./index"
-            url={config.CATALOG_MFE_URL}
-            mountProps={selection}
-            visible={drawerOpen}
+      <ErrorBoundary>
+        <AppLayout
+          onSelectGraphNode={(node) => {
+            console.log("[Shell] Setting activeGraphNode:", node);
+            setActiveGraphNode(node);
+          }}
+        >
+          <AppRouter
+            onSelectNode={handleNodeSelection}
+            activeGraphNode={activeGraphNode}
+            onSetRootNode={setActiveGraphNode}
+            selection={selection} // PROPAGATE selection
           />
-        </Drawer>
-      )}
+        </AppLayout>
+
+        {/* Connector: selection -> Detail MFE */}
+        {config.ENABLE_MFE_CATALOG && (
+          <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <RemoteMount
+              scope="tableDetailViewer"
+              module="./index"
+              url={config.CATALOG_MFE_URL}
+              mountProps={selection}
+              visible={drawerOpen}
+            />
+          </Drawer>
+        )}
+      </ErrorBoundary>
     </BrowserRouter>
   );
 };

@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '62aa20cf5576'
+revision: str = '0004_unify_user_and_auth_tables'
 down_revision: Union[str, None] = '0003_add_meta_tables'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,6 +41,14 @@ def upgrade() -> None:
     op.create_index(op.f('ix_user_account_user_id'), 'user_account', ['user_id'], unique=True)
 
     # 5. Drop the old 'user' table
+    # But first, drop FKs from project_user that point to 'user'
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if 'project_user' in inspector.get_table_names():
+        for fk in inspector.get_foreign_keys('project_user'):
+            if fk['referred_table'] == 'user':
+                op.drop_constraint(fk['name'], 'project_user', type_='foreignkey')
+
     op.drop_table('user')
 
 
