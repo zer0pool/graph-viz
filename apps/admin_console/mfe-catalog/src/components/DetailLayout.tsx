@@ -43,16 +43,21 @@ export const DetailLayout: React.FC<{
   children: React.ReactNode;
   owner?: string;
   lifecycle?: string;
-}> = ({ title, tabs, activeTab, onTabChange, mode, children, owner, lifecycle }) => {
+  type?: "table" | "job";
+}> = ({ title, tabs, activeTab, onTabChange, mode, children, owner, lifecycle, type = "table" }) => {
+  const isJob = type === "job";
+  
   return (
     <div className="h-full flex flex-col bg-[#f1f3f4] min-h-screen">
       {/* GCP Header */}
       <header className="bg-white px-8 py-5 border-b border-[#dadce0] flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-[#e8f0fe] rounded flex items-center justify-center text-[#1a73e8] font-bold">T</div>
+          <div className={`w-8 h-8 ${isJob ? "bg-purple-50 text-purple-600" : "bg-[#e8f0fe] text-[#1a73e8]"} rounded flex items-center justify-center font-bold`}>
+            {isJob ? "J" : "T"}
+          </div>
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[10px] text-[#5f6368] font-bold uppercase tracking-wider">Table</span>
+              <span className="text-[10px] text-[#5f6368] font-bold uppercase tracking-wider">{isJob ? "Job" : "Table"}</span>
             </div>
             <h1 className="text-xl font-medium text-[#202124] flex items-center gap-3">
               {title}

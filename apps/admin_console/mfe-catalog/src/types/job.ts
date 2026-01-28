@@ -8,6 +8,7 @@ export interface JobNodeRelation {
 
 export interface JobDetail {
   id: string;
+  job_id?: string;
   name: string;
   status: string;
   schedule?: string;
@@ -17,7 +18,10 @@ export interface JobDetail {
   next_run_time?: string;
   type?: string;
   lifecycle_status?: string;
+  properties?: Record<string, any>;
   labels?: Record<string, string>;
+  project_id?: string;
+  project_name?: string;
   run_summary?: {
     success: number;
     failed: number;

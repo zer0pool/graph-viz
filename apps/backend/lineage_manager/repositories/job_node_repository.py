@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from lineage_manager.models.graph_node import GraphNode
 from lineage_manager.models.job_node import JobNode
+from lineage_manager.models.project import Project
 from lineage_manager.repositories.base_repository import BaseRepository
 
 
@@ -57,8 +58,9 @@ class JobNodeRepository(BaseRepository):
             (results, total_count)
         """
         query = (
-            self.session.query(GraphNode, JobNode)
+            self.session.query(GraphNode, JobNode, Project.display_name.label("project_name"))
             .join(JobNode, GraphNode.id == JobNode.node_id)
+            .outerjoin(Project, JobNode.project_id == Project.project_id)
             .filter(JobNode.project_id == project_id)
         )
         
@@ -133,8 +135,9 @@ class JobNodeRepository(BaseRepository):
         List all jobs sorted by recently updated.
         """
         query = (
-            self.session.query(GraphNode, JobNode)
+            self.session.query(GraphNode, JobNode, Project.display_name.label("project_name"))
             .join(JobNode, GraphNode.id == JobNode.node_id)
+            .outerjoin(Project, JobNode.project_id == Project.project_id)
             .order_by(JobNode.updated_at.desc())
         )
         

@@ -24,7 +24,7 @@ class JobService:
         except Exception:
             return None
 
-    def _map_job_to_dto(self, node: Any, meta: Any) -> Dict[str, Any]:
+    def _map_job_to_dto(self, node: Any, meta: Any, project_name: Optional[str] = None) -> Dict[str, Any]:
         """Convert internal job node structures to API DTO format."""
         properties = meta.properties or {}
         return {
@@ -33,6 +33,7 @@ class JobService:
             "running_status": properties.get("status", "unknown"),
             "owner": meta.owner_id,
             "project_id": meta.project_id,
+            "project_name": project_name or meta.project_id,
             "job_name": properties.get("display_name", node.name),
             "enabled": properties.get("enabled", True),
             "updated_at": meta.updated_at.isoformat() if meta.updated_at else None
@@ -99,7 +100,7 @@ class JobService:
             
         results, total = self.graph_uow.job_node.list_all_jobs(limit=limit, offset=offset)
         
-        jobs = [self._map_job_to_dto(node, meta) for node, meta in results]
+        jobs = [self._map_job_to_dto(node, meta, project_name) for node, meta, project_name in results]
             
         return {
             "jobs": jobs,

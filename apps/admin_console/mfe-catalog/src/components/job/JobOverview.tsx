@@ -31,9 +31,10 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">
               {job.name}
             </h2>
+            <div className="text-xs text-gray-500 font-mono mb-2">{job.job_id || job.id}</div>
             <div className="flex flex-wrap gap-2">
               <span
                 className={`px-2 py-1 rounded text-xs font-bold uppercase ${
@@ -58,20 +59,36 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 pt-6 border-t border-gray-100">
-          <Field label="Owner" value={job.owner} />
-          <Field label="Platform" value={job.labels?.platform} />
-          <Field label="Job Type" value={job.type} />
-          <Field label="Status" value={job.status} isBadge={true} />
-          <Field label="Lifecycle" value={job.lifecycle_status} />
-          <Field label="Schedule" value={job.schedule} />
-          <Field label="Last Run" value={job.last_run_time} />
-          <Field label="Next Run" value={job.next_run_time} />
+          <Field label="Owner" value={job.owner || job.properties?.owner} />
+          <Field label="Platform" value={job.labels?.platform || job.properties?.platform} />
+          <Field label="Job Type" value={job.type || job.properties?.type} />
+          <Field label="Status" value={job.status || job.properties?.status} isBadge={true} />
+          <Field label="Lifecycle" value={job.lifecycle_status || job.properties?.lifecycle_status} />
+          <Field label="Write Mode" value={job.properties?.write_mode} />
+          
+          {/* Schedule Details */}
+          <div className="col-span-1">
+            <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-widest">Schedule</label>
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-gray-900">
+                {job.properties?.schedule?.cron_expression || job.schedule || "—"}
+              </div>
+              <div className="text-[10px] text-gray-500 flex gap-2">
+                 <span>Start: {job.properties?.schedule?.start_date || job.properties?.schedule?.start_dte || "—"}</span>
+                 <span>End: {job.properties?.schedule?.end_date || "—"}</span>
+              </div>
+            </div>
+          </div>
+
+          <Field label="Last Run" value={job.last_run_time || job.properties?.last_run_time} />
+          <Field label="Next Run" value={job.next_run_time || job.properties?.next_run_time} />
+          
           <div className="col-span-full bg-gray-50 p-4 rounded-lg border border-gray-100">
             <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest text">
               Description
             </label>
             <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap italic">
-              {job.description || "No description provided."}
+              {job.description || job.properties?.description || "No description provided."}
             </div>
           </div>
         </div>

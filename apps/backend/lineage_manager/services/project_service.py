@@ -69,7 +69,7 @@ class ProjectService:
             project_id, limit, offset
         )
         
-        jobs = [self._format_job(node, meta) for node, meta in results]
+        jobs = [self._format_job(node, meta, p_name) for node, meta, p_name in results]
         
         return {
             "jobs": jobs,
@@ -147,7 +147,7 @@ class ProjectService:
             "status": project.status
         }
     
-    def _format_job(self, node, meta) -> Dict:
+    def _format_job(self, node, meta, project_name: Optional[str] = None) -> Dict:
         """Format job for API response."""
         properties = meta.properties or {}
         
@@ -156,6 +156,8 @@ class ProjectService:
             "node_id": node.id,
             "running_status": properties.get("status", "unknown"),
             "owner": meta.owner_id,
+            "project_id": meta.project_id,
+            "project_name": project_name or meta.project_id,
             "job_name": properties.get("display_name", node.name),
             "enabled": properties.get("enabled", True)
         }
