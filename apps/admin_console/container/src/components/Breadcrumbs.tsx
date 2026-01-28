@@ -14,11 +14,11 @@ const routeLabels: Record<string, string> = {
   diag: "Diagnostics",
 };
 
-import { Database, Settings, GitBranch, User, Bell, LayoutDashboard } from "lucide-react";
+import { Database, Settings, GitBranch, User, Bell, LayoutDashboard, Table, List } from "lucide-react";
 
 const iconMap: Record<string, any> = {
-  jobs: Settings,
-  tables: Database,
+  jobs: List,
+  tables: Table,
   lineage: GitBranch,
   users: User,
   audit: Bell,
@@ -74,7 +74,8 @@ export const Breadcrumbs = () => {
               )}
               <div className="flex items-center">
                 {isLast ? (
-                  <span className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">
+                  <span className="flex items-center text-sm font-semibold text-gray-900 truncate max-w-[200px]">
+                     {Icon && <Icon className="w-4 h-4 mr-1" />}
                     {breadcrumb.label}
                   </span>
                 ) : (

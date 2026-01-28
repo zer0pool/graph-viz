@@ -41,7 +41,7 @@ const LineageRouteWrapper: React.FC<{
 
   return (
     <RemoteMount
-      key="lineage"
+      key={`lineage-${rest || 'home'}`}
       scope="lineage"
       module="./index"
       url={config.LINEAGE_MFE_URL}
@@ -49,6 +49,29 @@ const LineageRouteWrapper: React.FC<{
         onSelect: onSelectNode,
         rootNode: activeGraphNode,
         initialSelection: selection,
+        path: rest
+      }}
+      visible={true}
+    />
+  );
+};
+
+const CatalogRouteWrapper: React.FC<{ domain: string }> = ({ domain }) => {
+  const params = useParams();
+  const rest = params["*"];
+  const location = require("react-router-dom").useLocation();
+
+  return (
+    <RemoteMount
+      key={`catalog-${domain}-${rest?.split('/')[0] || 'landing'}`}
+      scope="tableDetailViewer"
+      module="./views"
+      url={config.CATALOG_MFE_URL}
+      mountProps={{ 
+        mode: "STANDALONE",
+        domain,
+        id: rest?.split('/')[0],
+        path: location.pathname
       }}
       visible={true}
     />
@@ -83,8 +106,6 @@ export const AppRouter: React.FC<{
   onSetRootNode: (node: any) => void;
   selection?: any;
 }> = ({ onSelectNode, activeGraphNode, onSetRootNode, selection }) => {
-  const location = require("react-router-dom").useLocation();
-  
   return (
     <Routes>
       <Route path="/" element={<DashboardLanding />} />
@@ -111,24 +132,13 @@ export const AppRouter: React.FC<{
       {config.ENABLE_MFE_CATALOG && (
         <>
           {/* Catalog MFE: Handles Jobs, Tables, and Projects */}
-          {/* @ts-ignore */}
-          {config.ENABLE_MFE_CATALOG &&
-            ["jobs", "tables", "projects"].map((domain) => (
-              <Route
-                key={`catalog-${domain}`}
-                path={`/${domain}/*`}
-                element={
-                  <RemoteMount
-                    key={`mount-${domain}`}
-                    scope="tableDetailViewer"
-                    module="./views"
-                    url={config.CATALOG_MFE_URL}
-                    mountProps={{ mode: "STANDALONE" }}
-                    visible={true}
-                  />
-                }
-              />
-            ))}
+          {["jobs", "tables", "projects"].map((domain) => (
+            <Route
+              key={`catalog-${domain}`}
+              path={`/${domain}/*`}
+              element={<CatalogRouteWrapper domain={domain} />}
+            />
+          ))}
         </>
       )}
 

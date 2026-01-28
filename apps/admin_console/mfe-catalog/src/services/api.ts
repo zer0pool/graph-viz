@@ -41,9 +41,29 @@ export class ApiClient {
   // --- Table Endpoints ---
 
   async fetchTableDetail(tableName: string): Promise<TableDetail> {
-    return this.request<TableDetail>(
+    const raw = await this.request<any>(
       `/api/v1/tables/${encodeURIComponent(tableName)}/detail`
     );
+
+    // Map Backend Response to Frontend Interface
+    return {
+      id: raw.full_name || tableName,
+      name: raw.full_name || tableName,
+      description: raw.description,
+      owner: raw.labels?.owner, // Assuming owner might come from labels, or add logic if separate
+      created_at: raw.created,
+      updated_at: raw.modified || raw.updated,
+      labels: raw.labels,
+      storage_info: {
+        type: raw.table_type,
+        location: raw.location,
+        format: "BigQuery", // or derived from type
+        size_bytes: raw.storage?.num_bytes,
+        row_count: raw.storage?.num_rows,
+        partitioning: raw.storage?.partitioning,
+        clustering: raw.storage?.clustering,
+      },
+    };
   }
 
   async fetchTableSchema(tableName: string): Promise<TableSchemaResponse> {
