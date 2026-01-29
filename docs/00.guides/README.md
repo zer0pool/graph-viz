@@ -14,7 +14,12 @@ tags: [guides, standards, developer-rules, workflow]
 
 ## 📄 Document List
 
-### 1. [agents.md](agents.md)
+### 1. [submission-checklist.md](submission-checklist.md)
+**Mandatory Quality Gate for All Submissions**
+- Verification protocol for Backend (Async/DDD), Frontend (FSD/Airbnb), and Docs.
+- Must be cleared by AI and Humans before every commit/PR.
+
+### 2. [agents.md](agents.md)
 **Collaboration Rules for AI Agents (ChatGPT, Copilot)**
 - Prompting guidelines and token efficiency tips.
 - Specialized instructions for Antigravity agents.

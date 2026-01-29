@@ -152,7 +152,13 @@ Output: numbered findings with severity
 
 ---
 
-## 9. Quality Checklist (before handing work back to humans)
+## 9. 🛡️ Mandatory Quality Gate
+
+Before completing any task, you **MUST** verify your work against the **[Submission Checklist](submission-checklist.md)**.
+- Failure to comply with the checklist is considered a "Logic Error".
+- You must explicitly confirm in your final summary that the quality gate has been cleared.
+
+## 10. Quality Checklist (Legacy - Use Submission Checklist instead)
 - [ ] Tests or lint run when feasible (`make test`, `npm test` not applicable yet).
 - [ ] Manual verifications noted (e.g., “Reloaded frontend; button focuses node”).
 - [ ] Highlight remaining risks or follow-ups.
