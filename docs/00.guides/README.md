@@ -1,66 +1,72 @@
-# 00.guides – 개발 표준 & 협력 규칙
+---
+status: shipped
+owner: David
+created: 2026-01-30
+updated: 2026-01-30
+version: 1.1
+related: [../01.onboarding/README.md, agents.md]
+tags: [guides, standards, developer-rules, workflow]
+---
 
-**이 폴더의 문서들은 모든 개발자가 항상 참고해야 하는 필수 가이드입니다.**
+# 00.guides – Development Standards & Collaboration Rules
 
-## 📄 문서 목록
+**The documents in this folder are essential guides that every developer must reference at all times.**
 
-### 1. `how-to-write-documents.md`
-**문서 작성 방법 및 규칙**
-- Markdown 포맷 가이드
-- 제목, 목차 작성 규칙
-- 코드 예제 삽입 방법
-- 문서 구조 템플릿
+## 📄 Document List
 
-### 2. `agents.md`
-**AI 에이전트(ChatGPT, Copilot) 협력 규칙**
-- 프롬프팅 가이드라인
-- 토큰 효율성 팁
-- 프롬프트 템플릿
-- AI와의 효과적인 협력 방법
+### 1. [agents.md](agents.md)
+**Collaboration Rules for AI Agents (ChatGPT, Copilot)**
+- Prompting guidelines and token efficiency tips.
+- Specialized instructions for Antigravity agents.
+- Effective collaboration methods within the OPS Console ecosystem.
 
-### 3. `coding-standards.md` (작성 예정)
-**코드 스타일 및 네이밍 컨벤션**
-- Python 코드 스타일 (FastAPI 서비스)
-- JavaScript 코드 스타일 (프론트엔드)
-- 네이밍 규칙 (변수, 함수, 클래스)
-- Linting & Formatting 도구
+### 2. [codebase-map.md](codebase-map.md)
+**Functional Mapping of the Project**
+- High-level overview of Backend and MFE relationships.
+- Diagram of service communications and data flows.
 
-### 4. `git-workflow.md` (작성 예정)
-**Git 브랜치 전략 및 커밋 규칙**
-- 브랜치 명명 규칙
-- 커밋 메시지 형식
-- Pull Request 절차
-- 리뷰 체크리스트
+### 3. [react-style-guide.md](react-style-guide.md)
+**React & TypeScript Coding Standards**
+- FSD (Feature-Sliced Design) and SOLID principles in React.
+- Component patterns (Compound, Container-Presenter).
 
-### 5. `common-tasks.md` (작성 예정)
-**반복 작업 체크리스트**
-- 새 엔드포인트 추가하기
-- 새 데이터베이스 모델 추가하기
-- 마이그레이션 작성하기
-- 테스트 작성하기
+### 4. [fastapi-refactoring-guide.md](fastapi-refactoring-guide.md)
+**Backend Refactoring Standards**
+- DDD (Domain-Driven Design) and SOLID principles for FastAPI.
+- Async I/O standards and testing strategies.
+
+### 5. [git-branching-guide.md](git-branching-guide.md)
+**Execution & Version Control Standards**
+- Branch naming conventions (`Number.Description`).
+- Commit message formats and PR procedures.
+
+### 6. [local-docker-guide.md](local-docker-guide.md)
+**Local Development Environment Guide**
+- Docker service orchestration and CORS configuration.
+- Troubleshooting local network and MFE loading issues.
 
 ---
 
-## 🎯 사용 시나리오
+## 🎯 Usage Scenarios
 
-| 상황 | 문서 |
-|------|------|
-| 새 개발자 입사 | `01.onboarding/` 후 이 폴더 읽기 |
-| 코드 리뷰 중 스타일 논쟁 | `coding-standards.md` 참고 |
-| 브랜치 생성할 때 | `git-workflow.md` 참고 |
-| AI에 도움 요청할 때 | `agents.md` 참고 |
-| 새로운 기능 추가 | `common-tasks.md`의 체크리스트 따르기 |
-
----
-
-## 📌 중요: .github/copilot-instructions.md와의 관계
-
-- `.github/copilot-instructions.md` – GitHub Copilot이 자동으로 로드하는 파일
-- `guides/agents.md` – 상세한 AI 협력 가이드 (이 폴더)
-
-**VS Code Copilot Chat 사용 시**: `.github/copilot-instructions.md`가 자동 참조됨
-**수동 참고**: `guides/agents.md`에서 더 자세한 내용 확인 가능
+| Situation | Document to Reference |
+| :--- | :--- |
+| **New Hire Joining** | Read `01.onboarding/` first, then this folder. |
+| **Code Review Debate** | Refer to `react-style-guide.md` or `fastapi-refactoring-guide.md`. |
+| **Creating a Branch** | Check `git-branching-guide.md`. |
+| **Requesting AI Help** | Follow `agents.md` guidelines. |
+| **Starting a Feature** | Review `codebase-map.md` to understand context. |
 
 ---
 
-**마지막 업데이트**: 2025년 12월 7일
+## 📌 Relationship with `.github/copilot-instructions.md`
+
+- **`.github/copilot-instructions.md`**: The primary entry point that GitHub Copilot loads automatically.
+- **`guides/agents.md`**: Detailed AI collaboration playbook (this folder).
+
+**When using Copilot Chat**: Use `@workspace` to ensure instructions are referenced.
+**Manual Reference**: Deep dive into `guides/agents.md` for specific technical standards.
+
+---
+
+**Last Updated**: 2026-01-30
