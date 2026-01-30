@@ -188,17 +188,25 @@ async def require_authenticated_user(
     Supports both BFF (Session Cookie) and legacy (Bearer Token) flows.
     """
     settings = get_settings()
+    path = request.url.path
     
     # 1. Allow Swagger/Redoc and Health check endpoints
-    path = request.url.path
     if path.startswith(("/docs", "/redoc", "/openapi.json", "/health")):
         return None
 
+    logger.debug("[Auth] Resolving authentication for path: %s", path)
+
     # 2. BFF Flow: Check Session Cookie (Highest Priority)
+    # logger.debug("[Auth] Session keys found: %s", list(request.session.keys()))
     user_payload = request.session.get("user")
+    
     if user_payload:
+        logger.info("[Auth] BFF Session authenticated: sub=%s, email=%s", 
+                    user_payload.get("sub"), user_payload.get("email"))
         request.state.user = user_payload
         return user_payload
+
+    logger.debug("[Auth] No 'user' found in session. Checking Bearer token...")
 
     # 3. Legacy/M2M Flow: Check Bearer Token
     token = credentials.credentials if credentials else None
@@ -206,20 +214,23 @@ async def require_authenticated_user(
         token = request.query_params.get("access_token")
     
     if token:
+        logger.debug("[Auth] Bearer token found (length=%d). Verifying...", len(token))
         container: GraphContainer = request.app.container
         verifier = container.core.oidc_provider()
         try:
             claims = verifier.verify_id_token(token)
+            logger.info("[Auth] Bearer token verified: sub=%s", claims.get("sub"))
+            
             user_service = container.user.user_service()
             user_payload = user_service.record_login(claims)
             request.state.user = user_payload
             return user_payload
         except AuthenticationError as exc:
-            logger.warning(f"Token verification failed: {exc}")
-            # If token is invalid, we don't return early if signin is optional
+            logger.warning("[Auth] Bearer token verification failed: %s", exc)
 
     # 4. Fallback: Open Backend (Anonymous User)
     if not settings.feature_flags.require_signin:
+        logger.info("[Auth] FALLBACK to Anonymous User (Require Sign-in is DISABLED)")
         anonymous_user = {
             "sub": "anonymous-user",
             "name": "Anonymous User",
@@ -232,6 +243,7 @@ async def require_authenticated_user(
         return anonymous_user
 
     # 5. Strict Auth: Raise 401
+    logger.warning("[Auth] Authentication failed for path: %s (Require Sign-in is ENABLED)", path)
     raise HTTPException(status_code=401, detail="Authentication required")
 
 

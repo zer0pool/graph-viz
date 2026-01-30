@@ -21,22 +21,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.info("[Auth] Initializing AuthProvider (BFF)...");
 
       if (!config.ENABLE_AUTH) {
-        console.warn("[Auth] Authentication is DISABLED.");
+        console.warn("[Auth] Authentication is DISABLED in config.");
         setIsInitializing(false);
         return;
       }
 
+      const meUrl = `${config.API_BASE_URL}/api/v1/auth/me`;
+      console.debug("[Auth] Fetching session status from:", meUrl);
+
       try {
-        const res = await fetch(`${config.API_BASE_URL}/api/v1/auth/me`);
+        const res = await fetch(meUrl);
+        console.info("[Auth] /me response status:", res.status, res.statusText);
+
         if (res.ok) {
           const userData = await res.json();
+          console.info("[Auth] Session active. User:", userData.sub, userData.email);
+          console.debug("[Auth] Full User Profile:", userData);
           setUser(userData);
-          console.info("[Auth] Session active:", userData.sub);
         } else {
-          console.info("[Auth] No active session found.");
+          console.warn("[Auth] No active session found (401 Unauthorized expected).");
+          setUser(null);
         }
       } catch (e) {
-        console.error("[Auth] Failed to check session", e);
+        console.error("[Auth] CRITICAL: Failed to reach BFF auth endpoint.", e);
+        setUser(null);
       } finally {
         setIsInitializing(false);
       }
