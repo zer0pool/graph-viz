@@ -5,11 +5,12 @@ from typing import List, Optional
 
 import redis
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 
 from lineage_manager.core.config import get_settings
 from lineage_manager.core.container import GraphContainer
+from lineage_manager.services.graph_query_service import GraphQueryService
 
 settings = get_settings()
 logger = logging.getLogger("analytics")
@@ -125,3 +126,51 @@ async def get_top_visited(
     except Exception as e:
         logger.error(f"Failed to get top visited from redis: {e}")
         return {"items": []}
+
+
+@router.get("/dashboard-metrics")
+@inject
+async def get_dashboard_metrics(
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Return summary metrics for the dashboard landing page.
+    """
+    try:
+        data = svc.get_dashboard_metrics()
+
+        return {
+            "metrics": [
+                {
+                    "type": "total_tables",
+                    "value": data.get("total_tables", 0),
+                    "subtext": "Across all schemas",
+                },
+                {
+                    "type": "total_jobs",
+                    "value": data.get("total_jobs", 0),
+                    "subtext": "Active pipelines",
+                },
+                {
+                    "type": "dummy_chart",
+                    "value": data.get("system_health", "N/A"),
+                    "subtext": "System Health",
+                },
+                {
+                    "type": "dummy_chart",
+                    "value": data.get("active_alerts", 0),
+                    "subtext": "Active Alerts",
+                    "status": "warning",
+                },
+                {
+                    "type": "dummy_chart",
+                    "value": data.get("daily_ingestion", "0 B"),
+                    "subtext": "Daily Ingestion",
+                },
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Failed to get dashboard metrics: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+

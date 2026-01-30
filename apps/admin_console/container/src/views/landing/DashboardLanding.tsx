@@ -2,11 +2,13 @@ import React from "react";
 import { SummaryGrid } from "../../components/common/SummaryGrid";
 import { RefreshCw, MapPin, Clock } from "lucide-react";
 import { useAnalyticsData } from "../../hooks/useAnalyticsData";
+import { useDashboardMetrics } from "../../hooks/useDashboardMetrics";
 import { VisitHistoryCard } from "../../components/common/VisitHistoryCard";
 
 export const DashboardLanding: React.FC = () => {
   // 🟢 View is now clean: Logic is encapsulated in the hook
   const { recentHistory, topVisited, loadingTop, refresh } = useAnalyticsData();
+  const { metrics, loading: loadingMetrics, refresh: refreshMetrics } = useDashboardMetrics();
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
@@ -20,7 +22,8 @@ export const DashboardLanding: React.FC = () => {
         </div>
         <button
           onClick={() => {
-            refresh(); // Refresh data without reloading page
+            refresh(); // Refresh analytics data
+            refreshMetrics(); // Refresh metrics data
             window.location.reload(); // Optional: Reload page if needed for other components
           }}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
@@ -33,13 +36,7 @@ export const DashboardLanding: React.FC = () => {
       {/* KPI Section */}
       <SummaryGrid 
         cols={5}
-        metrics={[
-          { type: "total_tables", value: 1240, subtext: "Across all schemas" },
-          { type: "total_jobs", value: 856, subtext: "Active pipelines" },
-          { type: "dummy_chart", value: "85%", subtext: "System Health" },
-          { type: "dummy_chart", value: 12, subtext: "Active Alerts", status: "warning" },
-          { type: "dummy_chart", value: "2.4 TB", subtext: "Daily Ingestion" },
-        ]}
+        metrics={metrics}
       />
 
       {/* History & Recommendations Section */}

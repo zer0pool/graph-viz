@@ -1,4 +1,3 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { Selection, SelectHandler } from "./types/graph";
@@ -48,10 +47,12 @@ export function mount(el: HTMLElement, options: MountOptions = {}) {
 
   return () => {
     el.removeEventListener("mfe:selection", handleSelection);
-    try {
-      root.unmount();
-    } catch (e) {
-      console.warn("[Lineage MFE] Error during root.unmount():", e);
-    }
+    queueMicrotask(() => {
+      try {
+        root.unmount();
+      } catch (e) {
+        console.warn("[Lineage MFE] Error during root.unmount():", e);
+      }
+    });
   };
 }

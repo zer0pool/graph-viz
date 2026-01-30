@@ -8,7 +8,7 @@ const isProd = process.env.NODE_ENV === "production";
 const isDeploy = process.env.DEPLOY === "true";
 
 module.exports = {
-  entry: "./src/main.tsx",
+  entry: "./src/app/entry/main.tsx",
   mode: isProd ? "production" : "development",
   devtool: "source-map",
 
@@ -29,10 +29,10 @@ module.exports = {
     },
     proxy: [
       {
-        context: ["/api"],
+        context: ["/admin-console/api"],
         target: "http://127.0.0.1:5003",
+        pathRewrite: { "^/admin-console/api": "/lineage-manager/api" },
         changeOrigin: true,
-        pathRewrite: { "^/api": "/lineage-manager/api" },
       },
     ],
   },
@@ -85,8 +85,8 @@ module.exports = {
       filename: "remoteEntry.js",
       exposes: {
         "./index": "./src/index.ts",
-        "./TableDetailViewer": "./src/TableDetailViewer.tsx",
-        "./views": "./src/viewMount.tsx",
+        "./TableDetailViewer": "./src/app/router/TableDetailViewer.tsx",
+        "./views": "./src/app/entry/viewMount.tsx",
       },
       shared: {
         react: { singleton: true, eager: false, requiredVersion: "^18.2.0" },

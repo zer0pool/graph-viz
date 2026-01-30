@@ -19,6 +19,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
       - GOOGLE_CLOUD_PROJECT=gizmopool
     volumes:
+      - ./lineage_manager:/app/src/lineage_manager:ro
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
     depends_on:
       - db-mysql
@@ -62,6 +63,5 @@ services:
 
 networks:
   backend-network:
+    external: true
     name: lineage-platform-network
-    driver: bridge
-    attachable: true
