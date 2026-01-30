@@ -11,7 +11,13 @@ export class ApiClient {
   async request(url, options = {}) {
     const fullUrl = `${this.baseUrl}${url}`;
     console.debug(`[Api] ${options.method || "GET"} ${fullUrl}`);
-    return this.authClient.fetchWithAuth(fullUrl, options);
+    
+    // In BFF mode, we just use the authClient's fetch wrapper which handles 401s,
+    // or we can just use native fetch as cookies are automatic.
+    if (this.authClient && this.authClient.fetchWithAuth) {
+      return this.authClient.fetchWithAuth(fullUrl, options);
+    }
+    return fetch(fullUrl, options);
   }
 
   async fetchSuggestions(query, limit = 10) {
@@ -79,14 +85,6 @@ export class ApiClient {
     return res.json();
   }
 
-  async fetchTableDetail(tableName) {
-    // This is the old/unused endpoint if it existed, but we are adding 'details' now
-    // Actually, I will replace this with the new specific 'details' endpoint
-    const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
-    if (!res.ok) throw new Error(`Table detail failed: ${res.status}`);
-    return res.json();
-  }
-
   async fetchTableDetails(tableName) {
     const res = await this.request(`/api/v1/tables/${encodeURIComponent(tableName)}/details`);
     if (!res.ok) throw new Error(`Table details fetch failed: ${res.status}`);
@@ -127,7 +125,6 @@ export class ApiClient {
   }
 
   async fetchJobDetail(jobId) {
-    console.debug(`[Api] GET /api/v1/jobs/${jobId}`);
     const res = await this.request(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
     if (!res.ok) throw new Error(`Job detail failed: ${res.status}`);
     return res.json();
@@ -139,89 +136,14 @@ export class ApiClient {
     return res.json();
   }
 
-  async fetchStateHash() {
-    const res = await this.request(`/api/v1/events/state-hash`);
-    if (!res.ok) throw new Error("state hash failed");
-    return res.json();
-  }
-
   async fetchConfig() {
-    console.debug("[Api] GET /api/v1/auth/config");
     const res = await this.request(`/api/v1/auth/config`);
     if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
     return res.json();
   }
 
-  async exchangeAuthorizationCode(code, verifier, idToken) {
-    console.debug("[Api] Starting exchangeAuthorizationCode process");
-    const fullUrl = `${this.baseUrl}/api/v1/auth/exchange`;
-    console.info("[Api] POST /api/v1/auth/exchange");
-
-    // If ID token is provided, send it directly
-    if (idToken) {
-      console.info("[Api] Sending ID token directly for verification");
-
-
-      // Convert to form data for consistency
-      const formData = new URLSearchParams();
-      if (idToken) formData.append("id_token", idToken);
-
-
-      const res = await fetch(fullUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      });
-
-      if (!res.ok) {
-        console.error("[Api] ID token verification failed", res.status);
-        const responseText = await res.text();
-        console.error("[Api] Response text:", responseText);
-        throw new Error(`Verification failed: ${res.status}`);
-      }
-      const payload = await res.json();
-      console.info("[Api] ID token verification succeeded");
-
-      return payload;
-    }
-
-    // Check for common issues with the verifier
-    if (verifier) {
-      // Clean the verifier to remove any potential whitespace issues
-      const cleanVerifier = verifier.trim();
-      if (cleanVerifier !== verifier) {
-        console.info("[Api] Cleaned code verifier (removed whitespace)");
-        verifier = cleanVerifier;
-      }
-    }
-
-    // Convert to form data for ADFS compatibility
-    const formData = new URLSearchParams();
-    if (code) formData.append("code", code);
-    if (verifier) formData.append("code_verifier", verifier);
-
-
-    const res = await fetch(fullUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
-    });
-
-
-    if (!res.ok) {
-      console.error("[Api] Authorization code exchange failed", res.status);
-
-      throw new Error(`Exchange failed: ${res.status}`);
-    }
-    const payload = await res.json();
-    console.info("[Api] Authorization code exchange succeeded");
-
-    return payload;
-  }
-
   async fetchProfile() {
-    console.debug("[Api] GET /api/v1/users/me");
-    const res = await this.request(`/api/v1/users/me`);
+    const res = await this.request(`/api/v1/auth/me`);
     if (!res.ok) throw new Error(`Profile fetch failed: ${res.status}`);
     return res.json();
   }
