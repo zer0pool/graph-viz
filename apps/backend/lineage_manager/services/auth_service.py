@@ -1,6 +1,8 @@
 import logging
 import secrets
 from typing import Any, Dict, Optional
+import redis
+
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from lineage_manager.core.config import get_settings
@@ -10,7 +12,7 @@ from lineage_manager.services.user_service import UserService
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    def __init__(self, user_service: UserService, oidc_client: OIDCProviderClient, redis_client: RedisClient):
+    def __init__(self, user_service: UserService, oidc_client: OIDCProviderClient, redis_client: redis.Redis):
         self.user_service = user_service
         self.oidc_client = oidc_client
         self.settings = get_settings()
@@ -64,24 +66,24 @@ class AuthService:
     async def handle_callback(self, request: Request, token: str, state: str) -> Dict[str, Any]:
         """
         Handle OIDC callback for both Authorization Code FLow and Implicit Flow.
-        Automatically detects whether toekn is a code or id_token.
+        Automatically detects whether token is a code or id_token.
         """
 
         # Verify state from Redis or session
-        store_nonce = None
+        stored_nonce = None
         if  self.redis_client:
             redis_key = f"oidc:state:{state}"
-            store_nonce = self.redis_client.get(redis_key)
+            stored_nonce = self.redis_client.get(redis_key)
             if stored_nonce:
                 # Redis already returns string when decode_response=True
-                if isinstance(store_nonce, bytes):
-                    store_nonce = store_nonce.decode('utf-8')
+                if isinstance(stored_nonce, bytes):
+                    stored_nonce = stored_nonce.decode('utf-8')
                 self.redis_client.delete(redis_key)
-                logger.info("[Auth] Retrieved state freom Redis: %s", state)
+                logger.info("[Auth] Retrieved state from Redis: %s", state)
             else:
                 logger.error("[Auth] OIDC state not found in Redis: %s", state)
                 
-        if not store_nonce:
+        if not stored_nonce:
             # Fallback to session
             stored_state = request.session.pop("oidc_state", None)
             stored_nonce = request.session.pop("oidc_nonce", None)
@@ -93,9 +95,9 @@ class AuthService:
             
         logger.info("[Auth] State verified. Processing Token...")        
         try:
-            # Detect if token is a code or id_tokne
+            # Detect if token is a code or id_token
             # JWT tokens have 3 parts separated by dots, codes are usually shorter
-            if "." in token and toekn.count(".") == 2:
+            if "." in token and token.count(".") == 2:
                 # This is an id_token  (JWT format)
                 logger.info("[Auth] Detected id_token")
                 claims = self.oidc_client.verify_id_token(token)

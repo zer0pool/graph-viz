@@ -113,7 +113,7 @@ server {
         access_log /var/log/nginx/oidc_access.log;
         error_log /var/log/nginx/oidc_error.log;
 
-        # Proxy to baxkend /api/v1/auth/authorized
+        # Proxy to backend /api/v1/auth/authorized
         proxy_pass $BACKEND_HOST/api/v1/auth/authorized;
         
         # Forward the original Host (e.g., self-scheduling.com) not the K8S service name

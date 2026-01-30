@@ -42,9 +42,9 @@ async def exchange(
     """Exchange authorization code for tokens, and establish session."""
     try:
         # Get code and state form form date
-        form_date = await request.form()
-        code = form_date.get("code")
-        state = form_date.get("state")
+        form_data = await request.form()
+        code = form_data.get("code")
+        state = form_data.get("state")
 
         if not code or not state:
             raise HTTPException(status_code=400, detail="Missing code or state")
@@ -64,19 +64,19 @@ async def authorized(
     request: Request,    
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
-    """handle the OIDC call back for Implicit Flow (id_toekn received via forem_post )"""
+    """handle the OIDC call back for Implicit Flow (id_token received via form_post )"""
     try:
         # Get code and state form form date
-        form_date = await request.form()
-        id_token = form_date.get("id_token")
-        state = form_date.get("state")
+        form_data = await request.form()
+        id_token = form_data.get("id_token")
+        state = form_data.get("state")
 
         if not id_token or not state:
             raise HTTPException(status_code=400, detail="Missing id_token or state")
         
         await auth_service.handle_callback(request, id_token, state)
-        # Redirect back to frontend
-        return RedirectResponse(url="/admin-console/")
+        # Redirect back to frontend using 303 See Other to convert POST to GET  
+        return RedirectResponse(url="/admin-console/", status_code=303)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except AuthenticationError as exc:
