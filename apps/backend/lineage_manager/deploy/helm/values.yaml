@@ -81,3 +81,10 @@ env:
   # Feature Settings
   FEATURE_HISTORY_TABLE: "sec-bdp.dev.bod_000.fin_history"
   FEATURE_ENABLE_BIGQUERY: "true"
+
+  # OIDC Settings
+  OIDC_ISSUER_URL: "https://sts.secsso.net/adfs"
+  OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"
+  OIDC_CLIENT_SECRET: "mock-secret"
+  OIDC_REDIRECT_URI: "http://localhost/api/v1/auth/callback"
+  OIDC_SCOPES: '["openid", "profile", "email"]'

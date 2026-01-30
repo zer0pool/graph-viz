@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { Routes, Route, useParams } from "react-router-dom";
 import { RemoteMount } from "../mfe/RemoteMount";
-import { AuthCallback } from "./AuthCallback";
 import { config } from "../config";
 import "../styles/app/Router.css";
 
@@ -116,7 +115,6 @@ export const AppRouter: React.FC<{
     <Routes>
       <Route path="/" element={<DashboardLanding />} />
       <Route path="/diag" element={<Diagnostics />} />
-      <Route path="/authorized" element={<AuthCallback />} />
       {/* Lineage MFE */}
       {/* @ts-ignore */}
       {config.ENABLE_MFE_LINEAGE && (

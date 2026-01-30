@@ -7,6 +7,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.middleware.sessions import SessionMiddleware
+
 from lineage_manager.api.v1.endpoints import auth as auth_ep
 from lineage_manager.api.v1.endpoints import web as web_ep
 from lineage_manager.api.v1.endpoints import audit as audit_ep
@@ -81,6 +83,16 @@ def create_app() -> GraphApp:
         allow_credentials=settings.cors.allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # BFF Session Middleware
+    app.add_middleware(
+        SessionMiddleware, 
+        secret_key=settings.secret_key,
+        session_cookie="lm_session",
+        max_age=3600 * 24 * 7,  # 1 week
+        same_site="lax",
+        https_only=not settings.is_development
     )
 
     # Add health check logging filter middleware

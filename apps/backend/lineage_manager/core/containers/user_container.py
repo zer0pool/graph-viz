@@ -9,6 +9,7 @@ from dependency_injector import containers, providers
 
 from lineage_manager.core.uow import UserUnitOfWork
 from lineage_manager.services.user_service import UserService
+from lineage_manager.services.auth_service import AuthService
 
 
 class UserContainer(containers.DeclarativeContainer):
@@ -29,4 +30,11 @@ class UserContainer(containers.DeclarativeContainer):
         UserService,
         uow=uow,
         graph_uow=graph.write_uow,
+    )
+
+    # Auth Service
+    auth_service = providers.Factory(
+        AuthService,
+        user_service=user_service,
+        oidc_client=core.oidc_provider,
     )

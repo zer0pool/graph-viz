@@ -183,53 +183,56 @@ async def require_authenticated_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ):
-    # Allow GET/OPTIONS/HEAD/TRACE without auth (redundant if we allow anonymous everywhere, but keeps fast path)
-    if request.method in ["GET", "OPTIONS", "HEAD", "TRACE"]:
-        # We still want to populate user if token exists, so don't return early if we want strict logging
-        # But if the goal is "remove all auth dependencies", we can just fall through.
-        pass
-
-    # Allow Swagger/Redoc UI
-    if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc") or request.url.path.startswith("/openapi.json"):
+    """
+    Dependency to ensure the user is authenticated.
+    Supports both BFF (Session Cookie) and legacy (Bearer Token) flows.
+    """
+    settings = get_settings()
+    
+    # 1. Allow Swagger/Redoc and Health check endpoints
+    path = request.url.path
+    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health")):
         return None
 
-    # Try to get token
+    # 2. BFF Flow: Check Session Cookie (Highest Priority)
+    user_payload = request.session.get("user")
+    if user_payload:
+        request.state.user = user_payload
+        return user_payload
+
+    # 3. Legacy/M2M Flow: Check Bearer Token
     token = credentials.credentials if credentials else None
     if not token:
         token = request.query_params.get("access_token")
     
-    # If no token, return anonymous user (Open Backend)
-    if not token:
-        request.state.user = {
+    if token:
+        container: GraphContainer = request.app.container
+        verifier = container.core.oidc_provider()
+        try:
+            claims = verifier.verify_id_token(token)
+            user_service = container.user.user_service()
+            user_payload = user_service.record_login(claims)
+            request.state.user = user_payload
+            return user_payload
+        except AuthenticationError as exc:
+            logger.warning(f"Token verification failed: {exc}")
+            # If token is invalid, we don't return early if signin is optional
+
+    # 4. Fallback: Open Backend (Anonymous User)
+    if not settings.feature_flags.require_signin:
+        anonymous_user = {
             "sub": "anonymous-user",
-            "name": "Anonymous",
+            "name": "Anonymous User",
             "email": "anonymous@lineage.manager",
             "roles": ["admin"],
-            "dept": "Engineering"
+            "dept": "Engineering",
+            "is_anonymous": True
         }
-        return request.state.user
+        request.state.user = anonymous_user
+        return anonymous_user
 
-    container: GraphContainer = request.app.container
-    verifier: OIDCProviderClient = container.core.oidc_provider()
-    try:
-        claims = verifier.verify_id_token(token)
-    except AuthenticationError as exc:
-        logger.warning(f"Token verification failed: {exc}. Falling back to anonymous.")
-        # Fallback to anonymous on bad token? Or raise?
-        # User said "all APIs available". Let's fallback to anonymous to be safe/open.
-        request.state.user = {
-            "sub": "anonymous-user",
-            "name": "Anonymous",
-            "email": "anonymous@lineage.manager",
-            "roles": ["admin"],
-            "dept": "Engineering"
-        }
-        return request.state.user
-
-    user_service = container.user.user_service()
-    user_payload = user_service.record_login(claims)
-    request.state.user = user_payload
-    return user_payload
+    # 5. Strict Auth: Raise 401
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 
 def is_auth_enabled() -> bool:
