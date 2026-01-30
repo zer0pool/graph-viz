@@ -8,6 +8,7 @@ import { renderMermaid, exportSVG, downloadSVG } from '../mermaid/renderer.js';
 import { generateMermaidDSL, validateGraphData, toMermaidId } from '../mermaid/dsl-generator.js';
 import { selectionState } from './state.js';
 import { getFoldedGraph } from './utils/graphUtils.js';
+import { BASE_URL } from './config.js'
 
 // Mermaid Graph Manager
 class MermaidGraphManager {
@@ -138,7 +139,7 @@ class MermaidGraphManager {
             this.expansionLimits = { upstream: 3, downstream: 3 };
             this.focusNodeId = nodeId;
             this.selectedNodeId = nodeId;
-            const url = `/api/v1/lineage/graph?node_id=${encodeURIComponent(nodeId)}&depth=1`;
+            const url = `${BASE_URL}/api/v1/lineage/graph?node_id=${encodeURIComponent(nodeId)}&depth=1`;
             console.log('Loading graph with URL:', url);
 
             const response = await fetch(url);
@@ -196,7 +197,7 @@ class MermaidGraphManager {
             this.focusNodeId = this.selectedNodeId;
             this.expansionLimits = { upstream: 3, downstream: 3 };
 
-            const url = `/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${direction}&depth=1`;
+            const url = `${BASE_URL}/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${direction}&depth=1`;
             console.log('Expanding with URL:', url);
             // ... cleanup later
             const response = await fetch(url);
@@ -255,7 +256,7 @@ class MermaidGraphManager {
             console.log('Expanding directions:', directions);
             // Fetch relevant directions in parallel
             const requests = directions.map(dir =>
-                fetch(`api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${dir}&depth=1`)
+                fetch(`${BASE_URL}/api/v1/lineage/graph?node_id=${encodeURIComponent(this.selectedNodeId)}&direction=${dir}&depth=1`)
                     .then(r => r.ok ? r.json() : { nodes: [], edges: [] })
                     .catch(e => {
                         console.warn(`Expand ${dir} failed`, e);

@@ -14,6 +14,9 @@ ARG CATALOG_MFE_URL
 ENV LINEAGE_MFE_URL=$LINEAGE_MFE_URL
 ENV CATALOG_MFE_URL=$CATALOG_MFE_URL
 
+# Set DEPLOY flag for webpack to use correct publicPath in production
+ENV DEPLOY=true
+
 RUN npm run build
 RUN ls -la dist/  # Verify build output
 

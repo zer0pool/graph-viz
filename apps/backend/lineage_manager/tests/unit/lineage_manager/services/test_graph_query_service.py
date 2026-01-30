@@ -26,14 +26,19 @@ class TestGraphQueryService:
         svc.mock_traversal = mock_traversal_class.return_value
         return svc
 
-    def test_get_health_stats(self, service, mock_uow):
-        mock_uow.jobs.list_all.return_value = [1, 2, 3]
+    def test_check_health(self, service):
+        result = service.check_health()
+        assert result["status"] == "healthy"
+        assert result["service"] == "lineage-manager"
+
+    def test_get_diagnostics(self, service, mock_uow):
+        mock_uow.jobs.count_jobs.return_value = 3
         mock_uow.tables.count_tables.return_value = 10
         mock_uow.edges.count_all.return_value = 15
         mock_uow.closures.count_all.return_value = 20
         mock_uow.db.execute.return_value = MagicMock()
         
-        result = service.get_health_stats()
+        result = service.get_diagnostics()
         
         assert result["status"] == "healthy"
         assert result["database"]["job_count"] == 3
@@ -74,7 +79,8 @@ class TestGraphQueryService:
 
     def test_get_table_lineage_summary(self, service, mock_uow):
         mock_uow.tables.get_by_full_name.return_value = MagicMock(id="t1", full_name="table1")
-        mock_uow.job_table_links.get_jobs_by_table_and_io_type.return_value = []
+        mock_uow.closures.get_upstream_nodes.return_value = []
+        mock_uow.closures.get_downstream_nodes.return_value = []
         
         result = service.get_table_lineage_summary("table1")
         

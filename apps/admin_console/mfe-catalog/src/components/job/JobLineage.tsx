@@ -1,6 +1,6 @@
 import React from "react";
 import { JobDetail, JobNodeRelation } from "../../types/job";
-import { useNavigate } from "react-router-dom";
+import { useMfeNavigate } from "../../utils/navigation";
 
 interface JobLineageProps {
   job: JobDetail;
@@ -8,7 +8,7 @@ interface JobLineageProps {
 }
 
 export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
-  const navigate = useNavigate();
+  const navigate = useMfeNavigate();
   if (loading) {
     return (
       <div className="p-8 text-center animate-pulse">

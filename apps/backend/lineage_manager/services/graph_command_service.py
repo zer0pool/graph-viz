@@ -617,6 +617,9 @@ class GraphCommandService:
         # Merge other metadata if not already present
         for k, v in meta.items():
             if k not in job_props:
+                # CRITICAL: Prevent collision with explicit arguments in get_or_create
+                if k in ["name", "job_id", "display_name"]:
+                    continue
                 job_props[k] = v
 
         if lineage.schedule:

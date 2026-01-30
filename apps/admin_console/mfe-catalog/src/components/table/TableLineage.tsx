@@ -1,6 +1,6 @@
 import React from "react";
 import { TableLineageSummary } from "../../types/table";
-import { useNavigate } from "react-router-dom";
+import { useMfeNavigate } from "../../utils/navigation";
 
 interface TableLineageProps {
   lineage: TableLineageSummary | null;
@@ -13,7 +13,7 @@ export const TableLineage: React.FC<TableLineageProps> = ({
   loading,
   tableName,
 }) => {
-  const navigate = useNavigate();
+  const navigate = useMfeNavigate();
 
   if (loading) {
     return (

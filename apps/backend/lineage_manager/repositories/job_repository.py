@@ -87,6 +87,15 @@ class JobRepository(BaseRepository):
         """List all jobs"""
         return self.db.execute(self._base_query()).scalars().all()
 
+    def count_jobs(self):
+        """Count all job nodes using SQL count for performance"""
+        stmt = select(func.count()).select_from(
+            select(GraphNode.id).where(GraphNode.node_type == "job").subquery()
+        )
+        result = self.db.execute(stmt).scalar()
+        logger.debug(f"Counted {result} jobs")
+        return result
+
     def find_upstream_jobs_by_output_tables(
         self, table_ids: list[int], exclude_job_id: int
     ):

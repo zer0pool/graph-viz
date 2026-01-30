@@ -65,7 +65,15 @@ class GraphQueryService:
             pass
 
     # Read APIs with caching wrappers
-    def get_health_stats(self):
+    def check_health(self):
+        """Lightweight health check for K8s probes"""
+        return {
+            "status": "healthy",
+            "service": "lineage-manager",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+    def get_diagnostics(self):
         key = "health_stats"
         cached = self._cache_get(key)
         if cached:
@@ -76,9 +84,7 @@ class GraphQueryService:
         try:
             stats = {}
             # Count jobs
-            # Note: naive count via list_all
-            jobs = uow.jobs.list_all()
-            stats["job_count"] = len(jobs)
+            stats["job_count"] = uow.jobs.count_jobs()
             
             # Count tables
             stats["table_count"] = uow.tables.count_tables()
