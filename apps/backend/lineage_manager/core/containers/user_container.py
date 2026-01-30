@@ -37,4 +37,5 @@ class UserContainer(containers.DeclarativeContainer):
         AuthService,
         user_service=user_service,
         oidc_client=core.oidc_provider,
+        redis_client=core.redis_client,
     )

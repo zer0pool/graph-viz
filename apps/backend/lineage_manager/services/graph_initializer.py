@@ -54,7 +54,7 @@ class GraphInitializerService:
             self.logger.info("Graph closure table rebuilt successfully.")
 
             # Step 5: Get final statistics
-            stats = self.query_service.get_health_stats()
+            stats = self.query_service.get_diagnostics()
 
             return self._build_result(result, stats)
 

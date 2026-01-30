@@ -107,6 +107,32 @@ server {
     # 5. Subpath Redirect Block (e.g. /admin -> /admin/)
     $SUBPATH_REDIRECT_BLOCK
 
+    # 6. OIDC Callback Proxying
+    location = $BASE_URL_PREFIX/authorized {
+        # add detailed logging for debugging 
+        access_log /var/log/nginx/oidc_access.log;
+        error_log /var/log/nginx/oidc_error.log;
+
+        # Proxy to baxkend /api/v1/auth/authorized
+        proxy_pass $BACKEND_HOST/api/v1/auth/authorized;
+        
+        # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
+        # This ensures backend redirects use the correct external domain
+        proxy_set_header Host $http_host;
+        
+        # Forward the original protocol (HTTPS) from the Ingress
+        # This prevents Mixed Content errors and ensures OIDC redirects are HTTPS
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        
+        # Standard forwarding headers
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # Forward cookies for session management
+        proxy_cookie_domain off;
+        proxy_cookie_path off;
+    }
+    
     # 7. API Proxying
     location ~ ^(/admin-console)?/api {
         # Add detailed logging for debugging        

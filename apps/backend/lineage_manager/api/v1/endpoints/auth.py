@@ -33,16 +33,22 @@ def login(
     logger.info("Redirecting to OIDC IdP")
     return RedirectResponse(auth_url)
 
-@router.get("/callback")
+@router.post("/exchange")
 @inject
-async def callback(
-    request: Request,
-    code: str,
-    state: str,
+async def exchange(
+    request: Request,    
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
-    """Handle the OIDC callback, exchange code for tokens, and establish session."""
+    """Exchange authorization code for tokens, and establish session."""
     try:
+        # Get code and state form form date
+        form_date = await request.form()
+        code = form_date.get("code")
+        state = form_date.get("state")
+
+        if not code or not state:
+            raise HTTPException(status_code=400, detail="Missing code or state")
+        
         await auth_service.handle_callback(request, code, state)
         # Redirect back to frontend
         return RedirectResponse(url="/admin-console/")
@@ -50,6 +56,32 @@ async def callback(
         raise HTTPException(status_code=400, detail=str(exc))
     except AuthenticationError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/authorized")
+@inject
+async def authorized(
+    request: Request,    
+    auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
+):
+    """handle the OIDC call back for Implicit Flow (id_toekn received via forem_post )"""
+    try:
+        # Get code and state form form date
+        form_date = await request.form()
+        id_token = form_date.get("id_token")
+        state = form_date.get("state")
+
+        if not id_token or not state:
+            raise HTTPException(status_code=400, detail="Missing id_token or state")
+        
+        await auth_service.handle_callback(request, id_token, state)
+        # Redirect back to frontend
+        return RedirectResponse(url="/admin-console/")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
 
 @router.get("/me")
 @inject

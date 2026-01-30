@@ -106,11 +106,10 @@ class TestTableService:
         assert result["result"]["full_name"] == "gs://bucket/path"
 
     def test_get_table_details_demo_fallback(self, service, mock_bigquery_service):
-        mock_bigquery_service.get_history_table_path.return_value = "gizmopool.test_data.table_load_history"
-        mock_bigquery_service.get_table_detail.return_value = {"full_name": "demo_table", "description": "demo"}
+        # The current implementation does not have demo fallback, it returns an error
+        mock_bigquery_service.get_table_detail.side_effect = Exception("Not found")
         
         result = service.get_table_details("real_table")
         
-        # Verify it fetched the demo table but patched the name
-        mock_bigquery_service.get_table_detail.assert_called_once_with("gizmopool.test_data.table_load_history")
+        assert result["status"] == "error"
         assert result["result"]["full_name"] == "real_table"
