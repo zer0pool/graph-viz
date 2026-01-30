@@ -191,7 +191,7 @@ async def require_authenticated_user(
     path = request.url.path
     
     # 1. Allow Swagger/Redoc and Health check endpoints
-    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health")):
+    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health", "/api/v1/graph")):
         return None
 
     logger.debug("[Auth] Resolving authentication for path: %s", path)
