@@ -108,6 +108,7 @@ class AuthService:
                 id_token = token_response.get("id_token")
                 claims = self.oidc_client.verify_id_token(id_token)                
                 
+
             logger.info("[Auth] Token verified. Identity: sub=%s, email=%s", claims.get("sub"), claims.get("email"))
             
             # Record login & generate user payload
@@ -115,6 +116,7 @@ class AuthService:
             
             # Save user in session
             request.session["user"] = user_payload            
+
             
             logger.info("[Auth] Session established successfully in backend for sub=%s", user_payload.get("sub"))
             return user_payload
