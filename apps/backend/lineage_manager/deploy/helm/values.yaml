@@ -66,7 +66,7 @@ env:
   # App Settings
   ENV_STATE: "dev"
   LOG_LEVEL: "INFO"
-  APP_REQUIRE_AUTHENTICATION: "false"
+  FEATURE_REQUIRE_SIGNIN: "true"
   APP_JOB_MANAGER_URL: "http://self-scheduling-backend:5001"
 
   # Redis Settings
