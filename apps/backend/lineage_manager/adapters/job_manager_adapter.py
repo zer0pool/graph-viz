@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Port (Interface)
 # ============================================================================
 
+
 class JobManagerPort(ABC):
     """Port interface for Job Manager external service."""
 
@@ -47,6 +48,7 @@ class JobManagerPort(ABC):
 # ============================================================================
 # Adapter (Implementation)
 # ============================================================================
+
 
 class JobManagerAdapter(JobManagerPort):
     """HTTP Adapter for Job Manager API."""

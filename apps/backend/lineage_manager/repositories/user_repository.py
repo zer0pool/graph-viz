@@ -22,19 +22,19 @@ class UserRepository(BaseRepository):
             raise ValueError("Missing 'sub' claim in token")
 
         user = self.get_by_sub(sub)
-        
+
         # Default to Viewer if no roles provided
-        roles = claims.get("roles") 
+        roles = claims.get("roles")
         if not roles:
             roles = [UserRole.VIEWER]
-            
+
         payload = {
             "email": claims.get("mail"),
             "name": claims.get("username_en"),
-            "login_id": claims.get("loginid"), # Renamed from loginId
+            "login_id": claims.get("loginid"),  # Renamed from loginId
             "roles": roles,
-            "department": claims.get("deptname_en"), # Renamed from dept
-            "user_id": claims.get("mail") # Ensure user_id is populated
+            "department": claims.get("deptname_en"),  # Renamed from dept
+            "user_id": claims.get("mail"),  # Ensure user_id is populated
         }
 
         if user:
@@ -71,19 +71,22 @@ class UserRepository(BaseRepository):
         email: str = None,
         name: str = None,
         department: str = None,
-        status: str = "ACTIVE"
+        status: str = "ACTIVE",
     ) -> UserAccount:
         """Create or update user details."""
         existing = self.get_catalog_user(user_id)
         if existing:
-            if email: existing.email = email
-            if name: existing.name = name
-            if department: existing.department = department
+            if email:
+                existing.email = email
+            if name:
+                existing.name = name
+            if department:
+                existing.department = department
             existing.status = status
             self.session.flush()
             return existing
         else:
-            # We need a 'sub' for new users if they are created via catalog sync, 
+            # We need a 'sub' for new users if they are created via catalog sync,
             # but usually they are created via login.
             # If creating purely from catalog, we might need a dummy sub.
             user = UserAccount(
@@ -92,7 +95,7 @@ class UserRepository(BaseRepository):
                 email=email,
                 name=name,
                 department=department,
-                status=status
+                status=status,
             )
             self.session.add(user)
             self.session.flush()
@@ -119,4 +122,5 @@ class UserRepository(BaseRepository):
     def clear_catalog_users(self):
         """Clear all entries from user table (DANGEROUS)."""
         from sqlalchemy import text
+
         self.db.execute(text("DELETE FROM user_account"))

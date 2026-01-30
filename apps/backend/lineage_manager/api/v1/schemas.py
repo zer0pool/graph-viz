@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+
 class JobRegister(BaseModel):
     """Schema for job registration requests."""
 
@@ -37,8 +38,12 @@ class JobUpdate(BaseModel):
     labels: Optional[dict] = Field(None, description="Job labels as JSON object")
     owner: Optional[str] = Field(None, description="Job owner")
     write_mode: Optional[str] = Field(None, description="Write mode for the job")
-    destination_types: Optional[List[str]] = Field(None, description="List of destination types")
-    destination_tables: Optional[List[str]] = Field(None, description="List of destination tables")
+    destination_types: Optional[List[str]] = Field(
+        None, description="List of destination types"
+    )
+    destination_tables: Optional[List[str]] = Field(
+        None, description="List of destination tables"
+    )
     trigger_tables: Optional[List[str]] = Field(
         None, description="List of trigger tables"
     )
@@ -118,14 +123,22 @@ class LineageMetrics(BaseModel):
 
 class LineageSection(BaseModel):
     root_tables: List[str] = Field(default_factory=list, description="Upstream roots")
-    leaf_tables: List[str] = Field(default_factory=list, description="Downstream leaves")
-    tables: List[str] = Field(default_factory=list, description="All tables in direction")
+    leaf_tables: List[str] = Field(
+        default_factory=list, description="Downstream leaves"
+    )
+    tables: List[str] = Field(
+        default_factory=list, description="All tables in direction"
+    )
     jobs: List[str] = Field(default_factory=list, description="All jobs in direction")
 
 
 class LineagePaths(BaseModel):
-    preview: List[List[str]] = Field(default_factory=list, description="Short paths for panel preview")
-    full: List[List[str]] = Field(default_factory=list, description="Full paths for drawer view")
+    preview: List[List[str]] = Field(
+        default_factory=list, description="Short paths for panel preview"
+    )
+    full: List[List[str]] = Field(
+        default_factory=list, description="Full paths for drawer view"
+    )
 
 
 class LineageCacheMeta(BaseModel):
@@ -149,12 +162,14 @@ class TableLineageSummaryResponse(BaseModel):
 # New schemas for batch job sync
 class JobSyncRequest(BaseModel):
     """Single job sync request."""
+
     type: str = Field(..., description="Job scheduling type (req-type, self-type)")
     job_id: str = Field(..., description="Job ID to sync")
 
 
 class BatchJobSyncRequest(BaseModel):
     """Batch job sync request."""
+
     jobs: List[JobSyncRequest] = Field(..., description="List of jobs to sync")
 
 
@@ -171,6 +186,7 @@ class NodeTableInfo(BaseModel):
     write_mode: Optional[str] = None
     storage_type: Optional[str] = None
 
+
 class NodeJobInfo(BaseModel):
     job_id: Optional[str] = None
     owner: Optional[str] = None
@@ -181,9 +197,11 @@ class NodeJobInfo(BaseModel):
     end_date: Optional[str] = None
     lifecycle_status: Optional[str] = None
 
+
 class NodeDetails(BaseModel):
     table_info: NodeTableInfo
     job_info: NodeJobInfo
+
 
 class BatchNodeDetailsResponse(BaseModel):
     status: str
@@ -194,48 +212,47 @@ class BatchNodeDetailsResponse(BaseModel):
 # New Graph API Schemas for Mermaid Viewer (Cytoscape Migration)
 # ============================================================================
 
+
 class GraphNode(BaseModel):
     """Node in the lineage graph (job or table)."""
-    
+
     id: str = Field(..., description="Node identifier: 'job:xxx' or 'table:xxx'")
     type: Literal["job", "table"] = Field(..., description="Node type")
     label: str = Field(..., description="Display label")
     properties: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Additional node properties (owner, status, etc.)"
+        description="Additional node properties (owner, status, etc.)",
     )
 
 
 class GraphEdge(BaseModel):
     """Edge in the lineage graph."""
-    
+
     source: str = Field(..., description="Source node ID")
     target: str = Field(..., description="Target node ID")
     type: str = Field(..., description="Edge type: writes, reads, depends_on")
     properties: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Additional edge properties (dependency_type, etc.)"
+        description="Additional edge properties (dependency_type, etc.)",
     )
 
 
 class GraphMetadata(BaseModel):
     """Metadata about the graph response."""
-    
+
     total_nodes: int = Field(..., description="Total number of nodes in response")
     depth: int = Field(..., description="Depth of graph traversal")
     truncated: bool = Field(
-        default=False,
-        description="Whether the graph was truncated due to size limits"
+        default=False, description="Whether the graph was truncated due to size limits"
     )
     max_nodes_reached: bool = Field(
-        default=False,
-        description="Whether maximum node limit was reached"
+        default=False, description="Whether maximum node limit was reached"
     )
 
 
 class MermaidGraphResponse(BaseModel):
     """Graph response optimized for Mermaid rendering."""
-    
+
     nodes: List[GraphNode] = Field(..., description="List of graph nodes")
     edges: List[GraphEdge] = Field(..., description="List of graph edges")
     metadata: GraphMetadata = Field(..., description="Graph metadata")
@@ -245,10 +262,11 @@ class MermaidGraphResponse(BaseModel):
 # Audit / Operations Schemas
 # ============================================================================
 
+
 class AuditEvent(BaseModel):
     id: str
     description: str
-    status: Literal['SUCCESS', 'FAILED', 'TIMEOUT']
+    status: Literal["SUCCESS", "FAILED", "TIMEOUT"]
     timestamp: str
 
 
@@ -258,7 +276,7 @@ class AuditCommand(BaseModel):
     type: str = "COMMAND"
     summary: str
     actor: str
-    status: Literal['SUCCESS', 'PARTIAL', 'FAILED']
+    status: Literal["SUCCESS", "PARTIAL", "FAILED"]
     incidentId: Optional[str] = None
     relatedInfo: Optional[str] = None
     events: List[AuditEvent] = []
@@ -267,6 +285,7 @@ class AuditCommand(BaseModel):
 # ============================================================================
 # User Management Schemas
 # ============================================================================
+
 
 class UserRole(str):
     PM = "PM"

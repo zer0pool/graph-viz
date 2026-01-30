@@ -18,23 +18,23 @@ from lineage_manager.services.project_service import ProjectService
 
 class GraphContainer(containers.DeclarativeContainer):
     """Graph domain container for lineage graph management."""
-    
+
     # Dependencies from other containers
     core = providers.DependenciesContainer()  # For database
-    job = providers.DependenciesContainer()   # For job_manager_adapter
-    
+    job = providers.DependenciesContainer()  # For job_manager_adapter
+
     # Write UoW (for mutations)
     write_uow = providers.Factory(
         GraphUnitOfWork,
         db=core.session_factory,
     )
-    
+
     # Read UoW (for queries) - can use read replica later
     read_uow = providers.Factory(
         GraphReadOnlyUnitOfWork,
         db=core.read_session_factory,
     )
-    
+
     # Main Graph Service (backward compatibility)
     # Graph Services
     # Query Service (uses read UoW)
@@ -49,7 +49,7 @@ class GraphContainer(containers.DeclarativeContainer):
         uow=write_uow,
         job_manager=job.job_manager_adapter,
     )
-    
+
     # Initializer Service
     initializer_service = providers.Factory(
         GraphInitializerService,
@@ -67,7 +67,7 @@ class GraphContainer(containers.DeclarativeContainer):
         query_service=query_service,
         initializer_service=initializer_service,
     )
-    
+
     # Project Service (for project/user search)
     project_service = providers.Factory(
         ProjectService,

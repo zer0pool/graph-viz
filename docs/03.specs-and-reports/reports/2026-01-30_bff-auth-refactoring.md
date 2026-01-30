@@ -16,6 +16,7 @@ Successfully refactored the Backend For Frontend (BFF) authentication flow to al
 
 ### 2. Implementation Details
 - **Session Management**: Securely handles OIDC `state` and user profile storage in server-side session cookies.
+- **Redis Integration**: Implemented Redis-based storage for OIDC `state` tokens (5 min TTL) to support stateless/horizontal scaling, with graceful fallback to session storage.
 - **Cleanup**: Removed manual secret generation and OIDC internal logic from routing functions.
 - **Consistency**: Maintained the established `/login`, `/callback`, `/me`, and `/logout` contract for both React and legacy static JS clients.
 
@@ -23,6 +24,11 @@ Successfully refactored the Backend For Frontend (BFF) authentication flow to al
 - [`auth.py`](file:///home/darkwing/src/lineage_platform/apps/backend/lineage_manager/api/v1/endpoints/auth.py): Refactored route handlers.
 - [`auth_service.py`](file:///home/darkwing/src/lineage_platform/apps/backend/lineage_manager/services/auth_service.py): [NEW] Core business logic for authentication.
 - [`user_container.py`](file:///home/darkwing/src/lineage_platform/apps/backend/lineage_manager/core/containers/user_container.py): Registered the new service.
+
+## 🧪 Verification
+- **Automated Tests**: Ran full unit test suite `pytest tests/unit/lineage_manager/` (with `PYTHONPATH`).
+- **Result**: **49 Passed**, 0 Failed.
+- **Coverage**: Verified `AuthService` logic including login URL generation, callback handling (Redis & Session flows), and user session retrieval.
 
 ## 🚀 Impact
 The refactoring ensures that authentication logic is testable, decoupled from the framework-specific `Request` object where possible, and follows the project's "Service" pattern, making the codebase more maintainable and consistent with other domains like `Job` and `User`.

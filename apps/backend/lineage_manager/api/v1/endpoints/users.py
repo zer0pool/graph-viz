@@ -28,7 +28,9 @@ def get_me(
 ):
     profile = user_service.get_profile(ctx_user["sub"])
     if not profile:
-        logger.warning("Authenticated user '%s' not found in profile store", ctx_user["sub"])
+        logger.warning(
+            "Authenticated user '%s' not found in profile store", ctx_user["sub"]
+        )
         raise HTTPException(status_code=404, detail="User not found")
     user_info = profile.get("user", {})
     logger.info(
@@ -81,24 +83,21 @@ def list_user_jobs(
 ):
     """
     List jobs owned by a user.
-    
+
     Args:
         user_id: User identifier
         limit: Maximum number of results
         offset: Offset for pagination
-        
+
     Returns:
         Jobs list with pagination info
     """
     try:
-        return user_service.get_user_jobs(
-            user_id=user_id,
-            limit=limit,
-            offset=offset
-        )
+        return user_service.get_user_jobs(user_id=user_id, limit=limit, offset=offset)
     except Exception as e:
         logger.error(f"Failed to list user jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{user_id}/projects")
 @inject

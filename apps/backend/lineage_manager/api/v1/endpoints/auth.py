@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
+
 @router.get("/config")
 @inject
 def get_auth_config(
@@ -20,7 +21,10 @@ def get_auth_config(
     try:
         return auth_service.get_auth_config()
     except AuthenticationError as exc:
-        raise HTTPException(status_code=503, detail="OIDC metadata unavailable") from exc
+        raise HTTPException(
+            status_code=503, detail="OIDC metadata unavailable"
+        ) from exc
+
 
 @router.get("/login")
 @inject
@@ -33,10 +37,11 @@ def login(
     logger.info("Redirecting to OIDC IdP")
     return RedirectResponse(auth_url)
 
+
 @router.post("/exchange")
 @inject
 async def exchange(
-    request: Request,    
+    request: Request,
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
     """Exchange authorization code for tokens, and establish session."""
@@ -48,7 +53,7 @@ async def exchange(
 
         if not code or not state:
             raise HTTPException(status_code=400, detail="Missing code or state")
-        
+
         await auth_service.handle_callback(request, code, state)
         # Redirect back to frontend
         return RedirectResponse(url="/admin-console/")
@@ -61,7 +66,7 @@ async def exchange(
 @router.post("/authorized")
 @inject
 async def authorized(
-    request: Request,    
+    request: Request,
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
     """handle the OIDC call back for Implicit Flow (id_token received via form_post )"""
@@ -73,9 +78,9 @@ async def authorized(
 
         if not id_token or not state:
             raise HTTPException(status_code=400, detail="Missing id_token or state")
-        
+
         await auth_service.handle_callback(request, id_token, state)
-        # Redirect back to frontend using 303 See Other to convert POST to GET  
+        # Redirect back to frontend using 303 See Other to convert POST to GET
         return RedirectResponse(url="/admin-console/", status_code=303)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -96,10 +101,14 @@ def get_me(
     if not user:
         logger.info("[Auth] /me - No user session found. Returning 401.")
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    logger.info("[Auth] /me - Session found for sub=%s (is_anonymous=%s)", 
-                user.get("sub"), user.get("is_anonymous", False))
+
+    logger.info(
+        "[Auth] /me - Session found for sub=%s (is_anonymous=%s)",
+        user.get("sub"),
+        user.get("is_anonymous", False),
+    )
     return user
+
 
 @router.post("/logout")
 @inject

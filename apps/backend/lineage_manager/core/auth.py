@@ -130,7 +130,9 @@ class OIDCProviderClient:
                 except ValueError as exc:
                     logger.error("Token response JSON parse error: %s", exc)
                     raise AuthenticationError("Invalid token response JSON") from exc
-                logger.debug("OIDC token exchange succeeded (keys=%s)", list(payload.keys()))
+                logger.debug(
+                    "OIDC token exchange succeeded (keys=%s)", list(payload.keys())
+                )
                 return payload
         except httpx.HTTPError as exc:
             logger.error("Failed to exchange authorization code: %s", exc)
@@ -174,7 +176,7 @@ def serialize_user(claims: Dict[str, Any], db_user) -> Dict[str, Any]:
         "name": claims.get("username_en") or getattr(db_user, "name", None),
         "roles": claims.get("roles") or getattr(db_user, "roles", []) or [],
         "department": claims.get("deptname_en") or getattr(db_user, "department", None),
-        "user_id": getattr(db_user, "user_id", None)
+        "user_id": getattr(db_user, "user_id", None),
     }
     return merged
 
@@ -189,9 +191,11 @@ async def require_authenticated_user(
     """
     settings = get_settings()
     path = request.url.path
-    
+
     # 1. Allow Swagger/Redoc and Health check endpoints
-    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health", "/api/v1/graph")):
+    if path.startswith(
+        ("/docs", "/redoc", "/openapi.json", "/health", "/api/v1/graph")
+    ):
         return None
 
     logger.debug("[Auth] Resolving authentication for path: %s", path)
@@ -199,10 +203,13 @@ async def require_authenticated_user(
     # 2. BFF Flow: Check Session Cookie (Highest Priority)
     # logger.debug("[Auth] Session keys found: %s", list(request.session.keys()))
     user_payload = request.session.get("user")
-    
+
     if user_payload:
-        logger.info("[Auth] BFF Session authenticated: sub=%s, email=%s", 
-                    user_payload.get("sub"), user_payload.get("email"))
+        logger.info(
+            "[Auth] BFF Session authenticated: sub=%s, email=%s",
+            user_payload.get("sub"),
+            user_payload.get("email"),
+        )
         request.state.user = user_payload
         return user_payload
 
@@ -212,7 +219,7 @@ async def require_authenticated_user(
     token = credentials.credentials if credentials else None
     if not token:
         token = request.query_params.get("access_token")
-    
+
     if token:
         logger.debug("[Auth] Bearer token found (length=%d). Verifying...", len(token))
         container: GraphContainer = request.app.container
@@ -220,7 +227,7 @@ async def require_authenticated_user(
         try:
             claims = verifier.verify_id_token(token)
             logger.info("[Auth] Bearer token verified: sub=%s", claims.get("sub"))
-            
+
             user_service = container.user.user_service()
             user_payload = user_service.record_login(claims)
             request.state.user = user_payload
@@ -237,13 +244,15 @@ async def require_authenticated_user(
             "email": "anonymous@lineage.manager",
             "roles": ["admin"],
             "dept": "Engineering",
-            "is_anonymous": True
+            "is_anonymous": True,
         }
         request.state.user = anonymous_user
         return anonymous_user
 
     # 5. Strict Auth: Raise 401
-    logger.warning("[Auth] Authentication failed for path: %s (Require Sign-in is ENABLED)", path)
+    logger.warning(
+        "[Auth] Authentication failed for path: %s (Require Sign-in is ENABLED)", path
+    )
     raise HTTPException(status_code=401, detail="Authentication required")
 
 

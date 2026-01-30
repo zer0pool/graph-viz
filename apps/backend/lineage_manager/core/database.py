@@ -6,7 +6,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 # Ensure models are imported so tables are registered on Base.metadata
-from ..models import GraphClosure, GraphEdge, GraphNode, JobNode, TableNode, Project, ProjectUser
+from ..models import (
+    GraphClosure,
+    GraphEdge,
+    GraphNode,
+    JobNode,
+    TableNode,
+    Project,
+    ProjectUser,
+)
 from ..models.base import Base
 from .config import get_settings
 
@@ -53,12 +61,12 @@ class Database:
     @property
     def session_factory(self) -> sessionmaker:
         return self._session_factory
-    
+
     @property
     def write_session_factory(self) -> sessionmaker:
         """Session factory for write operations (currently same as session_factory)."""
         return self._session_factory
-    
+
     @property
     def read_session_factory(self) -> sessionmaker:
         """Session factory for read operations (currently same as session_factory)."""

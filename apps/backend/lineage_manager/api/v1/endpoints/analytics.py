@@ -19,12 +19,14 @@ router = APIRouter(
     tags=["analytics"],
 )
 
+
 class TrackRequest(BaseModel):
     event_type: str = "page_view"
     visitor_id: str
     path: str
     title: str = ""
     timestamp: Optional[str] = None
+
 
 @router.post("/track")
 @inject
@@ -63,6 +65,7 @@ async def track_event(
 
     return {"status": "success"}
 
+
 @router.get("/top-visited")
 @inject
 async def get_top_visited(
@@ -85,36 +88,39 @@ async def get_top_visited(
         # Here we just use a simplified approach for demonstration
         # Actually we should use timedelta
         from datetime import timedelta
+
         target_time = now - timedelta(hours=i)
         keys.append(f"visits:{target_time.strftime('%Y%m%d%H')}")
 
     # Use a temporary key for union
     temp_key = f"temp:top_visited:{int(time.time())}"
-    
+
     try:
         # Union the scores from recent buckets
         # filter out keys that don't exist
         existing_keys = [k for k in keys if redis_client.exists(k)]
         if not existing_keys:
             return {"items": []}
-            
+
         redis_client.zunionstore(temp_key, existing_keys)
-        
+
         # Get top elements
         results = redis_client.zrevrange(temp_key, 0, limit - 1, withscores=True)
-        
+
         # Cleanup temp key
         redis_client.delete(temp_key)
-        
+
         # Format response
         items = []
         for path, score in results:
-            items.append({
-                "path": path,
-                "title": path.split('/')[-1] or "home", # Simplified
-                "count": int(score)
-            })
-            
+            items.append(
+                {
+                    "path": path,
+                    "title": path.split("/")[-1] or "home",  # Simplified
+                    "count": int(score),
+                }
+            )
+
         return {"items": items}
     except Exception as e:
         logger.error(f"Failed to get top visited from redis: {e}")

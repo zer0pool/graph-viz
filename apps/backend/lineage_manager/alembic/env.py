@@ -16,7 +16,16 @@ if PARENT_DIR not in sys.path:
 from lineage_manager.core.config import get_settings
 
 # Import models to register them with Base.metadata
-from lineage_manager.models import GraphClosure, GraphEdge, GraphNode, JobNode, TableNode, Project, UserAccount, ProjectUser
+from lineage_manager.models import (
+    GraphClosure,
+    GraphEdge,
+    GraphNode,
+    JobNode,
+    TableNode,
+    Project,
+    UserAccount,
+    ProjectUser,
+)
 from lineage_manager.models.base import Base
 
 # this is the Alembic Config object, which provides

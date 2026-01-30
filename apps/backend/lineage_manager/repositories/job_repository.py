@@ -28,11 +28,11 @@ class JobRepository(BaseRepository):
             return row
 
         logger.debug(f"Creating new job node for ID: {job_id}")
-        
+
         # Build properties dynamically - only include provided non-None values
         # This prevents bloating the JSON with empty lists/defaults
         properties = {}
-        
+
         # Map well-known attributes
         mapping = {
             "display_name": kwargs.get("name", kwargs.get("label", job_id)),
@@ -40,7 +40,7 @@ class JobRepository(BaseRepository):
             "owner": kwargs.get("owner"),
             "write_mode": kwargs.get("write_mode"),
             "upstreams": kwargs.get("upstreams"),
-            "downstreams": kwargs.get("downstreams"),            
+            "downstreams": kwargs.get("downstreams"),
             "schedule": kwargs.get("schedule"),
             "lifecycle_status": kwargs.get("lifecycle_status"),
             "status": kwargs.get("status"),
@@ -117,10 +117,10 @@ class JobRepository(BaseRepository):
     def search_by_prefix(self, prefix: str, limit: int = 10):
         """Search jobs by job_id or display name prefix."""
         pattern = f"%{prefix.lower()}%"
-        
+
         # Use as_string() for JSON property extraction for better compatibility
         display_name_field = GraphNode.properties["display_name"].as_string()
-        
+
         stmt = (
             self._base_query()
             .where(
@@ -132,7 +132,7 @@ class JobRepository(BaseRepository):
             .order_by(GraphNode.name)
             .limit(limit)
         )
-        
+
         return self.db.execute(stmt).scalars().all()
 
     def search_owners_by_prefix(self, prefix: str, limit: int = 10):

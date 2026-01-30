@@ -1,6 +1,7 @@
 import pytest
 from lineage_manager.services.dummy_bigquery_service import DummyBigQueryService
 
+
 class TestBigQueryService:
 
     @pytest.fixture
@@ -32,4 +33,11 @@ class TestBigQueryService:
         result = service.get_table_timelines_for_table("any_table", 7)
         assert "daily_summary" in result
         assert "hourly_detail" in result
-        assert isinstance(result["hourly_detail"]["2025-12-14"] if "2025-12-14" in result["hourly_detail"] else list(result["hourly_detail"].values())[0], list)
+        assert isinstance(
+            (
+                result["hourly_detail"]["2025-12-14"]
+                if "2025-12-14" in result["hourly_detail"]
+                else list(result["hourly_detail"].values())[0]
+            ),
+            list,
+        )

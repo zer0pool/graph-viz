@@ -23,7 +23,9 @@ async def session_middleware(
 
     Note: Transaction COMMIT is handled by the Service Layer (UoW), not here.
     """
-    session_registry = container.core.database().session_factory  # scoped_session registry
+    session_registry = (
+        container.core.database().session_factory
+    )  # scoped_session registry
     # Expose on request for any ad-hoc dependency usage
     request.state.db = session_registry
     try:

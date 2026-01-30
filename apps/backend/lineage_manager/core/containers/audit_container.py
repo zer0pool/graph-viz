@@ -12,17 +12,17 @@ from lineage_manager.services.command_execution_service import CommandExecutionS
 
 class AuditContainer(containers.DeclarativeContainer):
     """Container for audit logging domain."""
-    
+
     # Dependencies from other containers
     core = providers.DependenciesContainer()
     graph = providers.DependenciesContainer()
-    
+
     # Audit Service (uses its own database session)
     audit_service = providers.Factory(
         AuditService,
         db=core.db,
     )
-    
+
     # Command Execution Service (orchestrates graph commands + audit logging)
     command_execution_service = providers.Factory(
         CommandExecutionService,

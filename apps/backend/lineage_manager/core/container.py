@@ -13,29 +13,31 @@ from lineage_manager.core.containers.job_container import JobContainer
 from lineage_manager.core.containers.user_container import UserContainer
 from lineage_manager.core.containers.bigquery_container import BigQueryContainer
 from lineage_manager.core.containers.table_container import TableContainer
-from lineage_manager.core.containers.graph_container import GraphContainer as GraphDomainContainer
+from lineage_manager.core.containers.graph_container import (
+    GraphContainer as GraphDomainContainer,
+)
 from lineage_manager.core.containers.audit_container import AuditContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
     """Root application container that wires all domain containers."""
-    
+
     wiring_config = containers.WiringConfiguration(
         packages=["lineage_manager.api.v1.endpoints"]
     )
-    
+
     # ─────────────────────────────────────────────────────
     # Core infrastructure (database, auth)
     # ─────────────────────────────────────────────────────
     core = providers.Container(CoreContainer)
-    
+
     # ─────────────────────────────────────────────────────
     # Domain containers
     # ─────────────────────────────────────────────────────
-    
+
     # Job domain (needs core database)
     job = providers.Container(JobContainer, core=core)
-    
+
     # Graph domain (needs database from core, adapter from job)
     graph = providers.Container(
         GraphDomainContainer,
@@ -49,7 +51,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
         core=core,
         graph=graph,
     )
-    
+
     # BigQuery domain (no dependencies needed)
     bigquery = providers.Container(BigQueryContainer)
 
@@ -59,7 +61,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
         graph=graph,
         bigquery=bigquery,
     )
-    
+
     # Audit domain (needs core database and graph services)
     audit = providers.Container(
         AuditContainer,

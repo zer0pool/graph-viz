@@ -14,17 +14,17 @@ from lineage_manager.services.auth_service import AuthService
 
 class UserContainer(containers.DeclarativeContainer):
     """User management domain container."""
-    
+
     # Dependencies from CoreContainer (for database session)
     core = providers.DependenciesContainer()
     graph = providers.DependenciesContainer()  # For graph UoW
-    
+
     # Unit of Work
     uow = providers.Factory(
         UserUnitOfWork,
         db=core.session_factory,
     )
-    
+
     # Service with graph_uow for job queries
     user_service = providers.Factory(
         UserService,

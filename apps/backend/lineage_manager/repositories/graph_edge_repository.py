@@ -73,7 +73,9 @@ class GraphEdgeRepository(BaseRepository):
                 properties={"io_type": "output"},
             )
 
-    def update_dependency_type(self, source_id: int, target_id: int, dep_type: str) -> None:
+    def update_dependency_type(
+        self, source_id: int, target_id: int, dep_type: str
+    ) -> None:
         """Update dependency_type for a specific edge."""
         self.db.execute(
             update(GraphEdge)

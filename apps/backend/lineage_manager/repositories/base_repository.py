@@ -9,13 +9,15 @@ logger = logging.getLogger(__name__)
 class BaseRepository:
     def __init__(self, db: Session, table_or_name: str | type):
         self.db = db
-        self.session = db # Alias for convenience
-        
+        self.session = db  # Alias for convenience
+
         if isinstance(table_or_name, str):
             self.table_name = table_or_name
         else:
             # Assume it's a declarative model
-            self.table_name = getattr(table_or_name, "__tablename__", str(table_or_name))
+            self.table_name = getattr(
+                table_or_name, "__tablename__", str(table_or_name)
+            )
 
     def clear_all(self):
         """Delete all data from table using DELETE for safety"""

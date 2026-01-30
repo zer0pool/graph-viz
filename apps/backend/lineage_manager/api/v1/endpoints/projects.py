@@ -27,10 +27,10 @@ def list_projects(
 ):
     """
     List all projects with job counts.
-    
+
     Args:
         limit: Maximum number of projects to return
-        
+
     Returns:
         List of projects with statistics
     """
@@ -66,10 +66,10 @@ def get_project_detail(
 ):
     """
     Get project detail with summary statistics.
-    
+
     Args:
         project_id: Project identifier
-        
+
     Returns:
         Project detail with job count
     """
@@ -92,24 +92,22 @@ def list_project_jobs(
 ):
     """
     List jobs in a project with pagination.
-    
+
     Args:
         project_id: Project identifier
         limit: Maximum number of results (default: 20)
         offset: Offset for pagination (default: 0)
-        
+
     Returns:
         Jobs list with pagination info
     """
     try:
-        return svc.list_project_jobs(
-            project_id=project_id,
-            limit=limit,
-            offset=offset
-        )
+        return svc.list_project_jobs(project_id=project_id, limit=limit, offset=offset)
     except Exception as e:
         logger.error(f"Failed to list project jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{project_id}/users")
 @inject
 def list_project_users(

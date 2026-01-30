@@ -43,7 +43,9 @@ async def get_table_upstream(
         # Get table node
         table = uow.tables.get_by_full_name(table_name)
         if not table:
-            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Table '{table_name}' not found"
+            )
 
         # Query closure
         upstream = uow.closures.get_upstream_nodes(
@@ -81,7 +83,9 @@ async def get_table_downstream(
         # Get table node
         table = uow.tables.get_by_full_name(table_name)
         if not table:
-            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Table '{table_name}' not found"
+            )
 
         # Query closure
         downstream = uow.closures.get_downstream_nodes(
@@ -169,6 +173,7 @@ async def get_job_downstream(
         logger.error(f"Error getting downstream for job {job_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/batch-details", response_model=BatchNodeDetailsResponse)
 @inject
 async def get_lineage_batch_details(
@@ -182,13 +187,14 @@ async def get_lineage_batch_details(
     node_ids = payload.get("node_ids", [])
     if not node_ids:
         return {"status": "success", "results": {}}
-    
+
     return svc.get_nodes_batch_details(node_ids)
 
 
 # ============================================================================
 # New Lineage Graph API for Mermaid Viewer (Cytoscape Migration)
 # ============================================================================
+
 
 @router.get("/graph")
 @inject
@@ -198,22 +204,22 @@ async def get_lineage_graph(
     direction: Optional[str] = Query(
         None,
         regex="^(upstream|downstream)$",
-        description="Direction: upstream, downstream, or both (default)"
+        description="Direction: upstream, downstream, or both (default)",
     ),
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
     Get lineage graph optimized for Mermaid rendering.
-    
+
     This endpoint returns a simplified graph structure without Cytoscape-specific
     fields like position, layout, etc. The response is designed to be directly
     converted to Mermaid DSL on the frontend.
-    
+
     **Examples:**
     - Initial load: `/api/v1/lineage/graph?node_id=job:daily_agg&depth=1`
     - Expand upstream: `/api/v1/lineage/graph?node_id=job:daily_agg&direction=upstream&depth=1`
     - Expand downstream: `/api/v1/lineage/graph?node_id=table:proj.ds.tbl&direction=downstream&depth=1`
-    
+
     **Limits:**
     - Max depth: 2
     - Max nodes: 30 (truncated if exceeded)

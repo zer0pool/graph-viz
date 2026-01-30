@@ -70,7 +70,7 @@ class GraphQueryService:
         return {
             "status": "healthy",
             "service": "lineage-manager",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     def get_diagnostics(self):
@@ -85,16 +85,16 @@ class GraphQueryService:
             stats = {}
             # Count jobs
             stats["job_count"] = uow.jobs.count_jobs()
-            
+
             # Count tables
             stats["table_count"] = uow.tables.count_tables()
-            
+
             # Count edges
             stats["edge_count"] = uow.edges.count_all()
-            
+
             # Count closures
             stats["closure_count"] = uow.closures.count_all()
-            
+
             # Database status
             try:
                 uow.db.execute(text("SELECT 1"))
@@ -104,11 +104,11 @@ class GraphQueryService:
                 logger.error(f"Database connection test failed: {db_error}")
 
             stats["timestamp"] = datetime.now(timezone.utc).isoformat()
-            
+
             res = {"status": "healthy", "database": stats}
             self._cache_set(key, res)
             return res
-            
+
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return {
@@ -129,27 +129,27 @@ class GraphQueryService:
         cached = self._cache_get(key)
         if cached:
             return cached
-            
+
         res = self.uow.tables.get_table_dag(
-             table_name=full_name,
-             max_depth=depth,
-             direction=direction,
-             include_jobs=include_jobs,
-             include_tables=include_tables,
+            table_name=full_name,
+            max_depth=depth,
+            direction=direction,
+            include_jobs=include_jobs,
+            include_tables=include_tables,
         )
         if not res:
-             final_res = {
+            final_res = {
                 "status": "error",
                 "message": f"Table '{full_name}' not found",
                 "table_name": full_name,
-             }
+            }
         else:
             final_res = {
                 "status": "success",
                 "table_name": full_name,
                 "graph": res,
             }
-        
+
         self._cache_set(key, final_res)
         return final_res
 
@@ -164,7 +164,7 @@ class GraphQueryService:
         # Resolve base table
         table = uow.tables.get_by_full_name(base_table)
         if not table:
-             res = {
+            res = {
                 "status": "error",
                 "message": f"Table '{base_table}' not found",
                 "base_table": base_table,
@@ -175,8 +175,8 @@ class GraphQueryService:
                     "total_writer_jobs": 0,
                 },
             }
-             self._cache_set(key, res)
-             return res
+            self._cache_set(key, res)
+            return res
 
         visited_tables = {table.id}
         queue = deque([(table.id, table.full_name, 0)])
@@ -238,7 +238,11 @@ class GraphQueryService:
         return res
 
     def get_job_neighbors(
-        self, job_id: str, level: int = 1, direction: str = "both", limit: int | None = None
+        self,
+        job_id: str,
+        level: int = 1,
+        direction: str = "both",
+        limit: int | None = None,
     ):
         lim = "none" if limit is None else str(limit)
         key = f"neighbors:job:{job_id}:{level}:{direction}:{lim}"
@@ -260,7 +264,7 @@ class GraphQueryService:
             "nodes": result["nodes"],
             "edges": result["edges"],
         }
-        
+
         self._cache_set(key, res)
         return res
 
@@ -291,7 +295,7 @@ class GraphQueryService:
             "nodes": result["nodes"],
             "edges": result["edges"],
         }
-        
+
         self._cache_set(key, res)
         return res
 
@@ -353,14 +357,19 @@ class GraphQueryService:
         cached = self._cache_get(key)
         if cached:
             return cached
-            
+
         uow = self.uow
         table = uow.tables.get_by_full_name(table_name)
         if not table:
             # If it's an external storage path but not found, return empty success instead of error
             # to be consistent with how TableService handled it previously, but now we attempt query first.
             if table_name.startswith(("s3://", "gs://", "gcs://")) or "/" in table_name:
-                return {"status": "success", "table": table_name, "count": 0, "jobs": []}
+                return {
+                    "status": "success",
+                    "table": table_name,
+                    "count": 0,
+                    "jobs": [],
+                }
             return {"status": "error", "message": f"Table '{table_name}' not found"}
 
         rows = uow.job_table_links.get_job_inputs_with_trigger_flag(table.id)
@@ -370,7 +379,11 @@ class GraphQueryService:
             job_id = getattr(job, "job_id", None) or job.name
             job_name = getattr(job, "display_name", None) or job.name or job_id
             # dep_type_value is the dependency_type string from the edge
-            dependency_type = dep_type_value if isinstance(dep_type_value, str) else ("HARD" if dep_type_value else "SOFT")
+            dependency_type = (
+                dep_type_value
+                if isinstance(dep_type_value, str)
+                else ("HARD" if dep_type_value else "SOFT")
+            )
             items.append(
                 {
                     "job_id": job_id,
@@ -396,9 +409,10 @@ class GraphQueryService:
             return {
                 "status": "error",
                 "message": f"Table '{table_name}' not found",
-                "upstream": [], "downstream": []
+                "upstream": [],
+                "downstream": [],
             }
-        
+
         # Use traversal helper
         upstream = self._traversal.bfs_lineage_hierarchy(
             "table", center.id, center.full_name, "upstream", max_depth
@@ -406,10 +420,10 @@ class GraphQueryService:
         downstream = self._traversal.bfs_lineage_hierarchy(
             "table", center.id, center.full_name, "downstream", max_depth
         )
-        
+
         # Identify roots and leaves from the traversal results
         roots, leaves = self._traversal.find_root_and_leaf_nodes(upstream, downstream)
-        
+
         # Helper skips depth 0 (center node), so we add it manually
         center_node = {
             "id": center.full_name,
@@ -417,19 +431,19 @@ class GraphQueryService:
             "type": "TABLE",
             "depth": 0,
             "parent": None,
-            "properties": getattr(center, "properties", {}) or {}
+            "properties": getattr(center, "properties", {}) or {},
         }
-        
+
         # Prepend center node to both lists
         upstream.insert(0, center_node)
         downstream.insert(0, center_node)
-        
+
         return {
             "status": "success",
             "upstream": upstream,
             "downstream": downstream,
             "root_nodes": roots,
-            "leaf_nodes": leaves
+            "leaf_nodes": leaves,
         }
 
     def get_table_lineage_summary(
@@ -454,7 +468,10 @@ class GraphQueryService:
             table = uow.tables.get_by_full_name(table_name)
             if not table:
                 # Leniency for external storage paths (S3/GCS)
-                if table_name.startswith(("s3://", "gs://", "gcs://")) or "/" in table_name:
+                if (
+                    table_name.startswith(("s3://", "gs://", "gcs://"))
+                    or "/" in table_name
+                ):
                     return {
                         "status": "success",
                         "table": table_name,
@@ -486,10 +503,18 @@ class GraphQueryService:
             up_nodes = uow.closures.get_upstream_nodes(table.id)
             down_nodes = uow.closures.get_downstream_nodes(table.id)
 
-            upstream_tables = sorted(list(set([n["full_name"] for n in up_nodes if n["type"] == "table"])))
-            upstream_jobs = sorted(list(set([n["full_name"] for n in up_nodes if n["type"] == "job"])))
-            downstream_tables = sorted(list(set([n["full_name"] for n in down_nodes if n["type"] == "table"])))
-            downstream_jobs = sorted(list(set([n["full_name"] for n in down_nodes if n["type"] == "job"])))
+            upstream_tables = sorted(
+                list(set([n["full_name"] for n in up_nodes if n["type"] == "table"]))
+            )
+            upstream_jobs = sorted(
+                list(set([n["full_name"] for n in up_nodes if n["type"] == "job"]))
+            )
+            downstream_tables = sorted(
+                list(set([n["full_name"] for n in down_nodes if n["type"] == "table"]))
+            )
+            downstream_jobs = sorted(
+                list(set([n["full_name"] for n in down_nodes if n["type"] == "job"]))
+            )
 
             # Depth metrics
             max_up_depth = max([n["depth"] for n in up_nodes]) if up_nodes else 0
@@ -497,8 +522,16 @@ class GraphQueryService:
 
             # 2. Identify Roots and Leaves using Closure data
             # Simplified: Nodes at maximum depth are usually roots/leaves in the context of this table
-            roots = [n["full_name"] for n in up_nodes if n["depth"] == max_up_depth and n["type"] == "table"]
-            leaves = [n["full_name"] for n in down_nodes if n["depth"] == max_down_depth and n["type"] == "table"]
+            roots = [
+                n["full_name"]
+                for n in up_nodes
+                if n["depth"] == max_up_depth and n["type"] == "table"
+            ]
+            leaves = [
+                n["full_name"]
+                for n in down_nodes
+                if n["depth"] == max_down_depth and n["type"] == "table"
+            ]
 
             # 3. Restricted BFS for Preview Paths (Shallow only)
             preview_paths = []
@@ -508,17 +541,23 @@ class GraphQueryService:
                 visited = {table.id}
                 while queue and len(preview_paths) < 2:
                     curr, d, p = queue.popleft()
-                    if d >= 3: continue 
-                    prods = uow.job_table_links.get_jobs_by_table_and_io_type(curr.id, "output")
-                    if not prods: 
-                        if d > 0: preview_paths.append(list(p))
+                    if d >= 3:
+                        continue
+                    prods = uow.job_table_links.get_jobs_by_table_and_io_type(
+                        curr.id, "output"
+                    )
+                    if not prods:
+                        if d > 0:
+                            preview_paths.append(list(p))
                         continue
                     for j in prods[:2]:
-                        ins = uow.job_table_links.get_tables_by_job_and_io_type(j.id, "input")
+                        ins = uow.job_table_links.get_tables_by_job_and_io_type(
+                            j.id, "input"
+                        )
                         for t in ins[:1]:
                             if t.id not in visited:
                                 visited.add(t.id)
-                                queue.append((t, d+1, [t.full_name] + p))
+                                queue.append((t, d + 1, [t.full_name] + p))
 
             res = {
                 "status": "success",
@@ -547,7 +586,7 @@ class GraphQueryService:
                 },
                 "paths": {
                     "preview": preview_paths,
-                    "full": preview_paths, 
+                    "full": preview_paths,
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
@@ -571,12 +610,12 @@ class GraphQueryService:
         job = self.uow.jobs.get(job_id)
         if not job:
             return None
-        
+
         # derive defaults
         # 1. Try top-level properties first
         status = job._get_prop("status")
         enabled = job._get_prop("enabled")
-            
+
         # attach for response usage
         setattr(job, "status", status)
         setattr(job, "enabled", enabled)
@@ -591,15 +630,15 @@ class GraphQueryService:
         # 1. Fetch all requested nodes
         stmt = select(GraphNode).where(GraphNode.name.in_(node_ids))
         nodes = uow.db.execute(stmt).scalars().all()
-        
+
         # Mapping to keep track of nodes
         node_map = {n.name: n for n in nodes}
-        
+
         # 2. Identify table nodes and find their producers
         table_nodes = [n for n in nodes if n.node_type == "table"]
         table_node_ids = [n.id for n in table_nodes]
-        producer_map = {} # table_node_id -> JobNode
-        
+        producer_map = {}  # table_node_id -> JobNode
+
         if table_node_ids:
             # Query edges where target is one of our tables and edge_type is 'write'
             # Then join with GraphNode to get the job information
@@ -608,7 +647,7 @@ class GraphQueryService:
                 .join(GraphNode, GraphEdge.source_node_id == GraphNode.id)
                 .where(
                     GraphEdge.target_node_id.in_(table_node_ids),
-                    GraphEdge.edge_type == "write"
+                    GraphEdge.edge_type == "write",
                 )
             )
             producer_results = uow.db.execute(producer_stmt).all()
@@ -624,7 +663,7 @@ class GraphQueryService:
                 continue
 
             meta = node.job_metadata or {}
-            
+
             # Table Info Section
             table_info = {
                 "id": node.name,
@@ -649,8 +688,12 @@ class GraphQueryService:
                     "status": j_meta.get("status") or "-",
                     "run_status": j_meta.get("run_status") or "-",
                     "cron": j_sched.get("cron") or j_sched.get("interval") or "-",
-                    "start_date": j_sched.get("start_date") or j_meta.get("start_date") or "-",
-                    "end_date": j_sched.get("end_date") or j_meta.get("end_date") or "-",
+                    "start_date": j_sched.get("start_date")
+                    or j_meta.get("start_date")
+                    or "-",
+                    "end_date": j_sched.get("end_date")
+                    or j_meta.get("end_date")
+                    or "-",
                     "lifecycle_status": j_meta.get("lifecycle_status") or "-",
                 }
             else:
@@ -665,10 +708,7 @@ class GraphQueryService:
                     "lifecycle_status": "-",
                 }
 
-            results[nid] = {
-                "table_info": table_info,
-                "job_info": job_info
-            }
+            results[nid] = {"table_info": table_info, "job_info": job_info}
 
         return {"status": "success", "results": results}
 
@@ -689,31 +729,28 @@ class GraphQueryService:
                 "start_date": "-",
                 "end_date": "-",
                 "lifecycle_status": "-",
-            }
+            },
         }
 
     # ============================================================================
     # New Lineage Graph API for Mermaid Viewer (Cytoscape Migration)
     # ============================================================================
-    
+
     MAX_NODES = 30
     MAX_EDGES = 50
     MAX_DEPTH = 2
-    
+
     def get_lineage_graph(
-        self,
-        node_id: str,
-        depth: int = 1,
-        direction: Optional[str] = None
+        self, node_id: str, depth: int = 1, direction: Optional[str] = None
     ):
         """
         Get lineage graph optimized for Mermaid rendering.
-        
+
         Args:
             node_id: Node identifier in format "job:xxx" or "table:xxx"
             depth: Traversal depth (1-2, enforced)
             direction: None (both), "upstream", or "downstream"
-            
+
         Returns:
             MermaidGraphResponse with nodes, edges, and metadata
         """
@@ -721,20 +758,20 @@ class GraphQueryService:
             GraphNode as GraphNodeSchema,
             GraphEdge as GraphEdgeSchema,
             GraphMetadata,
-            MermaidGraphResponse
+            MermaidGraphResponse,
         )
-        
+
         # Validate depth
         if depth > self.MAX_DEPTH:
             raise ValueError(f"Depth must be <= {self.MAX_DEPTH}")
-        
+
         # Parse node_id
         if ":" not in node_id:
             # Assume it's a job_id for backward compatibility
             node_id = f"job:{node_id}"
-        
+
         node_type, node_name = node_id.split(":", 1)
-        
+
         # Get base node
         if node_type == "job":
             base_node = self.uow.jobs.get(node_name)
@@ -746,21 +783,21 @@ class GraphQueryService:
                 raise ValueError(f"Table '{node_name}' not found")
         else:
             raise ValueError(f"Invalid node type: {node_type}")
-        
+
         # Use traversal helper to get neighbors
         result = self._traversal.bfs_neighbors(
             node_type, base_node.id, base_node, depth, direction or "both", limit=None
         )
-        
+
         # Build ID mapping: internal_id -> formatted_id
         id_mapping = {}
         nodes_list = []
-        
+
         # Process nodes and build mapping
         for node_data in result["nodes"]:
             internal_id = node_data.get("id", "")  # e.g., "j1688", "t1690"
             ntype = node_data.get("type", "")
-            
+
             # Get actual identifier
             if ntype == "job":
                 actual_id = node_data.get("job_id") or node_data.get("name", "")
@@ -768,10 +805,10 @@ class GraphQueryService:
             else:  # table
                 actual_id = node_data.get("full_name") or node_data.get("name", "")
                 label = actual_id
-            
+
             formatted_id = f"{ntype}:{actual_id}"
             id_mapping[internal_id] = formatted_id
-            
+
             # Extract properties
             properties = {}
             if "owner" in node_data:
@@ -780,26 +817,23 @@ class GraphQueryService:
                 properties["status"] = node_data["status"]
             if "enabled" in node_data:
                 properties["enabled"] = node_data["enabled"]
-            
+
             node_schema = GraphNodeSchema(
-                id=formatted_id,
-                type=ntype,
-                label=label,
-                properties=properties
+                id=formatted_id, type=ntype, label=label, properties=properties
             )
             nodes_list.append(node_schema)
-        
+
         # Process edges using ID mapping
         edges_list = []
         for edge_data in result["edges"]:
             source_internal = edge_data.get("source", "")
             target_internal = edge_data.get("target", "")
             io_type = edge_data.get("io", "")
-            
+
             # Map to formatted IDs
             source_formatted = id_mapping.get(source_internal, source_internal)
             target_formatted = id_mapping.get(target_internal, target_internal)
-            
+
             # Determine edge type
             if io_type == "output":
                 mermaid_type = "writes"
@@ -807,31 +841,29 @@ class GraphQueryService:
                 mermaid_type = "reads"
             else:
                 mermaid_type = "related"
-            
+
             edge_schema = GraphEdgeSchema(
                 source=source_formatted,
                 target=target_formatted,
                 type=mermaid_type,
-                properties={}
+                properties={},
             )
             edges_list.append(edge_schema)
-        
+
         # Apply node limit
         truncated = False
         if len(nodes_list) > self.MAX_NODES:
-            nodes_list = nodes_list[:self.MAX_NODES]
+            nodes_list = nodes_list[: self.MAX_NODES]
             truncated = True
-        
+
         # Build metadata
         metadata = GraphMetadata(
             total_nodes=len(nodes_list),
             depth=depth,
             truncated=truncated,
-            max_nodes_reached=truncated
+            max_nodes_reached=truncated,
         )
-        
+
         return MermaidGraphResponse(
-            nodes=nodes_list,
-            edges=edges_list,
-            metadata=metadata
+            nodes=nodes_list, edges=edges_list, metadata=metadata
         )

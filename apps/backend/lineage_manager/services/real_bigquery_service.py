@@ -18,12 +18,12 @@ except Exception:  # pragma: no cover - allow module import even without google 
 
 class RealBigQueryService:
     """Production BigQuery service using google-cloud-bigquery SDK.
-    
+
     Responsibilities:
     - Connect to real GCP BigQuery
     - Fetch actual metadata, schema, and load history
     - Use environment credentials (GOOGLE_APPLICATION_CREDENTIALS or ADC)
-    
+
     Prohibited:
     - NO dummy data
     - NO debug redirects
@@ -33,7 +33,7 @@ class RealBigQueryService:
 
     def __init__(self, history_table: str):
         """Initialize service with history table configuration.
-        
+
         Args:
             history_table: Name of the table containing load history data
         """
@@ -42,51 +42,55 @@ class RealBigQueryService:
 
     def _get_history_location(self, client: "bigquery.Client") -> str:
         """Fetch and cache the location of the history table.
-        
+
         Args:
             client: Authenticated BigQuery client
-            
+
         Returns:
             Location string (e.g., 'US', 'asia-northeast1') or None
         """
         if self._history_location is None:
             try:
-                logger.info(f"Detecting location for history table: {self.history_table}")
+                logger.info(
+                    f"Detecting location for history table: {self.history_table}"
+                )
                 table = client.get_table(self.history_table)
                 self._history_location = table.location
                 logger.info(f"History table location: {self._history_location}")
             except Exception as e:
-                logger.warning(f"Could not determine location for {self.history_table}: {e}")
+                logger.warning(
+                    f"Could not determine location for {self.history_table}: {e}"
+                )
                 # Don't set self._history_location to stay None so it can retry or let BQ handle it
                 return None
         return self._history_location
 
     def _ensure_client(self):
         """Create BigQuery client using environment credentials.
-        
+
         Returns:
             bigquery.Client instance
         """
         if bigquery is None:
             raise RuntimeError("google-cloud-bigquery is not installed")
-            
+
         # Extract project ID from history table path if possible
         project_id = None
         parts = self.history_table.split(".")
         if len(parts) >= 1:
             project_id = parts[0]
-            
+
         return bigquery.Client(project=project_id)
 
     def get_table_schema(self, full_name: str) -> List[Dict[str, Any]]:
         """Fetch the schema (columns) for a BigQuery table.
-        
+
         Args:
             full_name: Fully qualified table name (project.dataset.table)
-            
+
         Returns:
             List of column definitions with name, type, mode, description, etc.
-            
+
         Raises:
             RuntimeError: If BigQuery SDK is not installed
             google.cloud.exceptions.NotFound: If table doesn't exist
@@ -98,10 +102,10 @@ class RealBigQueryService:
 
     def _field_to_dict(self, field: "bigquery.schema.SchemaField") -> Dict[str, Any]:
         """Convert BigQuery SchemaField to dictionary.
-        
+
         Args:
             field: BigQuery SchemaField object
-            
+
         Returns:
             Dict representation of the field
         """
@@ -120,13 +124,13 @@ class RealBigQueryService:
 
     def get_table_detail(self, full_name: str) -> Dict[str, Any]:
         """Fetch detailed metadata for a BigQuery table.
-        
+
         Args:
             full_name: Fully qualified table name (project.dataset.table)
-            
+
         Returns:
             Dict containing table metadata including storage, partitioning, clustering, etc.
-            
+
         Raises:
             RuntimeError: If BigQuery SDK is not installed
             google.cloud.exceptions.NotFound: If table doesn't exist
@@ -154,24 +158,38 @@ class RealBigQueryService:
             "table_type": "TABLE",
             "description": getattr(table, "description", None),
             "location": getattr(table, "location", None),
-            "created": getattr(table, "created", None).isoformat() if getattr(table, "created", None) else None,
-            "modified": getattr(table, "modified", None).isoformat() if getattr(table, "modified", None) else None,
-            "expires": getattr(table, "expires", None).isoformat() if getattr(table, "expires", None) else None,
+            "created": (
+                getattr(table, "created", None).isoformat()
+                if getattr(table, "created", None)
+                else None
+            ),
+            "modified": (
+                getattr(table, "modified", None).isoformat()
+                if getattr(table, "modified", None)
+                else None
+            ),
+            "expires": (
+                getattr(table, "expires", None).isoformat()
+                if getattr(table, "expires", None)
+                else None
+            ),
             "labels": dict(getattr(table, "labels", {}) or {}),
             "storage": storage,
         }
         return info
 
-    def get_table_timelines_for_table(self, table_name: str, days: int = 7) -> Dict[str, Any]:
+    def get_table_timelines_for_table(
+        self, table_name: str, days: int = 7
+    ) -> Dict[str, Any]:
         """Fetch timelines data showing load success/failure patterns over time.
-        
+
         Args:
             table_name: Table name to query (project.dataset.table)
             days: Number of days to look back (default: 7)
-            
+
         Returns:
             Dict with daily_summary, hourly_detail, and time_range
-            
+
         Raises:
             RuntimeError: If BigQuery SDK is not installed
         """
@@ -188,7 +206,9 @@ class RealBigQueryService:
             if len(parts) == 2:
                 project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
 
-        logger.info(f"Fetching timelines for {project_id}.{dataset_id}.{table_id} (days={days})")
+        logger.info(
+            f"Fetching timelines for {project_id}.{dataset_id}.{table_id} (days={days})"
+        )
 
         query = (
             "SELECT project_name, dataset_name, table_name, period, cron_schedule, "
@@ -209,12 +229,13 @@ class RealBigQueryService:
                 bigquery.ScalarQueryParameter("days", "INT64", int(days)),
             ]
         )
-        
+
         location = self._get_history_location(client)
         query_job = client.query(query, job_config=job_config, location=location)
         rows = list(query_job.result())
 
         from collections import defaultdict
+
         date_hours = defaultdict(set)
         date_rows = defaultdict(list)
         periods = set()
@@ -228,11 +249,11 @@ class RealBigQueryService:
                 d_str = str(d)
                 if len(d_str) == 8:
                     d_str = f"{d_str[:4]}-{d_str[4:6]}-{d_str[6:]}"
-                
+
             hour = int(r.get("hour") or 0)
             date_hours[d_str].add(hour)
             date_rows[d_str].append(r)
-            
+
             p = r.get("period")
             if p:
                 periods.add(str(p).upper())
@@ -241,8 +262,11 @@ class RealBigQueryService:
         is_hourly = "HOURLY" in periods
 
         from datetime import date, timedelta
+
         today = date.today()
-        dates_range = [(today - timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)]
+        dates_range = [
+            (today - timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)
+        ]
 
         daily_summary = []
         hourly_detail = {}
@@ -277,38 +301,42 @@ class RealBigQueryService:
                     state = "loaded" if hour in hours else "missing"
                     interval_start = f"{d}T{hour:02d}:00:00Z"
                     interval_end = f"{d}T{hour:02d}:59:59Z"
-                    rows_for_date.append({
-                        "hour": f"{hour:02d}", 
-                        "state": state, 
-                        "interval_start": interval_start, 
-                        "interval_end": interval_end
-                    })
+                    rows_for_date.append(
+                        {
+                            "hour": f"{hour:02d}",
+                            "state": state,
+                            "interval_start": interval_start,
+                            "interval_end": interval_end,
+                        }
+                    )
                 hourly_detail[d] = rows_for_date
 
         return {
-            "daily_summary": daily_summary, 
+            "daily_summary": daily_summary,
             "hourly_detail": hourly_detail,
             "time_range": {
                 "start": dates_range[0],  # Oldest
-                "end": dates_range[-1],   # Newest (Today)
-            }
+                "end": dates_range[-1],  # Newest (Today)
+            },
         }
 
-    def get_table_load_history(self, table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_table_load_history(
+        self, table_name: str, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         """Fetch recent load history records for a table.
-        
+
         Args:
             table_name: Table name to query (project.dataset.table)
             limit: Maximum number of records to return (default: 50)
-            
+
         Returns:
             List of load history records with run_id, status, duration, etc.
-            
+
         Raises:
             RuntimeError: If BigQuery SDK is not installed
         """
         client = self._ensure_client()
-        
+
         # Parse standard BigQuery id: project.dataset.table
         parts = table_name.split(".")
         if len(parts) == 3:
@@ -318,7 +346,9 @@ class RealBigQueryService:
             if len(parts) == 2:
                 project_id, dataset_id, table_id = ("unknown", parts[0], parts[1])
 
-        logger.info(f"Fetching load history for {project_id}.{dataset_id}.{table_id} (limit={limit})")
+        logger.info(
+            f"Fetching load history for {project_id}.{dataset_id}.{table_id} (limit={limit})"
+        )
 
         query = (
             "SELECT * "
@@ -337,32 +367,36 @@ class RealBigQueryService:
                 bigquery.ScalarQueryParameter("limit", "INT64", limit),
             ]
         )
-        
-        logger.debug(f"Executing BQ query with params: project={project_id}, dataset={dataset_id}, table={table_id}")
+
+        logger.debug(
+            f"Executing BQ query with params: project={project_id}, dataset={dataset_id}, table={table_id}"
+        )
         location = self._get_history_location(client)
         query_job = client.query(query, job_config=job_config, location=location)
-        
+
         results = []
         for row in query_job.result():
             # Convert Row to dict
             item = dict(row)
             # Ensure serialization of datetime objects
             for k, v in item.items():
-                if hasattr(v, 'isoformat'):
+                if hasattr(v, "isoformat"):
                     item[k] = v.isoformat()
-            
+
             # Map run_id if not present (UI key)
             if "run_id" not in item:
-                item["run_id"] = item.get("data_interval_start") or item.get("start_time")
-                
+                item["run_id"] = item.get("data_interval_start") or item.get(
+                    "start_time"
+                )
+
             results.append(item)
-            
+
         logger.info(f"Retrieved {len(results)} load history records for {table_name}")
         return results
 
     def get_history_table_path(self) -> str:
         """Return the configured path for the history table.
-        
+
         Returns:
             String representing the full table path (project.dataset.table)
         """

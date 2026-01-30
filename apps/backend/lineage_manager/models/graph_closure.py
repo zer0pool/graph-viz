@@ -14,10 +14,14 @@ class GraphClosure(Base):
     depth = Column(Integer, nullable=False, default=0)
     path = Column(JSON, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     __table_args__ = (
-        UniqueConstraint("ancestor_id", "descendant_id", "depth", name="uq_graph_closure"),
+        UniqueConstraint(
+            "ancestor_id", "descendant_id", "depth", name="uq_graph_closure"
+        ),
     )
 
     def __repr__(self):

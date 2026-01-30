@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 class GraphSyncService:
     """
     Orchestrator Service for syncing jobs from Job Manager.
-    
+
     ✅ TRANSACTION POLICY:
     - This service OWNS transactions.
     - Uses `with self.uow.transactional():` to manage commits.
     - Delegates mutations to GraphCommandService.
     - Supports partial success (individual transactions per job).
     """
-    
+
     _last_sync_result: Dict[str, Any] | None = None
 
     def __init__(
@@ -32,7 +32,7 @@ class GraphSyncService:
         job_manager: JobManagerAdapter,
         command_service: GraphCommandService,
         query_service: GraphQueryService,
-        initializer_service: GraphInitializerService
+        initializer_service: GraphInitializerService,
     ):
         self.uow = uow
         self.job_manager = job_manager
@@ -59,12 +59,15 @@ class GraphSyncService:
             try:
                 lineage = SchedulingLineage.model_validate(jd)
             except Exception as e:
-                return {"status": "error", "message": f"Invalid job data format for {job_id}: {e}"}
+                return {
+                    "status": "error",
+                    "message": f"Invalid job data format for {job_id}: {e}",
+                }
 
             # Orchestrator owns transaction
             with self.uow.transactional():
                 self.command_service.register_lineage_job(lineage)
-            
+
             return {"status": "success", "job_id": job_id}
         except Exception as e:
             logger.error(f"sync_job_from_manager failed: {e}")
@@ -82,7 +85,7 @@ class GraphSyncService:
                 "status": "success",
                 "job_id": job_id,
                 "action": action,
-                "synced_at": synced_at.isoformat()
+                "synced_at": synced_at.isoformat(),
             }
         except ValueError as e:
             return {"status": "error", "message": str(e)}
@@ -95,17 +98,19 @@ class GraphSyncService:
         jd = await self.job_manager.get_job(job_id)
         if not jd:
             raise ValueError(f"Job '{job_id}' not found in manager")
-            
+
         try:
             return SchedulingLineage.model_validate(jd)
         except Exception as e:
             raise ValueError(f"Invalid job format: {e}") from e
 
-    def _process_job_sync(self, job_id: str, lineage: SchedulingLineage) -> Tuple[str, datetime]:
+    def _process_job_sync(
+        self, job_id: str, lineage: SchedulingLineage
+    ) -> Tuple[str, datetime]:
         """Compare state and apply necessary updates within transaction."""
         uow = self.uow
         existing_job = uow.jobs.get(job_id)
-        
+
         if not existing_job:
             action = "create"
             with uow.transactional():
@@ -114,10 +119,10 @@ class GraphSyncService:
 
         is_structural, is_meta = self._calculate_job_diff(existing_job, lineage)
         action = self._determine_sync_action(is_structural, is_meta)
-        
+
         with uow.transactional():
             self._apply_sync_update(action, existing_job, lineage)
-            
+
         return action, datetime.utcnow()
 
     def _determine_sync_action(self, is_structural: bool, is_meta: bool) -> str:
@@ -127,7 +132,9 @@ class GraphSyncService:
             return "meta_sync"
         return "touch"
 
-    def _apply_sync_update(self, action: str, existing_job: Any, lineage: SchedulingLineage):
+    def _apply_sync_update(
+        self, action: str, existing_job: Any, lineage: SchedulingLineage
+    ):
         """Dispatch update based on action type."""
         if action == "full_sync":
             self.command_service.register_lineage_job(lineage)
@@ -137,36 +144,44 @@ class GraphSyncService:
         else:  # touch
             self.command_service.touch_job_timestamp(existing_job)
 
-    def _calculate_job_diff(self, existing_job: Any, new_lineage: SchedulingLineage) -> Tuple[bool, bool]:
+    def _calculate_job_diff(
+        self, existing_job: Any, new_lineage: SchedulingLineage
+    ) -> Tuple[bool, bool]:
         """Compare existing job node with new lineage payload."""
         # 1. Structural Check
         if self._has_structural_changes(existing_job, new_lineage):
-            return True, True # Meta change implied if structure changes
-            
+            return True, True  # Meta change implied if structure changes
+
         # 2. Metadata Check
         has_meta = self._has_metadata_changes(existing_job, new_lineage)
         return False, has_meta
 
-    def _has_structural_changes(self, existing_job: Any, new_lineage: SchedulingLineage) -> bool:
+    def _has_structural_changes(
+        self, existing_job: Any, new_lineage: SchedulingLineage
+    ) -> bool:
         existing_props = existing_job.job_metadata or {}
-        
+
         new_ups = self._get_edge_names_from_lineage(new_lineage.upstreams)
         old_ups = self._get_edge_names_from_props(existing_props.get("upstreams", []))
-        
+
         if new_ups != old_ups:
             return True
 
         new_downs = self._get_edge_names_from_lineage(new_lineage.downstreams)
-        old_downs = self._get_edge_names_from_props(existing_props.get("downstreams", []))
-        
+        old_downs = self._get_edge_names_from_props(
+            existing_props.get("downstreams", [])
+        )
+
         return new_downs != old_downs
 
-    def _has_metadata_changes(self, existing_job: Any, new_lineage: SchedulingLineage) -> bool:
+    def _has_metadata_changes(
+        self, existing_job: Any, new_lineage: SchedulingLineage
+    ) -> bool:
         existing_props = existing_job.job_metadata or {}
         current_props = self.command_service._extract_job_properties(new_lineage)
-        
+
         exclude_keys = {"upstreams", "downstreams", "updated_at"}
-        
+
         for key, new_val in current_props.items():
             if key in exclude_keys:
                 continue
@@ -255,89 +270,73 @@ class GraphSyncService:
     # ========================================================================
 
     def sync_single_job(
-        self,
-        lineage: SchedulingLineage,
-        dry_run: bool = False
+        self, lineage: SchedulingLineage, dry_run: bool = False
     ) -> dict:
         """Sync a single job lineage with transaction management."""
         if dry_run:
             changes = self.command_service.preview_lineage_job(lineage)
-            return {
-                "status": "dry_run",
-                "job_id": lineage.job_id,
-                "changes": changes
-            }
-        
+            return {"status": "dry_run", "job_id": lineage.job_id, "changes": changes}
+
         # Orchestrator owns transaction
         with self.uow.transactional():
             self.sync_from_lineage(lineage)
             return {
                 "status": "success",
                 "job_id": lineage.job_id,
-                "message": f"Job {lineage.job_id} synced successfully"
+                "message": f"Job {lineage.job_id} synced successfully",
             }
 
     async def sync_multiple_jobs(
-        self,
-        job_requests: List[Dict[str, str]],
-        dry_run: bool = False
+        self, job_requests: List[Dict[str, str]], dry_run: bool = False
     ) -> dict:
         """Sync multiple jobs with partial success support."""
         lineages = await self.job_manager.fetch_lineages_by_ids(job_requests)
-        
+
         if dry_run:
             results = []
             for lineage in lineages:
                 changes = self.command_service.preview_lineage_job(lineage)
-                results.append({
-                    "job_id": lineage.job_id,
-                    "changes": changes
-                })
-            
-            return {
-                "status": "dry_run",
-                "total_jobs": len(results),
-                "results": results
-            }
-        
+                results.append({"job_id": lineage.job_id, "changes": changes})
+
+            return {"status": "dry_run", "total_jobs": len(results), "results": results}
+
         # Batch processing: group jobs into transactional batches to improve performance
         # Reduced batch_size to 20 to prevent OOM during complex closure updates
         batch_size = 20
         results = []
-        
+
         for i in range(0, len(lineages), batch_size):
             batch = lineages[i : i + batch_size]
             try:
                 with self.uow.transactional():
                     for lineage in batch:
                         self.command_service.register_lineage_job(lineage)
-                        results.append({
-                            "job_id": lineage.job_id,
-                            "status": "success"
-                        })
+                        results.append({"job_id": lineage.job_id, "status": "success"})
             except Exception as e:
-                logger.error(f"Batch sync failed for {len(batch)} jobs starting at index {i}: {e}")
+                logger.error(
+                    f"Batch sync failed for {len(batch)} jobs starting at index {i}: {e}"
+                )
                 # Anything already in results for this batch is invalid due to rollback.
-                results = results[:i] 
+                results = results[:i]
                 for lineage in batch:
-                    results.append({
-                        "job_id": lineage.job_id,
-                        "status": "error",
-                        "message": f"Batch failure: {str(e)}"
-                    })
-        
+                    results.append(
+                        {
+                            "job_id": lineage.job_id,
+                            "status": "error",
+                            "message": f"Batch failure: {str(e)}",
+                        }
+                    )
+
         success_count = sum(1 for r in results if r["status"] == "success")
         return {
             "status": "completed",
             "total": len(results),
             "successful": success_count,
             "failed": len(results) - success_count,
-            "results": results
+            "results": results,
         }
 
     def sync_from_lineage(self, lineage: SchedulingLineage) -> None:
         """Sync a single SchedulingLineage to the graph."""
         # This was duplicating logic. Now delegating to CommandService.
         self.command_service.register_lineage_job(lineage)
-
-

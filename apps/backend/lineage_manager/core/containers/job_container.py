@@ -14,14 +14,13 @@ from lineage_manager.services.job_service import JobService
 
 from lineage_manager.core.uow import GraphUnitOfWork
 
-
 # Get settings at import time (cached singleton)
 _settings = get_settings()
 
 
 class JobContainer(containers.DeclarativeContainer):
     """Job Manager domain container."""
-    
+
     core = providers.DependenciesContainer()
 
     # Adapter - uses settings directly (no DependenciesContainer needed!)
@@ -29,7 +28,7 @@ class JobContainer(containers.DeclarativeContainer):
         JobManagerAdapter,
         base_url=_settings.job_manager_url,
     )
-    
+
     # Service
     job_service = providers.Factory(
         JobService,

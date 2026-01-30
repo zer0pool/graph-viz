@@ -12,8 +12,11 @@ router = APIRouter(tags=["web"])
 # Calculate absolute path of static folder relative to this file
 # This file is in src/lineage_manager/api/v1/endpoints/web.py
 # Static folder is in src/lineage_manager/static/
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 
 @router.get("/")
 def root():
@@ -23,16 +26,19 @@ def root():
         logger.error(f"Index file not found at: {index_path}")
     return FileResponse(index_path)
 
+
 @router.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     favicon_path = os.path.join(STATIC_DIR, "images", "favicon.ico")
     return FileResponse(favicon_path)
+
 
 @router.get("/authorized")
 def handle_sso_redirect_get():
     """Handle SSO redirect URI (GET) - frontend will process the authorization code"""
     index_path = os.path.join(STATIC_DIR, "index.html")
     return FileResponse(index_path)
+
 
 @router.post("/authorized")
 async def handle_sso_redirect_post(request: Request):

@@ -12,8 +12,12 @@ class SchedulingLineageDependency(BaseModel):
     type: str = Field(..., description="Entity type. Typically 'table'.")
     name: str = Field(..., description="Fully qualified identifier.")
     storage: str = Field(..., description="Storage type (bigquery, s3, gcs, etc.)")
-    dependency_type: Optional[str] = Field(None, description="HARD or SOFT (for upstreams)")
-    write_mode: Optional[str] = Field(None, description="APPEND or OVERWRITE (for downstreams)")
+    dependency_type: Optional[str] = Field(
+        None, description="HARD or SOFT (for upstreams)"
+    )
+    write_mode: Optional[str] = Field(
+        None, description="APPEND or OVERWRITE (for downstreams)"
+    )
 
     model_config = ConfigDict(extra="allow")
 
@@ -37,11 +41,11 @@ class SchedulingLineage(BaseModel):
     type: str = Field(..., description="Job type (SELF-TYPE, REQUEST-TYPE, etc.)")
     name: str = Field(..., description="Display name for the job.")
     status: str = Field(..., description="Running status (e.g. RUNNING)")
-    
+
     schedule: Optional[SchedulingLineageSchedule] = Field(None)
     upstreams: List[SchedulingLineageDependency] = Field(default_factory=list)
     downstreams: List[SchedulingLineageDependency] = Field(default_factory=list)
-    
+
     governance: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 

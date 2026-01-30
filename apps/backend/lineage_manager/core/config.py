@@ -25,8 +25,10 @@ load_dotenv(dotenv_path=env_path, override=False)
 # Nested Settings Models
 # ============================================================================
 
+
 class RedisSettings(BaseSettings):
     """Redis configuration"""
+
     host: str = "localhost"
     port: int = 6379
     db: int = 0
@@ -34,15 +36,17 @@ class RedisSettings(BaseSettings):
     enabled: bool = False
     analytics_retention_hours: int = 24
     analytics_window_hours: int = 4
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="REDIS_",   
+        env_prefix="REDIS_",
     )
+
 
 class MySQLSettings(BaseSettings):
     """MySQL database configuration"""
+
     driver: str = "mysql+pymysql"
     host: str = "172.17.0.1"
     port: int = 33306
@@ -52,13 +56,13 @@ class MySQLSettings(BaseSettings):
     pool_size: int = 10
     max_overflow: int = 20
     echo: bool = False
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="DB_",   
+        env_prefix="DB_",
     )
-    
+
     @property
     def database_url(self) -> str:
         """Build database URL from MySQL settings"""
@@ -73,6 +77,7 @@ class MySQLSettings(BaseSettings):
 
 class OIDCSettings(BaseSettings):
     """OpenID Connect (OIDC) / Authentication settings"""
+
     issuer_url: str = "https://accounts.google.com"
     client_id: str = ""
     client_secret: str = ""
@@ -80,16 +85,17 @@ class OIDCSettings(BaseSettings):
     audience: Optional[str] = None
     jwks_cache_seconds: int = 3600
     scopes: List[str] = ["openid", "email", "profile"]
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="OIDC_",  
+        env_prefix="OIDC_",
     )
 
 
 class FeatureFlags(BaseSettings):
     """Feature flags for enabling/disabling functionality"""
+
     enable_swagger: bool = True
     enable_metrics: bool = False
     require_signin: bool = False
@@ -97,28 +103,30 @@ class FeatureFlags(BaseSettings):
     enable_audit_logging: bool = True
     enable_rate_limiting: bool = True
     history_table: str = "test_data.table_load_history"
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="FEATURE_",  
+        env_prefix="FEATURE_",
     )
+
 
 class CORSSettings(BaseSettings):
     """Cross-Origin Resource Sharing (CORS) configuration"""
+
     allowed_origins: list[str] = ["http://localhost:5003", "http://localhost:3000"]
     allow_credentials: bool = True
     allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allow_headers: list[str] = ["*"]
     expose_headers: list[str] = ["Content-Length", "Content-Range"]
     max_age: int = 600
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="CORS_",  
+        env_prefix="CORS_",
     )
-    
+
     def to_dict(self) -> dict:
         """Convert to dict format for FastAPI CORSMiddleware"""
         return {
@@ -133,26 +141,28 @@ class CORSSettings(BaseSettings):
 
 class RateLimitingSettings(BaseSettings):
     """Rate limiting configuration"""
+
     per_second: int = 10
     burst: int = 20
     enabled: bool = True
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="RATE_LIMIT_",  
+        env_prefix="RATE_LIMIT_",
     )
 
 
 class SSESettings(BaseSettings):
     """Server-Sent Events (SSE) configuration"""
+
     buffer_size: int = 256
     event_poll_interval_ms: int = 15_000
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="SSE_",  
+        env_prefix="SSE_",
     )
 
 
@@ -160,9 +170,10 @@ class SSESettings(BaseSettings):
 # Main Settings
 # ============================================================================
 
+
 class Settings(BaseSettings):
     """Main settings class - Combines all configuration sections"""
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # Server & Application Settings
     # ─────────────────────────────────────────────────────────────────────
@@ -173,23 +184,23 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 5003
     workers: int = 4
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # External Services
     # ─────────────────────────────────────────────────────────────────────
     job_manager_url: str = "http://0.0.0.0:9000"
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # Static Files
     # ─────────────────────────────────────────────────────────────────────
     static_url: str = "/static/"
     static_root: str = "/app/static/"
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # Logging
     # ─────────────────────────────────────────────────────────────────────
     log_level: str = "INFO"
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # Nested Configuration Models
     # ─────────────────────────────────────────────────────────────────────
@@ -200,47 +211,47 @@ class Settings(BaseSettings):
     cors: CORSSettings = CORSSettings()
     rate_limiting: RateLimitingSettings = RateLimitingSettings()
     sse: SSESettings = SSESettings()
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_prefix="APP_",
         case_sensitive=False,
     )
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # Convenience Properties
     # ─────────────────────────────────────────────────────────────────────
-    
+
     @property
     def database_url(self) -> str:
         """Get database URL"""
         return self.mysql.database_url
-    
+
     @property
     def is_development(self) -> bool:
         """Check if running in development environment"""
         return self.environment == "development"
-    
+
     @property
     def is_production(self) -> bool:
         """Check if running in production environment"""
         return self.environment == "production"
-    
+
     @property
     def require_authentication(self) -> bool:
         """Check if authentication is required (legacy name, maps to require_signin)"""
         return self.feature_flags.require_signin
-    
+
     @property
     def require_signin(self) -> bool:
         """Check if sign-in is required"""
         return self.feature_flags.require_signin
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # String Representations
     # ─────────────────────────────────────────────────────────────────────
-    
+
     def __repr__(self) -> str:
         """Return structured string representation"""
         return (
@@ -260,11 +271,10 @@ class Settings(BaseSettings):
             f"    audit_logging={self.feature_flags.enable_audit_logging},\n"
             f"  # SSE\n"
             f"    sse_buffer_size={self.sse.buffer_size},\n"
-            f"    event_poll_interval_ms={self.sse.event_poll_interval_ms},\n"            
+            f"    event_poll_interval_ms={self.sse.event_poll_interval_ms},\n"
             f")"
-
         )
-    
+
     def __str__(self) -> str:
         """Return JSON formatted representation"""
         return json.dumps(self.model_dump(), indent=2, default=str)
@@ -274,22 +284,26 @@ class Settings(BaseSettings):
 # Singleton Settings Loader
 # ============================================================================
 
+
 @lru_cache()
 def get_settings() -> Settings:
     """Return singleton instance of Settings"""
     settings = Settings()
-    
+
     # 🔍 Verification Log: Print effective Auth Config
     import logging
+
     logger = logging.getLogger("lineage_manager.config")
-    logger.warning("="*50)
+    logger.warning("=" * 50)
     logger.warning(f"[CONFIG] Effective Auth Settings:")
-    logger.warning(f"  - FEATURE_REQUIRE_SIGNIN (env): {settings.feature_flags.require_signin}")
-    logger.warning(f"  - DEFAULT CODE VALUE: True") 
+    logger.warning(
+        f"  - FEATURE_REQUIRE_SIGNIN (env): {settings.feature_flags.require_signin}"
+    )
+    logger.warning(f"  - DEFAULT CODE VALUE: True")
     logger.warning(f"  - OIDC Issuer: {settings.oidc.issuer_url}")
     logger.warning(f"  - OIDC Client ID: {settings.oidc.client_id}")
-    logger.warning("="*50)
-    
+    logger.warning("=" * 50)
+
     return settings
 
 

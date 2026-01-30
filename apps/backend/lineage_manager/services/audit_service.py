@@ -28,7 +28,7 @@ class AuditService:
         performed_by: str,
         status: str = "SUCCESS",
         payload: Dict[str, Any] = None,
-        error_message: str = None
+        error_message: str = None,
     ) -> AuditLog:
         """Log a command execution."""
         try:
@@ -38,7 +38,7 @@ class AuditService:
                 performed_by=performed_by,
                 status=status,
                 payload=payload,
-                error_message=error_message
+                error_message=error_message,
             )
             self.db.commit()
             return log_entry
@@ -53,42 +53,52 @@ class AuditService:
         Maps AuditLog to AuditCommand interface.
         """
         logs = self.repository.list_logs(limit=limit, offset=offset)
-        
+
         commands = []
         for log in logs:
             # Generate summary from command type and target
-            summary = self._generate_summary(log.command_type, log.target_id, log.payload)
-            
+            summary = self._generate_summary(
+                log.command_type, log.target_id, log.payload
+            )
+
             # Create single event from log entry
-            events = [{
-                "id": f"{log.id}-event-1",
-                "description": summary,
-                "status": log.status if log.status != "PARTIAL" else "SUCCESS",
-                "timestamp": log.visited_at.strftime("%H:%M:%S")
-            }]
-            
+            events = [
+                {
+                    "id": f"{log.id}-event-1",
+                    "description": summary,
+                    "status": log.status if log.status != "PARTIAL" else "SUCCESS",
+                    "timestamp": log.visited_at.strftime("%H:%M:%S"),
+                }
+            ]
+
             # Add error event if failed
             if log.status == "FAILED" and log.error_message:
-                events.append({
-                    "id": f"{log.id}-event-error",
-                    "description": f"Error: {log.error_message}",
-                    "status": "FAILED",
-                    "timestamp": log.visited_at.strftime("%H:%M:%S")
-                })
-            
-            commands.append({
-                "id": str(log.id),
-                "timestamp": log.visited_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "type": log.command_type,
-                "summary": summary,
-                "actor": log.performed_by,
-                "status": log.status,
-                "events": events
-            })
-        
+                events.append(
+                    {
+                        "id": f"{log.id}-event-error",
+                        "description": f"Error: {log.error_message}",
+                        "status": "FAILED",
+                        "timestamp": log.visited_at.strftime("%H:%M:%S"),
+                    }
+                )
+
+            commands.append(
+                {
+                    "id": str(log.id),
+                    "timestamp": log.visited_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "type": log.command_type,
+                    "summary": summary,
+                    "actor": log.performed_by,
+                    "status": log.status,
+                    "events": events,
+                }
+            )
+
         return commands
 
-    def _generate_summary(self, command_type: str, target_id: str, payload_json: str) -> str:
+    def _generate_summary(
+        self, command_type: str, target_id: str, payload_json: str
+    ) -> str:
         """Generate human-readable summary from command details."""
         payload = {}
         if payload_json:
@@ -96,12 +106,12 @@ class AuditService:
                 payload = json.loads(payload_json)
             except:
                 pass
-        
+
         summaries = {
             "PAUSE_JOB": f"Paused job '{target_id}'",
             "RESUME_JOB": f"Resumed job '{target_id}'",
             "SEND_EMAIL": f"Sent email notification for job '{target_id}'",
             "SYNC_JOB": f"Synchronized job '{target_id}' from source",
         }
-        
+
         return summaries.get(command_type, f"{command_type} on {target_id}")

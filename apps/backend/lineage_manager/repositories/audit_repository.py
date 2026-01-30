@@ -6,6 +6,7 @@ from sqlalchemy import desc
 from lineage_manager.models.audit_log import AuditLog
 from lineage_manager.repositories.base_repository import BaseRepository
 
+
 class AuditRepository(BaseRepository):
     """Repository for audit logs."""
 
@@ -19,7 +20,7 @@ class AuditRepository(BaseRepository):
         performed_by: str,
         status: str = "SUCCESS",
         payload: Dict[str, Any] = None,
-        error_message: str = None
+        error_message: str = None,
     ) -> AuditLog:
         """Create a new audit log entry."""
         log_entry = AuditLog(
@@ -29,7 +30,7 @@ class AuditRepository(BaseRepository):
             status=status,
             payload=json.dumps(payload) if payload else None,
             error_message=error_message,
-            visited_at=datetime.utcnow()
+            visited_at=datetime.utcnow(),
         )
         self.session.add(log_entry)
         self.session.flush()

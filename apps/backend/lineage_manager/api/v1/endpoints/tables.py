@@ -97,9 +97,8 @@ async def set_table_dependency(
         dependency_type = str(trigger_value).upper()
         if dependency_type not in ("HARD", "SOFT"):
             dependency_type = "SOFT"
-    
-    return await svc.set_table_dependency(table_name, job_id, dependency_type)
 
+    return await svc.set_table_dependency(table_name, job_id, dependency_type)
 
 
 @router.get("/{table_name:path}/details")
@@ -133,9 +132,8 @@ async def bulk_set_table_dependency(
         dependency_type = str(trigger_value).upper()
         if dependency_type not in ("HARD", "SOFT"):
             dependency_type = "SOFT"
-    
-    return await svc.bulk_set_table_dependencies(table_name, dependency_type)
 
+    return await svc.bulk_set_table_dependencies(table_name, dependency_type)
 
 
 @router.get("/{table_name:path}/load-history")
@@ -177,4 +175,3 @@ async def get_table_detail(
 ):
     """Return table detail metadata from Table service."""
     return svc.get_table_details(table_name)
-

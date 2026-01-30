@@ -14,7 +14,9 @@ class GraphNode(Base):
     name = Column(String(500), nullable=False)
     properties = Column(MutableDict.as_mutable(JSON), nullable=True, default=dict)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     def __repr__(self):
         return f"<GraphNode(id={self.id}, type={self.node_type}, name={self.name})>"
@@ -83,9 +85,6 @@ class GraphNode(Base):
     @destination_tables.setter
     def destination_tables(self, value) -> None:
         self._set_prop("destination_tables", value)
-
- 
- 
 
     @property
     def job_metadata(self):

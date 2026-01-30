@@ -12,22 +12,27 @@ from lineage_manager.core.config import get_settings
 from lineage_manager.core.database import Database
 from lineage_manager.core.auth import OIDCProviderClient
 
-
 # Get settings at import time (cached singleton)
 _settings = get_settings()
 
 
 class CoreContainer(containers.DeclarativeContainer):
     """Core infrastructure container for database and auth."""
-    
+
     # Database
     database = providers.Singleton(Database)
-    
+
     # Session factories
-    session_factory = providers.Singleton(lambda db_inst: db_inst.session_factory, database)
-    write_session_factory = providers.Singleton(lambda db_inst: db_inst.write_session_factory, database)
-    read_session_factory = providers.Singleton(lambda db_inst: db_inst.read_session_factory, database)
-    
+    session_factory = providers.Singleton(
+        lambda db_inst: db_inst.session_factory, database
+    )
+    write_session_factory = providers.Singleton(
+        lambda db_inst: db_inst.write_session_factory, database
+    )
+    read_session_factory = providers.Singleton(
+        lambda db_inst: db_inst.read_session_factory, database
+    )
+
     # Authentication - uses settings directly
     oidc_provider = providers.Singleton(
         OIDCProviderClient,

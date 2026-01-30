@@ -23,6 +23,7 @@ router = APIRouter(
     dependencies=AUTH_DEPS,
 )
 
+
 def _sanitize_stats_for_hash(stats: dict) -> dict:
     cleaned = deepcopy(stats)
     database = cleaned.get("database")

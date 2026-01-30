@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class GraphInitializerService:
     """
     Orchestrator Service for initializing graph from Job Manager.
-    
+
     ✅ TRANSACTION POLICY:
     - This service OWNS transactions.
     - Uses `with uow.transactional():` for each job (partial success).
@@ -91,8 +91,10 @@ class GraphInitializerService:
         batches = [
             jobs_data[i : i + batch_size] for i in range(0, len(jobs_data), batch_size)
         ]
-        
-        self.logger.info(f"Processing {len(jobs_data)} jobs in {len(batches)} batches (size {batch_size})")
+
+        self.logger.info(
+            f"Processing {len(jobs_data)} jobs in {len(batches)} batches (size {batch_size})"
+        )
 
         for idx, batch in enumerate(batches):
             s, f = await self._process_batch_with_fallback(batch, idx)
@@ -114,12 +116,14 @@ class GraphInitializerService:
             with self.command_service.uow.transactional():
                 for job_data in batch:
                     # Pass compute_closure=False for bulk load optimization
-                    self.command_service.register_lineage_job(job_data, compute_closure=False)
-            
+                    self.command_service.register_lineage_job(
+                        job_data, compute_closure=False
+                    )
+
             # If we get here, batch succeeded
             self.logger.info(f"Batch {batch_idx + 1} succeeded ({len(batch)} jobs)")
             return len(batch), 0
-            
+
         except Exception as e:
             self.logger.warning(
                 f"Batch {batch_idx + 1} failed ({str(e)}). Falling back to individual processing."
@@ -132,19 +136,21 @@ class GraphInitializerService:
         """Process items one by one (fallback mode)."""
         success_count = 0
         fail_count = 0
-        
+
         for job_data in batch:
             try:
                 with self.command_service.uow.transactional():
                     # Still use compute_closure=False in fallback, as we still rebuild at the end
-                    self.command_service.register_lineage_job(job_data, compute_closure=False)
+                    self.command_service.register_lineage_job(
+                        job_data, compute_closure=False
+                    )
                 success_count += 1
             except Exception as inner_e:
                 self.logger.error(
                     f"Failed to register job {getattr(job_data, 'job_id', 'unknown')}: {inner_e}"
                 )
                 fail_count += 1
-        
+
         return success_count, fail_count
 
     def _build_result(

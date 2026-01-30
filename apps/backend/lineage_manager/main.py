@@ -79,7 +79,7 @@ def create_app() -> GraphApp:
     # ✅ Enable CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"], # Allow all origins for easier debugging in local networks
+        allow_origins=["*"],  # Allow all origins for easier debugging in local networks
         allow_credentials=settings.cors.allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -87,12 +87,12 @@ def create_app() -> GraphApp:
 
     # BFF Session Middleware
     app.add_middleware(
-        SessionMiddleware, 
+        SessionMiddleware,
         secret_key=settings.secret_key,
         session_cookie="lm_session",
         max_age=3600 * 24 * 7,  # 1 week
         same_site="lax",
-        https_only=not settings.is_development
+        https_only=not settings.is_development,
     )
 
     # Add health check logging filter middleware
@@ -129,7 +129,7 @@ def create_app() -> GraphApp:
     #     from alembic.config import Config
     #     from alembic import command
     #     import os
-    #     
+    #
     #     # Get alembic.ini path
     #     alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
     #     command.upgrade(alembic_cfg, "head")

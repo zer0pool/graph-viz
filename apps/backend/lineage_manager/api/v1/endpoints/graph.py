@@ -47,9 +47,6 @@ def register_job(
         raise
 
 
-
-
-
 @router.post("/reset")
 @inject
 def reset_graph(
@@ -82,7 +79,9 @@ def reset_graph(
 @router.post("/initialize")
 @inject
 async def initialize_graph(
-    initializer: GraphInitializerService = Depends(Provide[GraphContainer.graph.initializer_service]),
+    initializer: GraphInitializerService = Depends(
+        Provide[GraphContainer.graph.initializer_service]
+    ),
 ):
     """
     Initialize the graph by fetching all jobs from Job Manager API
@@ -232,9 +231,11 @@ def get_table_neighbors(
 
         raise HTTPException(status_code=500, detail=f"Neighbors query failed: {str(e)}")
 
+
 # ========================================================================
 # NEW: Direct Lineage Sync APIs
 # ========================================================================
+
 
 @router.post("/jobs/sync")
 @inject
@@ -245,13 +246,15 @@ def sync_job_lineage(
 ):
     """
     Directly sync a job's lineage information to the graph.
-    
+
     Query params:
     - dry_run: If true, return preview of changes without committing
-    
+
     Use case: Copy lineage JSON from Job Manager Swagger → Paste here for testing
     """
-    logger.info(f"Received direct sync request for job: {lineage.job_id}, dry_run={dry_run}")
+    logger.info(
+        f"Received direct sync request for job: {lineage.job_id}, dry_run={dry_run}"
+    )
     try:
         result = svc.sync_single_job(lineage, dry_run=dry_run)
         logger.info(f"Sync completed for {lineage.job_id}: {result.get('status')}")
@@ -261,7 +264,7 @@ def sync_job_lineage(
         logger.exception("Full traceback:")
         raise HTTPException(status_code=500, detail=str(e))
 
- 
+
 @router.post("/jobs/sync/by_ids")
 @inject
 async def sync_jobs_by_ids(
@@ -271,17 +274,18 @@ async def sync_jobs_by_ids(
 ):
     """
     Sync multiple jobs by fetching their lineages from Job Manager.
-    
+
     Query params:
     - dry_run: If true, return preview of changes without committing
-    
+
     Use case: Batch sync multiple jobs efficiently
     """
-    logger.info(f"Received batch sync request for {len(request.jobs)} jobs, dry_run={dry_run}")
+    logger.info(
+        f"Received batch sync request for {len(request.jobs)} jobs, dry_run={dry_run}"
+    )
     try:
         result = await svc.sync_multiple_jobs(
-            job_requests=[job.dict() for job in request.jobs],
-            dry_run=dry_run
+            job_requests=[job.dict() for job in request.jobs], dry_run=dry_run
         )
         logger.info(f"Batch sync completed: {result.get('status')}")
         return result

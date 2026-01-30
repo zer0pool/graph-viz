@@ -8,6 +8,7 @@ from lineage_manager.core.sse import broker
 
 logger = logging.getLogger(__name__)
 
+
 class TableService:
     """Service layer for table-related business logic and orchestration."""
 
@@ -21,7 +22,9 @@ class TableService:
         self.command_service = command_service
         self.bigquery_service = bigquery_service
 
-    def get_table_impact(self, table_name: str, max_depth: int, include_jobs: bool) -> Dict[str, Any]:
+    def get_table_impact(
+        self, table_name: str, max_depth: int, include_jobs: bool
+    ) -> Dict[str, Any]:
         """Return downstream tables impacted by a base table."""
         logger.info(f"Impact request for table={table_name}, max_depth={max_depth}")
         return self.query_service.get_table_impact(
@@ -36,35 +39,45 @@ class TableService:
         """Return full upstream/downstream lineage hierarchy."""
         return self.query_service.get_table_lineage_hierarchy(table_name)
 
-    def get_table_lineage_summary(self, table_name: str, max_roots: int, max_leaves: int) -> Dict[str, Any]:
+    def get_table_lineage_summary(
+        self, table_name: str, max_roots: int, max_leaves: int
+    ) -> Dict[str, Any]:
         """Return aggregated lineage metrics with schema compatibility fixes."""
         result = self.query_service.get_table_lineage_summary(
             table_name, max_roots=max_roots, max_leaves=max_leaves
         )
-        
+
         # Ensure upstream/downstream sections carry both root/leaf keys for schema compatibility
         if result.get("status") == "success":
             result.setdefault("upstream", {}).setdefault("root_tables", [])
             result["upstream"].setdefault("leaf_tables", [])
             result.setdefault("downstream", {}).setdefault("leaf_tables", [])
             result["downstream"].setdefault("root_tables", [])
-            
+
         return result
 
-    async def set_table_dependency(self, table_name: str, job_id: str, dependency_type: str) -> Dict[str, Any]:
+    async def set_table_dependency(
+        self, table_name: str, job_id: str, dependency_type: str
+    ) -> Dict[str, Any]:
         """Set dependency type (HARD/SOFT) and emit SSE notification."""
         with self.command_service.uow.transactional():
-            result = self.command_service.set_table_dependency(table_name, job_id, dependency_type)
-        
+            result = self.command_service.set_table_dependency(
+                table_name, job_id, dependency_type
+            )
+
         if result.get("status") == "success":
             await broker.publish("trigger_update", result)
         return result
 
-    async def bulk_set_table_dependencies(self, table_name: str, dependency_type: str) -> Dict[str, Any]:
+    async def bulk_set_table_dependencies(
+        self, table_name: str, dependency_type: str
+    ) -> Dict[str, Any]:
         """Bulk set dependency type (HARD/SOFT) and emit SSE for each changed job."""
         with self.command_service.uow.transactional():
-            result = self.command_service.bulk_set_table_dependencies(table_name, dependency_type)
-        
+            result = self.command_service.bulk_set_table_dependencies(
+                table_name, dependency_type
+            )
+
         if result.get("status") == "success":
             for jid in result.get("changed", []):
                 await broker.publish(
@@ -107,12 +120,12 @@ class TableService:
         except Exception as e:
             logger.error(f"Failed to fetch table details for {table_name}: {e}")
             return {
-                "status": "error", 
+                "status": "error",
                 "message": str(e),
                 "result": {
                     "full_name": table_name,
-                    "description": "Could not retrieve remote metadata."
-                }
+                    "description": "Could not retrieve remote metadata.",
+                },
             }
 
     def get_table_load_history(self, table_name: str) -> Dict[str, Any]:
@@ -130,7 +143,7 @@ class TableService:
         return {
             "status": "success",
             "input": {"table": table_name, "days": days},
-            "result": payload
+            "result": payload,
         }
 
     def get_table_schema(self, table_name: str) -> Dict[str, Any]:
@@ -139,14 +152,14 @@ class TableService:
         return {
             "status": "success",
             "input": {"requested": table_name},
-            "result": {"columns": cols}
+            "result": {"columns": cols},
         }
 
     def _is_external_storage(self, name: str) -> bool:
         """Check if table name represents external storage (S3/GCS)."""
         return (
-            name.startswith("s3://") or 
-            name.startswith("gs://") or 
-            name.startswith("gcs://") or 
-            "/" in name
+            name.startswith("s3://")
+            or name.startswith("gs://")
+            or name.startswith("gcs://")
+            or "/" in name
         )

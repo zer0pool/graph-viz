@@ -16,10 +16,10 @@ class CommandExecutionService:
     """
 
     def __init__(
-        self, 
-        graph_uow: GraphUnitOfWork, 
+        self,
+        graph_uow: GraphUnitOfWork,
         command_service: GraphCommandService,
-        audit_service: AuditService
+        audit_service: AuditService,
     ):
         self.graph_uow = graph_uow
         self.command_service = command_service
@@ -42,24 +42,24 @@ class CommandExecutionService:
         try:
             # Mock email sending logic
             logger.info(f"Sending email for Job {job_id} by {user_id}: {message}")
-            
+
             # TODO: Integrate with actual email service (e.g. SMTP, SES)
             success = True
-            
+
             # Log Audit (independent transaction)
             self.audit_service.log_command(
                 command_type="SEND_EMAIL",
                 target_id=job_id,
                 performed_by=user_id,
                 status="SUCCESS" if success else "FAILURE",
-                payload={"message": message}
+                payload={"message": message},
             )
-            
+
             return {
                 "status": "success",
                 "job_id": job_id,
                 "action": "send_email",
-                "message": "Email sent successfully (mock)"
+                "message": "Email sent successfully (mock)",
             }
         except Exception as e:
             logger.error(f"Failed to send email for {job_id}: {e}")
@@ -69,7 +69,7 @@ class CommandExecutionService:
                 performed_by=user_id,
                 status="FAILURE",
                 error_message=str(e),
-                payload={"message": message}
+                payload={"message": message},
             )
             return {"status": "error", "message": str(e)}
 
@@ -82,7 +82,7 @@ class CommandExecutionService:
             with self.graph_uow.transactional():
                 payload = JobUpdateRequest(enabled=enabled)
                 result = self.command_service.update_job(job_id, payload)
-                
+
                 if not result:
                     raise ValueError(f"Job {job_id} not found")
 
@@ -92,18 +92,18 @@ class CommandExecutionService:
                 target_id=job_id,
                 performed_by=user_id,
                 status="SUCCESS",
-                payload={"enabled": enabled}
+                payload={"enabled": enabled},
             )
-            
+
             return {
                 "status": "success",
                 "job_id": job_id,
                 "action": command_type.lower(),
-                "enabled": enabled
+                "enabled": enabled,
             }
         except Exception as e:
             logger.error(f"Failed to execute {command_type} for {job_id}: {e}")
-            
+
             # Log failure audit (independent transaction)
             try:
                 self.audit_service.log_command(
@@ -112,12 +112,9 @@ class CommandExecutionService:
                     performed_by=user_id,
                     status="FAILURE",
                     error_message=str(e),
-                    payload={"enabled": enabled}
+                    payload={"enabled": enabled},
                 )
             except Exception as audit_err:
                 logger.error(f"Failed to log audit failure: {audit_err}")
 
-            return {
-                "status": "error",
-                "message": str(e)
-            }
+            return {"status": "error", "message": str(e)}

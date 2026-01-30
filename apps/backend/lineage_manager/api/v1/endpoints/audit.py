@@ -45,10 +45,10 @@ async def pause_job(
     """Pause (disable) a job."""
     user_id = current_user.get("user_id", "unknown")
     result = command_service.pause_job(job_id, user_id)
-    
+
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("message"))
-    
+
     return result
 
 
@@ -64,10 +64,10 @@ async def resume_job(
     """Resume (enable) a job."""
     user_id = current_user.get("user_id", "unknown")
     result = command_service.resume_job(job_id, user_id)
-    
+
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("message"))
-    
+
     return result
 
 
@@ -84,8 +84,8 @@ async def send_email(
     """Send email notification for a job."""
     user_id = current_user.get("user_id", "unknown")
     result = command_service.send_email(job_id, user_id, request.message)
-    
+
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("message"))
-    
+
     return result

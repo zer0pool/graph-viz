@@ -1,29 +1,30 @@
 import json
 import sys
 
+
 def check_cycles(file_path):
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         data = json.load(f)
-    
+
     adj = {}
-    
+
     # Build graph
     # Job -> Downstream Tables
     # Upstream Tables -> Job
-    for item in data.get('items', []):
+    for item in data.get("items", []):
         job_id = f"job:{item['job_id']}"
         if job_id not in adj:
             adj[job_id] = []
-        
+
         # Upstreams -> Job
-        for upstream in item.get('upstreams', []):
+        for upstream in item.get("upstreams", []):
             table_name = f"table:{upstream['name']}"
             if table_name not in adj:
                 adj[table_name] = []
             adj[table_name].append(job_id)
-            
+
         # Job -> Downstreams
-        for downstream in item.get('downstreams', []):
+        for downstream in item.get("downstreams", []):
             table_name = f"table:{downstream['name']}"
             if job_id not in adj:
                 adj[job_id] = []
@@ -46,10 +47,10 @@ def check_cycles(file_path):
         visited.add(node)
         stack.add(node)
         path.append(node)
-        
+
         for neighbor in adj.get(node, []):
             visit(neighbor, path)
-        
+
         path.pop()
         stack.remove(node)
 
@@ -59,10 +60,11 @@ def check_cycles(file_path):
 
     if cycles:
         print(f"Cycles detected: {len(cycles)}")
-        for cycle in cycles[:5]: # Print first 5
+        for cycle in cycles[:5]:  # Print first 5
             print(" -> ".join(cycle))
     else:
         print("No cycles detected.")
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

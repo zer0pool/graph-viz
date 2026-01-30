@@ -1,4 +1,13 @@
-from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.ext.mutable import MutableDict
 
 from .base import Base
@@ -16,7 +25,9 @@ class GraphEdge(Base):
     dependency_type = Column(String(50), nullable=True)
     properties = Column(MutableDict.as_mutable(JSON), nullable=True, default=dict)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     @property
     def is_trigger(self) -> bool:

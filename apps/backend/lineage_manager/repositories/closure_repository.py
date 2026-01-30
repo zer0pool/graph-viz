@@ -23,24 +23,20 @@ class ClosureRepository(BaseRepository):
     def expand_closure(self, ancestor_id: int, descendant_id: int):
         """Expand closure transitivity"""
         self.db.execute(
-            text(
-                """
+            text("""
             INSERT IGNORE INTO graph_closure (ancestor_id, descendant_id, depth)
             SELECT c.ancestor_id, :v, c.depth + 1
             FROM graph_closure c WHERE c.descendant_id = :u
-        """
-            ),
+        """),
             {"u": ancestor_id, "v": descendant_id},
         )
 
         self.db.execute(
-            text(
-                """
+            text("""
             INSERT IGNORE INTO graph_closure (ancestor_id, descendant_id, depth)
             SELECT :u, c.descendant_id, c.depth + 1
             FROM graph_closure c WHERE c.ancestor_id = :v
-        """
-            ),
+        """),
             {"u": ancestor_id, "v": descendant_id},
         )
 
@@ -125,7 +121,7 @@ class ClosureRepository(BaseRepository):
         edges = self.db.execute(
             select(GraphEdge.source_node_id, GraphEdge.target_node_id)
         ).fetchall()
-        
+
         # 2. Build Adjacency List
         adj = collections.defaultdict(list)
         nodes = set()
@@ -133,30 +129,32 @@ class ClosureRepository(BaseRepository):
             adj[src].append(dst)
             nodes.add(src)
             nodes.add(dst)
-            
+
         closure_records = []
-        
+
         # 3. BFS for each node to find all descendants
         # Complexity: O(V * (V+E)) - acceptable for V < 5000
         for start_node in nodes:
             queue = collections.deque([(start_node, 0)])
             visited = {start_node}
-            
+
             while queue:
                 curr, depth = queue.popleft()
-                
+
                 # Add to closure (skip self-loop at depth 0 if desired, but typically closure includes self or starts at depth 1)
                 if depth > 0:
-                    closure_records.append({
-                        "ancestor_id": start_node,
-                        "descendant_id": curr,
-                        "depth": depth
-                    })
-                
+                    closure_records.append(
+                        {
+                            "ancestor_id": start_node,
+                            "descendant_id": curr,
+                            "depth": depth,
+                        }
+                    )
+
                 # Limit depth to prevent unreasonable growth for extremely deep chains
-                if depth >= 100: 
+                if depth >= 100:
                     continue
-                    
+
                 for neighbor in adj[curr]:
                     if neighbor not in visited:
                         visited.add(neighbor)
@@ -165,14 +163,10 @@ class ClosureRepository(BaseRepository):
         # 4. Clear and Bulk Insert
         # Use DELETE instead of TRUNCATE for transaction safety (avoids implicit commit and metadata locks)
         self.db.execute(text(f"DELETE FROM {GraphClosure.__tablename__}"))
-        
+
         if closure_records:
             # Insert in chunks to avoid packet size limits
             chunk_size = 5000
             for i in range(0, len(closure_records), chunk_size):
-                chunk = closure_records[i:i + chunk_size]
-                self.db.execute(
-                    insert(GraphClosure),
-                    chunk
-                )
-
+                chunk = closure_records[i : i + chunk_size]
+                self.db.execute(insert(GraphClosure), chunk)
