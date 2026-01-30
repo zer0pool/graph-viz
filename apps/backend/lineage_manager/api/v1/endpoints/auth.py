@@ -58,7 +58,7 @@ def get_me(
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
     """Return the currently authenticated user from session."""
-    logger.debug("[Auth] /me endpoint called. Checking session...")
+    logger.info("[Auth] /me endpoint CALLED. Delegating to auth_service...")
     user = auth_service.get_current_user(request)
     if not user:
         logger.info("[Auth] /me - No user session found. Returning 401.")

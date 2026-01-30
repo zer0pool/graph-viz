@@ -88,18 +88,35 @@ class AuthService:
 
     def get_current_user(self, request: Request) -> Dict[str, Any]:
         """
-        Retrieve the current user from the session.
+        Get the currently logged-in user from the session.
+        Returns None if not logged in (and strict auth is on).
+        Returns Anonymous User if not logged in (and strict auth is off).
         """
-        user = request.session.get("user")
-        if not user:
-            if not self.settings.require_signin:
-                 return {
-                    "sub": "anonymous-user",
-                    "name": "Anonymous User",
-                    "is_anonymous": True
-                }
-            return None
-        return user
+        # 1. Check Raw Session Data
+        session_user = request.session.get("user")
+        
+        if session_user:
+            logger.info(f"[Auth][get_current_user] ✅ Session HIT. Found user: {session_user.get('sub')} (email={session_user.get('email')})")
+            return session_user
+
+        # 2. No Session - Check Configuration
+        require_signin = self.settings.require_signin
+        logger.info(f"[Auth][get_current_user] ⚠️ Session MISS. Checking 'require_signin' config... Value={require_signin}")
+
+        if not require_signin:
+            logger.info("[Auth][get_current_user] 🔓 'require_signin' is FALSE. Falling back to ANONYMOUS USER.")
+            return {
+                "sub": "anonymous-user",
+                "name": "Anonymous User",
+                "email": "anonymous@lineage.manager",
+                "roles": ["admin"],
+                "dept": "Engineering",
+                "is_anonymous": True
+            }
+        
+        # 3. Strict Auth Endpoint
+        logger.info("[Auth][get_current_user] 🔒 'require_signin' is TRUE. Returning None (Client should 401).")
+        return None
 
     def logout(self, request: Request):
         """
