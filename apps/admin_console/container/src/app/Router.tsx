@@ -14,30 +14,36 @@ const LineageRouteWrapper: React.FC<{
   const params = useParams();
   const rest = params["*"];
 
+  // 🔹 Extract requested node from URL synchronously for initial mount
+  const requestedNode = React.useMemo(() => {
+    if (!rest) return null;
+    const decoded = decodeURIComponent(rest);
+    let type = "table";
+    let id = decoded;
+    if (decoded.includes(":")) {
+      const parts = decoded.split(":");
+      type = parts[0];
+      id = parts[1];
+    }
+    return { type, id };
+  }, [rest]);
+
   useEffect(() => {
     console.log("[Shell:LineageWrapper] rest param changed:", rest);
-    if (rest) {
-      const decoded = decodeURIComponent(rest);
-      let type = "table";
-      let id = decoded;
-      
-      if (decoded.includes(":")) {
-        const parts = decoded.split(":");
-        type = parts[0] as any;
-        id = parts[1];
-      }
+    if (requestedNode) {
+      console.log("[Shell:LineageWrapper] Parsed entity from URL:", requestedNode, "Current active:", activeGraphNode);
 
-      console.log("[Shell:LineageWrapper] Parsed entity:", { type, id }, "Current active:", activeGraphNode);
-
-      // Check if current active node is already this one to avoid loops
-      if (!activeGraphNode || activeGraphNode.id !== id || activeGraphNode.type !== type) {
-        console.log("[Shell:LineageWrapper] Requesting root node update to:", id);
-        onSetRootNode({ type, id });
-      } else {
-        console.log("[Shell:LineageWrapper] Entity already matches activeGraphNode, skipping update.");
+      // Sync activeGraphNode state if it doesn't match the URL (but don't wait for it for render)
+      if (!activeGraphNode || activeGraphNode.id !== requestedNode.id || activeGraphNode.type !== requestedNode.type) {
+        console.log("[Shell:LineageWrapper] Syncing Shell activeGraphNode state to match URL:", requestedNode.id);
+        onSetRootNode(requestedNode);
       }
     }
-  }, [rest, activeGraphNode, onSetRootNode]);
+  }, [requestedNode, activeGraphNode, onSetRootNode, rest]);
+
+  // 🔹 Priority: Current URL (requestedNode) > Global State (activeGraphNode)
+  // This prevents mounting with 'null' while state is updating
+  const effectiveRootNode = requestedNode || activeGraphNode;
 
   return (
     <RemoteMount
@@ -47,7 +53,7 @@ const LineageRouteWrapper: React.FC<{
       url={config.LINEAGE_MFE_URL}
       mountProps={{
         onSelect: onSelectNode,
-        rootNode: activeGraphNode,
+        rootNode: effectiveRootNode,
         initialSelection: selection,
         path: rest
       }}

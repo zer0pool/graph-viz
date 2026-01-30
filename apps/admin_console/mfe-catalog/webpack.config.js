@@ -5,6 +5,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 const isProd = process.env.NODE_ENV === "production";
+const isDeploy = process.env.DEPLOY === "true";
 
 module.exports = {
   entry: "./src/main.tsx",
@@ -115,7 +116,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: "auto",
+    publicPath: (isProd || isDeploy) ? "/admin-console/mfe-catalog/" : "http://localhost:5102/",
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[contenthash].js",
     chunkFilename: "[name].[contenthash].js",

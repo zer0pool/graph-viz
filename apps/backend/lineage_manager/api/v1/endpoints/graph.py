@@ -118,7 +118,22 @@ def health_check(
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
     """
-    Get basic database statistics for health monitoring.
+    Lightweight health check for K8s probes.
+    """
+    try:
+        return svc.check_health()
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
+
+@router.get("/diagnostics")
+@inject
+def get_diagnostics(
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Get detailed database statistics and diagnostics.
 
     Returns counts of:
     - Jobs (job nodes in graph_node table)
@@ -127,17 +142,15 @@ def health_check(
     - Closure entries (transitive relationships in graph_closure table)
     - Database connection status
     """
-    logger.info("Received health check request")
+    logger.info("Received diagnostics request")
     try:
-        result = svc.get_health_stats()
-        logger.info(f"Health check completed: {result['status']}")
+        result = svc.get_diagnostics()
+        logger.info(f"Diagnostics completed: {result['status']}")
         return result
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Diagnostics failed: {e}")
         logger.exception("Full traceback:")
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Diagnostics failed: {str(e)}")
 
 
 @router.get("/table/{full_name}/dag")

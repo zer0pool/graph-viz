@@ -18,11 +18,11 @@ class BaseRepository:
             self.table_name = getattr(table_or_name, "__tablename__", str(table_or_name))
 
     def clear_all(self):
-        """Delete all data from table using TRUNCATE for performance"""
+        """Delete all data from table using DELETE for safety"""
         logger.info(f"Clearing all data from {self.table_name}")
-        # TRUNCATE is much faster than DELETE for large tables
-        self.db.execute(text(f"TRUNCATE TABLE {self.table_name}"))
-        logger.debug(f"Truncated {self.table_name} table")
+        # DELETE is safer than TRUNCATE as it doesn't cause metadata locks
+        self.db.execute(text(f"DELETE FROM {self.table_name}"))
+        logger.debug(f"Deleted all rows from {self.table_name} table")
 
     def count_all(self):
         """Count all rows in table"""
