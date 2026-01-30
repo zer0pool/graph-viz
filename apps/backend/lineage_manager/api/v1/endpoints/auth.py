@@ -58,9 +58,14 @@ def get_me(
     auth_service: AuthService = Depends(Provide[GraphContainer.user.auth_service]),
 ):
     """Return the currently authenticated user from session."""
+    logger.debug("[Auth] /me endpoint called. Checking session...")
     user = auth_service.get_current_user(request)
     if not user:
+        logger.info("[Auth] /me - No user session found. Returning 401.")
         raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    logger.info("[Auth] /me - Session found for sub=%s (is_anonymous=%s)", 
+                user.get("sub"), user.get("is_anonymous", False))
     return user
 
 @router.post("/logout")

@@ -51,31 +51,39 @@ class AuthService:
         """
         Exchange authorization code for tokens and update session.
         """
+        logger.info("[Auth] Entered /callback with state: %s", state)
+        
         stored_state = request.session.pop("oidc_state", None)
         if not stored_state or state != stored_state:
-            logger.warning("[Auth] OIDC state mismatch: expected %s, got %s", stored_state, state)
+            logger.error("[Auth] OIDC state mismatch! Stored: %s, Received: %s", stored_state, state)
             raise ValueError("Invalid OIDC state")
 
+        logger.debug("[Auth] State verified. Exchanging code for tokens...")
         try:
             # Exchange code for tokens
             token_response = self.oidc_client.exchange_code(code, code_verifier=None)
             id_token = token_response.get("id_token")
+            access_token = token_response.get("access_token")
+            
+            logger.debug("[Auth] Token exchange successful. id_token length: %d, access_token length: %d", 
+                         len(id_token) if id_token else 0, len(access_token) if access_token else 0)
             
             # Verify tokens
             claims = self.oidc_client.verify_id_token(id_token)
+            logger.info("[Auth] Token verified. Identity: sub=%s, email=%s", claims.get("sub"), claims.get("email"))
             
             # Record login & generate user payload
             user_payload = self.user_service.record_login(claims)
             
             # Save user and access_token in session
             request.session["user"] = user_payload
-            request.session["access_token"] = token_response.get("access_token")
+            request.session["access_token"] = access_token
             
-            logger.info("[Auth] User '%s' authenticated successfully via BFF", user_payload.get("sub"))
+            logger.info("[Auth] Session established successfully in backend for sub=%s", user_payload.get("sub"))
             return user_payload
             
         except AuthenticationError as exc:
-            logger.error("[Auth] BFF Callback failed: %s", exc)
+            logger.error("[Auth] OIDC Authentication/Exchange failed: %s", exc)
             raise
 
     def get_current_user(self, request: Request) -> Dict[str, Any]:
