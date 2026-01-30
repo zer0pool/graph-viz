@@ -41,7 +41,7 @@ class TestGraphInitializerService:
         ])
         
         # Mock health stats
-        mock_query_service.get_health_stats.return_value = {
+        mock_query_service.get_diagnostics.return_value = {
             "status": "healthy",
             "database": {"nodes": 2, "edges": 1}
         }
@@ -82,7 +82,7 @@ class TestGraphInitializerService:
                 raise Exception("Individual fail")
                 
         mock_command_service.register_lineage_job.side_effect = side_effect
-        mock_query_service.get_health_stats.return_value = {"status": "healthy", "database": {}}
+        mock_query_service.get_diagnostics.return_value = {"status": "healthy", "database": {}}
 
         result = await service.initialize()
         

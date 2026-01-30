@@ -277,7 +277,20 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Return singleton instance of Settings"""
-    return Settings()
+    settings = Settings()
+    
+    # 🔍 Verification Log: Print effective Auth Config
+    import logging
+    logger = logging.getLogger("lineage_manager.config")
+    logger.warning("="*50)
+    logger.warning(f"[CONFIG] Effective Auth Settings:")
+    logger.warning(f"  - FEATURE_REQUIRE_SIGNIN (env): {settings.feature_flags.require_signin}")
+    logger.warning(f"  - DEFAULT CODE VALUE: True") 
+    logger.warning(f"  - OIDC Issuer: {settings.oidc.issuer_url}")
+    logger.warning(f"  - OIDC Client ID: {settings.oidc.client_id}")
+    logger.warning("="*50)
+    
+    return settings
 
 
 # ============================================================================

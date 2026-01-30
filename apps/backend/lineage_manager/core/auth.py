@@ -169,11 +169,11 @@ bearer_scheme = HTTPBearer(auto_error=False)
 def serialize_user(claims: Dict[str, Any], db_user) -> Dict[str, Any]:
     merged = {
         "sub": claims.get("sub"),
-        "login_id": claims.get("loginId") or getattr(db_user, "login_id", None),
-        "email": claims.get("email") or getattr(db_user, "email", None),
-        "name": claims.get("name") or getattr(db_user, "name", None),
+        "login_id": claims.get("loginid") or getattr(db_user, "login_id", None),
+        "email": claims.get("mail") or getattr(db_user, "email", None),
+        "name": claims.get("username_en") or getattr(db_user, "name", None),
         "roles": claims.get("roles") or getattr(db_user, "roles", []) or [],
-        "department": claims.get("dept") or getattr(db_user, "department", None),
+        "department": claims.get("deptname_en") or getattr(db_user, "department", None),
         "user_id": getattr(db_user, "user_id", None)
     }
     return merged
@@ -191,7 +191,7 @@ async def require_authenticated_user(
     path = request.url.path
     
     # 1. Allow Swagger/Redoc and Health check endpoints
-    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health")):
+    if path.startswith(("/docs", "/redoc", "/openapi.json", "/health", "/api/v1/graph")):
         return None
 
     logger.debug("[Auth] Resolving authentication for path: %s", path)

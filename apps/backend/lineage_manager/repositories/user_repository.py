@@ -24,17 +24,17 @@ class UserRepository(BaseRepository):
         user = self.get_by_sub(sub)
         
         # Default to Viewer if no roles provided
-        roles = claims.get("roles") or claims.get("role")
+        roles = claims.get("roles") 
         if not roles:
             roles = [UserRole.VIEWER]
             
         payload = {
-            "email": claims.get("email"),
-            "name": claims.get("name") or claims.get("given_name"),
-            "login_id": claims.get("preferred_username") or claims.get("email"), # Renamed from loginId
+            "email": claims.get("mail"),
+            "name": claims.get("username_en"),
+            "login_id": claims.get("loginid"), # Renamed from loginId
             "roles": roles,
-            "department": claims.get("dept"), # Renamed from dept
-            "user_id": claims.get("email") or sub # Ensure user_id is populated
+            "department": claims.get("deptname_en"), # Renamed from dept
+            "user_id": claims.get("mail") # Ensure user_id is populated
         }
 
         if user:
