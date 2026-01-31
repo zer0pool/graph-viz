@@ -7,7 +7,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const isProd = process.env.NODE_ENV === "production";
 
 module.exports = {
-  entry: "./src/main.tsx",
+  entry: "./src/app/entry/main.tsx",
   mode: isProd ? "production" : "development",
   devtool: "source-map",
 

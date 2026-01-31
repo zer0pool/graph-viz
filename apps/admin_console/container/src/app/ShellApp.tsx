@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { AppLayout } from "../layout/AppLayout";
-import { AuthProvider } from "./AuthContext";
-import { AppRouter } from "./Router";
-import { ErrorBoundary } from "../components/ErrorBoundary";
-import { Drawer } from "../components/common/Drawer";
-import { RemoteMount } from "../mfe/RemoteMount";
-import { config } from "../config";
+import { AppLayoutWidget } from "../widgets/app-layout/AppLayoutWidget";
+import { AuthProvider } from "./providers/AuthProvider";
+import { AppRouter } from "./router/Router";
+import { ErrorBoundary } from "../shared/ui/ErrorBoundary";
+import { Drawer } from "../shared/ui/Drawer";
+import { RemoteMount } from "../features/mfe-loader/RemoteMount";
+import { config } from '../shared/api/config';
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTracker } from "../hooks/useTracker";
+import { useTracker } from "../shared/lib/hooks/useTracker";
 import "../styles/global.css";
 import "../styles/tailwind.css";
 
@@ -44,12 +44,12 @@ const VisitTracker = () => {
   return null;
 };
 
-export const ShellApp = () => {
+export function ShellApp() {
 
-  // 🟢 Step 4: 진짜 Shell에 재결합
-  const [activeGraphNode, setActiveGraphNode] = useState<any>(null); // 검색 선정 노드
-  const [selection, setSelection] = useState<any>(null); // 그래프 클릭 노드
-  const [drawerOpen, setDrawerOpen] = useState(false); // Drawer 열림 상태
+  // 🟢 Step 4: Reintegration into the real Shell
+  const [activeGraphNode, setActiveGraphNode] = useState<any>(null); // Selected node from search
+  const [selection, setSelection] = useState<any>(null); // Node clicked on the graph
+  const [drawerOpen, setDrawerOpen] = useState(false); // Drawer open state
 
   React.useEffect(() => {
     console.log("[ShellApp] State Update - activeGraphNode:", activeGraphNode);
@@ -73,7 +73,7 @@ export const ShellApp = () => {
       <GlobalNavSync />
       <VisitTracker />
       <ErrorBoundary>
-        <AppLayout
+        <AppLayoutWidget
           onSelectGraphNode={(node) => {
             console.log("[Shell] Setting activeGraphNode:", node);
             setActiveGraphNode(node);
@@ -85,7 +85,7 @@ export const ShellApp = () => {
             onSetRootNode={setActiveGraphNode}
             selection={selection} // PROPAGATE selection
           />
-        </AppLayout>
+        </AppLayoutWidget>
 
         {/* Connector: selection -> Detail MFE */}
         {config.ENABLE_MFE_CATALOG && (
