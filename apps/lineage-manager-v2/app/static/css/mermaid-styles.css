@@ -1,0 +1,123 @@
+/* Mermaid Error Styles */
+.mermaid-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: #fef7f7;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.mermaid-error .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.mermaid-error .error-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #721c24;
+    margin-bottom: 8px;
+}
+
+.mermaid-error .error-message {
+    font-size: 14px;
+    color: #721c24;
+    text-align: center;
+    max-width: 600px;
+}
+
+/* Mermaid Container */
+.mermaid-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.mermaid-container .mermaid {
+    /* Allow content to expand beyond container when zoomed */
+    flex-shrink: 0;
+}
+
+.mermaid-container .empty-state {
+    color: #5f6368;
+    font-size: 16px;
+}
+
+/* Mermaid SVG Styling */
+.mermaid svg {
+    display: block;
+    overflow: visible !important;
+    /* Allow zoomed content to extend beyond original bounds */
+    font-family: 'Google Sans', 'Roboto', 'Helvetica Neue', sans-serif !important;
+}
+
+.mermaid .nodeLabel {
+    font-family: 'Google Sans', 'Roboto', 'Helvetica Neue', sans-serif !important;
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Ensure the wrapper can expand */
+#mermaid-graph>div {
+    overflow: visible;
+}
+
+/* Graph Legend */
+.graph-legend {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 2px solid transparent;
+}
+
+/* Match renderer.js colors */
+.legend-job {
+    background-color: #e3f2fd;
+    border-color: #1a73e8;
+}
+
+.legend-table {
+    background-color: #e8f5e9;
+    border-color: #34a853;
+}
