@@ -24,7 +24,22 @@ Provides a high-level map of the OPS Console project, linking functional require
 - **Backend**: 2 Backend services using **Python + FastAPI**.
 - **Infrastructure**: MySQL, Redis, Nginx (for routing).
 
-## 2. Execution Modes
+## 2. Admin Console Structure (FSD Architecture)
+*Refactored to Feature-Sliced Design (Jan 2026). See [Architecture Guide](admin-console-architecture.md) for details.*
+
+### 📂 Container Layer Map (`apps/admin_console/container/src/`)
+- **App Layer** (`app/`): Entry point (`bootstrap.tsx`), Global Providers (`AuthProvider`), Router.
+- **Pages Layer** (`pages/`):
+  - **Dashboard**: `pages/dashboard/DashboardPage.tsx` - System overview & metrics.
+  - **Users**: `pages/users/UsersPage.tsx` - User management list & details.
+  - **Audit**: `pages/audit/AuditPage.tsx` - System audit logs & commands.
+- **Widgets Layer** (`widgets/`):
+  - **Layout**: `widgets/app-layout/` (Navbar, Sidebar).
+  - **Search**: `widgets/search/GlobalSearch.tsx` - Global entity search.
+- **Features Layer** (`features/`): `RemoteMount` (MFE Loader), `UserMenu` (Auth UI), `Breadcrumbs`.
+- **Shared Layer** (`shared/`): Reusable UI (`ui/`), Hooks (`lib/hooks/`), Config (`api/config.ts`).
+
+## 3. Execution Modes
 
 ### 🟢 Local Development (Ubuntu)
 Run these commands to start individual components for rapid development:
@@ -42,14 +57,19 @@ Used to verify Nginx reverse proxy and multi-MFE mounting:
 - `make -C apps/backend up`
 - `make -C apps/admin_console up`
 
+### 🟡 Development Deployment (k8s)
+- Target: Dev Clusters.
+- Workflow: `docker-build` -> `docker-push` -> `helm-upgrade`.
+- Commands: `make -C <app-dir> deploy ENV=dev`
+
 ### 🔴 Production Deployment (K8s)
-- Target: Dev/Prd Clusters.
+- Target: Prd Clusters.
 - Workflow: `confirm` -> `docker-build` -> `docker-push` -> `helm-upgrade`.
 - Commands: `make -C <app-dir> deploy ENV=prd`
 
 ---
 
-## 5. Senior Architect Standards
+## 5. Architect Standards
 
 To maintain **OPS Console** as a top-tier enterprise tool, all code must adhere to:
 
@@ -80,7 +100,8 @@ The graph is built based on the relationship: `[Source Table] -> (Job) -> [Targe
 ```mermaid
 graph LR
     subgraph "External: Job Service"
-        DJM["Dummy Job Manager"]
+        DJM["Job Manager"] --> self_DB[("MySQL (Self-Type)")]
+        DJM --> req_DB[("MySQL (Req-Type)")]
     end
 
     subgraph "OPS Console: Backend"
@@ -118,4 +139,4 @@ graph LR
    - Supports depth-limited searches and filtering by node type (Job vs Table).
 
 ### C. The "Dummy" Role
-The `dummy-job-manager` is a local simulator that provides deterministic responses for testing the lineage logic without needing a full production scheduling cluster. In production, this adapter is swapped for the real Job Service.
+The `dummy-job-manager` is a local simulator that provides deterministic responses for testing the lineage logic without needing a full production scheduling cluster. In production, this adapter is swapped for the real Self-Scheduilng Job-Manager.

@@ -7,7 +7,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const isProd = process.env.NODE_ENV === "production";
 
 module.exports = {
-  entry: "./src/main.tsx",
+  entry: "./src/app/entry/main.tsx",
   mode: isProd ? "production" : "development",
   devtool: "source-map",
 
@@ -34,7 +34,21 @@ module.exports = {
       {
         context: ["/admin-console/api"],
         target: "http://localhost:5003",
-        pathRewrite: { "^/admin-console/api": "/api" },
+        pathRewrite: { "^/admin-console/api": "/lineage-manager/api" },
+        changeOrigin: true,
+        secure: false,
+      },
+      {
+        context: ["/admin-console/mfe-lineage"],
+        target: "http://localhost:5101",
+        pathRewrite: { "^/admin-console/mfe-lineage": "/mfe-lineage" },
+        changeOrigin: true,
+        secure: false,
+      },
+      {
+        context: ["/admin-console/mfe-catalog"],
+        target: "http://localhost:5102",
+        pathRewrite: { "^/admin-console/mfe-catalog": "/mfe-catalog" },
         changeOrigin: true,
         secure: false,
       },

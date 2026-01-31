@@ -1,11 +1,11 @@
-# AI Coding Agent Guide (Lineage Manager)
+# AI Coding Agent Guide (Admin Console)
 
-This document is the single source of truth for anyone using AI coding agents (Copilot Chat, GPT, Claude, etc.) on the Lineage Manager project. It unifies the architectural context, development workflows, and agent-specific rules that previously lived in multiple files.
+This document is the single source of truth for anyone using AI coding agents (Copilot Chat, GPT, Claude, etc.) on the Admin Console project. It unifies the architectural context, development workflows, and agent-specific rules that previously lived in multiple files.
 
 ---
 
 ## 1. Purpose & Scope
-- Keep AI-produced changes consistent with Lineage Manager’s architecture.
+- Keep AI-produced changes consistent with Admin Console’s architecture.
 - Minimize token/latency costs by using targeted prompts.
 - Ensure every AI-driven task leaves a paper trail (specs, completion notes).
 
@@ -58,7 +58,7 @@ If pip is missing inside `.venv`, run `python -m ensurepip --upgrade` before `py
 - Use the Unit of Work (`GraphUnitOfWork`) for DB interactions; never open raw sessions in endpoints/services.
 
 ### Specs & Reports
-1. Author spec: `docs/specs/<feature>.md`.
+1. Author spec: `docs/specs/<date>-<feature>.md`.
 2. Implement with AI (diff-only patches).
 3. Publish completion report: `docs/reports/<date>-<feature>-completion.md`.
 
@@ -138,7 +138,7 @@ Output: apply_patch blocks only
 ```
 Context: <UI state / file paths>
 Goal: <interaction or visual change>
-Constraints: preserve DOM structure/state mgmt, Cytoscape conventions
+Constraints: preserve DOM structure/state mgmt, 
 Output: minimal diff (apply_patch)
 ```
 

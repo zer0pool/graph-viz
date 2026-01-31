@@ -117,6 +117,23 @@ class GraphQueryService:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
+    def get_dashboard_metrics(self) -> Dict[str, Any]:
+        """
+        Get summary metrics for the dashboard landing page.
+        Returns a mix of real DB counts and initialized placeholder values.
+        """
+        with self.uow:
+            total_tables = self.uow.tables.count_tables()
+            total_jobs = self.uow.jobs.count_jobs()
+
+        return {
+            "total_tables": total_tables,
+            "total_jobs": total_jobs,
+            "system_health": "85%",
+            "active_alerts": 12,
+            "daily_ingestion": "2.4 TB",
+        }
+
     def get_table_dag(
         self,
         full_name: str,

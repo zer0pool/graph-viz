@@ -91,3 +91,32 @@ export const LoginContainer = () => {
 - [ ] Is the component folder following the FSD structure?
 - [ ] Are types defined in a separate `types.ts` or within the component folder?
 - [ ] Is there at least one unit test for the extracted logic (`hooks.test.ts`)?
+
+## 4. Lessons Learned & Tips (mfe-catalog Case Study)
+
+The `mfe-catalog` refactoring provided several critical insights for future work (especially for `mfe-lineage`).
+
+### 🚀 Tip 1: Avoid "Context Limit" Hurdles
+When attempting massive file moves or multi-file edits, the AI's internal context window can become a bottleneck.
+- **The "Rule of 15"**: Try to limit each sub-task or atomic operation to **10-15 files**. Moving more than this at once often leads to "file lost" errors or path corruption.
+- **The "800 Line Rule"**: For complex logic refactoring (extracting hooks, changing types), aim for blocks of **800-1000 lines** of code at a time. Beyond this, the risk of logic hallucination increases.
+- **Recommended Chunking Strategy**: 
+    1. **Layer 1: Shared & API** (~10 files, set the types first).
+    2. **Layer 2: Entities** (~10-15 files, small domain components).
+    3. **Layer 3: Features & Widgets** (complex logic split into 2-3 batches).
+    4. **Layer 4: Pages & App** (final assembly).
+
+### 🔄 Tip 2: Plan for Backend Data "Shape-Shifting"
+A common issue during the `mfe-catalog` refactor was receiving an **array of objects** from the backend (`[{type: 'total', value: 10}]`) when the frontend expected a **flat object** (`{ total: 10 }`).
+- **Lesson**: Don't just fix it in one place; check all related landing hooks (`useJobLanding`, `useTableLanding`).
+- **Best Practice**: Create a shared **transformation utility** or a standard **metric mapping function** in `shared/lib` to handle these discrepancies once for the whole project.
+
+### 🛡️ Tip 3: Anti-'any' as a Refactoring Compass
+Removing `any` felt tedious initially, but it served as a powerful "compass" for the refactoring.
+- **How**: By defining strict interfaces in `shared/api/api.ts` first, TypeScript automatically highlighted every single hook and component that needed updating.
+- **Benefit**: This ensures that 100% of the data path is verified before you even run the build.
+
+### 🎨 Tip 4: Component Consistency (export function)
+We standardized on `export function ComponentName(props: Props)` over `const ComponentName: React.FC<Props>`.
+- **Reason**: Better readability, easier Generic handling, and more consistent with modern React patterns favored in this project.
+- **Advice**: When starting `mfe-lineage`, perform a global search-and-replace for `React.FC` early to establish the pattern.
