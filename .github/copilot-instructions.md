@@ -1,6 +1,6 @@
 # AI Coding Agent Instructions
 
-The authoritative playbook for AI agents now lives in [`docs/guides/agents.md`](../docs/guides/agents.md). It contains:
+The authoritative playbook for AI agents now lives in [`docs/guides/agents.md`](../docs/00.guides/agents.md). It contains:
 
 - Project architecture & tech stack
 - Local dev / database / testing workflows
