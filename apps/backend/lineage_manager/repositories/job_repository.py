@@ -175,3 +175,19 @@ class JobRepository(BaseRepository):
             .limit(limit)
         )
         return self.db.execute(stmt).scalars().all()
+
+    def get_all_search_terms(self):
+        """
+        Fetch basic identifiers (name, display_name, owner) for all jobs.
+        Used for in-memory fuzzy search caching.
+        """
+        owner_field = GraphNode.properties["owner"].as_string()
+        display_name_field = GraphNode.properties["display_name"].as_string()
+
+        stmt = select(
+            GraphNode.name.label("job_id"),
+            display_name_field.label("display_name"),
+            owner_field.label("owner"),
+        ).where(GraphNode.node_type == "job")
+
+        return self.db.execute(stmt).all()

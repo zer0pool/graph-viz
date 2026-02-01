@@ -220,3 +220,19 @@ class TableRepository(BaseRepository):
         )
 
         return dag_result
+
+    def get_all_search_terms(self):
+        """
+        Fetch basic identifiers (full_name, table_name) for all tables.
+        Used for in-memory fuzzy search caching.
+        """
+        table_name_field = GraphNode.properties["table_name"].as_string()
+
+        stmt = select(
+            GraphNode.name.label("full_name"),
+            table_name_field.label("table_name"),
+            GraphNode.properties["project_name"].as_string().label("project"),
+            GraphNode.properties["dataset_name"].as_string().label("dataset"),
+        ).where(GraphNode.node_type == "table")
+
+        return self.db.execute(stmt).all()

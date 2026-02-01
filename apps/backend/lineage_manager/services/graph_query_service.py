@@ -17,6 +17,12 @@ from lineage_manager.models import GraphEdge, GraphNode
 
 from lineage_manager.services.helpers.graph_traversal_helper import GraphTraversalHelper
 
+try:
+    from rapidfuzz import process, fuzz
+except ImportError:
+    process = None
+    fuzz = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -343,31 +349,144 @@ class GraphQueryService:
         if not term:
             return {"query": q, "tables": [], "jobs": [], "owners": []}
 
-        jobs = self.uow.jobs.search_by_prefix(prefix=term, limit=limit)
-        tables = self.uow.tables.search_by_prefix(prefix=term, limit=limit)
-        owners = self.uow.jobs.search_owners_by_prefix(prefix=term, limit=limit)
+        # If term is very short or rapidfuzz missing, fallback to SQL LIKE
+        if len(term) < 2 or process is None:
+            jobs = self.uow.jobs.search_by_prefix(prefix=term, limit=limit)
+            tables = self.uow.tables.search_by_prefix(prefix=term, limit=limit)
+            owners = self.uow.jobs.search_owners_by_prefix(prefix=term, limit=limit)
+
+            return {
+                "query": term,
+                "jobs": [
+                    {
+                        "job_id": job.job_id or job.name,
+                        "name": job.display_name,
+                        "owner": job.owner,
+                    }
+                    for job in jobs
+                ],
+                "tables": [
+                    {
+                        "full_name": table.full_name,
+                        "table_name": table.table_name or table.full_name,
+                        "project": table.project_name,
+                        "dataset": table.dataset_name,
+                    }
+                    for table in tables
+                ],
+                "owners": [o["name"] for o in owners],
+            }
+
+        # Fuzzy Search Logic
+        corpus = self._get_fuzzy_search_corpus()
+        if not corpus:
+            return {"query": term, "tables": [], "jobs": [], "owners": []}
+
+        # Extract matches
+        # choices is list of strings: [item['text'] for item in corpus]
+        choices = [item["text"] for item in corpus]
+        
+        # rapidfuzz returns list of (match, score, index)
+        results = process.extract(
+            term, choices, limit=limit, scorer=fuzz.partial_ratio, score_cutoff=40
+        )
+
+        matched_jobs = []
+        matched_tables = []
+        seen_owners = set()
+        matched_owners = []
+
+        for match, score, idx in results:
+            item = corpus[idx]
+            if item["type"] == "job":
+                matched_jobs.append(
+                    {
+                        "job_id": item["id"],
+                        "name": item["data"].get("name"),
+                        "owner": item["data"].get("owner"),
+                    }
+                )
+                owner = item["data"].get("owner")
+                if owner and owner not in seen_owners:
+                    # Also checking if owner name itself matches somewhat?
+                    # For now just collecting owners of matched jobs
+                    seen_owners.add(owner)
+                    matched_owners.append(owner)
+
+            elif item["type"] == "table":
+                matched_tables.append(
+                    {
+                        "full_name": item["id"],
+                        "table_name": item["data"].get("table_name"),
+                        "project": item["data"].get("project"),
+                        "dataset": item["data"].get("dataset"),
+                    }
+                )
+
+        # Separate owner search: also fuzz match purely on owners if needed?
+        # The user requested "JOB_ID, OWNER, TABLE_NAME". 
+        # My corpus text construction should include OWNER so they are found in the main loop.
 
         return {
             "query": term,
-            "jobs": [
-                {
-                    "job_id": job.job_id or job.name,
-                    "name": job.display_name,
-                    "owner": job.owner,
-                }
-                for job in jobs
-            ],
-            "tables": [
-                {
-                    "full_name": table.full_name,
-                    "table_name": table.table_name or table.full_name,
-                    "project": table.project_name,
-                    "dataset": table.dataset_name,
-                }
-                for table in tables
-            ],
-            "owners": [o["name"] for o in owners],
+            "jobs": matched_jobs,
+            "tables": matched_tables,
+            "owners": matched_owners,
         }
+
+    def _get_fuzzy_search_corpus(self):
+        """Builds or retrieves cached list of search terms."""
+        key = "fuzzy_search_corpus_v1"
+        cached = self._cache_get(key)
+        if cached:
+            return cached
+
+        with self.uow:
+            # Fetch raw rows
+            job_rows = self.uow.jobs.get_all_search_terms()
+            table_rows = self.uow.tables.get_all_search_terms()
+
+        corpus = []
+        for j in job_rows:
+            # j keys: job_id, display_name, owner
+            # Combine for search text
+            parts = [
+                j.job_id,
+                j.display_name,
+                j.owner
+            ]
+            text_val = " ".join([str(p) for p in parts if p])
+            corpus.append({
+                "type": "job",
+                "id": j.job_id,
+                "text": text_val,
+                "data": {
+                    "name": j.display_name,
+                    "owner": j.owner
+                }
+            })
+
+        for t in table_rows:
+            # t keys: full_name, table_name, project, dataset
+            parts = [
+                t.full_name,
+                t.table_name
+            ]
+            text_val = " ".join([str(p) for p in parts if p])
+            corpus.append({
+                "type": "table",
+                "id": t.full_name,
+                "text": text_val,
+                "data": {
+                    "table_name": t.table_name or t.full_name,
+                    "project": t.project,
+                    "dataset": t.dataset
+                }
+            })
+        
+        # Cache for 5 minutes (300s)
+        self._cache_set(key, corpus)
+        return corpus
 
     def get_table_dependencies(self, table_name: str):
         key = f"dependencies:{table_name}"
