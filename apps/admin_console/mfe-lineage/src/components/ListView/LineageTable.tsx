@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { LineageItem, LineageTreeUtils } from "../../utils/LineageTreeUtils";
 import { config } from "../../config";
+import { UpstreamIcon, DownstreamIcon } from "../../assets/icons";
 import "./ListView.css";
 
 interface LineageTableProps {
@@ -8,13 +9,27 @@ interface LineageTableProps {
   items: LineageItem[];
   selectedNodeId?: string;
   onSelectNode: (node: LineageItem) => void;
+  isLoadingMeta?: boolean;
+  onExpandMore?: (parentId: string) => void;
+  jobTooltip?: string;
+  iconType?: "upstream" | "downstream";
 }
+
+const cleanId = (id: string) => {
+  if (id.startsWith("table:")) return id.substring(6);
+  if (id.startsWith("job:")) return id.substring(4);
+  return id;
+};
 
 export const LineageTable: React.FC<LineageTableProps> = ({
   title,
   items,
   selectedNodeId,
   onSelectNode,
+  isLoadingMeta = false,
+  onExpandMore,
+  jobTooltip,
+  iconType,
 }) => {
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
     new Set()
@@ -31,6 +46,9 @@ export const LineageTable: React.FC<LineageTableProps> = ({
   const counts = LineageTreeUtils.getCounts(items);
 
   const handleExpand = (parentId: string) => {
+    if (onExpandMore) {
+      onExpandMore(parentId);
+    }
     const next = new Set(expandedGroupIds);
     next.add(parentId);
     setExpandedGroupIds(next);
@@ -54,8 +72,13 @@ export const LineageTable: React.FC<LineageTableProps> = ({
   return (
     <div className="lineage-card">
       <div className="lineage-card-header">
+        {iconType && (
+          <span className="lineage-card-icon">
+            {iconType === "upstream" ? <UpstreamIcon /> : <DownstreamIcon />}
+          </span>
+        )}
         <span className="apa-table-label">
-          {title} ({counts.t} tables / {counts.j} jobs)
+          {title}
         </span>
       </div>
       <div className="lineage-card-body">
@@ -79,25 +102,23 @@ export const LineageTable: React.FC<LineageTableProps> = ({
               <th style={{ width: 100 }}>Write Mode</th>
               <th style={{ width: 150 }}>
                 Job ID
-                <span
-                  className="help-icon"
-                  title="The job that writes data to this table"
-                  style={{
-                    marginLeft: "6px",
-                    cursor: "help",
-                    fontSize: "12px",
-                    color: "#666",
-                    border: "1px solid #999",
-                    borderRadius: "50%",
-                    width: "14px",
-                    height: "14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  ?
-                </span>
+                {jobTooltip && (
+                  <span
+                    className="help-icon"
+                    title={jobTooltip}
+                    style={{
+                      marginLeft: "6px",
+                      cursor: "help",
+                      fontSize: "14px",
+                      color: "#5f6368",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      verticalAlign: "middle",
+                    }}
+                  >
+                    ⓘ
+                  </span>
+                )}
               </th>
               <th style={{ width: 100 }}>Owner</th>
               <th style={{ width: 150 }}>Schedule</th>
@@ -132,6 +153,8 @@ export const LineageTable: React.FC<LineageTableProps> = ({
               const job = item.viaJob;
               const jobProps = job?.properties || {};
 
+              const itemLoading = isLoadingMeta && item.type !== "MORE";
+
               return (
                 <tr
                   key={item.id}
@@ -144,9 +167,13 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                     <div className="node-label-container">
                       {renderPrefix(item.treePrefix)}
                       {item.depth === 0 ? (
-                        <span className="root-table-badge">{item.id}</span>
+                        <span className="root-table-badge">
+                          {cleanId(item.id)}
+                        </span>
                       ) : (
-                        <span className="node-label-text">{item.id}</span>
+                        <span className="node-label-text">
+                          {cleanId(item.id)}
+                        </span>
                       )}
                     </div>
                   </td>
@@ -155,11 +182,33 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                   </td>
                   <td className="col-table">{props.storage || "-"}</td>
                   <td className="col-table">{props.write_mode || "-"}</td>
-                  <td className="col-job">{job ? job.name : "-"}</td>
-                  <td className="col-job">{jobProps.owner || "-"}</td>
-                  <td className="col-job">{jobProps.schedule || "-"}</td>
                   <td className="col-job">
-                    {jobProps.status ? (
+                    {itemLoading ? (
+                      <div className="skeleton-box" />
+                    ) : job ? (
+                      cleanId(job.name)
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="col-job">
+                    {itemLoading ? (
+                      <div className="skeleton-box" />
+                    ) : (
+                      jobProps.owner || "-"
+                    )}
+                  </td>
+                  <td className="col-job">
+                    {itemLoading ? (
+                      <div className="skeleton-box" />
+                    ) : (
+                      jobProps.schedule || "-"
+                    )}
+                  </td>
+                  <td className="col-job">
+                    {itemLoading ? (
+                      <div className="skeleton-pill" />
+                    ) : jobProps.status ? (
                       <span
                         className={`status-pill status-${jobProps.status.toLowerCase()}`}
                       >
@@ -169,7 +218,13 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                       "-"
                     )}
                   </td>
-                  <td className="col-job">{props.lifecycle || "-"}</td>
+                  <td className="col-job">
+                    {itemLoading ? (
+                      <div className="skeleton-box" />
+                    ) : (
+                      props.lifecycle || "-"
+                    )}
+                  </td>
                 </tr>
               );
             })}

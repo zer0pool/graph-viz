@@ -17,3 +17,5 @@ export * from "./LayoutIcon";
 export * from './InfoIcon';
 export * from './TrashIcon';
 export * from './DetailIcon';
+export * from './UpstreamIcon';
+export * from './DownstreamIcon';

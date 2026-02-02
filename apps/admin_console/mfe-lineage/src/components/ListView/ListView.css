@@ -109,10 +109,30 @@
 
 .lineage-card-header {
   padding: 12px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-  font-weight: 600;
+  background: #ffffff;
+  border-bottom: 1px solid #dadce0;
+  font-weight: 500;
   font-size: 14px;
+  color: #202124;
+  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lineage-card-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5f6368;
+  flex-shrink: 0;
+}
+
+.lineage-card-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .apa-table {
@@ -134,29 +154,38 @@
 }
 
 .apa-header-group th {
-  background: #f1f3f4;
+  background: #f8f9fa;
   text-transform: uppercase;
   font-size: 11px;
   color: #5f6368;
   letter-spacing: 0.5px;
   text-align: center;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8eaed;
 }
 
 .group-identity {
-  border-top: 2px solid #5f6368;
+  border-top: 3px solid #5f6368;
+  color: #3c4043;
 }
 .group-table {
-  border-top: 2px solid #34a853;
+  border-top: 3px solid #34a853;
+  color: #188038;
 }
 .group-job {
-  border-top: 2px solid #1a73e8;
+  border-top: 3px solid #1a73e8;
+  color: #1967d2;
 }
 
 .apa-header-detail th {
   background: #fff;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 1px solid #dadce0;
   text-align: left;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 13px;
+  color: #202124;
+  padding: 10px 12px;
 }
 
 .depth-root-row {
@@ -268,6 +297,178 @@
 .node-label-container {
   display: flex;
   align-items: center;
+}
+
+/* Impact Analysis Header Styles (GCP Console Inspired) */
+.impact-analysis-header {
+  background: var(--bg-surface, #fff);
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  margin-bottom: 24px;
+}
+
+.impact-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* Align title top with control bar */
+  margin-bottom: 24px;
+}
+
+.impact-title-group {
+  padding-right: 0;
+}
+
+.impact-main-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #202124;
+  letter-spacing: -0.5px;
+}
+
+.impact-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.impact-summary-grid {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.impact-summary-card {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
+}
+
+.impact-summary-card:hover {
+  box-shadow: 0 4px 6px rgba(60, 64, 67, 0.15);
+  transform: translateY(-2px);
+  border-color: #d2d2d2;
+}
+
+.card-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  margin-right: 16px;
+  background: #f8f9fa;
+  border: 1px solid #f1f3f4;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #5f6368;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.card-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #202124;
+}
+
+.card-value-small {
+  font-size: 14px;
+  font-weight: 700;
+  color: #202124;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+/* Specific Card Theme Accents */
+.impact-summary-card.downstream .card-icon-wrapper {
+  background: rgba(26, 115, 232, 0.05);
+}
+.impact-summary-card.upstream .card-icon-wrapper {
+  background: rgba(103, 58, 183, 0.05);
+}
+.impact-summary-card.target-table .card-icon-wrapper {
+  background: rgba(95, 99, 104, 0.05);
+}
+
+.text-blue-600 { color: #1a73e8; }
+.text-indigo-600 { color: #673ab7; }
+.text-slate-600 { color: #5f6368; }
+
+/* Loading State (GCP Style) */
+.impact-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 0;
+  color: #5f6368;
+}
+
+.impact-spinner {
+  color: #1a73e8;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes skeleton-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.skeleton-box, .skeleton-pill {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: #f1f3f4;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.skeleton-box {
+  height: 14px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+.skeleton-pill {
+  height: 20px;
+  width: 60px;
+  border-radius: 12px;
+}
+
+/* ⓘ Help Icon Styling */
+.help-icon {
+  user-select: none;
+  transition: opacity 0.2s;
+  opacity: 0.7;
+}
+
+.help-icon:hover {
+  opacity: 1;
+  color: #1a73e8;
 }
 
 /* Header Actions */
