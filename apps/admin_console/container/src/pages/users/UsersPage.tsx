@@ -85,7 +85,6 @@ export function UsersPage() {
       const qParam = query ? `&q=${encodeURIComponent(query)}` : "";
       const url = `${config.API_BASE_URL}/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
       
-      console.log(`[UsersLanding] Fetching: ${url}`);
       const response = await fetch(url, {
         signal: controller.signal
       });
@@ -142,7 +141,6 @@ export function UsersPage() {
 
   const handleSaveRoles = () => {
     if (editingUser) {
-      console.log("Saving roles for", editingUser.email, ":", selectedRoles);
       setUsers((prev) =>
         prev.map((u) =>
           u.user_id === editingUser.user_id ? { ...u, roles: [...selectedRoles] } : u,

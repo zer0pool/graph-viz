@@ -8,81 +8,71 @@ interface JobRunDrawerProps {
 }
 
 export const JobRunDrawer: React.FC<JobRunDrawerProps> = ({ run, onClose }) => {
+  console.log("[JobRunDrawer] Rendering with run:", run);
   if (!run) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end overflow-hidden bg-gray-900 bg-opacity-50 transition-opacity">
-      <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full animate-slide-in-right">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+    <div 
+      className="fixed inset-0 z-[100] flex justify-end overflow-hidden bg-gray-900 bg-opacity-50 transition-opacity"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full animate-slide-in-right border-l border-[#e5e7eb]">
+        <div className="px-6 py-4 border-b border-[#e5e7eb] flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Run Details</h3>
-            <p className="text-sm text-gray-500 font-mono">{run.run_id}</p>
+            <h3 className="text-lg font-bold text-[#111827]">Run Details</h3>
+            <p className="text-xs text-[#6b7280] font-mono">{run.run_id}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="p-1.5 text-[#6b7280] hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            ✕
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-6">
-            <DetailField label="Status" value={run.status} isStatus />
-            <DetailField
-              label="Triggered By"
-              value={run.triggered_by || "Schedule"}
-            />
-            <DetailField label="Start Time" value={run.start_time} />
-            <DetailField label="End Time" value={run.end_time || "-"} />
-            <DetailField
-              label="Duration"
-              value={formatDuration(run.duration)}
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 pt-0 divide-y divide-[#f3f4f6]">
+          <PropertyRow label="Status" value={run.status || "Unknown"} isStatus />
+          <PropertyRow
+            label="Triggered By"
+            value={run.triggered_by || "Schedule"}
+          />
+          <PropertyRow label="Start Time" value={run.start_time} />
+          <PropertyRow label="End Time" value={run.end_time || "-"} />
+          <PropertyRow
+            label="Duration"
+            value={formatDuration(run.duration)}
+          />
         </div>
       </div>
     </div>
   );
 };
 
-const DetailField: React.FC<{
+const PropertyRow: React.FC<{
   label: string;
   value: string;
   isStatus?: boolean;
 }> = ({ label, value, isStatus }) => (
-  <div>
-    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-      {label}
-    </div>
+  <div className="flex justify-between py-4 items-center">
+    <span className="text-sm text-[#6b7280]">{label}</span>
     {isStatus ? (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-sm transition-all ${
-          value.toLowerCase().includes("success") ||
-          value.toLowerCase().includes("completed")
+          String(value || "").toLowerCase().includes("success") ||
+          String(value || "").toLowerCase().includes("completed")
             ? "bg-green-100 text-green-800"
-            : value.toLowerCase().includes("fail") ||
-              value.toLowerCase().includes("error")
+            : String(value || "").toLowerCase().includes("fail") ||
+              String(value || "").toLowerCase().includes("error")
             ? "bg-red-100 text-red-800"
             : "bg-blue-100 text-blue-800"
         }`}
       >
-        {value}
+        {value || "-"}
       </span>
     ) : (
-      <div className="text-sm font-medium text-gray-900">{value}</div>
+      <div className="text-sm font-medium text-[#111827]">{value || "-"}</div>
     )}
   </div>
 );

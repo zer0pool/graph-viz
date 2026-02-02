@@ -30,6 +30,7 @@ export function useMermaidRenderer({
 }: UseMermaidRendererOptions) {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const prevOrientationRef = useRef<LayoutOrientation>(orientation);
+  const prevLayoutRef = useRef<"dagre" | "elk">(layout);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
@@ -122,11 +123,19 @@ export function useMermaidRenderer({
   useEffect(() => {
     if (!dsl || !mermaidRef.current) return;
 
+    let isCancelled = false;
+
     const renderGraph = async () => {
       try {
         const container = mermaidRef.current;
-        if (!container) return;
+        if (!container || isCancelled) return;
 
+        // Clear previous content
+        container.innerHTML = "";
+        container.setAttribute("data-layout", layout);
+
+
+        // Set stable config
         mermaid.initialize({
           startOnLoad: false,
           theme: "default",
@@ -134,26 +143,30 @@ export function useMermaidRenderer({
           flowchart: {
             useMaxWidth: false,
             htmlLabels: true,
-            curve: "basis",
-            nodeSpacing: 100,
-            rankSpacing: 100,
-            padding: 8,
+            curve: layout === "dagre" ? "basis" : "linear",
+            nodeSpacing: 50,
+            rankSpacing: 50,
+            padding: 10, // Significantly increase for standard nodes (like Group)
             defaultRenderer: layout === "dagre" ? "dagre-wrapper" : "elk",
-          },
+          } as any,
           themeVariables: {
-            fontSize: "32px",
+            fontSize: "12px",
             fontFamily: "Inter, -apple-system, sans-serif",
-            primaryColor: "#e3f2fd",
-            primaryBorderColor: "#1a73e8",
+            labelPadding: 10,
+            nodePadding: 20,
+            primaryColor: "#E8F0FE",
+            primaryBorderColor: "#1A73E8",
             primaryTextColor: "#202124",
             lineColor: "#666666",
-            secondaryColor: "#e8f5e9",
-            secondaryBorderColor: "#34a853",
+            secondaryColor: "#E6F4EA",
+            secondaryBorderColor: "#1E8E3E",
           },
         });
 
-        const renderId = "mermaid-svg-" + Date.now();
-        const { svg } = await mermaid.render(renderId, dsl);
+        const renderId = "mermaid-svg-" + Math.floor(Math.random() * 10000);
+        const { svg } = await (mermaid as any).render(renderId, dsl, container);
+        
+        if (isCancelled) return;
         container.innerHTML = svg;
 
         const newSvg = container.querySelector("svg");
@@ -182,10 +195,11 @@ export function useMermaidRenderer({
 
           const isOrientationChange =
             prevOrientationRef.current !== orientation;
+          const isLayoutChange = prevLayoutRef.current !== layout;
           const isInitialLoad = pan.x === 0 && pan.y === 0 && zoomLevel === 1;
           const isFullReload = graphData ? graphData.nodes.length < 5 : true;
 
-          if (isInitialLoad || (isFullReload && !isOrientationChange)) {
+          if (isInitialLoad || isLayoutChange || (isFullReload && !isOrientationChange)) {
             const scale = 1.0;
             const cx = containerRect.width / 2;
             const cy = containerRect.height / 2;
@@ -203,6 +217,7 @@ export function useMermaidRenderer({
             }
             setZoomLevel(scale);
             setPan({ x, y });
+            prevLayoutRef.current = layout;
           } else if (isOrientationChange) {
             const scale = zoomLevel;
             const cx = containerRect.width / 2;
@@ -251,32 +266,16 @@ export function useMermaidRenderer({
               e.stopPropagation();
               e.preventDefault();
 
-              console.log(
-                "[Mermaid] Node action event:",
-                e.type,
-                "on node:",
-                node.id,
-                "type:",
-                node.type,
-              );
+              // selectNode(node, "click");
 
               // NEW: Handle Group Node Expansion
               if (node.type === "group" && onExpandGroup) {
-                console.log(
-                  "[Mermaid] Group node click (mousedown/contextmenu) -> Expanding:",
-                  node.id,
-                );
                 onExpandGroup(node);
                 return;
               }
 
               const rect = el.getBoundingClientRect();
               selectNode(node, "click");
-              console.log(
-                "[Mermaid] Selected node:",
-                node.id,
-                "Opening context menu",
-              );
               setContextMenu({
                 x: rect.left + rect.width / 2,
                 y: rect.top - 12,
@@ -288,14 +287,8 @@ export function useMermaidRenderer({
             el.addEventListener("contextmenu", handleNodeAction as any);
             el.addEventListener("dblclick", (e) => {
               e.stopPropagation();
-              console.log(
-                "[Mermaid] Double click on node:",
-                node.id,
-                node.type,
-              );
 
               if (node.type === "group" && onExpandGroup) {
-                console.log("[Mermaid] Expanding group node:", node.id);
                 onExpandGroup(node);
                 return;
               }
@@ -308,8 +301,11 @@ export function useMermaidRenderer({
         console.error("Mermaid render error:", err);
       }
     };
-
     renderGraph();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [dsl]);
 
   return {

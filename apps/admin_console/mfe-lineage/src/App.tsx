@@ -108,21 +108,23 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
 
   useEffect(() => {
     console.log("[Lineage App] rootNode updated:", rootNode);
-    if (rootNode?.id) {
-      if (
-        lastFetchedNode.current?.id !== rootNode.id ||
-        lastFetchedNode.current?.type !== rootNode.type
-      ) {
-        console.log(
-          "[Lineage App] Fetching graph for:",
-          rootNode.type,
-          rootNode.id,
-        );
-        fetchGraph(rootNode.type, rootNode.id, false, "both", true);
-        lastFetchedNode.current = { type: rootNode.type, id: rootNode.id };
-      } else {
-        console.log("[Lineage App] Skipping fetch, same as lastFetchedNode");
-      }
+    if (!rootNode?.id) return;
+
+    if (
+      lastFetchedNode.current?.id !== rootNode.id ||
+      lastFetchedNode.current?.type !== rootNode.type
+    ) {
+      console.log(
+        "[Lineage App] Fetching graph for:",
+        rootNode.type,
+        rootNode.id,
+      );
+      const controller = new AbortController();
+      fetchGraph(rootNode.type, rootNode.id, false, "both", true, controller.signal);
+      lastFetchedNode.current = { type: rootNode.type, id: rootNode.id };
+      return () => controller.abort();
+    } else {
+      console.log("[Lineage App] Skipping fetch, same as lastFetchedNode");
     }
   }, [rootNode, fetchGraph]);
 

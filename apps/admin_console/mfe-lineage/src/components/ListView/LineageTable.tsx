@@ -7,7 +7,7 @@ interface LineageTableProps {
   title: string;
   items: LineageItem[];
   selectedNodeId?: string;
-  onSelectNode: (node: any) => void;
+  onSelectNode: (node: LineageItem) => void;
 }
 
 export const LineageTable: React.FC<LineageTableProps> = ({
@@ -140,7 +140,7 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                   }`}
                   onClick={() => onSelectNode(item)}
                 >
-                  <td>
+                  <td className="col-identity">
                     <div className="node-label-container">
                       {renderPrefix(item.treePrefix)}
                       {item.depth === 0 ? (
@@ -150,15 +150,15 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                       )}
                     </div>
                   </td>
-                  <td style={{ textAlign: "center" }}>
+                  <td className="col-identity" style={{ textAlign: "center" }}>
                     {Math.floor(item.depth / 2)}
                   </td>
-                  <td>{props.storage || "-"}</td>
-                  <td>{props.write_mode || "-"}</td>
-                  <td>{job ? job.name : "-"}</td>
-                  <td>{jobProps.owner || "-"}</td>
-                  <td>{jobProps.schedule || "-"}</td>
-                  <td>
+                  <td className="col-table">{props.storage || "-"}</td>
+                  <td className="col-table">{props.write_mode || "-"}</td>
+                  <td className="col-job">{job ? job.name : "-"}</td>
+                  <td className="col-job">{jobProps.owner || "-"}</td>
+                  <td className="col-job">{jobProps.schedule || "-"}</td>
+                  <td className="col-job">
                     {jobProps.status ? (
                       <span
                         className={`status-pill status-${jobProps.status.toLowerCase()}`}
@@ -169,7 +169,7 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                       "-"
                     )}
                   </td>
-                  <td>{props.lifecycle || "-"}</td>
+                  <td className="col-job">{props.lifecycle || "-"}</td>
                 </tr>
               );
             })}

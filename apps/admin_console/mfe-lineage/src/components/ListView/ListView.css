@@ -160,7 +160,7 @@
 }
 
 .depth-root-row {
-  background-color: #fce8e6; /* Light red/pink highlight for root */
+  background-color: transparent !important;
 }
 
 .root-table-badge {
@@ -299,8 +299,21 @@
   background: #f5f5f5;
   border-color: #c0c0c0;
 }
+.apa-table td.col-identity {
+  background-color: #fafafa;
+}
+.apa-table td.col-table {
+  background-color: rgba(52, 168, 83, 0.03) !important; /* Extremely light green */
+}
+.apa-table td.col-job {
+  background-color: rgba(26, 115, 232, 0.03) !important; /* Extremely light blue */
+}
+
+/* Ensure selected row still stands out slightly */
 .apa-table tr.selected td {
-  background-color: #e8f0fe !important; /* Google Blue Light */
+  background-color: #e8f0fe !important;
+  border-top: 1px solid #1a73e8;
+  border-bottom: 1px solid #1a73e8;
 }
 
 .row-more {

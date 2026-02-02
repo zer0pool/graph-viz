@@ -33,7 +33,7 @@ describe("ExportUtils", () => {
           id: "t2",
           type: "table",
           depth: 2,
-          properties: { storage: "SNOWFLAKE" },
+          properties: { storage: "BIGQUERY" },
           viaJob: { name: "Job 1", properties: { owner: "User A" } },
         },
       ],

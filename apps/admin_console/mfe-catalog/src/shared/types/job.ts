@@ -15,6 +15,8 @@ export interface JobNodeRelation {
   full_name?: string;
   type: string;
   dependency_type?: "HARD" | "SOFT";
+  storage?: string;
+  write_mode?: string;
 }
 
 export interface JobDetail {
@@ -50,11 +52,19 @@ export interface JobRun {
   start_time: string;
   end_time?: string;
   duration?: number;
+  duration_sec?: number;
+  elapsed?: number;
   triggered_by?: string;
 }
 
 export interface JobRunHistoryResponse {
-  runs: JobRun[];
+  timeline: JobRun[];
+  summary: {
+    total: number;
+    running: number;
+    success: number;
+    failed: number;
+  };
   total: number;
   page: number;
   page_size: number;

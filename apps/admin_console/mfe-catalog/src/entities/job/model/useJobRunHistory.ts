@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { JobRun } from "../../../shared/types/job";
+import { JobRun, JobRunHistoryResponse } from "../../../shared/types/job";
 import { useApiClient } from "../../../shared/api/ApiContext";
 
 export function useJobRunHistory(jobId: string) {
   const [runs, setRuns] = useState<JobRun[]>([]);
+  const [summary, setSummary] = useState<JobRunHistoryResponse['summary'] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const api = useApiClient();
@@ -18,7 +19,9 @@ export function useJobRunHistory(jobId: string) {
       .fetchJobRunHistory(jobId)
       .then((data) => {
         if (mounted) {
-          setRuns(data.runs || []);
+          // Map 'timeline' from API to 'runs' state
+          setRuns(data.timeline || []);
+          setSummary(data.summary || null);
           setLoading(false);
         }
       })
@@ -34,5 +37,5 @@ export function useJobRunHistory(jobId: string) {
     };
   }, [api, jobId]);
 
-  return { runs, loading, error };
+  return { runs, summary, loading, error };
 }

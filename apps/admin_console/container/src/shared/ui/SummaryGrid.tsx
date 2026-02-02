@@ -87,12 +87,12 @@ interface SummaryGridProps {
 
 export function SummaryGrid({ metrics, cols = 4 }: SummaryGridProps) {
   const gridColsClass = {
-    4: "lg:grid-cols-4",
+    4: "md:grid-cols-4",
     5: "lg:grid-cols-5",
-  }[cols] || "lg:grid-cols-4";
+  }[cols] || "md:grid-cols-4";
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-4 mb-6`}>
+    <div className={`grid grid-cols-1 ${gridColsClass} gap-4 mb-6`}>
       {metrics.map((m, idx) => (
         <MetricCard key={`${m.type}-${idx}`} data={m} />
       ))}

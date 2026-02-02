@@ -7,6 +7,7 @@ interface JobLineageProps {
   loading?: boolean;
 }
 
+
 export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
   const navigate = useMfeNavigate();
   if (loading) {
@@ -26,36 +27,39 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
   const outputs = job.downstreams || [];
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="flex flex-col h-full bg-white space-y-8 animate-fade-in">
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+          <h3 className="text-base font-medium text-[#202124] flex items-center gap-2">
             Input Tables
+            <span className="text-xs font-normal text-[#5f6368] px-2 py-0.5 bg-[#f1f3f4] rounded-full">
+              {inputs.length}
+            </span>
           </h3>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-full border border-blue-100">
-            {inputs.length} detected
-          </span>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
+        <div className="bg-white rounded-lg border border-[#dadce0] overflow-hidden">
+          <table className="min-w-full divide-y divide-[#f1f3f4]">
+            <thead className="bg-[#f8f9fa]">
               <tr>
-                <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/2">
                   Table Name
                 </th>
-                <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/4">
+                  Storage
+                </th>
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/4">
                   Execution Behavior
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-[#f1f3f4]">
               {inputs.length > 0 ? (
                 inputs.map((item, idx) => <RelationRow key={idx} item={item} />)
               ) : (
                 <tr>
                   <td
-                    colSpan={2}
-                    className="px-6 py-8 text-center text-sm text-gray-400 italic"
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-sm text-[#5f6368] italic"
                   >
                     No input tables detected for this job.
                   </td>
@@ -68,76 +72,82 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
 
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+          <h3 className="text-base font-medium text-[#202124] flex items-center gap-2">
             Output Tables
+            <span className="text-xs font-normal text-[#5f6368] px-2 py-0.5 bg-[#f1f3f4] rounded-full">
+              {outputs.length}
+            </span>
           </h3>
-          <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs font-bold rounded-full border border-purple-100">
-            {outputs.length} detected
-          </span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {outputs.length > 0 ? (
-            outputs.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center p-3 bg-white border border-gray-100 rounded-lg shadow-sm hover:border-purple-200 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500 mr-3">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+        <div className="bg-white rounded-lg border border-[#dadce0] overflow-hidden">
+          <table className="min-w-full divide-y divide-[#f1f3f4]">
+            <thead className="bg-[#f8f9fa]">
+              <tr>
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/2">
+                  Table Name
+                </th>
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/4">
+                  Storage
+                </th>
+                <th className="px-6 py-3 text-left text-[10px] font-bold text-[#5f6368] uppercase tracking-widest w-1/4">
+                  Write Mode
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f1f3f4]">
+              {outputs.length > 0 ? (
+                outputs.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-[#f8f9fa] transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                          <span 
+                            onClick={() => navigate(`/tables/${encodeURIComponent(item.full_name || item.name)}`)}
+                            className="text-sm font-normal text-[#202124] group-hover:text-[#1a73e8] cursor-pointer hover:underline"
+                          >
+                            {item.full_name || item.name}
+                          </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <div className={`w-1.5 h-1.5 rounded-full ${item.storage === 'bigquery' ? 'bg-[#4285f4]' : 'bg-gray-400'}`} />
+                        <span className="text-xs text-[#5f6368] font-normal uppercase">
+                          {item.storage || "-"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        item.write_mode === 'OVERWRITE' 
+                          ? 'bg-red-50 text-red-700 border border-red-100' 
+                          : 'bg-blue-50 text-[#1a73e8] border border-blue-100'
+                      }`}>
+                        {item.write_mode || "N/A"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-sm text-[#5f6368] italic"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 17v-2a4 4 0 014-4h4m-4-4l4 4-4 4"
-                    />
-                  </svg>
-                </div>
-                <div className="truncate">
-                  <div className="text-sm font-semibold text-gray-900 truncate">
-                    {item.full_name || item.name}
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase font-bold">
-                    {item.type}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full p-8 text-center text-sm text-gray-400 italic border-2 border-dashed border-gray-100 rounded-xl">
-              No output tables detected.
-            </div>
-          )}
+                    No output tables detected.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
-
-      {/* View Full Graph Footer */}
-      <div className="mt-12 bg-[#f8f9fa] border border-[#dadce0] rounded-xl p-6 flex items-center justify-between">
-         <div className="flex items-center gap-4">
-           <div className="w-12 h-12 bg-[#e8f0fe] rounded-full flex items-center justify-center text-xl shadow-sm">🕸️</div>
-           <div>
-             <h4 className="text-sm font-bold text-[#202124]">Interactive Lineage Explorer</h4>
-             <p className="text-xs text-[#5f6368]">Explore the complete run dependency and data lineage for this job.</p>
-           </div>
-         </div>
-         <button 
-          onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.job_id || job.id)}`)}
-          className="text-xs font-bold text-white bg-[#1a73e8] hover:bg-[#1765cc] px-8 py-3 rounded shadow-md transition-all uppercase tracking-widest"
-        >
-          View Full Graph
-        </button>
-      </div>
     </div>
   );
 };
 
 const RelationRow: React.FC<{ item: JobNodeRelation }> = ({ item }) => {
+  const navigate = useMfeNavigate();
   const isHard = item.dependency_type === "HARD";
-  const icon = isHard ? "⏳" : "🔗";
   const behaviorText = isHard
     ? "Waits for data readiness"
     : "Runs on schedule (no wait)";
@@ -146,27 +156,36 @@ const RelationRow: React.FC<{ item: JobNodeRelation }> = ({ item }) => {
     : "This job executes based on its schedule regardless of data readiness.";
 
   return (
-    <tr className="hover:bg-gray-50/50 transition-colors group">
+    <tr className="hover:bg-[#f8f9fa] transition-colors group">
       <td className="px-6 py-4">
         <div className="flex items-center">
-          <div className="w-2 h-2 rounded-full bg-blue-400 mr-3 group-hover:scale-125 transition-transform"></div>
-          <span className="text-sm font-medium text-gray-900">
+          <span 
+            onClick={() => navigate(`/tables/${encodeURIComponent(item.full_name || item.name)}`)}
+            className="text-sm font-normal text-[#202124] group-hover:text-[#1a73e8] cursor-pointer hover:underline"
+          >
             {item.full_name || item.name}
           </span>
         </div>
       </td>
       <td className="px-6 py-4">
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <div className={`w-1.5 h-1.5 rounded-full ${item.storage === 'bigquery' ? 'bg-[#4285f4]' : 'bg-gray-400'}`} />
+          <span className="text-xs text-[#5f6368] font-normal uppercase">
+            {item.storage || "-"}
+          </span>
+        </div>
+      </td>
+      <td className="px-6 py-4">
         <div className="flex items-center text-xs" title={tooltip}>
-          <span className="text-base mr-2">{icon}</span>
           <div className="flex flex-col">
             <span
-              className={`font-semibold ${
-                isHard ? "text-amber-600" : "text-blue-600"
+              className={`font-semibold text-xs ${
+                isHard ? "text-amber-600" : "text-[#1a73e8]"
               }`}
             >
               {isHard ? "HARD" : "SOFT"}
             </span>
-            <span className="text-gray-500 text-[10px]">{behaviorText}</span>
+            <span className="text-[#5f6368] text-[10px]">{behaviorText}</span>
           </div>
         </div>
       </td>

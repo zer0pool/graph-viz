@@ -46,7 +46,7 @@ const LineageRouteWrapper: React.FC<{
 
   return (
     <RemoteMount
-      key={`lineage-${rest || 'home'}`}
+      key="lineage-main"
       scope="lineage"
       module="./index"
       url={config.LINEAGE_MFE_URL}

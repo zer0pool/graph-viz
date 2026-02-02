@@ -65,7 +65,7 @@ export const mockTableNode: GraphNode = {
   type: "table",
   name: "test_table",
   full_name: "db.schema.test_table",
-  platform: "snowflake",
+  platform: "bigquery",
 };
 
 export const mockJobNode: GraphNode = {
