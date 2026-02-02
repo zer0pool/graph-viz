@@ -36,8 +36,9 @@ export function useGraphData() {
       type: string,
       id: string,
       isExpansion = false,
-      direction: "upstream" | "downstream" | "both" = "both",
+      direction: "upstream" | "downstream" | "both" | undefined = "both",
       rememberAsInitial = false,
+      signal?: AbortSignal,
     ) => {
       if (rememberAsInitial) {
         setInitialNode({ type, id });
@@ -50,7 +51,13 @@ export function useGraphData() {
       setError(null);
 
       try {
-        const data = await GraphApiService.fetchExpand(type, id, direction);
+        const data = await GraphApiService.fetchExpand(
+          type,
+          id,
+          direction || "both",
+          1,
+          signal,
+        );
 
         if (isExpansion) {
           setGraphData((prev: GraphState | null) => {

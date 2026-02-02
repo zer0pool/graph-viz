@@ -33,8 +33,8 @@ export class MermaidDslService {
       }
     }
 
-    // Truncate if still too long (e.g. 25 chars)
-    const MAX_LENGTH = 25;
+    // Truncate if still too long (Show more as requested)
+    const MAX_LENGTH = 50;
     if (displayName.length > MAX_LENGTH) {
       return displayName.substring(0, MAX_LENGTH - 3) + "...";
     }
@@ -61,19 +61,14 @@ export class MermaidDslService {
   static generate({ graphData, orientation, layout }: DslOptions): string {
     if (!graphData || graphData.nodes.length === 0) return "";
 
-    // 1. Config Section (Frontmatter)
-    let dsl = "---\nconfig:\n";
-    dsl += `  layout: ${layout}\n`;
-    dsl += "  flowchart:\n";
-    dsl += `    defaultRenderer: ${
-      layout === "dagre" ? "dagre-wrapper" : "elk"
-    }\n`;
-    dsl += "---\n";
+    // 1. Config Section (Directive style is often more reliable in v11)
+    let dsl = `%%{init: {"flowchart": {"defaultRenderer": "${layout === "dagre" ? "dagre-wrapper" : "elk"}"}}}%%\n`;
     dsl += `flowchart ${orientation}\n`;
 
     // 2. Style Section
     const graphStyles = [
-      "  classDef assetNode fill:#FFFFFF,stroke:#D1D5DB,stroke-width:1px,color:#111827,rx:10,ry:10",
+      "  classDef tableNode fill:#E8F0FE,stroke:#1A73E8,stroke-width:1px,color:#111827,rx:10,ry:10",
+      "  classDef jobNode fill:#E6F4EA,stroke:#1E8E3E,stroke-width:1px,color:#111827,rx:10,ry:10",
       "  classDef groupNode fill:#F8F9FA,stroke:#1A73E8,stroke-width:2px,stroke-dasharray: 5 5,color:#1A73E8,rx:20,ry:20",
       "  linkStyle default stroke:#666666,stroke-width:1.5px,fill:none",
     ].join("\n");
@@ -95,14 +90,14 @@ export class MermaidDslService {
         );
         const platform =
           (node as any).platform ||
-          (node.type === "table" ? "snowflake" : "dbt");
+          (node.type === "table" ? "bigquery" : "bigquery");
 
-        const richLabel = `<b><font color='#2352DB' size='1'>●</font> ${displayName}</b><br/><hr/><sub>${node.type} | ${platform}</sub>`;
+        const richLabel = `<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;padding:10px 12px;margin:0;height:auto;min-width:120px;white-space:nowrap;box-sizing:border-box;'><div style='font-weight:bold;font-size:11px;margin:0;'>${displayName}</div><div style='width:100%;height:1px;background:rgba(0,0,0,0.1);margin:4px 0;'></div><div style='font-size:10px;color:#666;margin:0;'>${node.type} | ${platform}</div></div>`.replace(/>\s+</g, '><');
         const escapedLabel = richLabel.replace(/"/g, '\\"');
         const tooltip = (node.label || node.name).replace(/"/g, '\\"');
 
         dsl += `  ${safeId}@{ label: "${escapedLabel}", tooltip: "${tooltip}" }\n`;
-        dsl += `  ${safeId}:::assetNode\n`;
+        dsl += `  ${safeId}:::${node.type === "table" ? "tableNode" : "jobNode"}\n`;
       }
     });
 
@@ -132,10 +127,6 @@ export class MermaidDslService {
       dsl += `  ${safeSource} ${arrow} ${safeTarget}\n`;
     });
 
-    console.log(
-      "[MermaidDsl] Generated DSL (First 500 chars):\n",
-      dsl.substring(0, 500),
-    );
     return dsl;
   }
 }

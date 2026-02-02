@@ -283,7 +283,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: fadeInMenu 0.15s ease-out;
+  animation: fadeInMenu 0.1s ease-out;
+  transition: none !important;
   transform: translate(-50%, -100%);
   pointer-events: auto;
 }
@@ -591,51 +592,54 @@ foreignObject {
   overflow: visible !important;
 }
 
-/* Dagster-Style assetNode */
-.assetNode > rect,
-.assetNode > polygon,
-.assetNode > path,
-.assetNode > circle {
-  fill: #ffffff !important;
-  stroke: #d1d5db !important;
-  stroke-width: 1px !important;
+.tableNode > rect, .tableNode > polygon, .tableNode > path, .tableNode > circle {
+  fill: #E6F4EA !important; /* Green */
+  stroke: #1E8E3E !important;
+  stroke-width: 1.5px !important;
 }
 
-.assetNode .nodeLabel {
+.jobNode > rect, .jobNode > polygon, .jobNode > path, .jobNode > circle {
+  fill: #E8F0FE !important; /* Blue */
+  stroke: #1A73E8 !important;
+  stroke-width: 1.5px !important;
+}
+
+.tableNode .nodeLabel, 
+.jobNode .nodeLabel {
   color: #111827 !important;
-  padding: 2px 8px !important; /* Reduced padding for slim appearance */
+  padding: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  line-height: 1.2 !important; /* Tighter line height */
+  min-height: 0 !important;
 }
 
-.assetNode hr {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 0 !important; /* Remove margin entirely */
-  width: 100%;
+.tableNode hr,
+.jobNode hr {
+  display: none; /* We use a div in the DSL now */
 }
 
-.assetNode sub {
+.tableNode sub,
+.jobNode sub {
   color: #6b7280;
-  font-size: 8px; /* Even smaller metadata */
+  font-size: 9px;
   line-height: 1;
 }
 
 /* Ensure text color is applied */
-g.assetNode text {
+g.tableNode text,
+g.jobNode text {
   fill: #111827 !important;
 }
 
 .node .label {
   text-align: center;
+  width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 100% !important;
 }
 
 .node foreignObject {
@@ -647,22 +651,22 @@ g.assetNode text {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 100% !important;
-  text-align: center !important;
-  padding: 4px 8px !important; /* Restored some minimal padding */
-  line-height: 1.2 !important;
-  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important; /* Allow expansion */
 }
 
 /* Ensure sub and b tags don't break flex alignment */
 .nodeLabel b,
 .nodeLabel sub,
-.nodeLabel font {
-  display: inline-block !important;
-  line-height: inherit !important;
+.nodeLabel font,
+.nodeLabel div {
+  display: block !important; /* Stack vertically */
+  line-height: 1 !important;
   margin: 0 !important;
   padding: 0 !important;
-  vertical-align: middle !important;
 }
 
 g.table text {
@@ -678,8 +682,10 @@ g.table text {
   width: 100%;
   height: 100%;
   overflow: hidden; /* Changed from auto to hidden to prevent scrollbar flicker during zoom */
-  background: #ffffff;
-  padding: 0; /* Removing padding to make D3 calculations simpler */
+  background-color: #ffffff;
+  background-image: radial-gradient(#dadce0 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 0; 
   box-sizing: border-box;
   position: relative;
 }
@@ -707,12 +713,9 @@ g.table text {
 .node polygon,
 .node circle,
 .node ellipse,
-.node path:not(.edgePath),
-.assetNode > rect,
-.assetNode > polygon,
-.assetNode > path,
-.assetNode > circle {
-  fill: #ffffff !important;
+.node path:not(.edgePath) {
+  /* Default white, overridden by specific types */
+  fill: #ffffff;
 }
 
 /* Ensure markers (arrowheads) maintain their color and no fill glitch */

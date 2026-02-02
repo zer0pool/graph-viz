@@ -64,7 +64,7 @@ The system uses MySQL 8 as its primary data store.
 1. Client requests lineage for `target_id`.
 2. `GraphQueryService` identifies immediate neighbors via `job_edge`.
 3. High-level analysis (full upstream/downstream) utilizes the `job_closure` table.
-4. Data is serialized into a Cytoscape-compatible JSON format.
+4. Data is serialized into a **Mermaid DSL** or compatible JSON format (removed legacy Cytoscape).
 
 ### 2. Data Synchronization
 - External triggers periodically update job/table states via the `/sync` endpoints.

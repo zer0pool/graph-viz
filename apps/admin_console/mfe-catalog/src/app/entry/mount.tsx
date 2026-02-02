@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import App from "../App";
 import { ApiProvider } from "../../shared/api/ApiContext";
 import { AuthClient } from "../../shared/types/auth";
+import { BrowserRouter } from "react-router-dom";
 
 export function mount(
   el: HTMLElement,
@@ -27,10 +28,12 @@ export function mount(
 
     root.render(
       <ApiProvider auth={auth}>
-        <App
-          eventTarget={props.eventTarget}
-          initialSelection={props.initialSelection}
-        />
+        <BrowserRouter>
+          <App
+            eventTarget={props.eventTarget}
+            initialSelection={props.initialSelection}
+          />
+        </BrowserRouter>
       </ApiProvider>,
     );
   };

@@ -9,21 +9,20 @@ export class GraphApiService {
     id: string,
     direction: "upstream" | "downstream" | "both" = "both",
     depth = 1,
+    signal?: AbortSignal,
   ): Promise<GraphState> {
     const params = new URLSearchParams({
-      node_id: id.includes(":") ? id : `${type}:${id}`, // Ensure full URN if not present, though usually it is
+      node_id: id.includes(":") ? id : `${type}:${id}`,
       depth: String(depth),
     });
 
-    // Only append direction if it's not "both" (default behavior of backend is likely both/lineage)
     if (direction !== "both") {
       params.append("direction", direction);
     }
 
-    // Determine correct endpoint based on legacy vs new proxy
-    // Using the one requested by user: /api/v1/lineage/graph
     const response = await fetch(
       `${API_BASE_URL}/api/v1/lineage/graph?${params.toString()}`,
+      { signal },
     );
 
     if (!response.ok) {

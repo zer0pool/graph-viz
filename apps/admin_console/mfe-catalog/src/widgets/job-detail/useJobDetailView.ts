@@ -14,6 +14,7 @@ export function useJobDetailView(jobId: string) {
   const { job, loading: loadingJob, error: errorJob } = useJobOverview(jobId);
   const {
     runs,
+    summary,
     loading: loadingRuns,
     error: errorRuns,
   } = useJobRunHistory(jobId);
@@ -50,6 +51,7 @@ export function useJobDetailView(jobId: string) {
     loadingJob,
     errorJob,
     runs,
+    summary,
     loadingRuns,
     errorRuns,
     projectJobs,

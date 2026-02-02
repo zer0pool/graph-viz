@@ -16,8 +16,8 @@ export const config = {
   CATALOG_MFE_URL:
     runtimeConfig.CATALOG_MFE_URL || "http://localhost:5102/remoteEntry.js",
   DEBUG: isDev,
-  // Progressive Loading Limit (default: 3)
+  // Progressive Loading Limit (default: 10)
   PROGRESSIVE_LOADING_LIMIT: Number(
-    (import.meta as any).env.VITE_PROGRESSIVE_LOADING_LIMIT || 3,
+    (import.meta as any).env.VITE_PROGRESSIVE_LOADING_LIMIT || 10,
   ),
 };

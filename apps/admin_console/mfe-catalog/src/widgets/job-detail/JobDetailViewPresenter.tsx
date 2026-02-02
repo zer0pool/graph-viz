@@ -1,6 +1,7 @@
 import React from "react";
 import { ViewMode } from "../../shared/types";
 import { DetailLayout, Tab } from "../../shared/ui/DetailLayout";
+import { CompactDetailLayout } from "../../shared/ui/CompactDetailLayout";
 import { JobOverview } from "../../entities/job/JobOverview";
 import { JobLineage } from "../../entities/job/JobLineage";
 import { JobRunHistory } from "../../entities/job/JobRunHistory";
@@ -8,6 +9,7 @@ import { JobRunTimeline } from "../../entities/job/JobRunTimeline";
 import { JobRunDrawer } from "../../entities/job/JobRunDrawer";
 import { EntityContextLink } from "../../shared/ui/EntityContextLink";
 import { JobRun, Job } from "../../shared/types/job";
+import { GitBranch } from "lucide-react";
 
 const JOB_TABS: Tab[] = [
   { id: "info", label: "Overview" },
@@ -37,6 +39,7 @@ interface JobDetailViewPresenterProps {
   onNextPage: () => void;
   onPrevPage: () => void;
   onNavigateToJob: (id: string) => void;
+  summary?: any;
 }
 
 export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
@@ -61,6 +64,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
   onNextPage,
   onPrevPage,
   onNavigateToJob,
+  summary,
 }) => {
   if (errorJob)
     return (
@@ -72,9 +76,23 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
       </div>
     );
 
+  const Layout = mode === "EMBEDDED" ? CompactDetailLayout : (DetailLayout as any);
+
+  const headerActions = tab === 'lineage' ? (
+    <button 
+      onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+        detail: { path: `/lineage/job:${encodeURIComponent(job?.job_id || job?.id || jobId)}` } 
+      }))}
+      className="flex items-center gap-2 px-3 py-1.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-medium rounded shadow-sm transition-all shadow-[#3c404326]"
+    >
+      <GitBranch className="w-3.5 h-3.5" />
+      See lineage graph
+    </button>
+  ) : null;
+
   return (
     <>
-      <DetailLayout
+      <Layout
         title={job?.job_id || jobId}
         tabs={JOB_TABS}
         activeTab={tab}
@@ -82,12 +100,13 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
         mode={mode}
         type="job"
         owner={job?.owner || job?.properties?.owner}
-        lifecycle={job?.lifecycle_status || job?.properties?.lifecycle_status}
+        actions={headerActions}
       >
         <div className="p-6">
           {tab === "info" && (
             <div className="space-y-6 animate-fade-in">
-              {/* Navigation Header */}
+              {/* Navigation Header - Hide in Embedded Mode */}
+              {mode !== "EMBEDDED" && (
               <div className="flex items-center gap-8 p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6">
                 <EntityContextLink
                   title="Parent Project"
@@ -101,14 +120,15 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
                   path={job?.owner || job?.properties?.owner ? `/users/${job.owner || job.properties?.owner}` : "/"}
                 />
               </div>
+              )}
 
               <JobOverview
                 job={job || { id: jobId, name: jobId, status: "loading" }}
                 loading={loadingJob}
               />
 
-              {/* Other Jobs in Project */}
-              {job?.project_id && (
+              {/* Other Jobs in Project - Hide in Embedded Mode */}
+              {mode !== "EMBEDDED" && job?.project_id && (
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
@@ -120,11 +140,11 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
                     <div className="text-sm text-gray-500">Loading other jobs...</div>
                   ) : (
                     <div className="space-y-2">
-                       {projectJobs.filter(j => j.id !== jobId).length === 0 && (
+                       {projectJobs?.filter((j: any) => j.id !== jobId).length === 0 && (
                          <div className="text-sm text-gray-400 italic">No other jobs found in this project.</div>
                        )}
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {projectJobs.filter(j => j.id !== jobId).map(otherJob => (
+                        {projectJobs?.filter((j: any) => j.id !== jobId).map((otherJob: any) => (
                           <div 
                             key={otherJob.id}
                             onClick={() => onNavigateToJob(otherJob.id)}
@@ -170,8 +190,6 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
                   )}
                 </div>
               )}
-
-              <JobRunTimeline runs={runs} onRunSelect={onSetSelectedRun} />
             </div>
           )}
           {tab === "lineage" && (
@@ -183,16 +201,19 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
             </div>
           )}
           {tab === "runs" && (
-            <div className="animate-fade-in">
+            <div className="space-y-6 animate-fade-in">
+              <JobRunTimeline runs={runs} onRunSelect={onSetSelectedRun} />
+              
               <JobRunHistory
                 runs={runs}
+                summary={summary}
                 loading={loadingRuns}
                 onRunSelect={onRunSelect}
               />
             </div>
           )}
         </div>
-      </DetailLayout>
+      </Layout>
 
       {/* Slide-over Drawer for Run Details */}
       <JobRunDrawer run={selectedRun} onClose={onCloseDrawer} />

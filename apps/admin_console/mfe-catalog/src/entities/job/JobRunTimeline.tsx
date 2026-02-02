@@ -19,10 +19,10 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
   });
 
   const COLORS = {
-    SUCCESS: "#188038",
-    FAILED: "#C5221F",
-    RUNNING: "#1a73e8",
-    UNKNOWN: "#E5E7EB",
+    SUCCESS: "#1e8e3e", // GCP Dark Green
+    FAILED: "#d93025",  // GCP Dark Red
+    RUNNING: "#1a73e8", // GCP Blue
+    UNKNOWN: "#e8eaed", // GCP Grey
   };
 
   const getStatusColor = (status: string) => {
@@ -34,22 +34,22 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
   };
 
   const option = {
-    grid: { top: 5, bottom: 5, left: 0, right: 0 },
+    grid: { top: 0, bottom: 0, left: 0, right: 0 },
     tooltip: {
       trigger: "item",
+      renderMode: "html",
+      appendToBody: true,
+      backgroundColor: "rgba(32, 33, 36, 0.95)",
+      borderColor: "#3c4043",
+      textStyle: { color: "#fff" },
+      extraCssText: "z-index: 100000; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);",
       formatter: (params: any) => {
         const run = params.data.data;
         return `
-          <div style="font-size:12px; font-weight:600;">RUN ID: ${
-            run.run_id
-          }</div>
-          <div style="font-size:11px;">Status: <span style="color:${
-            params.color
-          }">${run.status}</span></div>
-          <div style="font-size:11px;">Start: ${run.start_time}</div>
-          <div style="font-size:11px;">Duration: ${formatDuration(
-            run.duration
-          )}</div>
+          <div style="font-size:11px; font-weight:700; color:#fff; margin-bottom:4px;">RUN ID: ${run.run_id}</div>
+          <div style="font-size:10px; color:#bdc1c6;">Status: <span style="color:${params.color}; font-weight:700;">${run.status}</span></div>
+          <div style="font-size:10px; color:#bdc1c6;">Start: ${run.start_time}</div>
+          <div style="font-size:10px; color:#bdc1c6;">Duration: ${formatDuration(run.duration || (run as any).duration_sec)}</div>
         `;
       },
     },
@@ -63,7 +63,9 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
           itemStyle: { color: getStatusColor(run.status) },
           data: run,
         })),
-        barWidth: "90%",
+        barWidth: "100%",
+        barGap: "0%",
+        barCategoryGap: "0%",
       },
     ],
   };
