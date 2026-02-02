@@ -94,6 +94,15 @@
   transition: all 0.3s ease-in-out !important;
 }
 
+/* Match GCP console alignment for List view - Centered as requested */
+[data-view-mode="list"] .graph-control-bar {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  top: 16px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
 /* Parent Shell for Graph/Canvas - Always 100% height */
 .graph-shell {
   flex: 1 !important;
@@ -111,7 +120,7 @@
    so the floating bar doesn't cover anything.
 */
 [data-view-mode="list"] .list-view-container {
-  padding-top: 88px !important; /* Space for the floating control bar */
+  padding-top: 80px !important; /* Space for the centered floating control bar */
 }
 
 .toolbar-shell {
