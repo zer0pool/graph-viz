@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scheduling Lineage Manager</title>
+    <link rel="stylesheet" href="static/css/modern-console.css">
+    <link rel="stylesheet" href="static/css/mermaid-styles.css">
+    <link rel="stylesheet" href="static/css/mermaid-zoom-styles.css">
+    <link rel="stylesheet" href="static/css/context-menu.css">
+    <link rel="icon" href="static/images/logo.png">
+    <link rel="shortcut icon" href="static/images/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+
+<body data-poll-interval="15000">
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="/static/index.html" class="nav-brand" aria-label="Lineage Manager home">
+            <img src="static/images/logo.png" alt="Logo" class="nav-logo">
+            <h2>Lineage Manager</h2>
+        </a>
+        <div id="search-bar">
+            <svg id="search-icon" viewBox="0 0 16 16">
+                <path
+                    d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85zm-5.242.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z">
+                </path>
+            </svg>
+            <input type="text" id="jobId" placeholder="Search job or table..." autocomplete="off" />
+            <button id="loadBtn">Search</button>
+            <div id="suggestions" class="suggestions" hidden></div>
+        </div>
+        <div id="user-controls">
+            <button id="login-btn" class="btn-primary">Sign in</button>
+            <div id="user-chip" class="user-chip" hidden>
+                <img id="user-avatar" alt="User profile">
+
+                <span class="caret">▼</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="main-layout">
+        <!-- Left Control Panel -->
+        <aside id="control-panel" class="side-panel collapsed" aria-label="Explorer controls">
+            <button id="control-toggle" class="panel-handle" type="button" aria-expanded="false"
+                aria-controls="control-panel" title="Show controls">
+                <span class="chevron">›</span>
+            </button>
+            <div class="panel-body">
+                <div class="panel-heading">
+                    <h3>Explorer Controls</h3>
+                    <p>Tune the lineage view and run actions.</p>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Graph layout</div>
+                    <div class="graph-layout-card">
+                        <button id="reset-graph" class="btn-secondary btn-full" type="button">Reset graph</button>
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">Node actions</div>
+                    <div id="direction-card" class="direction-card">
+                        <button id="direction-toggle" class="direction-header" type="button" aria-expanded="true">
+                            <span>Direction</span>
+                            <span class="direction-caret">▾</span>
+                        </button>
+                        <div id="direction-body" class="direction-body">
+                            <label class="direction-option checked" data-direction-option>
+                                <input type="checkbox" id="direction-upstream" value="upstream" checked />
+                                <span class="check-icon"></span>
+                                <span class="label-text">Upstream</span>
+                            </label>
+                            <label class="direction-option checked" data-direction-option>
+                                <input type="checkbox" id="direction-downstream" value="downstream" checked />
+                                <span class="check-icon"></span>
+                                <span class="label-text">Downstream</span>
+                            </label>
+                            <button id="direction-apply" class="btn-primary btn-full" type="button">Apply</button>
+                        </div>
+                    </div>
+                    <div class="panel-action">
+                        <button id="hide-node" class="btn-secondary btn-full" type="button" disabled>Hide selected
+                            node</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Graph Area -->
+        <section id="graph-area">
+            <div id="graph-shell">
+                <div id="graph-toolbar" class="floating-panel toolbar-shell">
+                    <div class="toolbar-left">
+                        <div class="view-toggle" role="tablist" aria-label="View mode">
+                            <button class="view-tab active" type="button" role="tab" aria-selected="true">Graph</button>
+                            <button class="view-tab" type="button" role="tab" aria-selected="false">List</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <!-- Desktop Buttons Container -->
+                        <div id="toolbar-main-actions" class="toolbar-actions">
+                            <!-- Actions -->
+                            <button id="download-svg" class="simple-btn" title="Save as Image">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                    <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                                </svg>
+                            </button>
+
+                            <span class="toolbar-divider"></span>
+
+                            <!-- Direction Controls -->
+                            <div class="toolbar-dropdown-wrapper">
+                                <button id="orientation-btn" class="simple-btn" title="Change Direction">
+                                    <span class="btn-icon">
+                                        <svg class="icon-svg" viewBox="0 0 24 24">
+                                            <path fill="currentColor"
+                                                d="M11 21H5q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v6.7q-.475-.175-.975-.288T19 11.3V5H5v14h6.05q.075.525.238 1.025t.412.975H11Zm-6-5h9.55q.625-.8 1.55-1.325T18 14.05V11H5v5Zm0-7h14V7H5v2Zm0-4h14V5H5v-.25V5Zm16.6 15.6l-2-2l1.4-1.4l1.6 1.6V15h2v3.8l1.6-1.6l1.4 1.4l-2 2q-.425.425-1.075.425T21.6 20.6Z" />
+                                        </svg>
+                                    </span>
+                                </button>
+
+                                <div id="orientation-menu" class="layout-popup" hidden>
+                                    <div class="layout-header">
+                                        <p>Direction</p>
+                                    </div>
+                                    <div class="layout-list">
+                                        <!-- Left to Right -->
+                                        <button class="layout-item active" data-direction="LR">
+                                            <div class="layout-item-content">
+                                                <div class="layout-item-left">
+                                                    <svg class="item-icon" viewBox="0 0 24 24">
+                                                        <path fill="currentColor"
+                                                            d="M13.4 17.6L19 12l-5.6-5.6l-1.4 1.4l3.175 3.2H5v2h10.175L12 16.2l1.4 1.4Z" />
+                                                    </svg>
+                                                    <span>Left to right</span>
+                                                </div>
+                                                <svg class="check-icon" viewBox="0 0 24 24">
+                                                    <path fill="currentColor"
+                                                        d="m10.5 16.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4l-7 7Z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </button>
+
+                                        <!-- Top to Bottom -->
+                                        <button class="layout-item" data-direction="TB">
+                                            <div class="layout-item-content">
+                                                <div class="layout-item-left">
+                                                    <svg class="item-icon" viewBox="0 0 24 24">
+                                                        <path fill="currentColor"
+                                                            d="M11 19V8.825L7.8 12L6.4 10.6L12 5l5.6 5.6L16.2 12l-3.2-3.175V19h-2Z"
+                                                            transform="rotate(180 12 12)" />
+                                                    </svg>
+                                                    <span>Top to bottom</span>
+                                                </div>
+                                                <svg class="check-icon" viewBox="0 0 24 24">
+                                                    <path fill="currentColor"
+                                                        d="m10.5 16.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4l-7 7Z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Layout Controls -->
+                            <div class="toolbar-dropdown-wrapper">
+                                <button id="layout-btn" class="simple-btn" title="Change Layout">
+                                    <span class="btn-icon">
+                                        <!-- Hierarchical Icon (Tree structure) -->
+                                        <svg class="icon-svg" viewBox="0 0 24 24">
+                                            <path fill="currentColor"
+                                                d="M5 22q-1.25 0-2.125-.875T2 19q0-.975.563-1.75T4 16.175V14q0-1.25.875-2.125T7 11h4V7.825q-.875-.3-1.437-1.075T9 5q0-1.25.875-2.125T12 2t2.125.875T15 5q0 .975-.562 1.75T13 7.825V11h4q1.25 0 2.125.875T20 14v2.175q.875.3 1.438 1.075T22 19q0 1.25-.875 2.125T19 22t-2.125-.875T16 19q0-.975.563-1.75T18 16.175V14q0-.425-.288-.712T17 13h-4v3.175q.875.3 1.438 1.075T15 19q0 1.25-.875 2.125T12 22t-2.125-.875T9 19q0-.975.563-1.75T11 16.175V13H7q-.425 0-.712.288T6 14v2.175q.875.3 1.438 1.075T8 19q0 1.25-.875 2.125T5 22m0-2q.425 0 .713-.288T6 19t-.288-.712T5 18t-.712.288T4 19t.288.713T5 20m7 0q.425 0 .713-.288T13 19t-.288-.712T12 18t-.712.288T11 19t.288.713T12 20m7 0q.425 0 .713-.288T20 19t-.288-.712T19 18t-.712.288T18 19t.288.713T19 20M12 6q.425 0 .713-.288T13 5t-.288-.712T12 4t-.712.288T11 5t.288.713T12 6" />
+                                        </svg>
+                                    </span>
+                                </button>
+
+                                <!-- Custom Menu adapted from user snippet -->
+                                <div id="layout-menu" class="layout-popup" hidden>
+                                    <div class="layout-header">
+                                        <p>Layout</p>
+                                    </div>
+                                    <div class="layout-list">
+                                        <!-- Hierarchical (Dagre) -->
+                                        <button class="layout-item active" data-layout="dagre">
+                                            <div class="layout-item-content">
+                                                <div class="layout-item-left">
+                                                    <!-- Hierarchical Icon -->
+                                                    <svg class="item-icon" viewBox="0 0 24 24">
+                                                        <path fill="currentColor"
+                                                            d="M5 22q-1.25 0-2.125-.875T2 19q0-.975.563-1.75T4 16.175V14q0-1.25.875-2.125T7 11h4V7.825q-.875-.3-1.437-1.075T9 5q0-1.25.875-2.125T12 2t2.125.875T15 5q0 .975-.562 1.75T13 7.825V11h4q1.25 0 2.125.875T20 14v2.175q.875.3 1.438 1.075T22 19q0 1.25-.875 2.125T19 22t-2.125-.875T16 19q0-.975.563-1.75T18 16.175V14q0-.425-.288-.712T17 13h-4v3.175q.875.3 1.438 1.075T15 19q0 1.25-.875 2.125T12 22t-2.125-.875T9 19q0-.975.563-1.75T11 16.175V13H7q-.425 0-.712.288T6 14v2.175q.875.3 1.438 1.075T8 19q0 1.25-.875 2.125T5 22m0-2q.425 0 .713-.288T6 19t-.288-.712T5 18t-.712.288T4 19t.288.713T5 20m7 0q.425 0 .713-.288T13 19t-.288-.712T12 18t-.712.288T11 19t.288.713T12 20m7 0q.425 0 .713-.288T20 19t-.288-.712T19 18t-.712.288T18 19t.288.713T19 20M12 6q.425 0 .713-.288T13 5t-.288-.712T12 4t-.712.288T11 5t.288.713T12 6">
+                                                        </path>
+                                                    </svg>
+                                                    <span>Hierarchical</span>
+                                                </div>
+                                                <!-- Check Icon (Visible when active) -->
+                                                <svg class="check-icon" viewBox="0 0 24 24">
+                                                    <path fill="currentColor"
+                                                        d="m10.5 16.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4l-7 7Z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </button>
+
+                                        <!-- Adaptive (ELK) -->
+                                        <button class="layout-item" data-layout="elk">
+                                            <div class="layout-item-content">
+                                                <div class="layout-item-left">
+                                                    <!-- Adaptive Icon -->
+                                                    <svg class="item-icon" viewBox="0 0 24 24">
+                                                        <path fill="currentColor"
+                                                            d="M7 22q-1.25 0-2.125-.875T4 19q0-.975.563-1.75T6 16.175v-8.35q-.875-.3-1.437-1.075T4 5q0-1.25.875-2.125T7 2t2.125.875T10 5q0 .975-.562 1.75T8 7.825V8q0 1.25.875 2.125T11 11h2q2.075 0 3.538 1.463T18 16v.175q.875.3 1.438 1.075T20 19q0 1.25-.875 2.125T17 22t-2.125-.875T14 19q0-.975.563-1.75T16 16.175V16q0-1.25-.875-2.125T13 13h-2q-.85 0-1.612-.262T8 12v4.175q.875.3 1.438 1.075T10 19q0 1.25-.875 2.125T7 22m0-2q.425 0 .713-.288T8 19t-.288-.712T7 18t-.712.288T6 19t.288.713T7 20m10 0q.425 0 .713-.288T18 19t-.288-.712T17 18t-.712.288T16 19t.288.713T17 20M7 6q.425 0 .713-.288T8 5t-.288-.712T7 4t-.712.288T6 5t.288.713T7 6">
+                                                        </path>
+                                                    </svg>
+                                                    <span>Adaptive</span>
+                                                </div>
+                                                <!-- Check Icon (Visible when active) -->
+                                                <svg class="check-icon" viewBox="0 0 24 24">
+                                                    <path fill="currentColor"
+                                                        d="m10.5 16.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4l-7 7Z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span class="toolbar-divider"></span>
+
+                            <!-- Zoom Controls -->
+                            <button id="zoom-fit" class="simple-btn" title="Fit to View">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                    <path fill="currentColor"
+                                        d="M20 10V7h-3V5h3q.825 0 1.413.588T22 7v3zM2 10V7q0-.825.588-1.412T4 5h3v2H4v3zm15 9v-2h3v-3h2v3q0 .825-.587 1.413T20 19zM4 19q-.825 0-1.412-.587T2 17v-3h2v3h3v2z">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button id="zoom-in" class="simple-btn" title="Zoom In">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                    <path fill="currentColor"
+                                        d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14m-1-1.5v-2h-2v-2h2v-2h2v2h2v2h-2v2z">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button id="zoom-out" class="simple-btn" title="Zoom Out">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="1.2em" height="1.2em">
+                                    <path fill="currentColor"
+                                        d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14M7 10.5v-2h5v2z">
+                                    </path>
+                                </svg>
+                            </button>
+                            <span id="zoom-level" class="zoom-display">100%</span>
+
+                            <div class="button-group">
+                                <button id="undo-btn" class="simple-btn" title="Undo" disabled>
+                                    <svg class="icon-svg" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M8 19q-.425 0-.712-.288T7 18t.288-.712T8 17h6.1q1.575 0 2.738-1T18 13.5T16.838 11T14.1 10H7.8l1.9 1.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275L4.7 9.7q-.15-.15-.213-.325T4.426 9t.063-.375T4.7 8.3l3.6-3.6q.275-.275.7-.275t.7.275t.275.7t-.275.7L7.8 8h6.3q2.425 0 4.163 1.575T20 13.5t-1.737 3.925T14.1 19z" />
+                                    </svg>
+                                </button>
+                                <button id="redo-btn" class="simple-btn" title="Redo" disabled>
+                                    <svg class="icon-svg" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M16.2 10H9.9q-1.575 0-2.738 1T6 13.5T7.163 16T9.9 17H16q.425 0 .713.288T17 18t-.288.713T16 19H9.9q-2.425 0-4.163-1.575T4 13.5t1.738-3.925T9.9 8h6.3l-1.9-1.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l3.6 3.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-3.6 3.6q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="toolbar-divider"></span>
+
+                            <!-- Expand Controls -->
+                            <div class="button-group">
+                                <button id="expand-upstream-btn" class="simple-btn" title="Expand Upstream" disabled>
+                                    <svg class="icon-svg" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                                    </svg>
+                                </button>
+
+                                <button id="expand-smart-btn" class="simple-btn" title="Smart Expand" disabled>
+                                    <span class="zoom-display">EXPAND</span>
+                                    <svg class="icon-svg" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M9.01 14H2v2h7.01v3L13 15l-3.99-4v3zm5.98-1v-3H22V8h-7.01V5L11 9l3.99 4z" />
+                                    </svg>
+                                </button>
+
+                                <button id="expand-downstream-btn" class="simple-btn" title="Expand Downstream"
+                                    disabled>
+                                    <svg class="icon-svg" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Burger Menu Button (Visible on narrow screens) -->
+                        <button id="toolbar-menu-btn" class="simple-btn toolbar-hamburger" title="Menu" type="button">
+                            <span class="hamburger-icon">|||</span>
+                        </button>
+
+                        <!-- Overflow Menu (Dropdown) -->
+                        <div id="toolbar-overflow-menu" class="floating-panel toolbar-dropdown" hidden>
+                            <!-- Replicated actions here or via JS if preferred, but for simplicity let's use JS to move elements or hide/show -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW LEGEND -->
+                <div id="graph-legend" class="floating-panel graph-legend">
+                    <div class="legend-item">
+                        <span class="legend-color legend-job"></span>
+                        <span>Job</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color legend-table"></span>
+                        <span>Table</span>
+                    </div>
+                </div>
+
+                <div id="mermaid-graph" class="mermaid-container"></div>
+                <div id="list-view" hidden>
+                    <div class="list-toolbar">
+                        <div class="view-toggle list-mode-toggle" role="tablist">
+                            <button class="view-tab active" data-list-mode="current" role="tab">Current Nodes</button>
+                            <button class="view-tab" data-list-mode="full" role="tab">Full Hierarchy</button>
+                        </div>
+                    </div>
+
+                    <!-- Current Graph Nodes -->
+                    <div id="list-view-current">
+                        <table id="node-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Owner</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="list-download-row">
+                            <button id="list-download" class="list-download-btn" type="button">Download Current
+                                CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Full Lineage Hierarchy -->
+                    <div id="list-view-full" hidden>
+                        <div class="full-lineage-header">
+                            <h3 id="full-lineage-title">Full Lineage</h3>
+                            <div class="full-lineage-actions">
+                                <button id="btn-load-full-lineage" class="btn-secondary" type="button" title="Reload">
+                                    <span class="icon">⟲</span> Reload
+                                </button>
+                                <button id="btn-download-full-lineage" class="btn-secondary" type="button" disabled
+                                    title="Download full lineage as Excel file">
+                                    <span class="icon">⬇</span> Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div id="full-lineage-notice" class="muted-text mb-2">Select a table to view lineage.</div>
+                        <div id="full-lineage-container" class="full-lineage-tree">
+                            <div class="empty-state">Select a node in the graph and click <strong>Load Full
+                                    Lineage</strong>.</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="graph-status" class="floating-panel" hidden>
+                    <span id="graph-status-text">Loading…</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Detail Panel -->
+        <div id="detail-resizer" class="panel-resizer" role="separator" aria-orientation="vertical"></div>
+        <aside id="detail-panel" class="side-panel detail collapsed" aria-label="Node details">
+            <button id="detail-toggle" class="panel-handle" type="button" aria-expanded="false"
+                aria-controls="detail-panel" title="Show details">
+                <span class="chevron">‹</span>
+            </button>
+            <div class="panel-body detail-body">
+                <div class="detail-header">
+                    <div class="detail-header-top">
+                        <div class="detail-heading">Details</div>
+                        <button id="detail-view-graph" class="view-graph-btn btn-icon-right" type="button" disabled
+                            title="Center the graph on this table/job">
+                            <span class="label">View in graph</span>
+                            <span class="icon-diagonal" aria-hidden="true">↗</span>
+                        </button>
+                    </div>
+                    <div class="detail-header-bottom">
+                        <div id="node-title" class="detail-title">Search the graph</div>
+                        <span id="node-type-badge" class="detail-pill muted">-</span>
+                    </div>
+                </div>
+
+                <!-- Job Details -->
+                <div id="detail-panel-body">
+                    <!-- Dynamically loaded components (job-detail.html, table-detail.html) -->
+                    <div class="detail-placeholder">Loading components...</div>
+                </div>
+
+                <!-- Table Details -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Drawers -->
+    <div id="profile-panel" class="profile-panel" hidden>
+        <div class="profile-card">
+            <button id="profile-close" class="profile-close" title="Close">&times;</button>
+            <div id="profile-content">
+                <img id="profile-photo" alt="Profile photo">
+                <h2 id="profile-name">User</h2>
+                <div id="profile-attribute-box" class="profile-attribute-box" aria-label="Profile attributes" hidden>
+                    <ul id="profile-attribute-list" class="profile-attribute-list"></ul>
+                </div>
+                <button id="logout-btn" class="btn-secondary logout-btn">Log out</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lineage-drawer" class="lineage-drawer" hidden>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div>
+                    <div id="lineage-drawer-title" class="drawer-title">Lineage details</div>
+                    <div id="lineage-drawer-subtitle" class="drawer-subtitle"></div>
+                </div>
+                <button id="lineage-drawer-close" class="drawer-close" type="button">&times;</button>
+            </div>
+            <div id="lineage-drawer-body" class="drawer-body"></div>
+        </div>
+    </div>
+
+    <!-- Node Context Menu -->
+    <div id="node-context-menu" class="floating-context-menu" hidden>
+        <button id="ctx-btn-expand-upstream" class="ctx-btn" aria-label="Expand Upstream"
+            data-tooltip="Expand Upstream">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+        </button>
+        <button id="ctx-btn-expand-downstream" class="ctx-btn" aria-label="Expand Downstream"
+            data-tooltip="Expand Downstream">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+            </svg>
+        </button>
+        <div class="ctx-divider"></div>
+        <button id="ctx-btn-detail" class="ctx-btn" aria-label="Go to Detail Panel" data-tooltip="Go to Detail Panel">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                    d="M3 21c-.55 0-1.02-.196-1.413-.587A1.926 1.926 0 0 1 1 19V5c0-.55.196-1.02.587-1.413A1.926 1.926 0 0 1 3 3h18c.55 0 1.02.196 1.413.587.39.393.587.863.587 1.413v14c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 21 21H3Zm0-2h18V7H3v12Zm13.675-6-1.9-1.9a.916.916 0 0 1-.287-.7c.008-.267.112-.5.312-.7.2-.183.433-.28.7-.287.267-.009.5.087.7.287l2.6 2.6c.2.2.3.433.3.7 0 .267-.1.5-.3.7l-2.6 2.6a.977.977 0 0 1-.688.287.93.93 0 0 1-.712-.287.948.948 0 0 1-.275-.7.95.95 0 0 1 .275-.7l1.875-1.9ZM6 14a.967.967 0 0 1-.713-.287A.968.968 0 0 1 5 13c0-.283.096-.52.287-.713A.967.967 0 0 1 6 12h2c.283 0 .52.096.713.287.191.192.287.43.287.713s-.096.52-.287.713A.967.967 0 0 1 8 14H6Z">
+                </path>
+            </svg>
+        </button>
+        <div class="ctx-divider"></div>
+        <button id="ctx-btn-delete" class="ctx-btn danger" aria-label="Delete Node" data-tooltip="Delete Node">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                    d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T14 21zm2-4h2V8H9zm4 0h2V8h-2z" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="static/js/app/mermaid-zoom-controls.js"></script>
+    <script type="module" src="static/js/app/mermaid-integration.js"></script>
+    <script type="module" src="static/js/auth.js"></script>
+    <script type="module" src="static/js/app/main.js"></script>
+</body>
+
+</html>

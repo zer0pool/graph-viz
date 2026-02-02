@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Data Portal (POC)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background: #f1f5f9;
+            color: #334155;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation (Parent App) */
+        nav {
+            width: 260px;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        nav h1 {
+            margin: 0 0 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        nav li a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 6px;
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        nav li a:hover,
+        nav li a.active {
+            color: white;
+            background: #1e293b;
+        }
+
+        /* Main Content Area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: white;
+            padding: 16px 32px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #0f172a;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        /* Embedded Lineage Container */
+        .lineage-container {
+            flex: 1;
+            padding: 20px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .iframe-shell {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h1>
+            <span>🚀</span> DataPortal
+        </h1>
+        <ul>
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Data Catalog</a></li>
+            <li><a href="#" class="active">Lineage Explorer</a></li>
+            <li><a href="#">Lineage Explorer Mini</a></li>
+            <li><a href="#">Governance</a></li>
+            <li><a href="#">Settings</a></li>
+        </ul>
+    </nav>
+    <main>
+        <header>
+            <h2>Lineage Explorer</h2>
+            <div class="user-menu">
+                <span>Demo User</span>
+                <div style="width: 32px; height: 32px; background: #cbd5e1; border-radius: 50%;"></div>
+            </div>
+        </header>
+        <div class="lineage-container">
+            <!-- Embedding the Lineage Manager here -->
+            <div class="iframe-shell">
+                <!-- Example: Start with a specific job context -->
+                <iframe src="/static/embed.html?job_id=L3_JOB_005" title="Embedded Lineage"></iframe>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simple navigation system
+        const pages = {
+            dashboard: `
+                <h2>Dashboard</h2>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Total Tables</div>
+                            <div style="font-size: 32px; font-weight: 700; color: #0f172a;">1,247</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Active Jobs</div>
+                            <div style="font-size: 32px; font-weight: 700; color: #0f172a;">342</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Data Quality</div>
+                            <div style="font-size: 32px; font-weight: 700; color: #10b981;">98.5%</div>
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px;">Recent Activity</h3>
+                        <div style="color: #64748b; font-size: 14px;">
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">✓ Pipeline job_daily_summary completed successfully</div>
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">✓ Table analytics.user_events updated</div>
+                            <div style="padding: 12px 0;">⚠ Schema change detected in raw.transactions</div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            catalog: `
+                <h2>Data Catalog</h2>
+                <div style="padding: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <input type="text" placeholder="Search tables, columns, tags..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
+                        <div style="display: grid; gap: 12px;">
+                            <div style="padding: 16px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                <div style="font-weight: 600; margin-bottom: 4px;">analytics.user_behavior</div>
+                                <div style="font-size: 13px; color: #64748b;">User interaction events and metrics</div>
+                                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Analytics</span>
+                                    <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px;">PII</span>
+                                </div>
+                            </div>
+                            <div style="padding: 16px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                <div style="font-weight: 600; margin-bottom: 4px;">raw.transactions</div>
+                                <div style="font-size: 13px; color: #64748b;">Raw transaction data from payment gateway</div>
+                                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                                    <span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Finance</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            lineage: `
+                <h2>Lineage Explorer</h2>
+                <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: calc(100vh - 120px);">
+                    <div style="display: flex; flex-direction: column;">
+                        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 600;">Light Theme</h3>
+                        <div style="flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <iframe src="/static/embed.html?job_id=L3_JOB_005" title="Light Theme" style="width: 100%; height: 100%; border: none;"></iframe>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 600;">Dark Theme</h3>
+                        <div style="flex: 1; border: 1px solid #404040; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <iframe src="/static/embed.html?job_id=L3_JOB_005&theme=dark" title="Dark Theme" style="width: 100%; height: 100%; border: none;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            `,
+            'lineage-mini': `
+                <h2>Lineage Explorer Mini</h2>
+                <div style="padding: 20px; display: flex; flex-direction: column; height: 50vh; gap: 20px;">
+                    <!-- Top Panel: Table Details -->
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 0 0 auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                            <div>
+                                <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600;">analytics.user_behavior</h3>
+                                <div style="font-size: 13px; color: #64748b;">User interaction events and behavioral metrics</div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">TABLE</span>
+                                <span style="background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">ACTIVE</span>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Rows</div>
+                                <div style="font-size: 16px; font-weight: 600;">2.4M</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Size</div>
+                                <div style="font-size: 16px; font-weight: 600;">1.2 GB</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Last Modified</div>
+                                <div style="font-size: 16px; font-weight: 600;">2h ago</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Partition</div>
+                                <div style="font-size: 16px; font-weight: 600;">event_date</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom Panel: Lineage Graph -->
+                    <div style="flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column;">
+                        <div style="padding: 12px 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">Data Lineage</div>
+                        </div>
+                        <div style="flex: 1; position: relative;">
+                            <iframe src="/static/embed.html?job_id=L3_JOB_005" title="Embedded Lineage" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            `,
+            governance: `
+                <h2>Governance</h2>
+                <div style="padding: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 16px; font-size: 16px;">Data Classification</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                            <div>
+                                <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Public</div>
+                                <div style="font-size: 24px; font-weight: 700;">847</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Internal</div>
+                                <div style="font-size: 24px; font-weight: 700;">312</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Confidential</div>
+                                <div style="font-size: 24px; font-weight: 700;">68</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Restricted</div>
+                                <div style="font-size: 24px; font-weight: 700;">20</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px;">Compliance Status</h3>
+                        <div style="color: #64748b; font-size: 14px;">
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                <span>GDPR Compliance</span>
+                                <span style="color: #10b981; font-weight: 600;">✓ Compliant</span>
+                            </div>
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                <span>Data Retention Policy</span>
+                                <span style="color: #10b981; font-weight: 600;">✓ Compliant</span>
+                            </div>
+                            <div style="padding: 12px 0; display: flex; justify-content: space-between;">
+                                <span>Access Control Review</span>
+                                <span style="color: #f59e0b; font-weight: 600;">⚠ Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            settings: `
+                <h2>Settings</h2>
+                <div style="padding: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px;">General Settings</h3>
+                        <div style="display: grid; gap: 16px;">
+                            <div>
+                                <label style="display: block; font-size: 13px; color: #64748b; margin-bottom: 6px;">Organization Name</label>
+                                <input type="text" value="DataPortal Inc." style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; color: #64748b; margin-bottom: 6px;">Default Project</label>
+                                <select style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <option>gizmopool</option>
+                                    <option>analytics-prod</option>
+                                    <option>data-warehouse</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" checked>
+                                    <span style="font-size: 14px;">Enable email notifications</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox">
+                                    <span style="font-size: 14px;">Auto-refresh lineage graph</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        // Navigation handler
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.textContent.trim().toLowerCase().replace(/\s+/g, '-');
+
+                // Update active state
+                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+                link.classList.add('active');
+
+                // Update content
+                const main = document.querySelector('main');
+                // Map page names to page keys
+                let pageKey = page;
+                if (page === 'data-catalog') pageKey = 'catalog';
+                else if (page === 'lineage-explorer') pageKey = 'lineage';
+                else if (page === 'lineage-explorer-mini') pageKey = 'lineage-mini';
+
+                main.innerHTML = `
+                    <header>
+                        <h2>${link.textContent}</h2>
+                        <div class="user-menu">
+                            <span>Demo User</span>
+                            <div style="width: 32px; height: 32px; background: #cbd5e1; border-radius: 50%;"></div>
+                        </div>
+                    </header>
+                    ${pages[pageKey] || pages.dashboard}
+                `;
+            });
+        });
+    </script>
+</body>
+
+</html>
