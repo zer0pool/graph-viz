@@ -54,13 +54,15 @@ class GraphNode(Base):
     def labels(self, value) -> None:
         self._set_prop("labels", value)
 
-    @property
-    def owner(self):
-        return self._get_prop("owner")
 
-    @owner.setter
-    def owner(self, value) -> None:
-        self._set_prop("owner", value)
+
+    @property
+    def owners(self):
+        return self._get_prop("owners", [])
+
+    @owners.setter
+    def owners(self, value) -> None:
+        self._set_prop("owners", value)
 
     @property
     def write_mode(self):
@@ -70,21 +72,9 @@ class GraphNode(Base):
     def write_mode(self, value) -> None:
         self._set_prop("write_mode", value)
 
-    @property
-    def destination_types(self):
-        return self._get_prop("destination_types", [])
 
-    @destination_types.setter
-    def destination_types(self, value) -> None:
-        self._set_prop("destination_types", value)
 
-    @property
-    def destination_tables(self):
-        return self._get_prop("destination_tables", [])
 
-    @destination_tables.setter
-    def destination_tables(self, value) -> None:
-        self._set_prop("destination_tables", value)
 
     @property
     def job_metadata(self):

@@ -1934,7 +1934,11 @@ body {
 }
 
 .mt-4 {
-    margin-top: 1rem;
+    margin-top: 24px !important;
+}
+
+.ml-2 {
+    margin-left: 8px !important;
 }
 
 /* Trigger section description */

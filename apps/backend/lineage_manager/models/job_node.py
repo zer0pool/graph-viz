@@ -13,11 +13,16 @@ class JobNode(Base):
         Integer, ForeignKey("graph_node.id", ondelete="CASCADE"), primary_key=True
     )
 
-    # Search fields (indexed)
+    # Unique identifier for the job ({project}.{name})
+    job_id = Column(String(500), nullable=False, unique=True, index=True)
+    
+    # Search fields
     project_id = Column(String(100), nullable=False, index=True)
-    owner_id = Column(String(100), nullable=False, index=True)
+    
+    # Owners list (JSON array)
+    owners = Column(JSON, nullable=True)
 
-    # Additional metadata
+    # Additional metadata (includes create_datetime, update_datetime, etc.)
     properties = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -29,4 +34,4 @@ class JobNode(Base):
     node = relationship("GraphNode", backref="job_node")
 
     def __repr__(self):
-        return f"<JobNode(node_id={self.node_id}, project={self.project_id}, owner={self.owner_id})>"
+        return f"<JobNode(node_id={self.node_id}, job_id={self.job_id}, project={self.project_id})>"

@@ -94,19 +94,20 @@ def get_job_detail(
     properties = dict(job.properties or {})
 
     # Ensure key fields are present even if null
-    properties.setdefault("owner", getattr(job, "owner", "-"))
+    properties.setdefault("owners", getattr(job, "owners", []))
     properties.setdefault("labels", getattr(job, "labels", {}))
     properties.setdefault("status", getattr(job, "status", "unknown"))
     properties.setdefault("enabled", getattr(job, "enabled", True))
 
-    # Clean up leftovers: remove job_metadata from properties if it's there
-    if "job_metadata" in properties:
-        # Merge it back in case it has unique fields, then remove it
-        child_meta = properties.pop("job_metadata")
-        if isinstance(child_meta, dict):
-            for k, v in child_meta.items():
-                if k not in properties:
-                    properties[k] = v
+    # Clean up leftovers: legacy support for deeply nested metadata
+    # (Note: new registrations are already flattened in GraphCommandService)
+    for legacy_key in ["job_meta", "job_metadata"]:
+        if legacy_key in properties:
+            child_meta = properties.pop(legacy_key)
+            if isinstance(child_meta, dict):
+                for k, v in child_meta.items():
+                    if k not in properties:
+                        properties[k] = v
 
     return {
         "job_id": job.job_id,

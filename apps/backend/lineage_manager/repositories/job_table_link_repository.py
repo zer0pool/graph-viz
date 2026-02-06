@@ -119,9 +119,9 @@ class JobTableLinkRepository(BaseRepository):
         return self.db.execute(stmt).scalars().all()
 
     def get_job_inputs_with_trigger_flag(self, table_id: int):
-        """Return (job_node, is_trigger_on_flag) tuples for table -> job read edges, mapped from dependency_type."""
+        """Return (job_node, is_trigger_on_flag) tuples for table -> job read edges, mapped from trigger."""
         stmt = (
-            select(GraphNode, GraphEdge.dependency_type)
+            select(GraphNode, GraphEdge.trigger)
             .join(GraphEdge, GraphNode.id == GraphEdge.target_node_id)
             .where(
                 GraphEdge.edge_type == "read",
@@ -129,5 +129,20 @@ class JobTableLinkRepository(BaseRepository):
             )
         )
         results = self.db.execute(stmt).all()
-        # Map dependency_type to boolean for caller compatibility
-        return [(node, dep == "HARD") for node, dep in results]
+        # Map trigger to boolean for caller compatibility
+        return [(node, bool(trigger)) for node, trigger in results]
+
+    def get_producer_jobs_by_table_ids(self, table_node_ids: list[int]):
+        """Query producers for multiple tables in one batch."""
+        if not table_node_ids:
+            return []
+            
+        stmt = (
+            select(GraphEdge.target_node_id, GraphNode)
+            .join(GraphNode, GraphEdge.source_node_id == GraphNode.id)
+            .where(
+                GraphEdge.target_node_id.in_(table_node_ids),
+                GraphEdge.edge_type == "write",
+            )
+        )
+        return self.db.execute(stmt).all()

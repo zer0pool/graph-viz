@@ -11,7 +11,7 @@ from ..models import (
     GraphEdge,
     GraphNode,
     JobNode,
-    TableNode,
+    DataNode,
     Project,
     ProjectUser,
 )

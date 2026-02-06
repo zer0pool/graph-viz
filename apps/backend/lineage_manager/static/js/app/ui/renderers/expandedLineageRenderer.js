@@ -98,19 +98,17 @@ export class ExpandedLineageRenderer {
         thead.innerHTML = `
             <tr class="apa-header-group">
                 <th colspan="2" class="group-identity">Identity</th>
-                <th colspan="2" class="group-table">Table Section</th>
-                <th colspan="5" class="group-job">Job Section</th>
+                <th colspan="1" class="group-table">Table Section</th>
+                <th colspan="4" class="group-job">Job Section</th>
             </tr>
             <tr class="apa-header-detail">
                 <th style="width: 250px;">Table Name</th>
                 <th style="width: 50px; text-align: center;">Depth</th>
-                <th style="width: 100px;">Storage</th>
                 <th style="width: 100px;">Write Mode</th>
                 <th style="width: 150px;">Job ID</th>
                 <th style="width: 100px;">Owner</th>
                 <th style="width: 150px;">Schedule</th>
                 <th style="width: 150px;">Status</th>
-                <th style="width: 100px;">Lifecycle</th>
             </tr>
         `;
         table.appendChild(thead);
@@ -139,7 +137,7 @@ export class ExpandedLineageRenderer {
             const totalTr = document.createElement("tr");
             totalTr.className = "apa-total-row";
             totalTr.innerHTML = `
-                <td colspan="9" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
+                <td colspan="7" style="text-align: right; padding-right: 12px; color: #444; font-weight: 600;">
                     ${countText}
                 </td>
             `;
@@ -153,7 +151,7 @@ export class ExpandedLineageRenderer {
             const omissionTr = document.createElement("tr");
             omissionTr.className = "omission-row";
             omissionTr.innerHTML = `
-                <td colspan="9" class="omission-cell">
+                <td colspan="7" class="omission-cell">
                     <div class="omission-content">
                         <div class="omission-dots">• • •</div>
                         <div class="omission-label">Middle items hidden</div>
@@ -248,13 +246,11 @@ export class ExpandedLineageRenderer {
                 </div>
             </td>
             <td style="text-align: center;">${logicalDepth}</td>
-            <td class="cell-storage loading-placeholder"><span class="skeleton-text"></span></td>
             <td class="cell-write-mode loading-placeholder"><span class="skeleton-text"></span></td>
             <td class="cell-job-id loading-placeholder"><span class="skeleton-text"></span></td>
             <td class="cell-owner loading-placeholder"><span class="skeleton-text"></span></td>
             <td class="cell-schedule loading-placeholder"><span class="skeleton-text"></span></td>
             <td class="cell-status loading-placeholder"><span class="skeleton-text"></span></td>
-            <td class="cell-lifecycle loading-placeholder"><span class="skeleton-text"></span></td>
         `;
 
         return tr;

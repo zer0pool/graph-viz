@@ -9,9 +9,10 @@ from lineage_manager.repositories.job_table_link_repository import (
 from lineage_manager.repositories.table_repository import TableRepository
 from lineage_manager.repositories.user_repository import UserRepository
 from lineage_manager.repositories.job_node_repository import JobNodeRepository
-from lineage_manager.repositories.table_node_repository import TableNodeRepository
+from lineage_manager.repositories.data_node_repository import DataNodeRepository
 from lineage_manager.repositories.project_repository import ProjectRepository
 from lineage_manager.repositories.audit_repository import AuditRepository
+from lineage_manager.repositories.graph_node_repository import GraphNodeRepository
 
 
 class BaseUnitOfWork:
@@ -85,10 +86,11 @@ class GraphUnitOfWork(BaseUnitOfWork):
         self.job_table_links = JobTableLinkRepository(db)
         self.edges = GraphEdgeRepository(db)
         self.closures = ClosureRepository(db)
+        self.nodes = GraphNodeRepository(db)
 
         # Search & Metadata repositories (Catalog)
         self.job_node = JobNodeRepository(db)
-        self.table_node = TableNodeRepository(db)
+        self.data_node = DataNodeRepository(db)
         self.project = ProjectRepository(db)
         self.users = UserRepository(db)
 
@@ -131,9 +133,10 @@ class GraphReadOnlyUnitOfWork(ReadOnlyUnitOfWork):
         self.job_table_links = JobTableLinkRepository(db)
         self.edges = GraphEdgeRepository(db)
         self.closures = ClosureRepository(db)
+        self.nodes = GraphNodeRepository(db)
 
         # Search repositories
         self.job_node = JobNodeRepository(db)
-        self.table_node = TableNodeRepository(db)
+        self.data_node = DataNodeRepository(db)
         self.project = ProjectRepository(db)
         self.users = UserRepository(db)

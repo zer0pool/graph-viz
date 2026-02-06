@@ -21,7 +21,7 @@ class GraphEdgeRepository(BaseRepository):
         source_type: str,
         target_type: str,
         edge_type: str,
-        dependency_type: str | None = None,
+        trigger: bool | None = None,
         properties: dict | None = None,
     ):
         logger.debug(
@@ -38,7 +38,7 @@ class GraphEdgeRepository(BaseRepository):
                 source_node_id=source_id,
                 target_node_id=target_id,
                 edge_type=edge_type,
-                dependency_type=dependency_type,
+                trigger=trigger,
                 properties=properties or {},
             )
             .prefix_with("IGNORE")
@@ -49,7 +49,7 @@ class GraphEdgeRepository(BaseRepository):
         job_id: int,
         table_id: int,
         io_type: str,
-        dependency_type: str | None = None,
+        trigger: bool | None = None,
     ):
         """Create a read/write edge between job and table nodes."""
         if io_type == "input":
@@ -59,7 +59,7 @@ class GraphEdgeRepository(BaseRepository):
                 source_type="table",
                 target_type="job",
                 edge_type="read",
-                dependency_type=dependency_type,
+                trigger=trigger,
                 properties={"io_type": "input"},
             )
         else:
@@ -69,19 +69,19 @@ class GraphEdgeRepository(BaseRepository):
                 source_type="job",
                 target_type="table",
                 edge_type="write",
-                dependency_type=dependency_type,
+                trigger=trigger,
                 properties={"io_type": "output"},
             )
 
-    def update_dependency_type(
-        self, source_id: int, target_id: int, dep_type: str
+    def update_trigger(
+        self, source_id: int, target_id: int, trigger: bool
     ) -> None:
-        """Update dependency_type for a specific edge."""
+        """Update trigger flag for a specific edge."""
         self.db.execute(
             update(GraphEdge)
             .where(
                 GraphEdge.source_node_id == source_id,
                 GraphEdge.target_node_id == target_id,
             )
-            .values(dependency_type=dep_type)
+            .values(trigger=trigger)
         )

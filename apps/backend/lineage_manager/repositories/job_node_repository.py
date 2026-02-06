@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Tuple
 
+import sqlalchemy as sa
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -21,16 +22,27 @@ class JobNodeRepository(BaseRepository):
         """Get job node by node ID."""
         return self.session.query(JobNode).filter_by(node_id=node_id).first()
 
+    def get_by_job_id(self, job_id: str) -> Optional[JobNode]:
+        """Get job node by unique job ID."""
+        return self.session.query(JobNode).filter_by(job_id=job_id).first()
+
     def create_or_update(
-        self, node_id: int, project_id: str, owner_id: str, properties: dict = None
+        self,
+        node_id: int,
+        job_id: str,
+        project_id: str,
+        owners: List[str] = None,
+        properties: dict = None,
     ) -> JobNode:
         """Create or update job node data."""
         existing = self.get_by_node_id(node_id)
 
         if existing:
             # Update
+            existing.job_id = job_id
             existing.project_id = project_id
-            existing.owner_id = owner_id
+            if owners is not None:
+                existing.owners = owners
             if properties is not None:
                 existing.properties = properties
             self.session.flush()
@@ -39,8 +51,9 @@ class JobNodeRepository(BaseRepository):
             # Create
             job_node = JobNode(
                 node_id=node_id,
+                job_id=job_id,
                 project_id=project_id,
-                owner_id=owner_id,
+                owners=owners or [],
                 properties=properties or {},
             )
             self.session.add(job_node)
@@ -74,15 +87,25 @@ class JobNodeRepository(BaseRepository):
         self, owner_id: str, limit: int = 20, offset: int = 0
     ) -> Tuple[List[Tuple[GraphNode, JobNode]], int]:
         """
-        Find jobs by owner ID.
+        Find jobs by owner ID (where owner_id is in the owners JSON list).
 
         Returns:
             (results, total_count)
         """
+        from sqlalchemy import text
+
+        # Using JSON_CONTAINS for MySQL
         query = (
             self.session.query(GraphNode, JobNode)
             .join(JobNode, GraphNode.id == JobNode.node_id)
-            .filter(JobNode.owner_id == owner_id)
+            .filter(func.json_contains(JobNode.owners, sa.cast(sa.json.quote_extension(owner_id), sa.JSON)))
+        )
+        # Wait, more portable/simpler way for JSON_CONTAINS in SQLAlchemy?
+        # Let's use a simpler filter if owners is a list of strings
+        query = (
+            self.session.query(GraphNode, JobNode)
+            .join(JobNode, GraphNode.id == JobNode.node_id)
+            .filter(func.json_contains(JobNode.owners, func.json_quote(owner_id)))
         )
 
         total = query.count()
@@ -98,7 +121,11 @@ class JobNodeRepository(BaseRepository):
 
     def get_owner_stats(self, owner_id: str) -> dict:
         """Get statistics for a user/owner."""
-        job_count = self.session.query(JobNode).filter_by(owner_id=owner_id).count()
+        job_count = (
+            self.session.query(JobNode)
+            .filter(func.json_contains(JobNode.owners, func.json_quote(owner_id)))
+            .count()
+        )
 
         return {"owned_jobs": job_count}
 
