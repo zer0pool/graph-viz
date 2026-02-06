@@ -3,7 +3,7 @@ import logging
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from lineage_manager.api.v1.schemas import JobRegister, BatchJobSyncRequest
+from lineage_manager.api.v1.schemas import  BatchJobSyncRequest
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
@@ -21,30 +21,6 @@ router = APIRouter(
     tags=["graph"],
     dependencies=AUTH_DEPS,
 )
-
-
-@router.post("/jobs")
-@inject
-def register_job(
-    payload: JobRegister,
-    svc: GraphCommandService = Depends(Provide[GraphContainer.graph.command_service]),
-):
-    """
-    Register a new job using container pattern with proper session management.
-
-    - Container provides session-managed Unit of Work
-    - GraphService uses container-provided UoW
-    - Transaction is automatically committed by middleware
-    """
-    logger.info(f"Received job registration request: {payload}")
-    try:
-        job_id = svc.register_job(payload)
-        logger.info(f"Job registered successfully: {job_id}")
-        return {"job_id": job_id}
-    except Exception as e:
-        logger.error(f"Error registering job: {e}")
-        logger.exception("Full traceback:")
-        raise
 
 
 @router.post("/reset")
@@ -90,12 +66,11 @@ async def initialize_graph(
     This endpoint will:
     1. Clear all existing graph data
     2. Fetch all jobs from the Job Manager API
-    3. Register each job using the existing register_job method
+    3. Register each job using the legacy-compatible lineage flow
     4. Create appropriate nodes, edges, and relationships
     5. Return statistics about the initialization process
 
-    The process uses the existing register_job method to ensure consistency
-    with single job registration functionality.
+    The process uses register_lineage_job to ensuring consistency.
     """
     logger.info("Received graph initialization request")
     try:

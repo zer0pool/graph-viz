@@ -3,87 +3,6 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
-class JobRegister(BaseModel):
-    """Schema for job registration requests."""
-
-    job_id: str = Field(..., description="Unique job identifier")
-    name: str = Field(..., description="Human-readable job name")
-    labels: dict = Field(default_factory=dict, description="Job labels as JSON object")
-    owner: Optional[str] = Field(None, description="Job owner")
-    write_mode: Optional[str] = Field(None, description="Write mode for the job")
-    destination_types: List[str] = Field(
-        default_factory=list, description="List of destination types"
-    )
-    destination_tables: List[str] = Field(
-        default_factory=list, description="List of destination tables"
-    )
-    trigger_tables: List[str] = Field(
-        default_factory=list, description="List of trigger tables"
-    )
-    reference_tables: List[str] = Field(
-        default_factory=list, description="List of reference tables"
-    )
-    run_status: Optional[str] = Field("RUN", description="Job run status (RUN/STOP)")
-    schedule: Optional[dict] = Field(None, description="Job schedule configuration")
-    destinations: Optional[list] = Field(
-        None, description="Job destinations configuration"
-    )
-    metadata: dict = Field(default_factory=dict, description="Additional job metadata")
-
-
-class JobUpdate(BaseModel):
-    """Schema for job update requests."""
-
-    name: Optional[str] = Field(None, description="Human-readable job name")
-    labels: Optional[dict] = Field(None, description="Job labels as JSON object")
-    owner: Optional[str] = Field(None, description="Job owner")
-    write_mode: Optional[str] = Field(None, description="Write mode for the job")
-    destination_types: Optional[List[str]] = Field(
-        None, description="List of destination types"
-    )
-    destination_tables: Optional[List[str]] = Field(
-        None, description="List of destination tables"
-    )
-    trigger_tables: Optional[List[str]] = Field(
-        None, description="List of trigger tables"
-    )
-    reference_tables: Optional[List[str]] = Field(
-        None, description="List of reference tables"
-    )
-    run_status: Optional[str] = Field(None, description="Job run status (RUN/STOP)")
-    schedule: Optional[dict] = Field(None, description="Job schedule configuration")
-    destinations: Optional[list] = Field(
-        None, description="Job destinations configuration"
-    )
-    metadata: Optional[dict] = Field(None, description="Additional job metadata")
-
-
-class JobResponse(BaseModel):
-    """Schema for job response data."""
-
-    id: str
-    name: str
-    labels: dict
-    type: str = "job"
-    service_type: str = "self-scheduling"
-    status: str
-    enabled: bool
-    owner: Optional[str] = None
-    write_mode: Optional[str] = None
-    destination_types: List[str] = []
-    destination_tables: List[str] = []
-    trigger_tables: List[str] = []
-    reference_tables: List[str] = []
-    metadata: Optional[dict] = None
-
-
-class GraphResponse(BaseModel):
-    """Schema for graph response data."""
-
-    nodes: List[JobResponse]
-    edges: List[dict]
-
-
 class JobDependencyResponse(BaseModel):
     """Schema for job dependency response."""
 
@@ -189,13 +108,16 @@ class NodeTableInfo(BaseModel):
 
 class NodeJobInfo(BaseModel):
     job_id: Optional[str] = None
-    owner: Optional[str] = None
+    owners: List[str] = []
     status: Optional[str] = None
     run_status: Optional[str] = None
     cron: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     lifecycle_status: Optional[str] = None
+    job_meta: Optional[Dict[str, Any]] = None  # Full structured metadata
+    labels: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
 
 
 class NodeDetails(BaseModel):

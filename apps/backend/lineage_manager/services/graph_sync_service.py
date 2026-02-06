@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Set
 
 from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
-from lineage_manager.api.v1.schemas import JobRegister
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
 from lineage_manager.services.graph_command_service import GraphCommandService
@@ -226,24 +225,40 @@ class GraphSyncService:
                 "failed": fail,
                 "table": table.full_name,
             }
-
     def sync_from_payload(
-        self, jobs: List[JobRegister], reset: bool = False
+        self, jobs: List[SchedulingLineage], reset: bool = False
     ) -> Dict[str, Any]:
-        """Sync graph from a list of JobRegister payloads."""
+        """Sync graph from a list of SchedulingLineage payloads."""
         if reset:
             self.command_service.reset_graph()
 
         success = 0
         errors: List[str] = []
-        for j in jobs:
-            try:
-                self.command_service.register_job(j)
-                success += 1
-            except Exception as e:
-                errors.append(f"{j.job_id}: {e}")
+        
+        # Performance optimization: Use a single transaction for the whole payload
+        # if the user wants atomicity, otherwise wrap each job in its own transaction.
+        # Given this is a batch payload, we'll use a single transaction for speed,
+        # but catch errors per job to report them.
+        try:
+            with self.uow.transactional():
+                for j in jobs:
+                    try:
+                        self.command_service.register_lineage_job(j)
+                        success += 1
+                    except Exception as e:
+                        errors.append(f"{j.job_id}: {e}")
+                        # In a single transaction, one failure rolls back everything.
+                        # If we want to continue, we need nested transactions or separate blocks.
+                        # For simplicity and correctness with UoW, we'll re-raise to rollback.
+                        raise
+        except Exception as e:
+            logger.error(f"Sync from payload failed: {e}")
+            # If batch fails, we don't have partial success in this simple implementation
+            # because transactional() rolls back.
+            success = 0
+            # errors is already populated or will be updated in caller
 
-        stats = self.query_service.get_health_stats()
+        stats = self.query_service.get_diagnostics()
         result: Dict[str, Any] = {
             "status": "success" if not errors else "partial",
             "synced_jobs": success,

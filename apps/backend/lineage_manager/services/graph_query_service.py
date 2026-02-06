@@ -361,7 +361,7 @@ class GraphQueryService:
                     {
                         "job_id": job.job_id or job.name,
                         "name": job.display_name,
-                        "owner": job.owner,
+                        "owners": job.owners or [],
                     }
                     for job in jobs
                 ],
@@ -399,19 +399,18 @@ class GraphQueryService:
         for match, score, idx in results:
             item = corpus[idx]
             if item["type"] == "job":
+                job_owners = item["data"].get("owners") or []
                 matched_jobs.append(
                     {
                         "job_id": item["id"],
                         "name": item["data"].get("name"),
-                        "owner": item["data"].get("owner"),
+                        "owners": job_owners,
                     }
                 )
-                owner = item["data"].get("owner")
-                if owner and owner not in seen_owners:
-                    # Also checking if owner name itself matches somewhat?
-                    # For now just collecting owners of matched jobs
-                    seen_owners.add(owner)
-                    matched_owners.append(owner)
+                for owner in job_owners:
+                    if owner and owner not in seen_owners:
+                        seen_owners.add(owner)
+                        matched_owners.append(owner)
 
             elif item["type"] == "table":
                 matched_tables.append(
@@ -448,13 +447,15 @@ class GraphQueryService:
 
         corpus = []
         for j in job_rows:
-            # j keys: job_id, display_name, owner
+            # j keys: job_id, display_name, owners
             # Combine for search text
             parts = [
                 j.job_id,
                 j.display_name,
-                j.owner
             ]
+            if j.owners:
+                parts.extend(j.owners)
+            
             text_val = " ".join([str(p) for p in parts if p])
             corpus.append({
                 "type": "job",
@@ -462,7 +463,7 @@ class GraphQueryService:
                 "text": text_val,
                 "data": {
                     "name": j.display_name,
-                    "owner": j.owner
+                    "owners": j.owners or []
                 }
             })
 
@@ -752,9 +753,15 @@ class GraphQueryService:
         status = job._get_prop("status")
         enabled = job._get_prop("enabled")
 
+        # 2. Fallback to job_meta if top-level is missing
+        if not status or status == "unknown":
+            jm = job._get_prop("job_meta")
+            if jm and isinstance(jm, dict):
+                status = jm.get("status")
+        
         # attach for response usage
-        setattr(job, "status", status)
-        setattr(job, "enabled", enabled)
+        setattr(job, "status", status or "unknown")
+        setattr(job, "enabled", enabled if enabled is not None else True)
         return job
 
     def get_nodes_batch_details(self, node_ids: list[str]):
@@ -820,7 +827,7 @@ class GraphQueryService:
                 j_sched = j_meta.get("schedule") or {}
                 job_info = {
                     "job_id": job_node.name,
-                    "owner": job_node.owner or j_meta.get("owner") or "-",
+                    "owners": job_node.owners or j_meta.get("owners") or [],
                     "status": j_meta.get("status") or "-",
                     "run_status": j_meta.get("run_status") or "-",
                     "cron": j_sched.get("cron") or j_sched.get("interval") or "-",
@@ -835,7 +842,7 @@ class GraphQueryService:
             else:
                 job_info = {
                     "job_id": "-",
-                    "owner": "-",
+                    "owners": [],
                     "status": "-",
                     "run_status": "-",
                     "cron": "-",
@@ -858,7 +865,7 @@ class GraphQueryService:
             },
             "job_info": {
                 "job_id": "-",
-                "owner": "-",
+                "owners": [],
                 "status": "not_found",
                 "run_status": "-",
                 "cron": "-",
@@ -947,8 +954,12 @@ class GraphQueryService:
 
             # Extract properties
             properties = {}
-            if "owner" in node_data:
-                properties["owner"] = node_data["owner"]
+            if "owners" in node_data:
+                properties["owners"] = node_data["owners"]
+            elif "owner" in node_data:
+                # Handle legacy if any
+                val = node_data["owner"]
+                properties["owners"] = [val] if val else []
             if "status" in node_data:
                 properties["status"] = node_data["status"]
             if "enabled" in node_data:

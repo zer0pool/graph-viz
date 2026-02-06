@@ -168,12 +168,17 @@ class GraphTraversalHelper:
             if key not in nodes:
                 # Extract job metadata
                 jm = getattr(obj, "job_metadata", {}) or {}
+                # Handle owners as list
+                owners = jm.get("owners") or getattr(obj, "owners", [])
+                if not isinstance(owners, list):
+                    owners = [owners] if owners else []
+                    
                 nodes[key] = {
                     "id": key,
                     "type": "job",
-                    "job_id": obj.job_id,
+                    "job_id": getattr(obj, "job_id", obj.name),
                     "name": obj.name,
-                    "owner": jm.get("owner") or obj.owner,
+                    "owners": owners,
                     "enabled": jm.get("enabled", True),
                     "status": jm.get("status"),
                 }

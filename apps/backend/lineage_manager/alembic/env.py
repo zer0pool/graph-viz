@@ -21,7 +21,7 @@ from lineage_manager.models import (
     GraphEdge,
     GraphNode,
     JobNode,
-    TableNode,
+    DataNode,
     Project,
     UserAccount,
     ProjectUser,

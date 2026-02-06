@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from lineage_manager.api.v1.schemas import JobRegister
+ 
 from lineage_manager.core.auth import is_auth_enabled, require_authenticated_user
 from lineage_manager.core.container import GraphContainer
 from lineage_manager.services.graph_sync_service import GraphSyncService
@@ -12,6 +12,8 @@ from lineage_manager.services.graph_sync_service import GraphSyncService
 logger = logging.getLogger(__name__)
 
 AUTH_DEPS = [Depends(require_authenticated_user)]
+
+from lineage_manager.models.scheduling_lineage import SchedulingLineage
 
 router = APIRouter(
     prefix="/api/v1/sync",
@@ -25,7 +27,7 @@ router = APIRouter(
 async def sync_graph(
     source: Optional[str] = Body(None, embed=True),
     reset: bool = Body(False, embed=True),
-    jobs: Optional[List[JobRegister]] = Body(None, embed=True),
+    jobs: Optional[List[SchedulingLineage]] = Body(None, embed=True),
     svc: GraphSyncService = Depends(Provide[GraphContainer.graph.sync_service]),
 ) -> Dict[str, Any]:
     """
@@ -46,6 +48,8 @@ async def sync_graph(
     except Exception as e:  # pragma: no cover
         logger.error(f"Graph sync failed: {e}")
         raise HTTPException(status_code=500, detail=f"Graph sync failed: {str(e)}")
+
+ 
 
 
 @router.get("/sync/status")

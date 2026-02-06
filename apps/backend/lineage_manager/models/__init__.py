@@ -3,7 +3,7 @@ from .graph_closure import GraphClosure
 from .graph_edge import GraphEdge
 from .graph_node import GraphNode
 from .job_node import JobNode
-from .table_node import TableNode
+from .data_node import DataNode
 from .project import Project
 from .project_user import ProjectUser
 from .user_account import UserAccount
@@ -15,7 +15,7 @@ __all__ = [
     "GraphEdge",
     "GraphClosure",
     "JobNode",
-    "TableNode",
+    "DataNode",
     "Project",
     "ProjectUser",
     "UserAccount",

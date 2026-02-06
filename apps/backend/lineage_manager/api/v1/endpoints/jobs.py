@@ -94,14 +94,24 @@ def get_job_detail(
     properties = dict(job.properties or {})
 
     # Ensure key fields are present even if null
-    properties.setdefault("owner", getattr(job, "owner", "-"))
+    properties.setdefault("owners", getattr(job, "owners", []))
     properties.setdefault("labels", getattr(job, "labels", {}))
     properties.setdefault("status", getattr(job, "status", "unknown"))
     properties.setdefault("enabled", getattr(job, "enabled", True))
 
-    # Clean up leftovers: remove job_metadata from properties if it's there
+    # Clean up leftovers and handle structured metadata
+    # We prefer the new 'job_meta' key if it exists
+    if "job_meta" in properties:
+        # job_meta is already structured, just make sure labels/status are synced to top level if missing
+        jm = properties["job_meta"]
+        if isinstance(jm, dict):
+            if "status" in jm and not properties.get("status"):
+                properties["status"] = jm["status"]
+            if "labels" in jm and not properties.get("labels"):
+                properties["labels"] = jm["labels"]
+    
+    # Legacy: if old 'job_metadata' exists, flatten it only if it doesn't conflict
     if "job_metadata" in properties:
-        # Merge it back in case it has unique fields, then remove it
         child_meta = properties.pop("job_metadata")
         if isinstance(child_meta, dict):
             for k, v in child_meta.items():

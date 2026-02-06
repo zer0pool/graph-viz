@@ -1,5 +1,5 @@
+from typing import List, Optional, Any
 import logging
-
 from sqlalchemy import Select, func, or_, select, desc, cast, String
 
 from lineage_manager.models import GraphEdge, GraphNode
@@ -37,12 +37,12 @@ class JobRepository(BaseRepository):
         mapping = {
             "display_name": kwargs.get("name", kwargs.get("label", job_id)),
             "labels": kwargs.get("labels"),
-            "owner": kwargs.get("owner"),
+            "owners": kwargs.get("owners", []),   
             "write_mode": kwargs.get("write_mode"),
             "upstreams": kwargs.get("upstreams"),
             "downstreams": kwargs.get("downstreams"),
             "schedule": kwargs.get("schedule"),
-            "lifecycle_status": kwargs.get("lifecycle_status"),
+            "logic_type": kwargs.get("logic_type"),
             "status": kwargs.get("status"),
             "type": kwargs.get("type"),
         }
@@ -54,10 +54,16 @@ class JobRepository(BaseRepository):
                     continue
                 properties[key] = val
 
+        # Add any other provided attributes to properties to avoid losing metadata
+        # (e.g. logic_type, description, custom labels, etc.)
+        for key, val in kwargs.items():
+            if key not in properties and val is not None:
+                properties[key] = val
+
         row = GraphNode(node_type="job", name=job_id, properties=properties)
         self.db.add(row)
         self.db.flush()
-        logger.debug(f"Successfully created job node: {job_id}")
+        logger.debug(f"Successfully created job node {job_id} with {len(properties)} properties")
         return row
 
     def get(self, job_id: str):
@@ -98,21 +104,23 @@ class JobRepository(BaseRepository):
 
     def find_upstream_jobs_by_output_tables(
         self, table_ids: list[int], exclude_job_id: int
-    ):
-        """Find jobs that write to the specified table node IDs."""
+    ) -> List[tuple[int, int]]:
+        """Find jobs that write to the specified table node IDs.
+        Returns list of (source_job_id, connecting_table_id).
+        """
         if not table_ids:
             return []
 
         stmt = (
-            select(GraphEdge.source_node_id)
+            select(GraphEdge.source_node_id, GraphEdge.target_node_id)
             .where(
                 GraphEdge.edge_type == "write",
                 GraphEdge.target_node_id.in_(tuple(table_ids)),
                 GraphEdge.source_node_id != exclude_job_id,
             )
-            .distinct()
         )
-        return [row[0] for row in self.db.execute(stmt).all()]
+        # Return as list of (source_job_id, target_table_id)
+        return [(row[0], row[1]) for row in self.db.execute(stmt).all()]
 
     def search_by_prefix(self, prefix: str, limit: int = 10):
         """Search jobs by job_id or display name prefix."""
@@ -137,28 +145,39 @@ class JobRepository(BaseRepository):
 
     def search_owners_by_prefix(self, prefix: str, limit: int = 10):
         """Find distinct owners matching the prefix, with a sample job id."""
-        owner_field = GraphNode.properties["owner"].as_string()
+        # owners is a JSON array in properties
+        owners_field = GraphNode.properties["owners"]
         pattern = f"%{prefix.lower()}%"
+        
+        # We need to extract owners and check prefix
+        # This is a bit tricky with JSON arrays in MySQL via SQLAlchemy
+        # For now, we'll fetch relevant jobs and extract unique owners in-app
+        # since owner count is usually small.
         stmt = (
-            select(GraphNode.name.label("job_id"), owner_field.label("owner"))
+            select(GraphNode.name.label("job_id"), owners_field.label("owners"))
             .where(
-                GraphNode.node_type == "job",
-                owner_field.isnot(None),
-                owner_field != "",
-                func.lower(owner_field).like(pattern),
+                GraphNode.node_type == "job"
             )
-            .order_by(owner_field, GraphNode.name)
-            .limit(limit * 5)
+            .limit(limit * 20) # Over-fetch to find unique owners
         )
 
         owners = []
         seen = set()
         for row in self.db.execute(stmt):
-            owner_name = row.owner
-            if not owner_name or owner_name in seen:
-                continue
-            owners.append({"name": owner_name, "sample_job_id": row.job_id})
-            seen.add(owner_name)
+            job_owners = row.owners or []
+            if not isinstance(job_owners, list):
+                if isinstance(job_owners, str):
+                    job_owners = [job_owners]
+                else:
+                    continue
+            
+            for owner_name in job_owners:
+                if not owner_name or owner_name in seen:
+                    continue
+                if prefix.lower() in owner_name.lower():
+                    owners.append({"name": owner_name, "sample_job_id": row.job_id})
+                    seen.add(owner_name)
+                
             if len(owners) >= limit:
                 break
         return owners
@@ -167,10 +186,13 @@ class JobRepository(BaseRepository):
         """Return jobs attributed to the supplied owner name."""
         if not owner:
             return []
-        owner_field = GraphNode.properties["owner"].as_string()
+        
+        from sqlalchemy import func
+        # Use json_contains to find owner in owners list
+        owners_field = GraphNode.properties["owners"]
         stmt = (
             self._base_query()
-            .where(func.lower(owner_field) == owner.lower())
+            .where(func.json_contains(owners_field, func.json_quote(owner)))
             .order_by(desc(GraphNode.updated_at))
             .limit(limit)
         )
@@ -181,13 +203,13 @@ class JobRepository(BaseRepository):
         Fetch basic identifiers (name, display_name, owner) for all jobs.
         Used for in-memory fuzzy search caching.
         """
-        owner_field = GraphNode.properties["owner"].as_string()
+        owners_field = GraphNode.properties["owners"]
         display_name_field = GraphNode.properties["display_name"].as_string()
 
         stmt = select(
             GraphNode.name.label("job_id"),
             display_name_field.label("display_name"),
-            owner_field.label("owner"),
+            owners_field.label("owners"),
         ).where(GraphNode.node_type == "job")
 
         return self.db.execute(stmt).all()

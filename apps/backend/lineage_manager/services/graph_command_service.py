@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from lineage_manager.adapters.job_manager_adapter import JobManagerAdapter
-from lineage_manager.api.v1.schemas import JobRegister, JobUpdateRequest
+from lineage_manager.api.v1.schemas import JobUpdateRequest
 from lineage_manager.core.uow import GraphUnitOfWork
 from lineage_manager.models.scheduling_lineage import SchedulingLineage
 
@@ -38,52 +38,7 @@ class GraphCommandService:
 
         # Disable context manager usage in this service
         self.uow._allow_context = False
-
-    def register_job(self, job_data: JobRegister) -> str:
-        """
-        Register a new job in the system.
-
-        ⚠️ Does NOT commit - caller must wrap with transaction.
-        """
-        if not job_data.job_id.strip():
-            raise ValueError("job_id cannot be empty")
-        if not job_data.name.strip():
-            raise ValueError("job name cannot be empty")
-
-        logger.info(f"Starting job registration for job_id: {job_data.job_id}")
-        uow = self.uow
-
-        job = self._create_job_node(job_data)
-
-        # Combine trigger and reference tables for input processing, filtering empty names
-        all_inputs = set()
-        trigger_tables = [
-            t.strip() for t in (job_data.trigger_tables or []) if t.strip()
-        ]
-        all_inputs.update(trigger_tables)
-
-        reference_tables = [
-            t.strip() for t in (job_data.reference_tables or []) if t.strip()
-        ]
-        all_inputs.update(reference_tables)
-
-        destination_tables = [
-            t.strip() for t in (job_data.destination_tables or []) if t.strip()
-        ]
-
-        # Update job data with cleaned lists for consistency
-        job_data.trigger_tables = trigger_tables
-        job_data.reference_tables = reference_tables
-        job_data.destination_tables = destination_tables
-
-        in_ids = self._process_input_tables(job, list(all_inputs), trigger_tables)
-        out_ids = self._process_destination_tables(job, job_data)
-
-        self._create_upstream_relationships(job, in_ids)
-        self._create_downstream_relationships(job, out_ids)
-
-        logger.info(f"Job registration completed successfully for job_id: {job.job_id}")
-        return job.id
+ 
 
     def toggle_job_enabled(self, job_id: str):
         """
@@ -158,11 +113,16 @@ class GraphCommandService:
         # But primarily update the main 'job' table's metadata JSON
         job_node.job_metadata = new_props
 
+        # Extract project and owners from new structure
+        project_id = lineage.get_project() or "default-project"
+        owners = lineage.get_owner()
+
         # Also sync to JobNode for search
         self.uow.job_node.create_or_update(
             node_id=job_node.id,
-            project_id=new_props.get("project") or "default-project",
-            owner_id=new_props.get("owner") or "unknown-owner",
+            job_id=lineage.job_id,
+            project_id=project_id,
+            owners=owners,
             properties=new_props,
         )
 
@@ -199,7 +159,7 @@ class GraphCommandService:
 
             # Clear new meta tables
             uow.job_node.clear_all()
-            uow.table_node.clear_all()
+            uow.data_node.clear_all()
             # NOTE: We specifically DO NOT clear uow.project and uow.users.
             # These tables contain administrative data (SSO users, permissions)
             # that must persist across graph initializations.
@@ -310,51 +270,6 @@ class GraphCommandService:
 
     # --- Helpers ---
 
-    def _create_job_node(self, job_data: JobRegister):
-        return self.uow.jobs.get_or_create(
-            job_data.job_id,
-            labels=job_data.labels or {},
-            owner=job_data.owner,
-            write_mode=job_data.write_mode,
-            destination_types=job_data.destination_types,
-            destination_tables=job_data.destination_tables,
-            trigger_tables=job_data.trigger_tables,
-            reference_tables=job_data.reference_tables,
-            job_metadata=job_data.metadata or {},
-        )
-
-    def _process_input_tables(
-        self, job, input_tables: List[str], trigger_tables: List[str]
-    ) -> List[int]:
-        in_ids = []
-        if not input_tables:
-            return in_ids
-
-        logger.debug(f"Processing {len(input_tables)} input tables")
-        for t in input_tables:
-            tbl = self.uow.tables.get_or_create(t)
-            in_ids.append(tbl.id)
-            self.uow.job_table_links.link_job_table(job.id, tbl.id, "input")
-            dep_type = "HARD" if t in trigger_tables else "SOFT"
-            self.uow.edges.create_job_table_edge(
-                job.id, tbl.id, "input", dependency_type=dep_type
-            )
-        return in_ids
-
-    def _process_destination_tables(self, job, job_data: JobRegister) -> List[int]:
-        out_ids = []
-        if not job_data.destination_tables:
-            return out_ids
-
-        logger.debug(f"Processing destination tables: {job_data.destination_tables}")
-        for t in job_data.destination_tables:
-            tbl = self.uow.tables.get_or_create(t)
-            out_ids.append(tbl.id)
-            self.uow.job_table_links.link_job_table(job.id, tbl.id, "output")
-            self.uow.edges.create_job_table_edge(
-                job.id, tbl.id, "output", dependency_type="SOFT"
-            )
-        return out_ids
 
     def preview_lineage_job(self, lineage: SchedulingLineage) -> dict:
         """
@@ -442,16 +357,38 @@ class GraphCommandService:
             return
 
         try:
-            up_jobs = self.uow.jobs.find_upstream_jobs_by_output_tables(in_ids, job.id)
-            for up in up_jobs:
-                logger.debug(f"Creating dependency edge: {up} -> {job.id}")
-                self.uow.edges.add(up, job.id, "job", "job", "dependency")
+            # Result is List[tuple[source_job_id, connecting_table_id]]
+            up_job_links = self.uow.jobs.find_upstream_jobs_by_output_tables(in_ids, job.id)
+            
+            # Group by upstream job
+            job_to_tables = {}
+            for up_id, table_id in up_job_links:
+                job_to_tables.setdefault(up_id, set()).add(table_id)
+
+            for up_id, table_ids in job_to_tables.items():
+                # Resolve table names for better readability in properties
+                table_names = []
+                for tid in table_ids:
+                    node = self.uow.tables.get_by_id(tid)
+                    if node:
+                        table_names.append(node.name)
+
+                logger.debug(f"Creating dependency edge: {up_id} -> {job.id} (via {table_names})")
+                self.uow.edges.add(
+                    up_id, 
+                    job.id, 
+                    "job", 
+                    "job", 
+                    "dependency",
+                    properties={"intermediate_tables": table_names}
+                )
 
                 if compute_closure:
-                    self.uow.closures.add_direct(up, job.id)
-                    self.uow.closures.expand_closure(up, job.id)
+                    self.uow.closures.add_direct(up_id, job.id)
+                    self.uow.closures.expand_closure(up_id, job.id)
         except Exception as e:
             logger.error(f"Error querying/creating upstream jobs: {e}")
+            raise
 
     def _create_downstream_relationships(
         self, job, out_ids: List[int], compute_closure: bool = True
@@ -462,6 +399,10 @@ class GraphCommandService:
 
         try:
             for out_id in out_ids:
+                # Resolve table name
+                table_node = self.uow.tables.get_by_id(out_id)
+                table_name = table_node.name if table_node else f"unknown:{out_id}"
+
                 # Find jobs that consume this table
                 consumer_jobs = self.uow.job_table_links.get_jobs_by_table_and_io_type(
                     out_id, "input"
@@ -470,15 +411,23 @@ class GraphCommandService:
                     if consumer.id == job.id:
                         continue
                     logger.debug(
-                        f"Creating forward dependency edge: {job.id} -> {consumer.id}"
+                        f"Creating forward dependency edge: {job.id} -> {consumer.id} (via {table_name})"
                     )
-                    self.uow.edges.add(job.id, consumer.id, "job", "job", "dependency")
+                    self.uow.edges.add(
+                        job.id, 
+                        consumer.id, 
+                        "job", 
+                        "job", 
+                        "dependency",
+                        properties={"intermediate_tables": [table_name]}
+                    )
 
                     if compute_closure:
                         self.uow.closures.add_direct(job.id, consumer.id)
                         self.uow.closures.expand_closure(job.id, consumer.id)
         except Exception as e:
             logger.error(f"Error querying/creating downstream jobs: {e}")
+            raise
 
     # --- Changed: register_lineage_job implementation ---
     def register_lineage_job(
@@ -489,15 +438,13 @@ class GraphCommandService:
 
         ⚠️ Does NOT commit - caller must wrap with transaction.
         """
-        if not lineage.job_id.strip():
+        if not lineage.job_id: # Already stripped in model
             raise ValueError("job_id cannot be empty")
-        if not lineage.name.strip():
-            raise ValueError("job name cannot be empty")
 
         uow = self.uow
         job_props = self._extract_job_properties(lineage)
 
-        # 1. Create or Update Job Node
+        # 1. Create or Update Job Node (Base)
         job = uow.jobs.get(lineage.job_id)
         if job:
             # Update properties directly
@@ -506,74 +453,83 @@ class GraphCommandService:
                     setattr(job, key, value)
                 else:
                     job._set_prop(key, value)
-
         else:
             # Create new job node with flat properties
             job = uow.jobs.get_or_create(
-                job_id=lineage.job_id, name=lineage.name, **job_props
+                job_id=lineage.job_id, name=lineage.get_name(), **job_props
             )
 
-        # 2. Process Upstream Nodes (Inputs)
-        input_table_ids = []
+        # 2. Process Upstream Nodes (Inputs) -> Data Assets
+        input_data_ids = []
         seen_upstreams = set()
-        common_owner = lineage.metadata.get("owner")
+        common_owners = lineage.get_owner()
 
         for upstream in lineage.upstreams:
-            if not upstream.name.strip():
-                continue
-            name = upstream.name.strip()
+            name = upstream.name
             if name in seen_upstreams:
                 continue
             seen_upstreams.add(name)
 
-            # Table properties: storage, owner
-            table_props = {"storage": upstream.storage, "owner": common_owner}
-            upstream_node = uow.tables.get_or_create(name, table_metadata=table_props)
-            input_table_ids.append(upstream_node.id)
+            # Register as DataNode
+            node = uow.tables.get_or_create(name) # Base representation as table
+            input_data_ids.append(node.id)
 
-            uow.job_table_links.link_job_table(job.id, upstream_node.id, "input")
+            uow.job_table_links.link_job_table(job.id, node.id, "input")
 
-            # TRIGGER logic: HARD -> dependency_type='HARD'
-            dep_type = upstream.dependency_type or "SOFT"
+            # Use trigger field (boolean: true = trigger, false = reference)
+            trigger = upstream.trigger if upstream.trigger is not None else False
             self.uow.edges.create_job_table_edge(
-                job.id, upstream_node.id, "input", dependency_type=dep_type
+                job.id, node.id, "input", trigger=trigger
             )
 
-        # 3. Process Downstream Nodes (Outputs)
-        output_table_ids = []
+            # Update DataNode sidecar            
+            data_type = upstream.type            
+            data_info = self._extract_data_info(name, upstream)
+            uow.data_node.create_or_update(
+                node_id=node.id,
+                data_id=name,
+                data_type=data_type,
+                data_info=data_info
+            )
+
+        # 3. Process Downstream Nodes (Outputs) -> Data Assets
+        output_data_ids = []
         seen_downstreams = set()
         for downstream in lineage.downstreams:
-            if not downstream.name.strip():
-                continue
-            name = downstream.name.strip()
+            name = downstream.name
             if name in seen_downstreams:
                 continue
             seen_downstreams.add(name)
 
-            # Table properties: storage, write_mode, owner
-            table_props = {
-                "storage": downstream.storage,
-                "write_mode": downstream.write_mode,
-                "owner": common_owner,
-            }
-            downstream_node = uow.tables.get_or_create(name, table_metadata=table_props)
-            output_table_ids.append(downstream_node.id)
+            node = uow.tables.get_or_create(name)
+            output_data_ids.append(node.id)
 
-            uow.job_table_links.link_job_table(job.id, downstream_node.id, "output")
-            uow.edges.create_job_table_edge(job.id, downstream_node.id, "output")
+            uow.job_table_links.link_job_table(job.id, node.id, "output")
+            self.uow.edges.create_job_table_edge(job.id, node.id, "output")
+            
+            # Update DataNode sidecar
+            orig_type = (downstream.type or "BIGQUERY").upper()
+            data_type = "BIGQUERY" if orig_type == "TABLE" else orig_type
+
+            data_info = self._extract_data_info(name, downstream)
+            uow.data_node.create_or_update(
+                node_id=node.id,
+                data_id=name,
+                data_type=data_type,
+                data_info=data_info
+            )
 
         # 4. Create Job-to-Job Dependencies
         self._create_upstream_relationships(
-            job, input_table_ids, compute_closure=compute_closure
+            job, input_data_ids, compute_closure=compute_closure
         )
         self._create_downstream_relationships(
-            job, output_table_ids, compute_closure=compute_closure
+            job, output_data_ids, compute_closure=compute_closure
         )
 
-        # 5. Populate Search & Catalog Tables (JobNode/TableNode/Project)
-        metadata = lineage.metadata or {}
-        project_id = metadata.get("project", "default-project")
-        owner_id = metadata.get("owner", "unknown-owner")
+        # 5. Populate Search & Catalog Tables
+        project_id = lineage.get_project() or "unknown-project"
+        primary_owner = common_owners[0] if common_owners else "unknown-owner"
 
         # Ensure Project exists in catalog
         self.uow.project.create_or_update(
@@ -581,35 +537,62 @@ class GraphCommandService:
             display_name=project_id.replace("-", " ").replace("_", " ").title(),
         )
 
-        # Ensure User exists in catalog
-        self.uow.users.create_or_update_catalog_user(
-            user_id=owner_id, name=owner_id.split("@")[0].replace(".", " ").title()
-        )
+        # Ensure all owners exist in catalog (user_account table)
+        for owner_id in common_owners:
+            self.uow.users.create_or_update_catalog_user(
+                user_id=owner_id, 
+                name=owner_id.split("@")[0].replace(".", " ").title()
+            )
 
-        # Populate JobNode for search
+        # Populate JobNode for search (with owners list)
         self.uow.job_node.create_or_update(
             node_id=job.id,
+            job_id=lineage.job_id,
             project_id=project_id,
-            owner_id=owner_id,
+            owners=common_owners,
             properties=job_props,
         )
 
-        # Populate TableNodes for search
-        all_table_nodes = []
-        # Reuse nodes from previous steps
-        # This is a bit inefficient to fetch again, but ensures consistency
-        for name in seen_upstreams.union(seen_downstreams):
-            tbl = self.uow.tables.get_by_full_name(name)
-            if tbl:
-                dataset, table_only = self._parse_table_name(name)
-                self.uow.table_node.create_or_update(
-                    node_id=tbl.id,
-                    dataset=dataset,
-                    table_name=table_only,
-                    properties=tbl.properties or {},
-                )
-
         return job.id
+
+    def _extract_data_info(self, name: str, node_info: Any) -> dict:
+        """Extract sidecar metadata for views."""
+        info = {}
+        raw_type = getattr(node_info, "type", "BIGQUERY")
+        data_type = (raw_type or "BIGQUERY").upper()
+        
+        # Normalize 'TABLE' to 'BIGQUERY'
+        if data_type == "TABLE":
+            data_type = "BIGQUERY"
+
+        if data_type == "BIGQUERY":
+            # Assume proj.dataset.table
+            parts = name.split(".")
+            if len(parts) >= 3:
+                info["project"] = parts[0]
+                info["dataset"] = parts[1]
+                info["table"] = parts[2]
+            elif len(parts) == 2:
+                info["dataset"] = parts[0]
+                info["table"] = parts[1]
+            else:
+                info["table"] = name
+        elif data_type in ("S3", "GCS"):
+            # Assume s3://bucket/path
+            if "://" in name:
+                path_part = name.split("://")[1]
+                parts = path_part.split("/", 1)
+                info["bucket"] = parts[0]
+                if len(parts) > 1:
+                    info["prefix"] = parts[1]
+            else:
+                info["bucket"] = name
+        
+        # Add basic storage info if available
+        if hasattr(node_info, "storage") and node_info.storage:
+            info["storage_details"] = node_info.storage
+            
+        return info
 
     def _parse_table_name(self, full_name: str) -> tuple[str, str]:
         """Parse table name into dataset and table_name."""
@@ -625,29 +608,48 @@ class GraphCommandService:
     # --- Helpers moved from GraphSyncService ---
 
     def _extract_job_properties(self, lineage: SchedulingLineage) -> dict:
-        meta = lineage.metadata or {}
-
+        """Extract job properties from SchedulingLineage, supporting both old and new formats."""
+        
+        # Use helper methods to get values from either structure
+        job_type = lineage.get_type()
+        job_status = lineage.get_status()
+        job_schedule = lineage.get_schedule()
+        
         job_props = {
-            "type": lineage.type,
-            "status": lineage.status,
-            "scheduling_type": lineage.type,
-            "governance": lineage.governance,
-            "owner": meta.get("owner"),
-            "labels": meta.get("labels", {}),
-            "is_active": meta.get("is_active", True),
+            "type": job_type,
+            "status": job_status     
         }
 
-        # Merge other metadata if not already present
-        for k, v in meta.items():
-            if k not in job_props:
-                # CRITICAL: Prevent collision with explicit arguments in get_or_create
-                if k in ["name", "job_id", "display_name"]:
-                    continue
-                job_props[k] = v
-
-        if lineage.schedule:
-            # Convert model to dict for serializability, excluding None values
-            job_props["schedule"] = lineage.schedule.model_dump(exclude_none=True)
+        # Handle new nested metadata structure
+        if lineage.metadata:
+            meta = lineage.metadata
+            
+            # Extract owners (store all owners)
+            if meta.owner:
+                job_props["owners"] = meta.owner  # Store full list
+            
+            # Extract from job_meta (keep it structured for the response)
+            if meta.job_meta:
+                job_props["job_meta"] = meta.job_meta.model_dump(exclude_none=True)
+                
+                # Also expose status at top level for backward compatibility and search
+                if meta.job_meta.status:
+                    job_props["status"] = meta.job_meta.status
+                if meta.job_meta.labels:
+                    job_props["labels"] = meta.job_meta.labels
+            
+            # Extract project
+            project = meta.get_project()
+            if project:
+                job_props["project"] = project
+            
+            # Extract encryption configs
+            if meta.enc_configs:
+                job_props["enc_configs"] = meta.enc_configs
+        
+        # Handle schedule from either location
+        if job_schedule:
+            job_props["schedule"] = job_schedule.model_dump(exclude_none=True)
 
         # Store upstreams and downstreams directly as dicts, excluding None values
         if lineage.upstreams:
@@ -659,7 +661,7 @@ class GraphCommandService:
             job_props["downstreams"] = [
                 d.model_dump(exclude_none=True) for d in lineage.downstreams
             ]
-
+            
         # Filter out None or empty values to keep properties clean
         return {
             k: v

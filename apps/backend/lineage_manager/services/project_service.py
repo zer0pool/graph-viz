@@ -135,7 +135,7 @@ class ProjectService:
             "job_id": node.name,
             "node_id": node.id,
             "running_status": properties.get("status", "unknown"),
-            "owner": meta.owner_id,
+            "owners": getattr(meta, "owners", []),
             "project_id": meta.project_id,
             "project_name": project_name or meta.project_id,
             "job_name": properties.get("display_name", node.name),
