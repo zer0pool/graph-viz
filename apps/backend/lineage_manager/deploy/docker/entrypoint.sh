@@ -11,7 +11,7 @@ set -o pipefail
 readonly DEFAULT_DB_HOST="127.0.0.1"
 readonly DEFAULT_DB_PORT="3306"
 readonly DEFAULT_DB_NAME="lineage_manager"
-readonly DEFAULT_DB_USER="ss_admin"
+readonly DEFAULT_DB_USER="root"
 
 # --- Helper Functions ---
 
