@@ -75,11 +75,22 @@ export function setupViewToggle(graphController, listViewController) {
             btn.setAttribute("aria-selected", active ? "true" : "false");
         });
 
+        const graphToolbar = document.getElementById("graph-toolbar");
+        const contextMenu = document.getElementById("node-context-menu");
+        const graphLegend = document.getElementById("graph-legend");
+        const graphStatus = document.getElementById("graph-status");
+
         // Toggle DOM elements
         if (mode === "list") {
             console.log('[ViewToggle] Showing List view');
             if (graphView) graphView.hidden = true;
             if (listView) listView.hidden = false;
+
+            // Hide graph-specific floating elements
+            if (graphToolbar) graphToolbar.hidden = true;
+            if (contextMenu) contextMenu.hidden = true;
+            if (graphLegend) graphLegend.hidden = true;
+            if (graphStatus) graphStatus.hidden = true;
 
             // Update list view
             if (listViewController?.updateListView) {
@@ -93,6 +104,19 @@ export function setupViewToggle(graphController, listViewController) {
             console.log('[ViewToggle] Showing Graph view');
             if (graphView) graphView.hidden = false;
             if (listView) listView.hidden = true;
+
+            // Show graph-specific floating elements if logic permits
+            // Note: graphController.updateToolbarVisibility() handles graphToolbar based on data
+            if (graphController?.updateToolbarVisibility) {
+                graphController.updateToolbarVisibility();
+            } else if (graphToolbar) {
+                graphToolbar.hidden = false;
+            }
+
+            if (graphLegend) {
+                const hasGraph = graphController?.view?.mermaidManager?.nodes?.length > 0;
+                graphLegend.hidden = !hasGraph;
+            }
         }
 
         // Call ListView.setViewMode

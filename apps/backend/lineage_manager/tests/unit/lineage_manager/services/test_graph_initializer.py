@@ -41,10 +41,12 @@ class TestGraphInitializerService:
         mock_job_manager.get_all_jobs = AsyncMock(
             return_value=[
                 SchedulingLineage(
-                    job_id="job1", name="Job 1", type="SELF-TYPE", status="ENABLED"
+                    job_id="job1", 
+                    metadata={"name": "Job 1", "owner": ["owner1"], "project_name": "project1"}
                 ),
                 SchedulingLineage(
-                    job_id="job2", name="Job 2", type="SELF-TYPE", status="ENABLED"
+                    job_id="job2", 
+                    metadata={"name": "Job 2", "owner": ["owner1"], "project_name": "project1"}
                 ),
             ]
         )
@@ -69,10 +71,12 @@ class TestGraphInitializerService:
     ):
         jobs = [
             SchedulingLineage(
-                job_id="job1", name="Job 1", type="SELF-TYPE", status="ENABLED"
+                job_id="job1", 
+                metadata={"name": "Job 1", "owner": ["owner1"], "project_name": "project1"}
             ),
             SchedulingLineage(
-                job_id="job2", name="Job 2", type="SELF-TYPE", status="ENABLED"
+                job_id="job2", 
+                metadata={"name": "Job 2", "owner": ["owner1"], "project_name": "project1"}
             ),
         ]
         mock_job_manager.get_all_jobs = AsyncMock(return_value=jobs)

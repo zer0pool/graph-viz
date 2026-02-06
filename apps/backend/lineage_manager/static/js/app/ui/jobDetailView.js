@@ -37,7 +37,11 @@ export class JobDetailView {
             schedule: container.querySelector("#job-schedule"),
             owner: container.querySelector("#job-owner"),
             jobType: container.querySelector("#job-type"),
-            lifecycle: container.querySelector("#job-lifecycle"),
+            logicType: container.querySelector("#job-logic-type"),
+            project: container.querySelector("#job-project"),
+            dagActive: container.querySelector("#job-dag-active"),
+            encryption: container.querySelector("#job-encryption"),
+            encryptionField: container.querySelector("#job-encryption-field"),
         };
 
         this.labelsSection = container.querySelector("#job-labels-section");
@@ -112,18 +116,108 @@ export class JobDetailView {
         if (this.overviewPlaceholder) this.overviewPlaceholder.hidden = true;
         this.overviewContent.hidden = false;
 
+        // Update panel header with the name from detail response if available
+        if (detail.name) {
+            this.setLabel(detail.name, false);
+            // Also update the main panel title if possible (PanelController handles this usually)
+            const panelTitle = document.getElementById("node-title");
+            if (panelTitle) panelTitle.textContent = detail.name;
+        }
+
         const fields = this.overviewFields || {};
         this.setField(fields.status, detail.status || "-");
+        this.setField(fields.project, detail.project || "-");
 
         // Handle schedule formatting
         const scheduleHtml = this.formatDetailedSchedule(detail.schedule);
         if (fields.schedule) fields.schedule.innerHTML = scheduleHtml;
 
-        this.setField(fields.owner, detail.owner || "-");
+        // Handle multi-owner with truncation
+        this.renderOwners(fields.owner, detail.owners || detail.owner);
+
         this.setField(fields.jobType, detail.type || "-");
-        this.setField(fields.lifecycle, detail.lifecycle_status || "-");
+        this.setField(fields.logicType, detail.logic_type || "-");
+        
+        // DAG Active rendering
+        const dagActive = detail.is_dag_active;
+        if (fields.dagActive) {
+            const isActive = dagActive === true || String(dagActive).toLowerCase() === "true";
+            fields.dagActive.innerHTML = `<span class="pill ${isActive ? 'status-success' : 'status-failed'}">${isActive ? 'Active' : 'Inactive'}</span>`;
+        }
+
+        // Encryption Configs
+        this.renderEncryption(fields, detail.enc_configs);
 
         this.renderLabels(detail.labels);
+    }
+
+    renderEncryption(fields, configs) {
+        if (!fields.encryptionField || !fields.encryption) return;
+        
+        if (!configs || typeof configs !== "object") {
+            fields.encryptionField.hidden = true;
+            return;
+        }
+
+        const activeEncs = [];
+        if (configs.file_enc) activeEncs.push("File");
+        if (configs.column_enc) activeEncs.push("Column");
+
+        if (activeEncs.length === 0) {
+            fields.encryptionField.hidden = true;
+            return;
+        }
+
+        fields.encryptionField.hidden = false;
+        fields.encryption.innerHTML = activeEncs.map(e => `<span class="pill">${e}</span>`).join(" ");
+    }
+
+    renderOwners(container, owners) {
+        if (!container) return;
+        if (!owners || (Array.isArray(owners) && owners.length === 0)) {
+            container.textContent = "-";
+            return;
+        }
+
+        const ownerList = Array.isArray(owners) ? owners : [owners];
+        const threshold = 2;
+        
+        const render = (isExpanded) => {
+            container.innerHTML = "";
+            const visible = isExpanded ? ownerList : ownerList.slice(0, threshold);
+            
+            const text = visible.join(", ");
+            const span = document.createElement("span");
+            span.textContent = text;
+            container.appendChild(span);
+
+            if (!isExpanded && ownerList.length > threshold) {
+                const moreCount = ownerList.length - threshold;
+                const moreBtn = document.createElement("button");
+                moreBtn.type = "button";
+                moreBtn.className = "link-btn ml-2";
+                moreBtn.style.fontSize = "11px";
+                moreBtn.textContent = `+${moreCount} more`;
+                moreBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    render(true);
+                };
+                container.appendChild(moreBtn);
+            } else if (isExpanded && ownerList.length > threshold) {
+                const hideBtn = document.createElement("button");
+                hideBtn.type = "button";
+                hideBtn.className = "link-btn ml-2";
+                hideBtn.style.fontSize = "11px";
+                hideBtn.textContent = "Show less";
+                hideBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    render(false);
+                };
+                container.appendChild(hideBtn);
+            }
+        };
+
+        render(false);
     }
 
     renderLabels(labels) {

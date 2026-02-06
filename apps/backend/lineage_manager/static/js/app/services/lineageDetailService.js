@@ -60,18 +60,41 @@ export class LineageDetailService {
                 const tInfo = details.table_info || {};
                 const jInfo = details.job_info || {};
 
-                this._updateCell(tr, ".cell-storage", (tInfo.storage_type || "-").toLowerCase());
                 this._updateCell(tr, ".cell-write-mode", (tInfo.write_mode || "-").toLowerCase());
 
                 this._updateCell(tr, ".cell-job-id", jInfo.job_id || "-");
-                this._updateCell(tr, ".cell-owner", jInfo.owner || "-");
-                this._updateCell(tr, ".cell-schedule", jInfo.cron || "-");
+                
+                // Owners: join array if available
+                const owners = Array.isArray(jInfo.owners) ? jInfo.owners.join(', ') : (jInfo.owners || "-");
+                this._updateCell(tr, ".cell-owner", owners);
+
+                // Schedule: combine start, end, interval
+                const schedule = this._renderSchedule(jInfo);
+                this._updateCell(tr, ".cell-schedule", schedule);
+                
                 this._updateCell(tr, ".cell-status", this._renderStatusPills(jInfo));
-                this._updateCell(tr, ".cell-lifecycle", jInfo.lifecycle_status || "-");
 
                 tr.dataset.enriched = "true";
             }
         });
+    }
+
+    _renderSchedule(jInfo) {
+        const interval = jInfo.interval || jInfo.cron || "-";
+        const hasInterval = interval && interval !== "-";
+        const hasDate = jInfo.start_date && jInfo.start_date !== "-";
+
+        if (!hasInterval && !hasDate) return "-";
+        
+        let html = `<div class="schedule-info">`;
+        if (hasInterval) {
+            html += `<div class="schedule-interval">${interval}</div>`;
+        }
+        if (hasDate) {
+            html += `<div class="schedule-range text-muted" style="font-size: 0.85em;">${jInfo.start_date} ~ ${jInfo.end_date || ''}</div>`;
+        }
+        html += `</div>`;
+        return html;
     }
 
     _updateCell(row, selector, value) {

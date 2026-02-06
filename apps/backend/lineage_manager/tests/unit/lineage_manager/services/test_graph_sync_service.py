@@ -57,7 +57,12 @@ class TestGraphSyncService:
         self, service, mock_job_manager, mock_command_service
     ):
         lineage = SchedulingLineage(
-            job_id="job1", name="Job 1", type="SELF-TYPE", status="ENABLED"
+            job_id="job1",
+            metadata={
+                "name": "Job 1",
+                "owner": ["owner1"],
+                "project_name": "project1"
+            }
         )
         mock_job_manager.get_job = AsyncMock(return_value=lineage)
 
@@ -84,10 +89,12 @@ class TestGraphSyncService:
     ):
         lineages = [
             SchedulingLineage(
-                job_id="job1", name="Job 1", type="SELF-TYPE", status="ENABLED"
+                job_id="job1", 
+                metadata={"name": "Job 1", "owner": ["owner1"], "project_name": "project1"}
             ),
             SchedulingLineage(
-                job_id="job2", name="Job 2", type="SELF-TYPE", status="ENABLED"
+                job_id="job2", 
+                metadata={"name": "Job 2", "owner": ["owner1"], "project_name": "project1"}
             ),
         ]
         mock_job_manager.fetch_lineages_by_ids = AsyncMock(return_value=lineages)
@@ -108,10 +115,12 @@ class TestGraphSyncService:
     ):
         lineages = [
             SchedulingLineage(
-                job_id="job1", name="Job 1", type="SELF-TYPE", status="ENABLED"
+                job_id="job1", 
+                metadata={"name": "Job 1", "owner": ["owner1"], "project_name": "project1"}
             ),
             SchedulingLineage(
-                job_id="job2", name="Job 2", type="SELF-TYPE", status="ENABLED"
+                job_id="job2", 
+                metadata={"name": "Job 2", "owner": ["owner1"], "project_name": "project1"}
             ),
         ]
         mock_job_manager.fetch_lineages_by_ids = AsyncMock(return_value=lineages)

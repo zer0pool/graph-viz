@@ -361,7 +361,7 @@ class GraphQueryService:
                     {
                         "job_id": job.job_id or job.name,
                         "name": job.display_name,
-                        "owners": job.owners or [],
+                        "owners": job.owners,
                     }
                     for job in jobs
                 ],
@@ -749,15 +749,18 @@ class GraphQueryService:
             return None
 
         # derive defaults
-        # 1. Try top-level properties first
+        # Primary: Try top-level properties (new behavior is flattened)
         status = job._get_prop("status")
         enabled = job._get_prop("enabled")
 
-        # 2. Fallback to job_meta if top-level is missing
+        # Fallback: legacy support for nested structures
         if not status or status == "unknown":
-            jm = job._get_prop("job_meta")
-            if jm and isinstance(jm, dict):
-                status = jm.get("status")
+            # Check legacy keys
+            for key in ["job_meta", "job_metadata"]:
+                jm = job._get_prop(key)
+                if jm and isinstance(jm, dict):
+                    status = jm.get("status")
+                    if status: break
         
         # attach for response usage
         setattr(job, "status", status or "unknown")
@@ -769,31 +772,21 @@ class GraphQueryService:
         if not node_ids:
             return {"status": "success", "results": {}}
 
-        uow = self.uow
-        # 1. Fetch all requested nodes
-        stmt = select(GraphNode).where(GraphNode.name.in_(node_ids))
-        nodes = uow.db.execute(stmt).scalars().all()
-
-        # Mapping to keep track of nodes
+        # Normalize and filter
+        node_ids = list(set(nid for nid in node_ids if nid))
+        
+        # 1. Fetch all requested nodes via repository
+        nodes = self.uow.nodes.get_by_names(node_ids)
         node_map = {n.name: n for n in nodes}
 
         # 2. Identify table nodes and find their producers
         table_nodes = [n for n in nodes if n.node_type == "table"]
         table_node_ids = [n.id for n in table_nodes]
-        producer_map = {}  # table_node_id -> JobNode
+        producer_map = {}  # table_node_id -> GraphNode (job)
 
         if table_node_ids:
-            # Query edges where target is one of our tables and edge_type is 'write'
-            # Then join with GraphNode to get the job information
-            producer_stmt = (
-                select(GraphEdge.target_node_id, GraphNode)
-                .join(GraphNode, GraphEdge.source_node_id == GraphNode.id)
-                .where(
-                    GraphEdge.target_node_id.in_(table_node_ids),
-                    GraphEdge.edge_type == "write",
-                )
-            )
-            producer_results = uow.db.execute(producer_stmt).all()
+            # Query producers via repository
+            producer_results = self.uow.job_table_links.get_producer_jobs_by_table_ids(table_node_ids)
             for t_id, job_node in producer_results:
                 if t_id not in producer_map:
                     producer_map[t_id] = job_node
@@ -805,39 +798,40 @@ class GraphQueryService:
                 results[nid] = self._make_empty_node_details(nid)
                 continue
 
-            meta = node.job_metadata or {}
+            ntype = getattr(node, "node_type", "unknown")
+            nid_db = getattr(node, "id", None)
+            props = getattr(node, "properties", {}) or {}
 
             # Table Info Section
             table_info = {
-                "id": node.name,
-                "type": node.node_type,
-                "write_mode": node.write_mode or meta.get("write_mode") or "-",
-                "storage_type": node.storage_type or meta.get("storage_type") or "-",
+                "id": getattr(node, "name", nid),
+                "type": ntype,
+                "write_mode": getattr(node, "write_mode", None) or props.get("write_mode") or "-",
+                "storage_type": getattr(node, "storage_type", None) or props.get("storage_type") or "-",
             }
 
             # Job Info Section
             job_node = None
-            if node.node_type == "job":
+            if ntype == "job":
                 job_node = node
             else:
-                job_node = producer_map.get(node.id)
+                job_node = producer_map.get(nid_db)
 
             if job_node:
-                j_meta = job_node.job_metadata or {}
-                j_sched = j_meta.get("schedule") or {}
+                j_props = getattr(job_node, "properties", {}) or {}
+                j_sched = j_props.get("schedule") or {}
+                
+                # Reconstruct job_info from flattened properties
                 job_info = {
-                    "job_id": job_node.name,
-                    "owners": job_node.owners or j_meta.get("owners") or [],
-                    "status": j_meta.get("status") or "-",
-                    "run_status": j_meta.get("run_status") or "-",
-                    "cron": j_sched.get("cron") or j_sched.get("interval") or "-",
-                    "start_date": j_sched.get("start_date")
-                    or j_meta.get("start_date")
-                    or "-",
-                    "end_date": j_sched.get("end_date")
-                    or j_meta.get("end_date")
-                    or "-",
-                    "lifecycle_status": j_meta.get("lifecycle_status") or "-",
+                    "job_id": getattr(job_node, "name", "-"),
+                    "owners": getattr(job_node, "owners", []) or j_props.get("owners") or [],
+                    "status": j_props.get("status") or "-",
+                    "run_status": j_props.get("run_status") or "-",
+                    "interval": j_sched.get("cron") or j_sched.get("interval") or "-",
+                    "start_date": j_sched.get("start_date") or "-",
+                    "end_date": j_sched.get("end_date") or "-",
+                    "job_meta": j_props,
+                    "type": j_props.get("type") or j_props.get("logic_type") or "-",
                 }
             else:
                 job_info = {
@@ -845,12 +839,12 @@ class GraphQueryService:
                     "owners": [],
                     "status": "-",
                     "run_status": "-",
-                    "cron": "-",
+                    "interval": "-",
                     "start_date": "-",
                     "end_date": "-",
-                    "lifecycle_status": "-",
+                    "job_meta": None,
+                    "type": None,
                 }
-
             results[nid] = {"table_info": table_info, "job_info": job_info}
 
         return {"status": "success", "results": results}
@@ -868,10 +862,11 @@ class GraphQueryService:
                 "owners": [],
                 "status": "not_found",
                 "run_status": "-",
-                "cron": "-",
+                "interval": "-",
                 "start_date": "-",
                 "end_date": "-",
-                "lifecycle_status": "-",
+                "job_meta": None,
+                "type": None,
             },
         }
 

@@ -472,6 +472,12 @@ class GraphCommandService:
 
             # Register as DataNode
             node = uow.tables.get_or_create(name) # Base representation as table
+            
+            # --- [NEW] Populate Table Info Properties (Upstream) ---
+            if upstream.storage:
+                node.storage_type = upstream.storage
+            # -------------------------------------------------------
+
             input_data_ids.append(node.id)
 
             uow.job_table_links.link_job_table(job.id, node.id, "input")
@@ -502,6 +508,14 @@ class GraphCommandService:
             seen_downstreams.add(name)
 
             node = uow.tables.get_or_create(name)
+            
+            # --- [NEW] Populate Table Info Properties (Downstream) ---
+            if downstream.storage:
+                node.storage_type = downstream.storage
+            if downstream.write_mode:
+                node.write_mode = downstream.write_mode
+            # ---------------------------------------------------------
+
             output_data_ids.append(node.id)
 
             uow.job_table_links.link_job_table(job.id, node.id, "output")
@@ -628,15 +642,15 @@ class GraphCommandService:
             if meta.owner:
                 job_props["owners"] = meta.owner  # Store full list
             
-            # Extract from job_meta (keep it structured for the response)
+            # Flatten job_meta into root properties
+            # This makes fields like logic_type, description, schedule directly accessible
             if meta.job_meta:
-                job_props["job_meta"] = meta.job_meta.model_dump(exclude_none=True)
-                
-                # Also expose status at top level for backward compatibility and search
-                if meta.job_meta.status:
-                    job_props["status"] = meta.job_meta.status
-                if meta.job_meta.labels:
-                    job_props["labels"] = meta.job_meta.labels
+                job_meta_data = meta.job_meta.model_dump(exclude_none=True)
+                # Ensure labels and schedule are handled specifically if needed, 
+                # but model_dump already includes them.
+                for k, v in job_meta_data.items():
+                    if k not in job_props:
+                        job_props[k] = v
             
             # Extract project
             project = meta.get_project()
@@ -647,20 +661,13 @@ class GraphCommandService:
             if meta.enc_configs:
                 job_props["enc_configs"] = meta.enc_configs
         
-        # Handle schedule from either location
-        if job_schedule:
+        # Schedule is already flattened from job_meta above if it existed there.
+        # But we keep this for backward compatibility with old payload structure.
+        if job_schedule and "schedule" not in job_props:
             job_props["schedule"] = job_schedule.model_dump(exclude_none=True)
 
-        # Store upstreams and downstreams directly as dicts, excluding None values
-        if lineage.upstreams:
-            job_props["upstreams"] = [
-                u.model_dump(exclude_none=True) for u in lineage.upstreams
-            ]
-
-        if lineage.downstreams:
-            job_props["downstreams"] = [
-                d.model_dump(exclude_none=True) for d in lineage.downstreams
-            ]
+        # REDUNDANT: Stop storing upstreams and downstreams in the JSON properties.
+        # They are already provided at the top level of the API response via edges.
             
         # Filter out None or empty values to keep properties clean
         return {

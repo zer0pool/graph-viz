@@ -99,24 +99,15 @@ def get_job_detail(
     properties.setdefault("status", getattr(job, "status", "unknown"))
     properties.setdefault("enabled", getattr(job, "enabled", True))
 
-    # Clean up leftovers and handle structured metadata
-    # We prefer the new 'job_meta' key if it exists
-    if "job_meta" in properties:
-        # job_meta is already structured, just make sure labels/status are synced to top level if missing
-        jm = properties["job_meta"]
-        if isinstance(jm, dict):
-            if "status" in jm and not properties.get("status"):
-                properties["status"] = jm["status"]
-            if "labels" in jm and not properties.get("labels"):
-                properties["labels"] = jm["labels"]
-    
-    # Legacy: if old 'job_metadata' exists, flatten it only if it doesn't conflict
-    if "job_metadata" in properties:
-        child_meta = properties.pop("job_metadata")
-        if isinstance(child_meta, dict):
-            for k, v in child_meta.items():
-                if k not in properties:
-                    properties[k] = v
+    # Clean up leftovers: legacy support for deeply nested metadata
+    # (Note: new registrations are already flattened in GraphCommandService)
+    for legacy_key in ["job_meta", "job_metadata"]:
+        if legacy_key in properties:
+            child_meta = properties.pop(legacy_key)
+            if isinstance(child_meta, dict):
+                for k, v in child_meta.items():
+                    if k not in properties:
+                        properties[k] = v
 
     return {
         "job_id": job.job_id,
