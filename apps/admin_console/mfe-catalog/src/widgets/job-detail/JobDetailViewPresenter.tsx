@@ -9,11 +9,14 @@ import { JobRunTimeline } from "../../entities/job/JobRunTimeline";
 import { JobRunDrawer } from "../../entities/job/JobRunDrawer";
 import { EntityContextLink } from "../../shared/ui/EntityContextLink";
 import { JobRun, Job } from "../../shared/types/job";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Zap, Clock, PanelLeft, Star, RefreshCcw, User } from "lucide-react";
+import { Badge } from "../../shared/ui/badge";
+import { EntityHeader } from "../../shared/ui/EntityHeader";
+import { HeaderActionButtons } from "../../shared/ui/HeaderActionButtons";
 
 const JOB_TABS: Tab[] = [
-  { id: "info", label: "Overview" },
-  { id: "lineage", label: "Run Dependency" },
+  { id: "info", label: "Summary" },
+  { id: "lineage", label: "Lineage" },
   { id: "runs", label: "Run History" },
 ];
 
@@ -78,17 +81,76 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
 
   const Layout = mode === "EMBEDDED" ? CompactDetailLayout : (DetailLayout as any);
 
-  const headerActions = tab === 'lineage' ? (
-    <button 
-      onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+  const properties = job?.properties || {};
+  const status = job?.status || properties.status || "UNKNOWN";
+
+  const getStatusVariant = (s: string) => {
+    const statusVal = s.toUpperCase();
+    if (statusVal.includes("SUCCESS") || statusVal.includes("COMPLETED")) return "default";
+    if (statusVal.includes("FAILED") || statusVal.includes("ERROR")) return "destructive";
+    return "secondary";
+  };
+
+  const headerActions = (
+    <HeaderActionButtons 
+      onSync={() => console.log("Sync clicked")}
+      onLineage={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
         detail: { path: `/lineage/job:${encodeURIComponent(job?.job_id || job?.id || jobId)}` } 
       }))}
-      className="flex items-center gap-2 px-3 py-1.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-medium rounded shadow-sm transition-all shadow-[#3c404326]"
-    >
-      <GitBranch className="w-3.5 h-3.5" />
-      See lineage graph
-    </button>
-  ) : null;
+    />
+  );
+ 
+  const metadata = [
+    { icon: Clock, label: properties.schedule?.interval || job?.schedule || "No Schedule" },
+    { 
+      icon: PanelLeft, 
+      label: (
+        <button 
+          onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+            detail: { path: `/projects/${encodeURIComponent(properties.project || job?.project_id || "N/A")}` } 
+          }))}
+          className="hover:text-blue-600 transition-colors text-left"
+        >
+          {properties.project || job?.project_name || properties.project_name || "N/A"}
+        </button>
+      )
+    },
+    { 
+      icon: User, 
+      label: (
+        <button 
+          onClick={() => {
+            const ownerId = (properties.owners && properties.owners.length > 0) 
+              ? properties.owners[0] 
+              : (properties.owner || job?.owner);
+            if (ownerId) {
+              window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+                detail: { path: `/users/${encodeURIComponent(ownerId)}` } 
+              }));
+            }
+          }}
+          className="hover:text-amber-600 transition-colors text-left"
+        >
+          {(properties.owners && properties.owners.length > 0) 
+            ? properties.owners[0] 
+            : (properties.owner || job?.owner || "N/A")}
+          {(properties.owners && properties.owners.length > 1) ? ` +${properties.owners.length - 1}` : ""}
+        </button>
+      )
+    },
+  ];
+ 
+  const jobHeaderSummary = (
+    <EntityHeader
+      icon={Zap}
+      title={properties.display_name || job?.name || jobId}
+      badge={status}
+      badgeVariant={getStatusVariant(status)}
+      metadata={metadata}
+      actions={headerActions}
+      onFavoriteToggle={() => console.log("Header favorite clicked")}
+    />
+  );
 
   return (
     <>
@@ -101,27 +163,11 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
         type="job"
         owner={job?.owner || job?.properties?.owner}
         actions={headerActions}
+        headerContent={jobHeaderSummary}
       >
         <div className="p-6">
           {tab === "info" && (
             <div className="space-y-6 animate-fade-in">
-              {/* Navigation Header - Hide in Embedded Mode */}
-              {mode !== "EMBEDDED" && (
-              <div className="flex items-center gap-8 p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6">
-                <EntityContextLink
-                  title="Parent Project"
-                  label={job?.project_name || job?.project_id || "N/A"}
-                  path={job?.project_id ? `/projects/${job.project_id}` : "/"}
-                />
-                <div className="w-px h-8 bg-slate-200" />
-                <EntityContextLink
-                  title="Registered By"
-                  label={job?.owner || job?.properties?.owner || "N/A"}
-                  path={job?.owner || job?.properties?.owner ? `/users/${job.owner || job.properties?.owner}` : "/"}
-                />
-              </div>
-              )}
-
               <JobOverview
                 job={job || { id: jobId, name: jobId, status: "loading" }}
                 loading={loadingJob}

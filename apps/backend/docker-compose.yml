@@ -57,7 +57,7 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - ./dummy-job-manager/dummy_lineage.json:/app/dummy_lineage.json:ro
+      - ./dummy-job-manager:/app/data:ro
     networks:
       - backend-network
 

@@ -24,6 +24,7 @@ import {
   Table2, 
   List, 
   Briefcase, 
+  Boxes,
   Shield,
   ChevronRight, 
   Home,
@@ -37,6 +38,7 @@ const iconMap: Record<string, LucideIcon> = {
   users: Users,
   audit: Shield,
   dashboard: LayoutDashboard,
+  projects: Boxes,
 };
 
 /**
@@ -67,8 +69,8 @@ export const Breadcrumbs = () => {
     let Icon = iconMap[value];
     let isStacked = false;
 
-    // Plural logic: apply stacked effect to jobs/tables list items
-    if (value === 'jobs' || value === 'tables') {
+    // Plural logic: apply stacked effect to jobs/tables/projects list items
+    if (value === 'jobs' || value === 'tables' || value === 'projects') {
        isStacked = true;
     }
 
@@ -84,13 +86,14 @@ export const Breadcrumbs = () => {
     }
 
     // Identify if current value is an ID based on context
-    if (prevValue === 'jobs' || prevValue === 'tables' || prevValue === 'lineage' || prevValue === 'users') {
+    if (prevValue === 'jobs' || prevValue === 'tables' || prevValue === 'lineage' || prevValue === 'users' || prevValue === 'projects') {
        // It's an ID
        if (!Icon) { // Only assign if not already set by prefix logic
           if (prevValue === 'jobs') Icon = Briefcase;
           if (prevValue === 'tables') Icon = Table2;
           if (prevValue === 'lineage') Icon = GitBranch;
           if (prevValue === 'users') Icon = User;
+          if (prevValue === 'projects') Icon = Boxes;
        }
        
        // Shorten if it's too long for the breadcrumb

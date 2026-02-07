@@ -3,7 +3,7 @@ export interface Job {
   node_id?: number;
   job_name?: string;
   running_status?: string;
-  owner?: string;
+  owners?: string[];
   project_id?: string;
   enabled?: boolean;
   updated_at?: string | null;
@@ -26,6 +26,7 @@ export interface JobDetail {
   status: string;
   schedule?: string;
   owner?: string;
+  owners?: string[];
   description?: string;
   last_run_time?: string;
   next_run_time?: string;

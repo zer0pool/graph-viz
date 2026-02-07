@@ -3,49 +3,68 @@ import os
 from typing import List, Dict, Any, Optional
 
 class LineageRepository:
-    _instance = None
-    _data: List[Dict[str, Any]] = []
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(LineageRepository, cls).__new__(cls)
-            cls._instance._load_data()
-        return cls._instance
-
-    def _load_data(self):
-        # Assuming dummy_lineage.json is in the root /app directory in container
-        # or current working directory locally.
-        try:
-            path = "dummy_lineage.json"
-            if not os.path.exists(path):
-                # Fallback to parent dir if running from app subdir? 
-                # Ideally we run from root of dummy-job-manager
-                if os.path.exists(f"../{path}"):
-                    path = f"../{path}"
-            
+    def _load_file(self, filename: str) -> List[Dict[str, Any]]:
+        # Try to locate the file in multiple possible locations
+        possible_paths = [
+            f"/app/data/lineage/{filename}",  # Container path
+            f"app/data/lineage/{filename}",   # Local path from root
+            f"data/lineage/{filename}"        # Local path relative to valid cwd
+        ]
+        
+        for path in possible_paths:
             if os.path.exists(path):
-                with open(path, "r") as f:
-                    content = json.load(f)
-                    self._data = content.get("items", [])
-                    print(f"Loaded {len(self._data)} jobs from {path}")
-            else:
-                print(f"WARNING: {path} not found. Repository empty.")
-                self._data = []
-        except Exception as e:
-            print(f"ERROR loading lineage data: {e}")
-            self._data = []
+                try:
+                    with open(path, "r") as f:
+                        content = json.load(f)
+                        return content.get("items", [])
+                except Exception as e:
+                    print(f"ERROR loading {path}: {e}")
+                    return []
+        
+        print(f"WARNING: File {filename} not found in searched paths.")
+        return []
+
+    def get_lineage_data(self, scheduling_type: str) -> List[Dict[str, Any]]:
+        if not scheduling_type:
+            return []
+            
+        filename = f"{scheduling_type}.json"
+        return self._load_file(filename)
 
     def get_all(self) -> List[Dict[str, Any]]:
-        return self._data
+        # Legacy support or fallback: allow loading all known types if needed?
+        # For now, let's just return empty or maybe try to load commonly known ones if implied.
+        # Given the new requirement is strict about directory mapping, getting "everything" 
+        # is ambiguous unless we list the directory.
+        # Let's list the directory to find all available types.
+        all_items = []
+        possible_dirs = ["/app/data/lineage", "app/data/lineage"]
+        
+        target_dir = None
+        for d in possible_dirs:
+            if os.path.isdir(d):
+                target_dir = d
+                break
+        
+        if target_dir:
+            try:
+                for f_name in os.listdir(target_dir):
+                    if f_name.endswith(".json"):
+                        items = self._load_file(f_name)
+                        all_items.extend(items)
+            except Exception as e:
+                print(f"Error listing directory {target_dir}: {e}")
+                
+        return all_items
 
-    def get_by_type(self, job_type: str) -> List[Dict[str, Any]]:
-        return [j for j in self._data if j.get("type") == job_type]
-
+    def get_by_ids(self, job_ids: set) -> List[Dict[str, Any]]:
+        # This is expensive if we have to load everything, but for a dummy manager it's fine.
+        all_data = self.get_all()
+        return [j for j in all_data if j["job_id"] in job_ids]
+    
     def get_by_id(self, job_id: str) -> Optional[Dict[str, Any]]:
-        for item in self._data:
+        all_data = self.get_all()
+        for item in all_data:
             if item["job_id"] == job_id:
                 return item
         return None
-
-    def get_by_ids(self, job_ids: set) -> List[Dict[str, Any]]:
-        return [j for j in self._data if j["job_id"] in job_ids]

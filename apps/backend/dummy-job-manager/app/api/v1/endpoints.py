@@ -15,9 +15,10 @@ def get_scheduling_lineage(
     limit: int = 100,
 ):
     """Paginated static lineage data from file."""
+    """Paginated static lineage data from file."""
     if scheduling_type:
         target_type = scheduling_type.value
-        filtered = repo.get_by_type(target_type)
+        filtered = repo.get_lineage_data(target_type)
     else:
         filtered = repo.get_all()
 

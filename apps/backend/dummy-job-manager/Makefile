@@ -10,10 +10,11 @@ PID_FILE=.dummy_pid
 
 .PHONY: venv run kill restart status clean docker-build docker-run
 
-venv:
+venv:	
+	rm -rf $(VENV)
 	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
-	$(VENV)/bin/pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/pip install -r requirements.txt
+	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
+	$(VENV)/bin/python -m pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
 
 run:
 	@echo "Starting Dummy Job Manager..."
