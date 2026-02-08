@@ -61,7 +61,7 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
 
   let currentPercent = 0;
   return (
-    <div className="relative w-10 h-10 shrink-0 group/pie mr-6">
+    <div className="relative w-8 h-8 shrink-0 group/pie mr-6">
       <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90 overflow-visible">
         {data.map((item, idx) => {
           const val = Number(item.value);
@@ -86,7 +86,7 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
               key={idx}
               cx="18"
               cy="18"
-              r="15.915"
+              r="15.915"              
               fill="transparent"
               stroke={colorHex}
               strokeWidth="31.83" // Radius * 2 to fill center
@@ -110,7 +110,9 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
           <div className="flex items-center gap-1.5">
             <div className={`w-1.5 h-1.5 rounded-full ${data[hoveredIndex].color || "bg-white"}`} />
             <span className="font-medium text-gray-300">{data[hoveredIndex].label}:</span>
-            <span className="font-bold whitespace-nowrap">{data[hoveredIndex].value}</span>
+            <span className="font-bold whitespace-nowrap">
+              {((Number(data[hoveredIndex].value) / total) * 100).toFixed(1)}%
+            </span>
           </div>
           {/* Tooltip Arrow */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />

@@ -12,7 +12,7 @@ from lineage_manager.services.graph_query_service import GraphQueryService
 from lineage_manager.services.graph_command_service import GraphCommandService
 from lineage_manager.services.job_service import JobService
 from lineage_manager.services.graph_sync_service import GraphSyncService
-from lineage_manager.api.v1.schemas import JobUpdateRequest
+from lineage_manager.api.v1.schemas import JobUpdateRequest, JobLineageHybridResponse, JobHealthResponse
 
 AUTH_DEPS = [Depends(require_authenticated_user)]
 
@@ -119,13 +119,51 @@ async def get_job_detail(
     }
 
 
-@router.get("/{job_id}/graph")
+@router.get("/{job_id}/lineage", response_model=JobLineageHybridResponse)
+@inject
+async def get_job_lineage(
+    job_id: str,
+    depth: int = 1,
+    direction: str = "both",
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Get lineage graph for a specific job.
+    - **depth**: Number of hops to traverse (default: 1)
+    - **direction**: 'upstream', 'downstream', or 'both' (default: 'both')
+    """
+    result = svc.get_job_lineage(job_id, depth=depth, direction=direction)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result["message"])
+    return result
+
+
+@router.get("/{job_id}/health", response_model=JobHealthResponse)
+@inject
+async def get_job_health(
+    job_id: str,
+    svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
+):
+    """
+    Get health status for a specific job.
+    Includes freshness, last run status, and execution mode.
+    """
+    result = svc.get_job_health(job_id)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result["message"])
+    return result
+
+
+@router.get("/{job_id}/graph", deprecated=True)
 @inject
 async def get_job_graph(
     job_id: str,
     depth: int = 1,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
+    """
+    **DEPRECATED**: Use `/api/v1/jobs/{job_id}/lineage` instead.
+    """
     deps = svc.get_job_neighbors(job_id, level=depth)
     if deps.get("status") == "error":
         raise HTTPException(status_code=500, detail=deps["message"])

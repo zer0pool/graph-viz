@@ -222,3 +222,116 @@ class UserInfo(BaseModel):
     roles: List[str]
     department: str
     lastActive: str
+
+
+# ============================================================================
+# Job Lineage Schemas (New)
+# ============================================================================
+
+
+class LineageNode(BaseModel):
+    """Refined node model for lineage response."""
+    id: str = Field(..., description="Canonical ID (e.g., job:123, table:456)")
+    type: str = Field(..., description="'job' or 'table'")
+    name: str = Field(..., description="Display name")
+    
+    # Optional fields depending on type
+    job_id: Optional[str] = None
+    full_name: Optional[str] = None
+    owners: List[str] = []
+    status: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+class LineageEdge(BaseModel):
+    """Refined edge model for lineage response."""
+    source: str
+    target: str
+    io: str = Field(..., description="'input' or 'output'")
+
+
+class LineageDirection(BaseModel):
+    """Container for nodes and edges in a specific direction."""
+    nodes: List[LineageNode]
+    edges: List[LineageEdge]
+
+
+# ============================================================================
+# Job Lineage Hybrid Schemas (New)
+# ============================================================================
+
+class InputTableInfo(BaseModel):
+    """Schema for Upstream Input Table."""
+    id: str
+    name: str
+    storage_type: Optional[str] = "BQ"
+    read_mode: Optional[str] = "FULL"
+    freshness: Optional[str] = None  # e.g. "02:01"
+    quality_status: Optional[str] = "PASS"
+    row_count: Optional[int] = None
+    owner: Optional[str] = None
+    criticality: Optional[str] = "LOW"
+
+
+class OutputTableInfo(BaseModel):
+    """Schema for Downstream Output Table."""
+    id: str
+    name: str
+    storage_type: Optional[str] = "BQ"
+    write_mode: Optional[str] = "APPEND"
+    recent_volume: Optional[int] = None  # bytes or rows
+    consumer_count: int = 0
+    sla_status: Optional[str] = "MET"
+
+
+class LineageGraphData(BaseModel):
+    """Container for visualization graph data."""
+    nodes: List[LineageNode]
+    edges: List[LineageEdge]
+
+
+class JobLineageHybridResponse(BaseModel):
+    """Hybrid response for Lineage Page (List + Graph)."""
+    job_id: str
+    inputs: List[InputTableInfo]
+    outputs: List[OutputTableInfo]
+    graph: LineageGraphData
+
+
+
+# ============================================================================
+# Job Health Schemas (New)
+# ============================================================================
+
+
+class FreshnessInfo(BaseModel):
+    last_updated: str
+    sla: str
+    delay: Optional[int] = None
+
+
+class LastRunInfo(BaseModel):
+    result: str
+    duration: str
+    ended_at: str
+
+
+class ExecutionInfo(BaseModel):
+    mode: str
+    partition: Optional[str] = None
+
+
+class JobHealthData(BaseModel):
+    """Inner health data object."""
+    freshness: FreshnessInfo
+    last_run: LastRunInfo
+    execution: ExecutionInfo
+
+
+class JobHealthResponse(BaseModel):
+    """Top-level response for job health."""
+    job_id: str
+    updated_at: str
+    health: JobHealthData
+
+

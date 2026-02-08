@@ -108,16 +108,23 @@ class JobRepository(BaseRepository):
         # 1. Remove existing owners for this job
         self.db.execute(delete(JobOwner).where(JobOwner.job_id == job_db_id))
 
-        # 2. Add new owners
+        # 2. Add new owners (only if user exists)
+        from lineage_manager.models.user_account import UserAccount
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
         for uid in owner_user_ids:
             if not uid:
                 continue
             
-            # Optional: Verify user exists? 
-            # For now, we'll just insert to allow late-binding/demo data.
-            # But we should probably check to avoid foreign key violations if they are enforced.
-            # Let's assume user_id exists or we handle it gracefully.
-            self.db.add(JobOwner(job_id=job_db_id, user_id=uid))
+            # Check if user exists in user_account table
+            user_exists = self.db.query(UserAccount).filter(UserAccount.user_id == uid).first()
+            
+            if user_exists:
+                self.db.add(JobOwner(job_id=job_db_id, user_id=uid))
+            else:
+                logger.warning(f"Skipping job_owner entry: user_id '{uid}' not found in user_account table")
         
         self.db.flush()
 

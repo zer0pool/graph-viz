@@ -5,6 +5,7 @@ import {
   TableSchemaResponse,
   TableTimelinessResponse,
 } from "../types/table";
+import { JobHealthResponse, JobLineageHybridResponse } from "./types/lineage";
 import { SummaryMetricsResponse, PaginatedResponse } from "../types";
 
 export class ApiClient {
@@ -18,7 +19,7 @@ export class ApiClient {
     this.baseUrl = baseUrl || "/admin-console";
   }
 
-  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  public async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const fullUrl = `${this.baseUrl}${url}`;
     const res = await this.auth.fetchWithAuth(fullUrl, options);
 
@@ -47,6 +48,14 @@ export class ApiClient {
     return this.request<JobRunHistoryResponse>(
       `/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`
     );
+  }
+
+  async fetchJobHealth(jobId: string): Promise<JobHealthResponse> {
+    return this.request<JobHealthResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}/health`);
+  }
+
+  async fetchJobLineageHybrid(jobId: string): Promise<JobLineageHybridResponse> {
+    return this.request<JobLineageHybridResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}/lineage`);
   }
 
   async fetchProjectJobs(

@@ -165,7 +165,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
         actions={headerActions}
         headerContent={jobHeaderSummary}
       >
-        <div className="p-6">
+        <div className="px-6 pb-6 pt-2">
           {tab === "info" && (
             <div className="space-y-6 animate-fade-in">
               <JobOverview

@@ -62,11 +62,12 @@ class GraphQueryService:
         except Exception:
             return None
 
-    def _cache_set(self, key: str, value: Dict[str, Any]) -> None:
+    def _cache_set(self, key: str, value: Dict[str, Any], expire: int = None) -> None:
         if not self.redis_enabled or not self._r:
             return
+        ttl = expire if expire is not None else self.redis_ttl
         try:
-            self._r.setex(key, self.redis_ttl, json.dumps(value))
+            self._r.setex(key, ttl, json.dumps(value))
         except Exception:
             pass
 
@@ -292,6 +293,169 @@ class GraphQueryService:
 
         self._cache_set(key, res)
         return res
+
+    def get_job_lineage(
+        self,
+        job_id: str,
+        depth: int = 1,
+        direction: str = "both",
+    ):
+        """
+        Get structured lineage for a job, separated by upstream/downstream.
+        """
+        key = f"lineage:job:{job_id}:{depth}:{direction}"
+        cached = self._cache_get(key)
+        if cached:
+            return cached
+
+        with self.uow:
+            job = self.uow.jobs.get(job_id)
+            if not job:
+                return {"status": "error", "message": f"Job '{job_id}' not found"}
+
+            # Initialize empty structures
+            upstream_data = {"nodes": [], "edges": []}
+            downstream_data = {"nodes": [], "edges": []}
+
+            # Upstream traversal
+            if direction in ("upstream", "both"):
+                up_res = self._traversal.bfs_neighbors(
+                    "job", job.id, job, depth, "upstream"
+                )
+                upstream_data = up_res
+
+            # Downstream traversal
+            if direction in ("downstream", "both"):
+                down_res = self._traversal.bfs_neighbors(
+                    "job", job.id, job, depth, "downstream"
+                )
+                downstream_data = down_res
+
+            # Deduplicate nodes by ID
+            unique_nodes = {}
+            for node in upstream_data["nodes"] + downstream_data["nodes"]:
+                if node["id"] not in unique_nodes:
+                    unique_nodes[node["id"]] = node
+            
+            # Deduplicate edges by source-target-io
+            unique_edges = set()
+            final_edges = []
+            for edge in upstream_data["edges"] + downstream_data["edges"]:
+                edge_key = (edge["source"], edge["target"], edge.get("io"))
+                if edge_key not in unique_edges:
+                    unique_edges.add(edge_key)
+                    final_edges.append(edge)
+
+            # Define graph data for visualization
+            lineage_graph = {
+                "nodes": list(unique_nodes.values()),
+                "edges": final_edges,
+            }
+            
+            # --- Map to Hybrid Response (Inputs / Outputs) ---
+            inputs = []
+            for node in upstream_data["nodes"]:
+                 if node["type"] == "table":
+                     # Logic to extract InputTableInfo metrics
+                     inputs.append({
+                         "id": node["id"],
+                         "name": node["name"],
+                         "storage_type": "BQ", # Placeholder
+                         "read_mode": "FULL", # Placeholder
+                         "freshness": "00:00", # Placeholder
+                         "quality_status": "PASS",
+                         "row_count": 0,
+                         "owner": node.get("owners", [""])[0] if node.get("owners") else None,
+                         "criticality": "LOW"
+                     })
+
+            outputs = []
+            for node in downstream_data["nodes"]:
+                if node["type"] == "table":
+                     # Logic to extract OutputTableInfo metrics
+                     outputs.append({
+                         "id": node["id"],
+                         "name": node["name"],
+                         "storage_type": "BQ",
+                         "write_mode": "APPEND",
+                         "recent_volume": 0,
+                         "consumer_count": 0,
+                         "sla_status": "MET"
+                     })
+
+            response = {
+                "job_id": job_id,
+                "inputs": inputs,
+                "outputs": outputs,
+                "graph": lineage_graph
+            }
+
+        self._cache_set(key, response)
+        return response
+
+    def get_job_health(self, job_id: str):
+        """
+        Get job health status (mix of real and dummy data).
+        """
+        key = f"health:job:{job_id}"
+        # Health should have short TTL or no cache usually, but for now 30s
+        cached = self._cache_get(key)
+        if cached:
+            return cached
+
+        with self.uow:
+            job = self.uow.jobs.get(job_id)
+            if not job:
+                return {"status": "error", "message": f"Job '{job_id}' not found"}
+
+            # 1. Real Data (from Job/History)
+            # Try to find last execution from history
+            from lineage_manager.services.job_service import JobService
+            # We can't easily inject JobService here due to circular deps, 
+            # so we query the repository or models directly if needed.
+            # For MVP, we'll use placeholder or basic properties.
+            
+            # Use 'updated_at' from job if available
+            updated_at = getattr(job, "updated_at", None)
+            if updated_at:
+                updated_at_str = updated_at.isoformat()
+            else:
+                from datetime import datetime
+                updated_at_str = datetime.utcnow().isoformat()
+
+            # 2. Dummy Data (as requested)
+            # Freshness
+            freshness = {
+                "last_updated": updated_at_str[11:16],  # HH:MM
+                "sla": "03:00",
+                "delay": 59  # Dummy
+            }
+
+            # Last Run (Mocking success)
+            last_run = {
+                "result": "SUCCESS",
+                "duration": "12m 32s",
+                "ended_at": "02:03"
+            }
+
+            # Execution
+            execution = {
+                "mode": "INCREMENTAL",
+                "partition": f"dt={updated_at_str[:10]}"
+            }
+
+            response = {
+                "job_id": job_id,
+                "updated_at": updated_at_str,
+                "health": {
+                    "freshness": freshness,
+                    "last_run": last_run,
+                    "execution": execution
+                }
+            }
+
+        self._cache_set(key, response, expire=30)
+        return response
 
     def get_table_neighbors(
         self,

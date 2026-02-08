@@ -20,7 +20,7 @@ describe("useDashboardMetrics", () => {
   it("should return fetched metrics on success", async () => {
     const mockData = {
       metrics: [
-        { type: "total_jobs", value: 100, subtext: "Active pipelines" }
+        { type: "total_jobs", value: 100, subtext: "Active Jobs" }
       ]
     };
 

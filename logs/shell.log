@@ -1,0 +1,143 @@
+
+> dev
+> webpack serve --mode development
+
+<i> [webpack-dev-server] [HPM] Proxy created: /api  -> http://localhost:5003/lineage-manager
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: http://localhost:3000/
+<i> [webpack-dev-server] On Your Network (IPv4): http://172.21.164.104:3000/
+<i> [webpack-dev-server] Content not from webpack is served from '/home/darkwing/src/lineage_platform/apps/admin_console/shell/public' directory
+<i> [webpack-dev-server] 404s will fallback to '/index.html'
+assets by chunk 1.51 MiB (id hint: vendors)
+  asset vendors-node_modules_react-dom_index_js.bundle.js 1.03 MiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_css-loader_dist_runtime_noSo-6100d6.bundle.js 400 KiB [emitted] (id hint: vendors)
+  asset vendors-node_modules_react_index_js.bundle.js 89.9 KiB [emitted] (id hint: vendors)
+asset bundle.js 184 KiB [emitted] (name: main)
+asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 133 KiB [emitted]
+runtime modules 19.6 KiB 16 modules
+modules by path ./node_modules/ 1.56 MiB 44 modules
+modules by path ./src/ 104 KiB
+  modules by path ./src/layout/*.tsx 16.6 KiB 4 modules
+  modules by path ./src/app/*.tsx 4.57 KiB 3 modules
+  modules by path ./src/*.tsx 294 bytes 2 modules
+  modules by path ./src/mfe/ 4.06 KiB 2 modules
+  modules by path ./src/styles/*.css 76 KiB 2 modules
+  + 2 modules
+provide-module modules 84 bytes
+  provide shared module (default) react-dom@18.3.1 = ./node_modules/reac...(truncated) 42 bytes [built] [code generated]
+  provide shared module (default) react@18.3.1 = ./node_modules/react/index.js 42 bytes [built] [code generated]
+consume-shared-module modules 84 bytes
+  consume shared module (default) react@* (singleton) (fallback: ./node_modules/r...(truncated) 42 bytes [built] [code generated]
+  consume shared module (default) react-dom@* (singleton) (fallback: ./node_module...(truncated) 42 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 1867 ms
+(node:46313) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 326 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 141 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 62 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/AuthContext.tsx 8.42 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 330 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 326 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 141 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 61 modules
+runtime modules 19.6 KiB 16 modules
+javascript modules 3.46 KiB
+  ./src/app/Router.tsx 1.32 KiB [built] [code generated]
+  ./src/app/AuthCallback.tsx 2.14 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 65 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 330 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 145 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/Router.tsx 1.37 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 45 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 330 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 146 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/layout/Navbar.tsx 11.9 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 182 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/AuthContext.tsx 11.2 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 256 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/AuthCallback.tsx 2.37 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 131 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/config.ts 460 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 205 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 333 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/ShellApp.tsx 2.08 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 113 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/Router.tsx 1.43 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 35 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/app/ShellApp.tsx 2.12 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 35 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/config.ts 521 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 95 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/config.ts 536 bytes [built] [code generated]
+webpack 5.104.1 compiled successfully in 48 ms
+assets by status 1.51 MiB [cached] 3 assets
+assets by path . 334 KiB
+  asset bundle.js 184 KiB [emitted] (name: main)
+  asset src_bootstrap_tsx-webpack_sharing_consume_default_react-dom_react-dom.bundle.js 149 KiB [emitted]
+cached modules 1.66 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) [cached] 63 modules
+runtime modules 19.6 KiB 16 modules
+./src/layout/Navbar.tsx 11.8 KiB [built] [code generated]
+webpack 5.104.1 compiled successfully in 401 ms
+assets by status 1.84 MiB [cached] 5 assets
+cached modules 1.67 MiB (javascript) 84 bytes (share-init) 84 bytes (consume-shared) 19.6 KiB (runtime) [cached] 80 modules
+webpack 5.104.1 compiled successfully in 158 ms
