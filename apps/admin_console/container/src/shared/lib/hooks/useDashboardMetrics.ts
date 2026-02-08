@@ -12,7 +12,7 @@ export const useDashboardMetrics = () => {
     { 
       type: "total_jobs", 
       value: 20, 
-      subtext: "Active pipelines",
+      subtext: "Active Jobs",
       breakdown: [
         { label: "Self-Type", value: 10, color: "bg-blue-600" },
         { label: "Request-Type", value: 10, color: "bg-amber-500" }

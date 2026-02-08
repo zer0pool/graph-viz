@@ -38,7 +38,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <Info className="w-4 h-4 text-blue-500" />
                 <h3 className="font-semibold text-slate-800">Job Profile</h3>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-2">
                  <PropertyRow label="Job ID" value={job.job_id || job.id} />
                  <PropertyRow label="Project" value={properties.project || job.project_id} />
                  <PropertyRow label="Type" value={job.type || properties.type} />
@@ -87,7 +87,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <Clock className="w-4 h-4 text-orange-500" />
                 <h3 className="font-semibold text-slate-800">Schedule</h3>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-2">
                  <PropertyRow label="Interval" value={properties.schedule?.interval || job.schedule} />
                  <PropertyRow label="Start" value={properties.schedule?.start_date} />
                  <PropertyRow label="End" value={properties.schedule?.end_date} />
@@ -105,7 +105,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <Zap className="w-4 h-4 text-amber-500" />
                 <h3 className="font-semibold text-slate-800">Execution Status</h3>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-2">
                  <PropertyRow 
                     label="Status" 
                     value={
@@ -144,7 +144,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
             >
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-slate-400" />
-                <h3 className="font-semibold text-slate-700">Metadata (Advanced)</h3>
+                <h3 className="font-semibold text-slate-700">Metadata</h3>
               </div>
               {isMetadataExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
             </button>
@@ -179,8 +179,8 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
 };
 
 const PropertyRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => (
-  <div className="grid grid-cols-3 items-center gap-4">
-    <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">{label}</span>
+  <div className="grid grid-cols-3 items-center gap-2">
+    <span className="text-xs font-semibold text-slate-500 uppercase tracking-tight">{label}</span>
     <span className="text-sm text-slate-900 col-span-2 flex items-center font-medium">
       {value || "—"}
     </span>

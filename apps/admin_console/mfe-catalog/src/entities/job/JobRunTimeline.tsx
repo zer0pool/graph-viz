@@ -19,10 +19,10 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
   });
 
   const COLORS = {
-    SUCCESS: "#1e8e3e", // GCP Dark Green
-    FAILED: "#d93025",  // GCP Dark Red
-    RUNNING: "#1a73e8", // GCP Blue
-    UNKNOWN: "#e8eaed", // GCP Grey
+    SUCCESS: "#4ADE80", // Success (Green-400) - Clear positive indicator
+    FAILED: "#FCA5A5",  // Highlight Issue (Soft Red)
+    RUNNING: "#93C5FD", // Active State (Soft Blue)
+    UNKNOWN: "#F3F4F6", // Neutral (Very Light Gray)
   };
 
   const getStatusColor = (status: string) => {
@@ -77,7 +77,7 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
       </div>
       <ReactECharts
         option={option}
-        style={{ height: "40px", width: "100%" }}
+        style={{ height: "12px", width: "100%" }}
         onEvents={{
           click: (params: any) => {
             if (params.data && params.data.data)

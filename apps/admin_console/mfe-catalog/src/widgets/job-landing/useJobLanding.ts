@@ -37,7 +37,7 @@ export function useJobLanding() {
         { 
           type: "total_jobs", 
           value: getMetricVal("total_jobs"), 
-          subtext: getMetricSub("total_jobs", "Active pipelines")
+          subtext: getMetricSub("total_jobs", "Active Jobs")
         },
         { 
           type: "success_execution", 

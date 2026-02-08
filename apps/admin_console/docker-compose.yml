@@ -18,6 +18,9 @@ services:
       - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
       - ENABLE_CATALOG_MFE=${ENABLE_CATALOG_MFE:-true}
       - NODE_ENV=production
+    depends_on:
+      - admin-mfe-lineage
+      - admin-mfe-catalog
     networks:
       - admin-network
       - backend-network
@@ -62,5 +65,5 @@ networks:
   admin-network:
     driver: bridge
   backend-network:
-    external: true
     name: lineage-platform-network
+    driver: bridge

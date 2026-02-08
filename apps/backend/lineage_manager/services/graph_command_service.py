@@ -443,6 +443,23 @@ class GraphCommandService:
 
         uow = self.uow
         job_props = self._extract_job_properties(lineage)
+        
+        # 0. Extract owners and project, ensure they exist FIRST
+        common_owners = lineage.get_owner()
+        project_id = lineage.get_project() or "unknown-project"
+        
+        # Ensure Project exists in catalog
+        self.uow.project.create_or_update(
+            project_id=project_id,
+            display_name=project_id.replace("-", " ").replace("_", " ").title(),
+        )
+        
+        # Ensure all owners exist in catalog (user_account table) BEFORE creating job
+        for owner_id in common_owners:
+            self.uow.users.create_or_update_catalog_user(
+                user_id=owner_id, 
+                name=owner_id.split("@")[0].replace(".", " ").title()
+            )
 
         # 1. Create or Update Job Node (Base)
         job = uow.jobs.get(lineage.job_id)
@@ -462,7 +479,6 @@ class GraphCommandService:
         # 2. Process Upstream Nodes (Inputs) -> Data Assets
         input_data_ids = []
         seen_upstreams = set()
-        common_owners = lineage.get_owner()
 
         for upstream in lineage.upstreams:
             name = upstream.name
@@ -542,21 +558,8 @@ class GraphCommandService:
         )
 
         # 5. Populate Search & Catalog Tables
-        project_id = lineage.get_project() or "unknown-project"
+        # (Users and project already created at the beginning)
         primary_owner = common_owners[0] if common_owners else "unknown-owner"
-
-        # Ensure Project exists in catalog
-        self.uow.project.create_or_update(
-            project_id=project_id,
-            display_name=project_id.replace("-", " ").replace("_", " ").title(),
-        )
-
-        # Ensure all owners exist in catalog (user_account table)
-        for owner_id in common_owners:
-            self.uow.users.create_or_update_catalog_user(
-                user_id=owner_id, 
-                name=owner_id.split("@")[0].replace(".", " ").title()
-            )
 
         # Populate JobNode for search (with owners list)
         self.uow.job_node.create_or_update(

@@ -149,7 +149,7 @@ async def get_dashboard_metrics(
                 {
                     "type": "total_jobs",
                     "value": data.get("total_jobs", 0),
-                    "subtext": "Active pipelines",
+                    "subtext": "Active Jobs",
                 },
                 {
                     "type": "dummy_chart",

@@ -63,5 +63,5 @@ services:
 
 networks:
   backend-network:
-    external: true
     name: lineage-platform-network
+    driver: bridge
