@@ -111,13 +111,14 @@ class JobService:
         if not self.graph_uow:
             return {"jobs": [], "total": 0, "limit": limit, "offset": offset}
 
-        results, total = self.graph_uow.job_node.list_all_jobs(
-            limit=limit, offset=offset
-        )
+        with self.graph_uow:
+            results, total = self.graph_uow.job_node.list_all_jobs(
+                limit=limit, offset=offset
+            )
 
-        jobs = [
-            self._map_job_to_dto(node, meta, project_name)
-            for node, meta, project_name in results
-        ]
+            jobs = [
+                self._map_job_to_dto(node, meta, project_name)
+                for node, meta, project_name in results
+            ]
 
         return {"jobs": jobs, "total": total, "limit": limit, "offset": offset}

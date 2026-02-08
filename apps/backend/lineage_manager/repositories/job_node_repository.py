@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from lineage_manager.models.graph_node import GraphNode
 from lineage_manager.models.job_node import JobNode
+from lineage_manager.models.job_owner import JobOwner
 from lineage_manager.models.project import Project
 from lineage_manager.repositories.base_repository import BaseRepository
 
@@ -46,6 +47,10 @@ class JobNodeRepository(BaseRepository):
             if properties is not None:
                 existing.properties = properties
             self.session.flush()
+
+            if owners is not None:
+                self._sync_owners(existing.node_id, owners)
+
             return existing
         else:
             # Create
@@ -58,7 +63,30 @@ class JobNodeRepository(BaseRepository):
             )
             self.session.add(job_node)
             self.session.flush()
+
+            if owners:
+                self._sync_owners(node_id, owners)
+
             return job_node
+
+    def _sync_owners(self, job_db_id: int, owner_user_ids: list[str]):
+        """Synchronize entries in job_owner table with the provided list of user_ids."""
+        if not isinstance(owner_user_ids, list):
+            return
+
+        from sqlalchemy import delete
+        from lineage_manager.models.job_owner import JobOwner
+
+        # 1. Remove existing owners for this job
+        self.session.execute(delete(JobOwner).where(JobOwner.job_id == job_db_id))
+
+        # 2. Add new owners
+        for uid in owner_user_ids:
+            if not uid:
+                continue
+            self.session.add(JobOwner(job_id=job_db_id, user_id=uid))
+        
+        self.session.flush()
 
     def find_by_project(
         self, project_id: str, limit: int = 20, offset: int = 0
@@ -87,25 +115,16 @@ class JobNodeRepository(BaseRepository):
         self, owner_id: str, limit: int = 20, offset: int = 0
     ) -> Tuple[List[Tuple[GraphNode, JobNode]], int]:
         """
-        Find jobs by owner ID (where owner_id is in the owners JSON list).
+        Find jobs by owner ID via the job_owner relation.
 
         Returns:
             (results, total_count)
         """
-        from sqlalchemy import text
-
-        # Using JSON_CONTAINS for MySQL
         query = (
             self.session.query(GraphNode, JobNode)
             .join(JobNode, GraphNode.id == JobNode.node_id)
-            .filter(func.json_contains(JobNode.owners, sa.cast(sa.json.quote_extension(owner_id), sa.JSON)))
-        )
-        # Wait, more portable/simpler way for JSON_CONTAINS in SQLAlchemy?
-        # Let's use a simpler filter if owners is a list of strings
-        query = (
-            self.session.query(GraphNode, JobNode)
-            .join(JobNode, GraphNode.id == JobNode.node_id)
-            .filter(func.json_contains(JobNode.owners, func.json_quote(owner_id)))
+            .join(JobOwner, GraphNode.id == JobOwner.job_id)
+            .filter(JobOwner.user_id == owner_id)
         )
 
         total = query.count()
@@ -120,10 +139,10 @@ class JobNodeRepository(BaseRepository):
         return {"jobs": job_count}
 
     def get_owner_stats(self, owner_id: str) -> dict:
-        """Get statistics for a user/owner."""
+        """Get statistics for a user/owner using job_owner relationship."""
         job_count = (
-            self.session.query(JobNode)
-            .filter(func.json_contains(JobNode.owners, func.json_quote(owner_id)))
+            self.session.query(JobOwner)
+            .filter(JobOwner.user_id == owner_id)
             .count()
         )
 
