@@ -29,6 +29,7 @@ export const useAnalyticsData = () => {
     const localData = getRecentlyVisited().slice(0, 5).map(item => ({
       path: item.path,
       title: item.title,
+      type: item.type,
       meta: formatDistance(item.timestamp)
     }));
     setRecentHistory(localData);
@@ -56,11 +57,31 @@ export const useAnalyticsData = () => {
         return;
       }
       
-      const mappedData: VisitHistoryItem[] = (data.items || []).map((item: TopVisitedResponseItem) => ({
-        path: item.path,
-        title: item.title,
-        meta: `${item.count} times`
-      }));
+      const mappedData: VisitHistoryItem[] = (data.items || []).map((item: TopVisitedResponseItem) => {
+        // Infer type for remote data since backend doesn't provide it yet
+        let type = "other";
+        const normalizedPath = item.path.endsWith("/") ? item.path.slice(0, -1) : item.path;
+        
+        if (normalizedPath === "/jobs") type = "jobs_landing";
+        else if (normalizedPath.startsWith("/jobs/")) type = "job";
+        else if (normalizedPath === "/tables") type = "tables_landing";
+        else if (normalizedPath.startsWith("/tables/")) type = "table";
+        else if (normalizedPath === "/users") type = "users_landing";
+        else if (normalizedPath.startsWith("/users/")) type = "user";
+        else if (normalizedPath === "/projects") type = "projects_landing";
+        else if (normalizedPath.startsWith("/projects/")) type = "project";
+        else if (normalizedPath.startsWith("/lineage/")) type = "lineage";
+        else if (normalizedPath === "/audit") type = "audit";
+        else if (normalizedPath === "/settings") type = "settings";
+        else if (normalizedPath === "/") type = "dashboard";
+
+        return {
+          path: item.path,
+          title: item.title,
+          type: type,
+          meta: `${item.count} times`
+        };
+      });
       setTopVisited(mappedData);
     } catch (e) {
       console.error("[Analytics] Error fetching top visited", e);

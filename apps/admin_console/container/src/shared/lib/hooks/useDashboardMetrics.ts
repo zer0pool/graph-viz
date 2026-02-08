@@ -9,7 +9,15 @@ interface DashboardMetricsResponse {
 export const useDashboardMetrics = () => {
   const [metrics, setMetrics] = useState<MetricData[]>([
     { type: "total_tables", value: 0, subtext: "Across all schemas" },
-    { type: "total_jobs", value: 0, subtext: "Active pipelines" },
+    { 
+      type: "total_jobs", 
+      value: 20, 
+      subtext: "Active pipelines",
+      breakdown: [
+        { label: "Self-Type", value: 10, color: "bg-blue-600" },
+        { label: "Request-Type", value: 10, color: "bg-amber-500" }
+      ]
+    },
     { type: "dummy_chart", value: "85%", subtext: "System Health" },
     { type: "dummy_chart", value: 12, subtext: "Active Alerts", status: "warning" },
     { type: "dummy_chart", value: "2.4 TB", subtext: "Daily Ingestion" },
@@ -28,7 +36,22 @@ export const useDashboardMetrics = () => {
       }
       
       const data: DashboardMetricsResponse = await response.json();
-      setMetrics(data.metrics);
+      
+      // Merge breakdown for total_jobs if not provided by API
+      const enrichedMetrics = data.metrics.map(m => {
+        if (m.type === "total_jobs" && !m.breakdown) {
+          return {
+            ...m,
+            breakdown: [
+              { label: "Self-Type", value: 10, color: "bg-blue-600" },
+              { label: "Request-Type", value: 10, color: "bg-amber-500" }
+            ]
+          };
+        }
+        return m;
+      });
+      
+      setMetrics(enrichedMetrics);
     } catch (e) {
       console.error("[Dashboard] Error fetching metrics", e);
       // Keep default metrics on error

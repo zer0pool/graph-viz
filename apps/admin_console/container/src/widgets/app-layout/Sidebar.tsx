@@ -22,7 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     { label: "Dashboard", path: "/", icon: LayoutDashboard },
     { label: "Jobs", path: "/jobs", icon: Briefcase },
     { label: "Tables", path: "/tables", icon: Table2 },
-    { label: "Data Lineage", path: "/lineage", icon: GitBranch },
+    // { label: "Data Lineage", path: "/lineage", icon: GitBranch },
     { label: "Users", path: "/users", icon: Users },
     { label: "Audit/Events", path: "/audit", icon: Shield },
     { label: "Settings", path: "/settings", icon: Settings },

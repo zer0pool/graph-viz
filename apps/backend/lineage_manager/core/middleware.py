@@ -37,6 +37,7 @@ async def session_middleware(
         raise
     finally:
         # Always remove the scoped session to return connection to pool
+        # For sync endpoints running in threads, this is critical to prevent leaks.
         session_registry.remove()
 
 

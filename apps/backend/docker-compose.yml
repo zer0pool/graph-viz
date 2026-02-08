@@ -10,7 +10,7 @@ services:
       - ./lineage_manager/.env
     environment:
       - PORT=5003
-      - DB_HOST=db-mysql
+      - DB_HOST=mysql-db
       - DB_PORT=3306
       - REDIS_HOST=cache-redis
       - REDIS_PORT=6379
@@ -22,14 +22,14 @@ services:
       - ./lineage_manager:/app/src/lineage_manager:ro
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
     depends_on:
-      - db-mysql
+      - mysql-db
       - cache-redis
     networks:
       - backend-network
 
-  db-mysql:
+  mysql-db:
     image: mysql:8.0-debian
-    container_name: db-mysql
+    container_name: mysql-db
     command: --default-authentication-plugin=mysql_native_password
     env_file:
       - ./lineage_manager/.env
@@ -57,7 +57,7 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - ./dummy-job-manager/dummy_lineage.json:/app/dummy_lineage.json:ro
+      - ./dummy-job-manager:/app/data:ro
     networks:
       - backend-network
 

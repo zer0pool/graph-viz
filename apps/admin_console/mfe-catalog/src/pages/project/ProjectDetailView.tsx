@@ -1,28 +1,33 @@
-import React, { useCallback } from "react";
-import { useMfeNavigate } from "../../shared/lib/navigation";
+import React from "react";
+import { ViewMode } from "../../shared/types";
 import { useProjectDetailView } from "../../widgets/project-detail/useProjectDetailView";
 import { ProjectDetailViewPresenter } from "../../widgets/project-detail/ProjectDetailViewPresenter";
 
-export const ProjectDetailView: React.FC<{ projectId: string }> = ({
-  projectId,
-}) => {
-  const navigate = useMfeNavigate();
+export const ProjectDetailView: React.FC<{
+  projectId: string;
+  mode?: ViewMode;
+}> = ({ projectId, mode = "PAGE" }) => {
   const logic = useProjectDetailView(projectId);
 
-  const handleNavigateToJob = useCallback((id: string) => {
-    navigate(`/jobs/${id}`);
-  }, [navigate]);
+  const handleNavigateToJob = (id: string) => {
+    window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+      detail: { path: `/jobs/${encodeURIComponent(id)}` } 
+    }));
+  };
 
-  const handleNavigateToTable = useCallback((id: string) => {
-    navigate(`/tables/${id}`);
-  }, [navigate]);
+  const handleNavigateToUser = (id: string) => {
+    window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+      detail: { path: `/users/${encodeURIComponent(id)}` } 
+    }));
+  };
 
   return (
     <ProjectDetailViewPresenter
       projectId={projectId}
+      mode={mode}
       {...logic}
       onNavigateToJob={handleNavigateToJob}
-      onNavigateToTable={handleNavigateToTable}
+      onNavigateToUser={handleNavigateToUser}
     />
   );
 };

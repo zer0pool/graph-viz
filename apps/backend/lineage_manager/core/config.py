@@ -34,8 +34,8 @@ class RedisSettings(BaseSettings):
     db: int = 0
     default_ttl: int = 60
     enabled: bool = False
-    analytics_retention_hours: int = 24
-    analytics_window_hours: int = 4
+    analytics_retention_hours: int = 192
+    analytics_window_hours: int = 168
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -53,8 +53,8 @@ class MySQLSettings(BaseSettings):
     user: str = "root"
     password: str = "root123"
     name: str = "lineage_manager"
-    pool_size: int = 10
-    max_overflow: int = 20
+    pool_size: int = 20
+    max_overflow: int = 40
     echo: bool = False
 
     model_config = SettingsConfigDict(

@@ -6,7 +6,7 @@
       "job_id": "SELF-TYPE_L1_JOB_000",
       "type": "SELF-TYPE",
       "name": "SELF-TYPE_L1_JOB_000",
-      "status": "RUNNING",
+      "status": "SUCCEEDED",
       "upstreams": [
         {
           "type": "table",

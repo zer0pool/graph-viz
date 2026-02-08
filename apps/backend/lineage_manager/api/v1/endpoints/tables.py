@@ -21,7 +21,7 @@ router = APIRouter(
 
 @router.get("/{table_name:path}/impact")
 @inject
-def get_table_impact(
+async def get_table_impact(
     table_name: str,
     max_depth: int = Query(3, ge=1, le=10),
     include_jobs: bool = Query(True),
@@ -37,7 +37,7 @@ def get_table_impact(
 
 @router.get("/{table_name:path}/triggers")
 @inject
-def get_table_dependencies(
+async def get_table_dependencies(
     table_name: str,
     svc: TableService = Depends(Provide[GraphContainer.table.table_service]),
 ):
@@ -47,7 +47,7 @@ def get_table_dependencies(
 
 @router.get("/{table_name:path}/hierarchy")
 @inject
-def get_table_hierarchy(
+async def get_table_hierarchy(
     table_name: str,
     svc: TableService = Depends(Provide[GraphContainer.table.table_service]),
 ):
@@ -60,7 +60,7 @@ def get_table_hierarchy(
     response_model=TableLineageSummaryResponse,
 )
 @inject
-def get_table_lineage_summary(
+async def get_table_lineage_summary(
     table_name: str,
     max_roots: int = Query(50, ge=1, le=200),
     max_leaves: int = Query(50, ge=1, le=200),
@@ -103,7 +103,7 @@ async def set_table_dependency(
 
 @router.get("/{table_name:path}/details")
 @inject
-def get_table_details_legacy(
+async def get_table_details_legacy(
     table_name: str,
     svc: TableService = Depends(Provide[GraphContainer.table.table_service]),
 ):

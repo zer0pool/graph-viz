@@ -106,7 +106,7 @@ export function SummaryGrid({ metrics, cols = 5 }: SummaryGridProps) {
   }[cols] || "lg:grid-cols-5";
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-5 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700`}>
+    <div className={`grid grid-cols-2 md:grid-cols-3 ${gridColsClass} gap-5 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700`}>
       {metrics.map((m, idx) => (
         <MetricCard key={`${m.type}-${idx}`} data={m} />
       ))}

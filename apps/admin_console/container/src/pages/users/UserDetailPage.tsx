@@ -12,6 +12,19 @@ import {
 } from "lucide-react";
 import { config } from '../../shared/api/config';
 
+interface ProjectData {
+  project_id: string;
+  display_name: string;
+  status: string;
+}
+
+interface JobData {
+  job_id: string;
+  job_name: string;
+  running_status: string;
+  enabled: boolean;
+}
+
 interface UserData {
   user: {
     user_id: string;
@@ -31,6 +44,8 @@ export function UserDetailPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState<UserData | null>(null);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +54,26 @@ export function UserDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(userId || "")}`);
-        if (!response.ok) throw new Error("Failed to fetch user details");
-        const json = await response.json();
-        setData(json);
+        const [userRes, projectsRes, jobsRes] = await Promise.all([
+          fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(userId || "")}`),
+          fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(userId || "")}/projects`),
+          fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(userId || "")}/jobs`)
+        ]);
+
+        if (!userRes.ok) throw new Error("Failed to fetch user details");
+        
+        const userData = await userRes.json();
+        setData(userData);
+
+        if (projectsRes.ok) {
+          const projectJson = await projectsRes.json();
+          setProjects(projectJson.projects || []);
+        }
+
+        if (jobsRes.ok) {
+          const jobJson = await jobsRes.json();
+          setJobs(jobJson.jobs || []);
+        }
       } catch (err: any) {
         console.error("Error fetching user detail:", err);
         setError(err.message || "Failed to load user details");
@@ -152,19 +183,73 @@ export function UserDetailPage() {
           </div>
 
           <section className="mt-12">
-            <div className="flex items-center justify-between mb-4">
-               <h3 className="text-lg font-semibold text-slate-800">
-                Owned Assets
+            <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
+              <Building className="w-5 h-5 text-blue-500" />
+              Project Memberships
+            </h3>
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {projects.map((proj) => (
+                  <div 
+                    key={proj.project_id}
+                    onClick={() => navigate(`/projects/${proj.project_id}`)}
+                    className="p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
+                        {proj.display_name}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${proj.status === 'ACTIVE' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {proj.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{proj.project_id}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+                <p className="text-sm text-slate-400 italic">No project memberships found.</p>
+              </div>
+            )}
+          </section>
+
+          <section className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-indigo-500" />
+                Owned Assets (Jobs)
               </h3>
               <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                {summary.owned_jobs} Jobs Owned
+                {summary.owned_jobs} Jobs
               </span>
             </div>
-            <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
-              <div className="max-w-xs mx-auto text-slate-400">
-                <p className="text-sm italic">Asset list is integrated with the Catalog MFE. Navigate to Jobs or Tables to see specific assets owned by this user.</p>
+            {jobs.length > 0 ? (
+              <div className="space-y-3">
+                {jobs.map((job) => (
+                  <div 
+                    key={job.job_id}
+                    onClick={() => navigate(`/jobs/${job.job_id}`)}
+                    className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${job.running_status === 'success' ? 'bg-green-500' : job.running_status === 'failed' ? 'bg-red-500' : 'bg-blue-500'} animate-pulse`} />
+                      <div>
+                        <p className="font-medium text-slate-700">{job.job_name}</p>
+                        <p className="text-xs text-slate-400">{job.job_id}</p>
+                      </div>
+                    </div>
+                    {!job.enabled && (
+                      <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">Disabled</span>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+                <p className="text-sm text-slate-400 italic">No owned jobs found.</p>
+              </div>
+            )}
           </section>
         </div>
       </div>

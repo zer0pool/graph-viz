@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 
-from lineage_manager.models import UserAccount, ProjectUser, Project
+from lineage_manager.models import UserAccount, ProjectUser, Project, JobOwner, GraphNode
 from lineage_manager.models.user_account import UserRole
 from lineage_manager.repositories.base_repository import BaseRepository
 
@@ -116,6 +116,15 @@ class UserRepository(BaseRepository):
             self.session.query(Project)
             .join(ProjectUser, Project.project_id == ProjectUser.project_id)
             .filter(ProjectUser.user_id == user_id)
+            .all()
+        )
+
+    def list_owned_jobs(self, user_id: str) -> List[GraphNode]:
+        """List all jobs owned by a user."""
+        return (
+            self.session.query(GraphNode)
+            .join(JobOwner, GraphNode.id == JobOwner.job_id)
+            .filter(JobOwner.user_id == user_id)
             .all()
         )
 

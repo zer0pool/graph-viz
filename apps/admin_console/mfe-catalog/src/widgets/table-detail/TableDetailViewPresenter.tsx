@@ -29,9 +29,14 @@ interface TableDetailViewPresenterProps {
   loadingTime: boolean;
   timelineDays: number;
   onTimelineDaysChange: (days: number) => void;
+  projectName: string;
+  datasetName: string;
+  displayName: string;
 }
 
-import { GitBranch } from "lucide-react";
+import { GitBranch, Database, Folder, FileCode, Search, Server, Star, RefreshCcw } from "lucide-react";
+import { EntityHeader } from "../../shared/ui/EntityHeader";
+import { HeaderActionButtons } from "../../shared/ui/HeaderActionButtons";
 
 export const TableDetailViewPresenter: React.FC<TableDetailViewPresenterProps> = ({
   tableName,
@@ -48,31 +53,56 @@ export const TableDetailViewPresenter: React.FC<TableDetailViewPresenterProps> =
   loadingTime,
   timelineDays,
   onTimelineDaysChange,
+  projectName,
+  datasetName,
+  displayName,
 }) => {
-  const Layout = mode === "EMBEDDED" ? CompactDetailLayout : DetailLayout;
+  const Layout = mode === "EMBEDDED" ? CompactDetailLayout : (DetailLayout as any);
 
-  const headerActions = tab === 'lineage' ? (
-    <button 
-      onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
+  // 1. Determine Storage Type and Icon
+  const storageType = (table?.storage_info?.type || "table").toLowerCase();
+  const isCloudStorage = storageType.includes("s3") || storageType.includes("gcs") || storageType.includes("file");
+  
+  const HeaderIcon = isCloudStorage ? Folder : Database;
+  const iconBgColor = isCloudStorage ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-blue-50 text-blue-600 border-blue-100";
+
+  // 2. Permanent Header Actions
+  const headerActions = (
+    <HeaderActionButtons 
+      onSync={() => console.log("Sync clicked")}
+      onLineage={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
         detail: { path: `/lineage/table:${encodeURIComponent(tableName)}` } 
       }))}
-      className="flex items-center gap-2 px-3 py-1.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-medium rounded shadow-sm transition-all shadow-[#3c404326]"
-    >
-      <GitBranch className="w-3.5 h-3.5" />
-      See lineage graph
-    </button>
-  ) : null;
+    />
+  );
+
+  // 3. Rich Header Content
+  const metadata = [
+    { icon: Server, label: projectName },
+    { icon: Search, label: datasetName },
+  ];
+
+  const tableHeaderSummary = (
+    <EntityHeader
+      icon={HeaderIcon}
+      iconClassName={iconBgColor}
+      title={displayName}
+      badge={table?.storage_info?.type}
+      metadata={metadata}
+      actions={headerActions}
+      onFavoriteToggle={() => console.log("Table favorite clicked")}
+    />
+  );
 
   return (
     <Layout
-      title={table?.name || tableName.split('.').pop() || tableName}
+      title={displayName}
       tabs={TABLE_TABS}
       activeTab={tab}
       onTabChange={onTabChange}
       mode={mode}
-      owner={table?.owner}
       type="table"
-      actions={headerActions}
+      headerContent={tableHeaderSummary}
     >
       <div className="h-full overflow-y-auto p-6">
         {tab === "info" && (
@@ -96,7 +126,7 @@ export const TableDetailViewPresenter: React.FC<TableDetailViewPresenterProps> =
             loading={loadingSchema}
           />
         )}
-        {tab === "timeliness" && (
+        {tab === "timeline" && (
           <TableTimeliness
             data={timeliness}
             loading={loadingTime}

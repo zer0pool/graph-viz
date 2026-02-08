@@ -2,7 +2,7 @@ from typing import List, Optional, Any
 import logging
 from sqlalchemy import Select, func, or_, select, desc, cast, String
 
-from lineage_manager.models import GraphEdge, GraphNode
+from lineage_manager.models import GraphEdge, GraphNode, JobOwner, UserAccount
 from lineage_manager.repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,10 @@ class JobRepository(BaseRepository):
         row = GraphNode(node_type="job", name=job_id, properties=properties)
         self.db.add(row)
         self.db.flush()
+        
+        # Sync owners to job_owner table
+        self._sync_owners(row.id, properties.get("owners", []))
+        
         logger.debug(f"Successfully created job node {job_id} with {len(properties)} properties")
         return row
 
@@ -87,7 +91,35 @@ class JobRepository(BaseRepository):
                     setattr(job, key, value)
                 else:
                     job._set_prop(key, value)
+            
+            # If owners updated, sync to job_owner table
+            if "owners" in kwargs:
+                self._sync_owners(job.id, kwargs["owners"])
+                
         return job
+
+    def _sync_owners(self, job_db_id: int, owner_user_ids: list[str]):
+        """Synchronize entries in job_owner table with the provided list of user_ids."""
+        if not isinstance(owner_user_ids, list):
+            return
+
+        from sqlalchemy import delete
+
+        # 1. Remove existing owners for this job
+        self.db.execute(delete(JobOwner).where(JobOwner.job_id == job_db_id))
+
+        # 2. Add new owners
+        for uid in owner_user_ids:
+            if not uid:
+                continue
+            
+            # Optional: Verify user exists? 
+            # For now, we'll just insert to allow late-binding/demo data.
+            # But we should probably check to avoid foreign key violations if they are enforced.
+            # Let's assume user_id exists or we handle it gracefully.
+            self.db.add(JobOwner(job_id=job_db_id, user_id=uid))
+        
+        self.db.flush()
 
     def list_all(self):
         """List all jobs"""

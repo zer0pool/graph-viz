@@ -8,6 +8,7 @@ const RECENT_VISITED_KEY = "admin_console_recent_visited";
 export interface RecentVisit {
   path: string;
   title: string;
+  type: string;
   timestamp: number;
 }
 
@@ -34,11 +35,29 @@ export const useTracker = () => {
       // Deduplicate: remove if already exists
       history = history.filter((item) => item.path !== pathname);
 
+      // Detect Page Type
+      let type = "other";
+      const normalizedPath = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+      
+      if (normalizedPath === "/jobs") type = "jobs_landing";
+      else if (normalizedPath.startsWith("/jobs/")) type = "job";
+      else if (normalizedPath === "/tables") type = "tables_landing";
+      else if (normalizedPath.startsWith("/tables/")) type = "table";
+      else if (normalizedPath === "/users") type = "users_landing";
+      else if (normalizedPath.startsWith("/users/")) type = "user";
+      else if (normalizedPath === "/projects") type = "projects_landing";
+      else if (normalizedPath.startsWith("/projects/")) type = "project";
+      else if (normalizedPath.startsWith("/lineage/")) type = "lineage";
+      else if (normalizedPath === "/audit") type = "audit";
+      else if (normalizedPath === "/settings") type = "settings";
+      else if (normalizedPath === "/") type = "dashboard";
+
       // Add to front
-      const title = pathname.split("/").pop() || "home";
+      const title = pathname.split("/").filter(Boolean).pop() || "Dashboard";
       history.unshift({
         path: pathname,
         title: title,
+        type: type,
         timestamp: Date.now(),
       });
 

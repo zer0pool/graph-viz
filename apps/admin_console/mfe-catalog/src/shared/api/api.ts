@@ -4,7 +4,6 @@ import {
   TableDetail,
   TableSchemaResponse,
   TableTimelinessResponse,
-  Table,
 } from "../types/table";
 import { SummaryMetricsResponse, PaginatedResponse } from "../types";
 
@@ -62,6 +61,14 @@ export class ApiClient {
     return this.request<PaginatedResponse<Job>>(
       `/api/v1/projects/${encodeURIComponent(projectId)}/jobs?${params.toString()}`
     );
+  }
+
+  async fetchProjectDetail(projectId: string): Promise<any> {
+    return this.request<any>(`/api/v1/projects/${encodeURIComponent(projectId)}`);
+  }
+
+  async fetchProjectUsers(projectId: string): Promise<any> {
+    return this.request<any>(`/api/v1/projects/${encodeURIComponent(projectId)}/users`);
   }
 
   // --- Table Endpoints ---

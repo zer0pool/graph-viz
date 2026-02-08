@@ -25,7 +25,7 @@ router = APIRouter(
 
 @router.get("")
 @inject
-def list_jobs(
+async def list_jobs(
     limit: int = 20,
     offset: int = 0,
     svc: JobService = Depends(Provide[GraphContainer.job.job_service]),
@@ -44,7 +44,7 @@ def list_jobs(
 
 @router.get("/{job_id}")
 @inject
-def get_job_detail(
+async def get_job_detail(
     job_id: str,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
 ):
@@ -121,7 +121,7 @@ def get_job_detail(
 
 @router.get("/{job_id}/graph")
 @inject
-def get_job_graph(
+async def get_job_graph(
     job_id: str,
     depth: int = 1,
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),

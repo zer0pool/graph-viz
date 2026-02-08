@@ -1,6 +1,6 @@
 .PHONY: build-all docker-build-all docker-push-all deploy-all
 
-APPS := shell lineage table-detail-viewer
+APPS := container mfe-lineage mfe-catalog
 ENV ?= dev
 
 # Define Image Repos (These defaults match the individual Makefiles/Values)
@@ -24,13 +24,13 @@ endif
 build-all:
 	@for app in $(APPS); do \
 		echo "Building $$app..."; \
-		(cd $$app && npm install && npm run build) || exit 1; \
+		(cd $$app/deploy/docker/Dockerfile && npm install && npm run build) || exit 1; \
 	done
 
 docker-build-all:
 	@for app in $(APPS); do \
 		echo "Docker building $$app..."; \
-		docker build -f $$app/Dockerfile -t $(REPO_PREFIX)/admin-$$app:latest ./$$app || exit 1; \
+		docker build -f $$app/deploy/docker/Dockerfile -t $(REPO_PREFIX)/admin-$$app:latest ./$$app || exit 1; \
 	done
 
 docker-push-all: confirm
