@@ -12,6 +12,10 @@ class UserRepository(BaseRepository):
     def __init__(self, db):
         super().__init__(db, UserAccount)
 
+    def count_users(self) -> int:
+        """Get total number of users."""
+        return self.session.query(UserAccount).count()
+
     def get_by_sub(self, sub: str) -> Optional[UserAccount]:
         stmt = select(UserAccount).where(UserAccount.sub == sub)
         return self.db.execute(stmt).scalar_one_or_none()
@@ -20,8 +24,6 @@ class UserRepository(BaseRepository):
         sub = claims.get("sub")
         if not sub:
             raise ValueError("Missing 'sub' claim in token")
-
-        user = self.get_by_sub(sub)
 
         # Default to Viewer if no roles provided
         roles = claims.get("roles")
@@ -34,27 +36,25 @@ class UserRepository(BaseRepository):
             "login_id": claims.get("loginid"),  # Renamed from loginId
             "roles": roles,
             "department": claims.get("deptname_en"),  # Renamed from dept
-            "user_id": claims.get("mail"),  # Ensure user_id is populated
+            "user_id": claims.get("mail"),  # LowerCaseString handles normalization
         }
 
+        # Prioritize lookup by user_id (email) to align with graph owners
+        user = self.get_catalog_user(payload["user_id"])
+        if not user:
+            # Fallback to sub if not found by email
+            user = self.get_by_sub(sub)
+
         if user:
-            # Update existing user by sub
+            # Update existing user (updates sub if it changed or was missing)
+            user.sub = sub
             for key, value in payload.items():
                 if value is not None and hasattr(user, key):
                     setattr(user, key, value)
         else:
-            # Check if a placeholder was created via catalog (by user_id)
-            user = self.get_catalog_user(payload["user_id"])
-            if user:
-                # Upgrade placeholder to real user
-                user.sub = sub
-                for key, value in payload.items():
-                    if value is not None and hasattr(user, key):
-                        setattr(user, key, value)
-            else:
-                # Create brand new user
-                user = UserAccount(sub=sub, **payload)
-                self.db.add(user)
+            # Create brand new user
+            user = UserAccount(sub=sub, **payload)
+            self.db.add(user)
 
         user.last_login_at = datetime.utcnow()
         self.db.flush()
@@ -63,6 +63,8 @@ class UserRepository(BaseRepository):
     # Catalog methods - checking UserAccount directly
     def get_catalog_user(self, user_id: str) -> Optional[UserAccount]:
         """Get user by user_id."""
+        if not user_id:
+            return None
         return self.session.query(UserAccount).filter_by(user_id=user_id).first()
 
     def create_or_update_catalog_user(
@@ -74,6 +76,9 @@ class UserRepository(BaseRepository):
         status: str = "ACTIVE",
     ) -> UserAccount:
         """Create or update user details."""
+        if not user_id:
+            raise ValueError("user_id is required")
+            
         existing = self.get_catalog_user(user_id)
         if existing:
             if email:

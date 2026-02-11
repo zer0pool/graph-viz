@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { config } from '../../api/config';
 import { getRecentlyVisited } from "./useTracker";
 import { VisitHistoryItem } from '../../ui/VisitHistoryCard';
-
-interface TopVisitedResponseItem {
-  path: string;
-  title: string;
-  count: number;
-}
+import { analyticsApi } from "../../api/analyticsApi";
 
 // Time formatting helper
 const formatDistance = (timestamp: number) => {
@@ -23,6 +17,7 @@ const formatDistance = (timestamp: number) => {
 export const useAnalyticsData = () => {
   const [recentHistory, setRecentHistory] = useState<VisitHistoryItem[]>([]);
   const [topVisited, setTopVisited] = useState<VisitHistoryItem[]>([]);
+  const [windowHours, setWindowHours] = useState(4); // Default to 4
   const [loadingTop, setLoadingTop] = useState(true);
 
   const fetchRecentHistory = useCallback(() => {
@@ -38,26 +33,10 @@ export const useAnalyticsData = () => {
   const fetchTopVisited = useCallback(async () => {
     setLoadingTop(true);
     try {
-      const response = await fetch(`${config.API_BASE_URL}/api/v1/analytics/top-visited`);
+      const data = await analyticsApi.getTopVisited();
+      setWindowHours(data.window_hours);
       
-      if (!response.ok) {
-         // Silently fail for UI if analytics is down, but log warning
-         console.warn(`[Analytics] Failed to fetch top visited: ${response.status}`);
-         setTopVisited([]);
-         return;
-      }
-      
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        // Backend returned HTML or empty string
-        setTopVisited([]);
-        return;
-      }
-      
-      const mappedData: VisitHistoryItem[] = (data.items || []).map((item: TopVisitedResponseItem) => {
+      const mappedData: VisitHistoryItem[] = (data.items || []).map((item) => {
         // Infer type for remote data since backend doesn't provide it yet
         let type = "other";
         const normalizedPath = item.path.endsWith("/") ? item.path.slice(0, -1) : item.path;
@@ -84,7 +63,7 @@ export const useAnalyticsData = () => {
       });
       setTopVisited(mappedData);
     } catch (e) {
-      console.error("[Analytics] Error fetching top visited", e);
+      console.error("[Analytics] Error fetching top visited:", e);
       setTopVisited([]);
     } finally {
       setLoadingTop(false);
@@ -105,6 +84,7 @@ export const useAnalyticsData = () => {
   return {
     recentHistory,
     topVisited,
+    windowHours,
     loadingTop,
     refresh
   };

@@ -141,6 +141,19 @@ class JobRepository(BaseRepository):
         logger.debug(f"Counted {result} jobs")
         return result
 
+    def count_jobs_by_type_distribution(self) -> dict[str, int]:
+        """Get distribution of jobs by type using a single group-by query."""
+        type_field = GraphNode.properties["type"].as_string()
+        stmt = (
+            select(type_field.label("job_type"), func.count(GraphNode.id))
+            .where(GraphNode.node_type == "job")
+            .group_by(type_field)
+        )
+        
+        results = self.db.execute(stmt).all()
+        # Return as a dictionary: { "SELF-TYPE": 5, "REQUEST-TYPE": 10, ... }
+        return {row[0]: row[1] for row in results if row[0] is not None}
+
     def find_upstream_jobs_by_output_tables(
         self, table_ids: list[int], exclude_job_id: int
     ) -> List[tuple[int, int]]:

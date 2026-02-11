@@ -132,10 +132,24 @@ class GraphQueryService:
         with self.uow:
             total_tables = self.uow.tables.count_tables()
             total_jobs = self.uow.jobs.count_jobs()
+            total_users = self.uow.users.count_users()
+            
+            # Get job type distribution in one query
+            distribution = self.uow.jobs.count_jobs_by_type_distribution()
+            
+            self_type_jobs = distribution.get("SELF-TYPE", 0)
+            request_type_jobs = distribution.get("REQUEST-TYPE", 0)
 
         return {
             "total_tables": total_tables,
-            "total_jobs": total_jobs,
+            "total_jobs": {
+                "count": total_jobs,
+                "breakdown": [
+                    {"label": "Self-Type", "value": self_type_jobs},
+                    {"label": "Request-Type", "value": request_type_jobs},
+                ],
+            },
+            "total_users": total_users,
             "system_health": "85%",
             "active_alerts": 12,
             "daily_ingestion": "2.4 TB",
@@ -728,19 +742,19 @@ class GraphQueryService:
             # Identify roots and leaves from the traversal results
             roots, leaves = self._traversal.find_root_and_leaf_nodes(upstream, downstream)
 
-        # Helper skips depth 0 (center node), so we add it manually
-        center_node = {
-            "id": center.full_name,
-            "name": center.full_name,
-            "type": "TABLE",
-            "depth": 0,
-            "parent": None,
-            "properties": getattr(center, "properties", {}) or {},
-        }
+            # Helper skips depth 0 (center node), so we add it manually
+            center_node = {
+                "id": center.full_name,
+                "name": center.full_name,
+                "type": "TABLE",
+                "depth": 0,
+                "parent": None,
+                "properties": getattr(center, "properties", {}) or {},
+            }
 
-        # Prepend center node to both lists
-        upstream.insert(0, center_node)
-        downstream.insert(0, center_node)
+            # Prepend center node to both lists
+            upstream.insert(0, center_node)
+            downstream.insert(0, center_node)
 
         return {
             "status": "success",

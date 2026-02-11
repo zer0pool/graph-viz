@@ -1,51 +1,35 @@
 import { useState, useEffect, useCallback } from "react";
-import { config } from '../../api/config';
 import { MetricData } from '../../ui/SummaryGrid';
+import { analyticsApi } from '../../api/analyticsApi';
 
-interface DashboardMetricsResponse {
-  metrics: MetricData[];
-}
+const JOB_TYPE_COLORS: Record<string, string> = {
+  "Self-Type": "bg-blue-600",
+  "Request-Type": "bg-amber-500",
+};
 
 export const useDashboardMetrics = () => {
   const [metrics, setMetrics] = useState<MetricData[]>([
     { type: "total_tables", value: 0, subtext: "Across all schemas" },
-    { 
-      type: "total_jobs", 
-      value: 20, 
-      subtext: "Active Jobs",
-      breakdown: [
-        { label: "Self-Type", value: 10, color: "bg-blue-600" },
-        { label: "Request-Type", value: 10, color: "bg-amber-500" }
-      ]
-    },
-    { type: "dummy_chart", value: "85%", subtext: "System Health" },
-    { type: "dummy_chart", value: 12, subtext: "Active Alerts", status: "warning" },
-    { type: "dummy_chart", value: "2.4 TB", subtext: "Daily Ingestion" },
+    { type: "total_jobs", value: 0, subtext: "Active Jobs" },
+    { type: "total_users", value: 0, subtext: "Total Users" },
+    { type: "dummy_chart", value: 0, subtext: "Active Alerts", status: "warning" },
+    { type: "dummy_chart", value: "0 B", subtext: "Daily Ingestion" },
   ]);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${config.API_BASE_URL}/api/v1/analytics/dashboard-metrics`);
+      const data = await analyticsApi.getDashboardMetrics();
       
-      if (!response.ok) {
-        console.warn(`[Dashboard] Failed to fetch metrics: ${response.status}`);
-        // Keep default metrics on error
-        return;
-      }
-      
-      const data: DashboardMetricsResponse = await response.json();
-      
-      // Merge breakdown for total_jobs if not provided by API
       const enrichedMetrics = data.metrics.map(m => {
-        if (m.type === "total_jobs" && !m.breakdown) {
+        if (m.type === "total_jobs" && m.breakdown) {
           return {
             ...m,
-            breakdown: [
-              { label: "Self-Type", value: 10, color: "bg-blue-600" },
-              { label: "Request-Type", value: 10, color: "bg-amber-500" }
-            ]
+            breakdown: m.breakdown.map(item => ({
+              ...item,
+              color: JOB_TYPE_COLORS[item.label] || "bg-gray-400"
+            }))
           };
         }
         return m;
@@ -53,8 +37,7 @@ export const useDashboardMetrics = () => {
       
       setMetrics(enrichedMetrics);
     } catch (e) {
-      console.error("[Dashboard] Error fetching metrics", e);
-      // Keep default metrics on error
+      console.error("[Dashboard] Error fetching metrics:", e);
     } finally {
       setLoading(false);
     }

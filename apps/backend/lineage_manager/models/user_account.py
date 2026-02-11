@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import JSON, Column, DateTime, Integer, String, func
 
 from .base import Base
+from .types import LowerCaseString
 from enum import StrEnum
 
 
@@ -31,7 +32,7 @@ class UserAccount(Base):
     roles = Column(JSON, nullable=True, default=[UserRole.VIEWER])
     department = Column(String(255), nullable=True)  # Renamed from dept
     status = Column(String(20), default="ACTIVE", nullable=True)  # New column
-    user_id = Column(String(100), unique=True, index=True, nullable=False)  # New column
+    user_id = Column(LowerCaseString(100), unique=True, index=True, nullable=False)  # New column
 
     last_login_at = Column(DateTime, default=func.now(), onupdate=func.now())
     created_at = Column(DateTime, default=func.now())
