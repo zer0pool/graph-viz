@@ -12,7 +12,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "System Management:"
-	@echo "  up                  - Start entire platform (Backend + Admin)"
+	@echo "  up                  - Start entire platform (Backend + Frontend)"
 	@echo "  down                - Stop entire platform"
 	@echo "  logs                - View all platform logs"
 	@echo "  clean-all           - Clean all application builds and venvs"
@@ -27,11 +27,11 @@ help:
 	@echo "  venv-all            - Setup python environments for all backends"
 	@echo "  test-all            - Run all backend unit tests"
 	@echo ""
-	@echo "Admin Console Management (MFEs):"
-	@echo "  admin-up            - Start admin console MFEs"
-	@echo "  admin-down          - Stop admin console MFEs"
-	@echo "  admin-rebuild       - Rebuild and restart all admin MFEs (Shell, Lineage, Table)"
-	@echo "  admin-logs          - View admin console logs"
+	@echo "Frontend Management (MFEs):"
+	@echo "  frontend-up            - Start frontend MFEs"
+	@echo "  frontend-down          - Stop frontend MFEs"
+	@echo "  frontend-rebuild       - Rebuild and restart all frontend MFEs (Shell, Lineage, Table)"
+	@echo "  frontend-logs          - View frontend logs"
 
 # Lineage Manager delegation
 venv-lm:
@@ -81,10 +81,10 @@ clean-all:
 # Docker Compose commands
 up:
 	docker compose -f apps/backend/docker-compose.yml up -d
-	docker compose -f apps/admin_console/docker-compose.yml up -d
+	docker compose -f apps/frontend/docker-compose.yml up -d
 
 down:
-	docker compose -f apps/admin_console/docker-compose.yml down
+	docker compose -f apps/frontend/docker-compose.yml down
 	docker compose -f apps/backend/docker-compose.yml down
 
 backend-up:
@@ -99,31 +99,31 @@ backend-rebuild:
 backend-logs:
 	docker compose -f apps/backend/docker-compose.yml logs -f
 
-admin-up:
-	docker compose -f apps/admin_console/docker-compose.yml up -d
+frontend-up:
+	docker compose -f apps/frontend/docker-compose.yml up -d
 
-admin-down:
-	docker compose -f apps/admin_console/docker-compose.yml down
+frontend-down:
+	docker compose -f apps/frontend/docker-compose.yml down
 
-admin-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app admin-mfe-lineage admin-mfe-catalog
+frontend-rebuild:
+	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-console-app frontend-mfe-lineage frontend-mfe-catalog
 	docker system prune -f
 
 # (Internal/Secondary) Rebuild individual MFEs if needed
-admin-lineage-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-lineage
+frontend-lineage-rebuild:
+	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-mfe-lineage
 
-admin-catalog-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-mfe-catalog
+frontend-catalog-rebuild:
+	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-mfe-catalog
 
-admin-container-rebuild:
-	docker compose -f apps/admin_console/docker-compose.yml up -d --build admin-console-app
+frontend-container-rebuild:
+	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-console-app
 
-admin-logs:
-	docker compose -f apps/admin_console/docker-compose.yml logs -f
+frontend-logs:
+	docker compose -f apps/frontend/docker-compose.yml logs -f
 
 logs:
-	docker compose -f apps/backend/docker-compose.yml -f apps/admin_console/docker-compose.yml logs -f
+	docker compose -f apps/backend/docker-compose.yml -f apps/frontend/docker-compose.yml logs -f
 
 docker-rmi:
 	@echo "⚠️  [WARNING] Deleting ALL docker images..."

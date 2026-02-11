@@ -1,12 +1,12 @@
 services:
-  admin-console-app:
+  frontend-console-app:
     build:
       context: ./container
       dockerfile: deploy/docker/Dockerfile
       args:
         - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
         - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: admin-console-app
+    container_name: frontend-console-app
     ports:
       - "${SHELL_PORT:-5100}:80"
     environment:
@@ -19,20 +19,20 @@ services:
       - ENABLE_CATALOG_MFE=${ENABLE_CATALOG_MFE:-true}
       - NODE_ENV=production
     depends_on:
-      - admin-mfe-lineage
-      - admin-mfe-catalog
+      - frontend-mfe-lineage
+      - frontend-mfe-catalog
     networks:
-      - admin-network
+      - frontend-network
       - backend-network
 
-  admin-mfe-lineage:
+  frontend-mfe-lineage:
     build:
       context: ./mfe-lineage
       dockerfile: deploy/docker/Dockerfile
       args:
         - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
         - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: admin-mfe-lineage
+    container_name: frontend-mfe-lineage
     ports:
       - "${LINEAGE_PORT:-5101}:80"
     environment:
@@ -40,17 +40,17 @@ services:
       - BASE_URL=${LINEAGE_BASE_URL:-/mfe-lineage}
       - BACKEND_HOST=http://lineage-manager:5003
     networks:
-      - admin-network
+      - frontend-network
       - backend-network
 
-  admin-mfe-catalog:
+  frontend-mfe-catalog:
     build:
       context: ./mfe-catalog
       dockerfile: deploy/docker/Dockerfile
       args:
         - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
         - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: admin-mfe-catalog
+    container_name: frontend-mfe-catalog
     ports:
       - "${TABLE_DETAIL_PORT:-5102}:80"
     environment:
@@ -58,11 +58,11 @@ services:
       - BASE_URL=${CATALOG_BASE_URL:-/mfe-catalog}
       - BACKEND_HOST=http://lineage-manager:5003
     networks:
-      - admin-network
+      - frontend-network
       - backend-network
 
 networks:
-  admin-network:
+  frontend-network:
     driver: bridge
   backend-network:
     name: lineage-platform-network

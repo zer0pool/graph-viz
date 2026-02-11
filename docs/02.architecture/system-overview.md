@@ -28,7 +28,7 @@ Explains the high-level architecture of the OPS Console platform, detailing the 
 graph TD
     User([User])
     
-    subgraph "Admin Console (Frontend Stack)"
+    subgraph "Frontend (Frontend Stack)"
         Shell[Main Shell Container]
         MFE_Lineage[Lineage Graph MFE]
         MFE_Catalog[Catalog/Detail MFE]

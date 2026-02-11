@@ -1,10 +1,10 @@
 version: "3.8"
 
 services:
-  # --- Admin Console Shell MFE ---
+  # --- Frontend Shell MFE ---
   shell:
     build:
-      context: ./apps/admin_console/shell
+      context: ./apps/frontend/shell
       dockerfile: deploy/docker/Dockerfile
     ports:
       - "${SHELL_PORT:-3000}:80"

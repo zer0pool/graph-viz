@@ -1,4 +1,4 @@
-# Admin Console DB Optimization Design
+# Frontend DB Optimization Design
 
 ## Fast Search for Projects, Users, and Related Jobs
 
@@ -112,7 +112,7 @@ def find_by_project(self, project_id: str):
 
 ## 5. 결론 및 제언
 
-Admin Console의 유기적인 페이지 내비게이션(Job ↔ Project ↔ User)을 지원하기 위해서는 **인덱싱 가능한 구조**가 필수적입니다.
+Frontend의 유기적인 페이지 내비게이션(Job ↔ Project ↔ User)을 지원하기 위해서는 **인덱싱 가능한 구조**가 필수적입니다.
 
 1. 우선 **Phase 1(가상 컬럼)**을 적용하여 현재 67.mfe_loading 브랜치에서 진행 중인 시연 UI의 응답 속도를 확보할 것을 권장합니다.
 2. 이후 프로젝트 생성/수정 기능이 추가되는 시점에 **Phase 2(정규화)**로 전환하여 데이터 정합성을 확보하는 로드맵이 가장 안정적입니다.

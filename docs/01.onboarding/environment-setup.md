@@ -58,7 +58,7 @@ This runs the full stack including Database and Redis.
 # Run backend stack
 make backend-up
 
-# Run admin console stack
+# Run frontend stack
 make admin-up
 ```
 
@@ -75,7 +75,7 @@ make run
 ## 🛠️ Verification Checklist
 
 - [ ] **Backend API**: Navigate to [http://localhost:5003/lineage-manager/docs](http://localhost:5003/lineage-manager/docs) to see Swagger UI.
-- [ ] **Admin Console**: Navigate to [http://localhost:5100/admin-console](http://localhost:5100/admin-console) to see the main UI.
+- [ ] **Frontend**: Navigate to [http://localhost:5100/admin-console](http://localhost:5100/admin-console) to see the main UI.
 - [ ] **Database Connectivity**: Use `docker ps` to ensure `db-mysql` is running.
 
 ---

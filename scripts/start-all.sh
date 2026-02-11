@@ -100,7 +100,7 @@ start_frontend() {
     
     # Lineage MFE
     start_component "mfe-lineage" \
-        "$PROJECT_ROOT/apps/admin_console/mfe-lineage" \
+        "$PROJECT_ROOT/apps/frontend/mfe-lineage" \
         "npm run dev" \
         "5101"
     
@@ -109,7 +109,7 @@ start_frontend() {
     
     # Catalog MFE
     start_component "mfe-catalog" \
-        "$PROJECT_ROOT/apps/admin_console/mfe-catalog" \
+        "$PROJECT_ROOT/apps/frontend/mfe-catalog" \
         "npm run dev" \
         "5102"
     
@@ -118,7 +118,7 @@ start_frontend() {
     
     # App
     start_component "app" \
-        "$PROJECT_ROOT/apps/admin_console/container" \
+        "$PROJECT_ROOT/apps/frontend/container" \
         "npm run dev" \
         "5100"
     

@@ -1,11 +1,11 @@
-# AI Coding Agent Guide (Admin Console)
+# AI Coding Agent Guide (Frontend)
 
-This document is the single source of truth for anyone using AI coding agents (Copilot Chat, GPT, Claude, etc.) on the Admin Console project. It unifies the architectural context, development workflows, and agent-specific rules that previously lived in multiple files.
+This document is the single source of truth for anyone using AI coding agents (Copilot Chat, GPT, Claude, etc.) on the Frontend project. It unifies the architectural context, development workflows, and agent-specific rules that previously lived in multiple files.
 
 ---
 
 ## 1. Purpose & Scope
-- Keep AI-produced changes consistent with Admin Console’s architecture.
+- Keep AI-produced changes consistent with Frontend’s architecture.
 - Minimize token/latency costs by using targeted prompts.
 - Ensure every AI-driven task leaves a paper trail (specs, completion notes).
 

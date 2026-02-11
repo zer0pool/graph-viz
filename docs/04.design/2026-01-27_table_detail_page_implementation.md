@@ -4,7 +4,7 @@
 
 ## 1. 개요
 
-본 문서는 Admin Console 내 `mfe-catalog` 마이크로 프론트엔드에서 구현된 **Table 상세 페이지**의 디자인 및 기능 사양을 정의합니다. Google Cloud Platform (GCP) 콘솔의 미학을 벤치마킹하여 사용자 친화적이고 전문적인 데이터 관리 환경을 제공하는 것을 목표로 합니다.
+본 문서는 Frontend 내 `mfe-catalog` 마이크로 프론트엔드에서 구현된 **Table 상세 페이지**의 디자인 및 기능 사양을 정의합니다. Google Cloud Platform (GCP) 콘솔의 미학을 벤치마킹하여 사용자 친화적이고 전문적인 데이터 관리 환경을 제공하는 것을 목표로 합니다.
 
 ## 2. 디자인 가이드라인 (GCP Look & Feel)
 

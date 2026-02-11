@@ -25,8 +25,8 @@ In-Net 환경에서 인증이 어디서 막히는지 즉시 파악할 수 있도
 
 Shell MFE 배포를 위해 다음 파일들을 생성했습니다:
 
-- **[Dockerfile](file:///home/darkwing/src/lineage_platform/apps/admin_console/shell/Dockerfile)**: Multi-stage 빌드를 통해 최종 이미지를 `nginx:alpine` 기반의 매우 작은 사이즈(~30MB 미만)로 구성했습니다.
-- **[entrypoint.sh](file:///home/darkwing/src/lineage_platform/apps/admin_console/shell/entrypoint.sh)**: 컨테이너 실행 시 환경 변수 주입 등 런타임 설정을 처리할 수 있는 통로를 마련했습니다.
+- **[Dockerfile](file:///home/darkwing/src/lineage_platform/apps/frontend/shell/Dockerfile)**: Multi-stage 빌드를 통해 최종 이미지를 `nginx:alpine` 기반의 매우 작은 사이즈(~30MB 미만)로 구성했습니다.
+- **[entrypoint.sh](file:///home/darkwing/src/lineage_platform/apps/frontend/shell/entrypoint.sh)**: 컨테이너 실행 시 환경 변수 주입 등 런타임 설정을 처리할 수 있는 통로를 마련했습니다.
 
 ### UI & Session Integration
 
@@ -36,7 +36,7 @@ Shell MFE 배포를 위해 다음 파일들을 생성했습니다:
 
 ## 2. Next Steps for Internal Deployment
 
-1. **Deploy Build**: Copy the updated `apps/admin_console/shell` directory to the internal environment.
+1. **Deploy Build**: Copy the updated `apps/frontend/shell` directory to the internal environment.
 2. **Configure Backend**: Ensure the internal OIDC provider URL is set in the backend environment variables or through the `/api/v1/auth/config` response.
 3. **Verify Redirects**: Confirm that the `redirect_uri` in the provider matches the `/authorized` path of the Shell.
 

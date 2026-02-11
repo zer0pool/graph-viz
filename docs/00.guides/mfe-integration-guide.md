@@ -1,6 +1,6 @@
-# Admin Console: Micro-Frontend (MFE) Integration Guide
+# Frontend: Micro-Frontend (MFE) Integration Guide
 
-This guide provides technical specifications and best practices for developing and integrating Micro-Frontends (MFEs) into the Lineage Platform Admin Console.
+This guide provides technical specifications and best practices for developing and integrating Micro-Frontends (MFEs) into the Lineage Platform Frontend.
 
 ## 1. Architectural Overview
 

@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Migrate the legacy SSO (OIDC/Google) authentication logic from the legacy `lineage_manager` frontend to the modern Admin Console Shell MFE. This includes supporting Google Login initially and preparing for internal SSO integration with robust logging for remote debugging.
+Migrate the legacy SSO (OIDC/Google) authentication logic from the legacy `lineage_manager` frontend to the modern Frontend Shell MFE. This includes supporting Google Login initially and preparing for internal SSO integration with robust logging for remote debugging.
 
 ## 2. Legacy Implementation Analysis
 

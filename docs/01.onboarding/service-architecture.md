@@ -12,7 +12,7 @@
 graph TD
     User((사용자))
 
-    subgraph "Admin Console Stack (Docker Compose: admin)"
+    subgraph "Frontend Stack (Docker Compose: admin)"
         Shell["web-shell (Nginx)<br/>Port: 5100"]
         MFE_L["web-lineage (MFE)<br/>Port: 5101"]
         MFE_T["web-table-viewer (MFE)<br/>Port: 5102"]
@@ -46,7 +46,7 @@ graph TD
 
 ---
 
-## 2. 프론트엔드 구조 (Admin Console)
+## 2. 프론트엔드 구조 (Frontend)
 
 프론트엔드는 **Module Federation** 기술을 사용하여 여러 독립적인 마이크로 앱을 하나의 쉘(Shell)에서 통합합니다.
 

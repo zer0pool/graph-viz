@@ -1,6 +1,6 @@
 # Micro-Frontend (MFE) Integration Contract
 
-This document defines the interface standards and communication patterns for MFE integration within the Admin Console. All participating MFEs must adhere to this contract to ensure seamless interoperability.
+This document defines the interface standards and communication patterns for MFE integration within the Frontend. All participating MFEs must adhere to this contract to ensure seamless interoperability.
 
 ## 1. Interaction Pattern (Event Bridge)
 
