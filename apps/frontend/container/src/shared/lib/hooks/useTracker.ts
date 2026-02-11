@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { config } from '../../api/config';
 
-const VISITOR_ID_KEY = "admin_console_visitor_id";
-const RECENT_VISITED_KEY = "admin_console_recent_visited";
+const VISITOR_ID_KEY = "frontend_visitor_id";
+const RECENT_VISITED_KEY = "frontend_recent_visited";
 
 export interface RecentVisit {
   path: string;

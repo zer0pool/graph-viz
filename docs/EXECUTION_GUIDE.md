@@ -4,12 +4,12 @@
 
 ## 📦 컴포넌트 목록 및 포트
 
-| 컴포넌트                    | 경로                                     | 포트 | 실행 명령                                                                    |
-| --------------------------- | ---------------------------------------- | ---- | ---------------------------------------------------------------------------- |
-| **Backend**                 | `apps/lineage_manager`                   | 5003 | `make run` 또는 `uvicorn apps.lineage_manager.main:app --reload --port 5003` |
-| **Lineage MFE**             | `apps/admin_console/lineage`             | 3001 | `npm run dev`                                                                |
-| **Table Detail Viewer MFE** | `apps/admin_console/table-detail-viewer` | 3002 | `npm run dev`                                                                |
-| **Shell**                   | `apps/admin_console/shell`               | 3000 | `npm run dev`                                                                |
+| 컴포넌트            | 경로                            | 포트 | 실행 명령                                                               |
+| ------------------- | ------------------------------- | ---- | ----------------------------------------------------------------------- |
+| **Backend**         | `apps/backend/lineage_manager`  | 5003 | `make run` 또는 `uvicorn lineage_manager.main:app --reload --port 5003` |
+| **Lineage MFE**     | `apps/frontend/mfe-lineage`     | 5101 | `npm run dev`                                                           |
+| **Catalog MFE**     | `apps/frontend/mfe-catalog`     | 5102 | `npm run dev`                                                           |
+| **App (Container)** | `apps/frontend/container`       | 5100 | `npm run dev`                                                           |
 
 ---
 
@@ -18,40 +18,40 @@
 ### 1️⃣ Backend (필수)
 
 ```bash
-cd /home/darkwing/src/lineage_platform
+cd /home/darkwing/src/lineage_platform/apps/backend/lineage_manager
 make run
 # 또는
-python -m uvicorn apps.lineage_manager.main:app --reload --port 5003
+uvicorn lineage_manager.main:app --reload --port 5003
 ```
 
 **확인**: http://localhost:5003/lineage-manager/docs
 
-### 2️⃣ Table Detail Viewer MFE
+### 2️⃣ Catalog MFE
 
 ```bash
-cd /home/darkwing/src/lineage_platform/apps/admin_console/table-detail-viewer
+cd /home/darkwing/src/lineage_platform/apps/frontend/mfe-catalog
 npm run dev
 ```
 
-**확인**: http://localhost:3002
+**확인**: http://localhost:5102
 
 ### 3️⃣ Lineage MFE
 
 ```bash
-cd /home/darkwing/src/lineage_platform/apps/admin_console/lineage
+cd /home/darkwing/src/lineage_platform/apps/frontend/mfe-lineage
 npm run dev
 ```
 
-**확인**: http://localhost:3001
+**확인**: http://localhost:5101
 
-### 4️⃣ Shell (마지막)
+### 4️⃣ App Container (마지막)
 
 ```bash
-cd /home/darkwing/src/lineage_platform/apps/admin_console/shell
+cd /home/darkwing/src/lineage_platform/apps/frontend/container
 npm run dev
 ```
 
-**확인**: http://localhost:3000
+**확인**: http://localhost:5100
 
 ---
 

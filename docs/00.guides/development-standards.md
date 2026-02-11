@@ -1,4 +1,4 @@
-# Admin Console: Agent Development Standards
+# Frontend: Agent Development Standards
 
 This document serves as the **Persistent Instruction Set** for AI agents (Antigravity). I must read and follow these rules for every task in this project without being asked repeatedly.
 

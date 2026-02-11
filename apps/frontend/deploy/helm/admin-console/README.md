@@ -1,6 +1,6 @@
-# Admin Console Helm Chart
+# Frontend Helm Chart
 
-This Helm chart deploys the Admin Console application consisting of:
+This Helm chart deploys the Frontend application consisting of:
 
 - **app**: Main shell application
 - **mfe-lineage**: Lineage graph micro-frontend

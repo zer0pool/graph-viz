@@ -27,5 +27,5 @@ I have successfully migrated the legacy OIDC/PKCE logic to the Shell MFE.
 
 ### Next Steps
 
-1. Refactor `AuthContext.tsx` in `apps/admin_console/shell` to handle OIDC logic.
+1. Refactor `AuthContext.tsx` in `apps/frontend/shell` to handle OIDC logic.
 2. Add comprehensive logging for all auth stages.

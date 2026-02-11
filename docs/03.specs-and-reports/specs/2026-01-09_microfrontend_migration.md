@@ -24,7 +24,7 @@ Micro Frontend(MFE) 구조로 이전하기 위한 공식 가이드**이다.
 
 - 기존 SPA로 구현된 Job / Table Detail 화면
 - Tab 기반 상세 뷰
-- Admin Console / User Console에서 공용으로 사용될 기능
+- Frontend / User Console에서 공용으로 사용될 기능
 
 ### 목표
 

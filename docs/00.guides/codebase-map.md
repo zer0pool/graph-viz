@@ -24,10 +24,10 @@ Provides a high-level map of the OPS Console project, linking functional require
 - **Backend**: 2 Backend services using **Python + FastAPI**.
 - **Infrastructure**: MySQL, Redis, Nginx (for routing).
 
-## 2. Admin Console Structure (FSD Architecture)
+## 2. Frontend Structure (FSD Architecture)
 *Refactored to Feature-Sliced Design (Jan 2026). See [Architecture Guide](admin-console-architecture.md) for details.*
 
-### 📂 Container Layer Map (`apps/admin_console/container/src/`)
+### 📂 Container Layer Map (`apps/frontend/container/src/`)
 - **App Layer** (`app/`): Entry point (`bootstrap.tsx`), Global Providers (`AuthProvider`), Router.
 - **Pages Layer** (`pages/`):
   - **Dashboard**: `pages/dashboard/DashboardPage.tsx` - System overview & metrics.
@@ -48,14 +48,14 @@ Run these commands to start individual components for rapid development:
   - Lineage Manager: `make -C apps/backend/lineage_manager run`
   - Dummy Job Manager: `make -C apps/backend/dummy-job-manager run`
 - **Frontend (TS/React)**:
-  - Shell Container: `make -C apps/admin_console/container dev`
-  - Lineage MFE: `make -C apps/admin_console/mfe-lineage dev`
-  - Catalog MFE: `make -C apps/admin_console/mfe-catalog dev`
+  - Shell Container: `make -C apps/frontend/container dev`
+  - Lineage MFE: `make -C apps/frontend/mfe-lineage dev`
+  - Catalog MFE: `make -C apps/frontend/mfe-catalog dev`
 
 ### 🟡 Integration Verification (Docker Compose)
 Used to verify Nginx reverse proxy and multi-MFE mounting:
 - `make -C apps/backend up`
-- `make -C apps/admin_console up`
+- `make -C apps/frontend up`
 
 ### 🟡 Development Deployment (k8s)
 - Target: Dev Clusters.

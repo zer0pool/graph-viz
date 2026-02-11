@@ -13,7 +13,7 @@
 ## 2. 사용자 식별 전략 (Common)
 
 ### 2.1 익명 사용자 (Anonymous ID)
-- **생성**: 로그인하지 않은 최초 진입 시 브라우저 LocalStorage에 UUID 생성. (`admin_console_visitor_id`)
+- **생성**: 로그인하지 않은 최초 진입 시 브라우저 LocalStorage에 UUID 생성. (`frontend_visitor_id`)
 - **수명**: 브라우저를 닫아도 삭제되지 않도록 `localStorage`에 영구 보관.
 
 ### 2.2 로그인 사용자 (Auth ID)

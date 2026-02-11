@@ -35,8 +35,8 @@ if [ -n "$K8S_NAMESPACE" ]; then
     export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog.${K8S_NAMESPACE}.svc.cluster.local:5102}"
 else
     export BACKEND_HOST="${BACKEND_HOST:-http://lineage-manager:5003}"
-    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://admin-mfe-lineage:80}"
-    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://admin-mfe-catalog:80}"
+    export MFE_LINEAGE_UPSTREAM="${MFE_LINEAGE_UPSTREAM:-http://frontend-mfe-lineage:80}"
+    export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://frontend-mfe-catalog:80}"
 fi
 
 echo "[Shell] Config Summary:"

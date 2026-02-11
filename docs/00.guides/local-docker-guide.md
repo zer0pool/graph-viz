@@ -1,6 +1,6 @@
 # Docker Compose를 이용한 로컬 통합 실행 가이드
 
-이 문서는 Docker Compose를 사용하여 전체 프로젝트(Backend 및 Admin Console)를 로컬에서 가장 쉽고 빠르게 실행하는 방법을 설명합니다.
+이 문서는 Docker Compose를 사용하여 전체 프로젝트(Backend 및 Frontend)를 로컬에서 가장 쉽고 빠르게 실행하는 방법을 설명합니다.
 
 ---
 
@@ -17,7 +17,7 @@
 - **cache-redis**: 캐시 저장소 (Redis)
 - **app-job-dummy**: 가상 데이터 생성을 위한 워커
 
-### 2. Admin Console Stack (`apps/admin_console`)
+### 2. Frontend Stack (`apps/frontend`)
 
 사용자 인터페이스와 마이크로 프론트엔드(MFE) 계층을 포함합니다.
 
@@ -54,7 +54,7 @@ docker-compose -p backend up -d
 
 _백엔드가 DB에 연결되고 초기화될 때까지 약 10~20초 정도 기다려 주십시오._
 
-#### Step 2: Admin Console 실행
+#### Step 2: Frontend 실행
 
 ```bash
 make admin-up

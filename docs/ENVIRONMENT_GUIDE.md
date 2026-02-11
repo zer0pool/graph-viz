@@ -1,6 +1,6 @@
 # Environment Configuration Guide
 
-This document outlines how to manage environment variables for the Admin Console Shell across different stages of development and deployment.
+This document outlines how to manage environment variables for the Frontend Shell across different stages of development and deployment.
 
 ## 1. Local Development (`npm run dev`)
 

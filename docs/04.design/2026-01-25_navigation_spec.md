@@ -1,4 +1,4 @@
-# Admin Console Navigation & Routing Specification
+# Frontend Navigation & Routing Specification
 
 ## Page Hierarchy, Navigation Rules, and Breadcrumb Policy
 
@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-본 문서는 Admin Console 내의 **페이지 이동 규칙(Navigation)**, **페이지 계층 구조(Page Hierarchy)**, 그리고 **브레드크럼(Breadcrumb) 정책**을 명확히 정의합니다.
+본 문서는 Frontend 내의 **페이지 이동 규칙(Navigation)**, **페이지 계층 구조(Page Hierarchy)**, 그리고 **브레드크럼(Breadcrumb) 정책**을 명확히 정의합니다.
 
 ### 목적
 
@@ -213,6 +213,6 @@ graph LR
 
 ## 8. Summary
 
-1. Admin Console 탐색의 3대 핵심축은 **Jobs**, **Tables**, **Users**입니다.
+1. Frontend 탐색의 3대 핵심축은 **Jobs**, **Tables**, **Users**입니다.
 2. **Project**는 독립적 엔티티가 아닌, 상위 엔티티의 맥락(Context)을 제공하는 용도로만 사용됩니다.
 3. 모든 이동과 표식(Breadcrumb)은 단순하고 예측 가능해야 하며, 명확한 링크 규칙을 따릅니다.

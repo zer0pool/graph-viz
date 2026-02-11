@@ -4,7 +4,7 @@
 
 ### 0.1 목적
 
-본 문서는 Admin Console(`shell + lineage_mfe + job-table_detail`)을
+본 문서는 Frontend(`shell + lineage_mfe + job-table_detail`)을
 
 **로컬 → docker-compose → k8s**로 단계적으로 검증·배포하기 위한
 
@@ -39,7 +39,7 @@
 
 | 컴포넌트         | 역할                       | 기본 포트 |
 | ---------------- | -------------------------- | --------- |
-| shell            | Admin Console Host (entry) | 5100      |
+| shell            | Frontend Host (entry) | 5100      |
 | lineage_mfe      | Lineage UI                 | 5101      |
 | job-table_detail | Job/Table Detail UI        | 5102      |
 

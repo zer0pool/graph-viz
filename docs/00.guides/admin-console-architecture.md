@@ -1,4 +1,4 @@
-# Admin Console Container Architecture Guide
+# Frontend Container Architecture Guide
 
 **Version:** 1.0  
 **Updated:** 2026-01-31  
