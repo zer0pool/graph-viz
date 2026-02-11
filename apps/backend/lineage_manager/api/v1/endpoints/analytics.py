@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import redis
 from dependency_injector.wiring import Provide, inject
@@ -27,6 +27,34 @@ class TrackRequest(BaseModel):
     path: str
     title: str = ""
     timestamp: Optional[str] = None
+
+
+class MetricBreakdown(BaseModel):
+    label: str
+    value: int
+
+
+class MetricItem(BaseModel):
+    type: str
+    value: Any
+    subtext: str
+    status: Optional[str] = "default"
+    breakdown: Optional[List[MetricBreakdown]] = None
+
+
+class DashboardMetricsResponse(BaseModel):
+    metrics: List[MetricItem]
+
+
+class TopVisitedItem(BaseModel):
+    path: str
+    title: str
+    count: int
+
+
+class TopVisitedResponse(BaseModel):
+    items: List[TopVisitedItem]
+    window_hours: int
 
 
 @router.post("/track")
@@ -67,7 +95,7 @@ async def track_event(
     return {"status": "success"}
 
 
-@router.get("/top-visited")
+@router.get("/top-visited", response_model=TopVisitedResponse)
 @inject
 async def get_top_visited(
     redis_client: redis.Redis = Depends(Provide[GraphContainer.core.redis_client]),
@@ -76,18 +104,15 @@ async def get_top_visited(
     """
     Aggregate recent hourly buckets from Redis to provide top-visted pages.
     """
+    window_hours = settings.redis.analytics_window_hours
+    
     if not settings.redis.enabled:
-        return {"items": []}
+        return TopVisitedResponse(items=[], window_hours=window_hours)
 
     # Get recent N hours keys
-    window_hours = settings.redis.analytics_window_hours
     now = datetime.utcnow()
     keys = []
     for i in range(window_hours):
-        h = now.replace(minute=0, second=0, microsecond=0)
-        # In a real scenario, you'd subtract hours correctly
-        # Here we just use a simplified approach for demonstration
-        # Actually we should use timedelta
         from datetime import timedelta
 
         target_time = now - timedelta(hours=i)
@@ -101,7 +126,7 @@ async def get_top_visited(
         # filter out keys that don't exist
         existing_keys = [k for k in keys if redis_client.exists(k)]
         if not existing_keys:
-            return {"items": []}
+            return TopVisitedResponse(items=[], window_hours=window_hours)
 
         redis_client.zunionstore(temp_key, existing_keys)
 
@@ -114,21 +139,22 @@ async def get_top_visited(
         # Format response
         items = []
         for path, score in results:
+            path_str = path.decode("utf-8") if isinstance(path, bytes) else str(path)
             items.append(
-                {
-                    "path": path,
-                    "title": path.split("/")[-1] or "home",  # Simplified
-                    "count": int(score),
-                }
+                TopVisitedItem(
+                    path=path_str,
+                    title=path_str.split("/")[-1] or "home",  # Simplified
+                    count=int(score),
+                )
             )
 
-        return {"items": items}
+        return TopVisitedResponse(items=items, window_hours=window_hours)
     except Exception as e:
         logger.error(f"Failed to get top visited from redis: {e}")
-        return {"items": []}
+        return TopVisitedResponse(items=[], window_hours=window_hours)
 
 
-@router.get("/dashboard-metrics")
+@router.get("/dashboard-metrics", response_model=DashboardMetricsResponse)
 @inject
 async def get_dashboard_metrics(
     svc: GraphQueryService = Depends(Provide[GraphContainer.graph.query_service]),
@@ -139,36 +165,41 @@ async def get_dashboard_metrics(
     try:
         data = svc.get_dashboard_metrics()
 
-        return {
-            "metrics": [
-                {
-                    "type": "total_tables",
-                    "value": data.get("total_tables", 0),
-                    "subtext": "Across all schemas",
-                },
-                {
-                    "type": "total_jobs",
-                    "value": data.get("total_jobs", 0),
-                    "subtext": "Active Jobs",
-                },
-                {
-                    "type": "dummy_chart",
-                    "value": data.get("system_health", "N/A"),
-                    "subtext": "System Health",
-                },
-                {
-                    "type": "dummy_chart",
-                    "value": data.get("active_alerts", 0),
-                    "subtext": "Active Alerts",
-                    "status": "warning",
-                },
-                {
-                    "type": "dummy_chart",
-                    "value": data.get("daily_ingestion", "0 B"),
-                    "subtext": "Daily Ingestion",
-                },
-            ]
-        }
+        job_data = data.get("total_jobs", {})
+        total_jobs_count = job_data.get("count", 0) if isinstance(job_data, dict) else job_data
+        job_breakdown = job_data.get("breakdown", []) if isinstance(job_data, dict) else []
+
+        metrics = [
+            MetricItem(
+                type="total_tables",
+                value=data.get("total_tables", 0),
+                subtext="Across all schemas",
+            ),
+            MetricItem(
+                type="total_jobs",
+                value=total_jobs_count,
+                subtext="Active Jobs",
+                breakdown=job_breakdown,
+            ),
+            MetricItem(
+                type="total_users",
+                value=data.get("total_users", 0),
+                subtext="Total Users",
+            ),
+            MetricItem(
+                type="dummy_chart",
+                value=data.get("active_alerts", 0),
+                subtext="Active Alerts",
+                status="warning",
+            ),
+            MetricItem(
+                type="dummy_chart",
+                value=data.get("daily_ingestion", "0 B"),
+                subtext="Daily Ingestion",
+            ),
+        ]
+
+        return DashboardMetricsResponse(metrics=metrics)
     except Exception as e:
         logger.error(f"Failed to get dashboard metrics: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

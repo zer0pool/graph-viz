@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, func
 from sqlalchemy.orm import relationship
 
 from .base import Base
+from .types import LowerCaseString
 
 
 class JobOwner(Base):
@@ -18,7 +19,7 @@ class JobOwner(Base):
         primary_key=True,
     )
     user_id = Column(
-        String(100),
+        LowerCaseString(100),
         ForeignKey("user_account.user_id", ondelete="CASCADE"),
         primary_key=True,
     )

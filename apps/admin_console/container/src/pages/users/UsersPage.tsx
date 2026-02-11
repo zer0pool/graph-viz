@@ -175,6 +175,7 @@ export function UsersPage() {
       </div>
 
       <SummaryGrid 
+        cols={4}
         metrics={[
           { 
             type: "total_users", 

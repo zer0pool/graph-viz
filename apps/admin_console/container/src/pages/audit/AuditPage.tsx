@@ -201,6 +201,7 @@ export function AuditPage() {
       </div>
 
       <SummaryGrid 
+        cols={4}
         metrics={[
           { type: "total_commands", value: commands.length, subtext: "Total recorded" },
           { type: "success_ops", value: commands.filter(c => c.status === "SUCCESS").length, subtext: "Completed successfully" },

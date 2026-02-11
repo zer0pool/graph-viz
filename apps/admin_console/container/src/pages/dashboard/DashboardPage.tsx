@@ -4,10 +4,12 @@ import { RefreshCw, MapPin, Clock } from "lucide-react";
 import { useAnalyticsData } from "../../shared/lib/hooks/useAnalyticsData";
 import { useDashboardMetrics } from "../../shared/lib/hooks/useDashboardMetrics";
 import { VisitHistoryCard } from '../../shared/ui/VisitHistoryCard';
+import { formatWindowHours } from "../../shared/lib/utils";
+
 
 export function DashboardPage() {
   // 🟢 View is now clean: Logic is encapsulated in the hook
-  const { recentHistory, topVisited, loadingTop, refresh } = useAnalyticsData();
+  const { recentHistory, topVisited, windowHours, loadingTop, refresh } = useAnalyticsData();
   const { metrics, loading: loadingMetrics, refresh: refreshMetrics } = useDashboardMetrics();
 
   return (
@@ -44,7 +46,7 @@ export function DashboardPage() {
         {/* Functional Component 1: Top Visited (Remote Data) */}
         <VisitHistoryCard
           title="Top Visited"
-          subtitle="Last 4 hours"
+          subtitle={`Last ${formatWindowHours(windowHours)}`}
           icon={MapPin}
           iconColor="text-blue-500"
           items={topVisited}

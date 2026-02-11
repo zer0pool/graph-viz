@@ -61,7 +61,7 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
 
   let currentPercent = 0;
   return (
-    <div className="relative w-8 h-8 shrink-0 group/pie mr-6">
+    <div className="relative w-8 h-8 shrink-0 group/pie">
       <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90 overflow-visible">
         {data.map((item, idx) => {
           const val = Number(item.value);
@@ -136,20 +136,27 @@ function MetricCard({ data }: { data: MetricData }) {
 
   return (
     <Card className="px-6 py-4 flex flex-col group hover:shadow-md transition-all duration-200 relative">
-      <div className="flex flex-col space-y-1.5">
-        <p className="text-xs text-gray-500 flex items-center gap-2">
-          <Icon className={`h-3.5 w-3.5 ${config.color}`} />
-          {config.label}
-        </p>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <h3 className="text-2xl font-bold tracking-tight text-gray-900 leading-none">
-              {typeof data.value === "number" ? data.value.toLocaleString() : data.value}
-            </h3>
-            <p className={`text-[11px] ${subtextColor} mt-1.5 leading-tight`}>{data.subtext}</p>
+      <div className="flex items-center">
+        <div className="flex flex-col space-y-1.5 flex-1">
+          <p className="text-xs text-gray-500 flex items-center gap-2">
+            <Icon className={`h-3.5 w-3.5 ${config.color}`} />
+            {config.label}
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold tracking-tight text-gray-900 leading-none">
+                {typeof data.value === "number" ? data.value.toLocaleString() : data.value}
+              </h3>
+              <p className={`text-[11px] ${subtextColor} mt-1.5 leading-tight`}>{data.subtext}</p>
+            </div>
           </div>
-          {data.breakdown && <MetricPie data={data.breakdown} />}
         </div>
+        
+        {data.breakdown && (
+          <div className="flex-1 flex justify-center">
+            <MetricPie data={data.breakdown} />
+          </div>
+        )}
       </div>
       
       {data.breakdown && data.breakdown.length > 0 && (
@@ -186,12 +193,12 @@ interface SummaryGridProps {
 
 export function SummaryGrid({ metrics, cols = 4 }: SummaryGridProps) {
   const gridColsClass = {
-    4: "lg:grid-cols-4",
-    5: "lg:grid-cols-5",
-  }[cols] || "lg:grid-cols-4";
+    4: "grid-cols-4",
+    5: "grid-cols-5",
+  }[cols] || "grid-cols-4";
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-4 mb-6`}>
+    <div className={`grid ${gridColsClass} gap-4 mb-6`}>
       {metrics.map((m, idx) => (
         <MetricCard key={`${m.type}-${idx}`} data={m} />
       ))}

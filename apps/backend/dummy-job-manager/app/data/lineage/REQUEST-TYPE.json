@@ -482,6 +482,121 @@
           "write_mode": "append"
         }
       }
+    },
+    {
+      "job_id": "billing.REQUEST-TYPE_L1_JOB_011",
+      "upstreams": [
+        { "type": "table", "name": "external.stripe.invoices", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.finance.billing_history", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "billing-service",
+        "name": "REQUEST-TYPE_L1_JOB_011",
+        "owner": ["alice"],
+        "job_meta": {
+          "logic_type": "python",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "finance" }
+        }
+      }
+    },
+    {
+      "job_id": "support.REQUEST-TYPE_L1_JOB_012",
+      "upstreams": [
+        { "type": "table", "name": "external.zendesk.tickets", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.support.ticket_metrics", "write_mode": "overwrite" }
+      ],
+      "metadata": {
+        "project": "customer-support",
+        "name": "REQUEST-TYPE_L1_JOB_012",
+        "owner": ["alice", "bob"],
+        "job_meta": {
+          "logic_type": "python",
+          "status": "RUNNING",
+          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "support" }
+        }
+      }
+    },
+    {
+      "job_id": "realtime.REQUEST-TYPE_L1_JOB_013",
+      "upstreams": [
+        { "type": "table", "name": "external.kafka.clicks", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.realtime.clickstream", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "streaming-platform",
+        "name": "REQUEST-TYPE_L1_JOB_013",
+        "owner": ["charlie"],
+        "job_meta": {
+          "logic_type": "spark",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "data" }
+        }
+      }
+    },
+    {
+      "job_id": "recommendation.REQUEST-TYPE_L2_JOB_014",
+      "upstreams": [
+        { "type": "table", "name": "analytics.realtime.clickstream", "trigger": true },
+        { "type": "table", "name": "analytics.api.request_logs", "trigger": false }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "ml.reco.user_preferences", "write_mode": "overwrite" }
+      ],
+      "metadata": {
+        "project_name": "reco-engine",
+        "name": "REQUEST-TYPE_L2_JOB_014",
+        "owner": ["charlie", "david"],
+        "job_meta": {
+          "logic_type": "python",
+          "status": "DEPLOYED",
+          "labels": { "layer": "2", "type": "REQUEST-TYPE", "env": "prod", "team": "ml" }
+        }
+      }
+    },
+    {
+      "job_id": "monitoring.REQUEST-TYPE_L1_JOB_015",
+      "upstreams": [
+        { "type": "table", "name": "external.prometheus.metrics", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.infra.health_checks", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "observability",
+        "name": "REQUEST-TYPE_L1_JOB_015",
+        "owner": ["Frank"],
+        "job_meta": {
+          "logic_type": "sql",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "sre" }
+        }
+      }
+    },
+    {
+      "job_id": "admin-audit.REQUEST-TYPE_L1_JOB_016",
+      "upstreams": [
+        { "type": "table", "name": "external.admin.actions", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.security.admin_audit", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "admin-ops",
+        "name": "REQUEST-TYPE_L1_JOB_016",
+        "owner": ["frank"],
+        "job_meta": {
+          "logic_type": "sql",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "security" }
+        }
+      }
     }
   ]
 }

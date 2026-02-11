@@ -19,6 +19,12 @@ class JobNodeRepository(BaseRepository):
     def __init__(self, session: Session):
         super().__init__(session, JobNode)
 
+    def _normalize_owners(self, owners: Optional[List[str]]) -> List[str]:
+        """Normalize owner list to lowercase for consistency."""
+        if not owners:
+            return []
+        return [o.lower() for o in owners if o]
+
     def get_by_node_id(self, node_id: int) -> Optional[JobNode]:
         """Get job node by node ID."""
         return self.session.query(JobNode).filter_by(node_id=node_id).first()
@@ -36,6 +42,7 @@ class JobNodeRepository(BaseRepository):
         properties: dict = None,
     ) -> JobNode:
         """Create or update job node data."""
+        normalized_owners = self._normalize_owners(owners)
         existing = self.get_by_node_id(node_id)
 
         if existing:
@@ -43,13 +50,13 @@ class JobNodeRepository(BaseRepository):
             existing.job_id = job_id
             existing.project_id = project_id
             if owners is not None:
-                existing.owners = owners
+                existing.owners = normalized_owners
             if properties is not None:
                 existing.properties = properties
             self.session.flush()
 
             if owners is not None:
-                self._sync_owners(existing.node_id, owners)
+                self._sync_owners(existing.node_id, normalized_owners)
 
             return existing
         else:
@@ -58,14 +65,14 @@ class JobNodeRepository(BaseRepository):
                 node_id=node_id,
                 job_id=job_id,
                 project_id=project_id,
-                owners=owners or [],
+                owners=normalized_owners,
                 properties=properties or {},
             )
             self.session.add(job_node)
             self.session.flush()
 
-            if owners:
-                self._sync_owners(node_id, owners)
+            if normalized_owners:
+                self._sync_owners(node_id, normalized_owners)
 
             return job_node
 
@@ -116,9 +123,6 @@ class JobNodeRepository(BaseRepository):
     ) -> Tuple[List[Tuple[GraphNode, JobNode]], int]:
         """
         Find jobs by owner ID via the job_owner relation.
-
-        Returns:
-            (results, total_count)
         """
         query = (
             self.session.query(GraphNode, JobNode)

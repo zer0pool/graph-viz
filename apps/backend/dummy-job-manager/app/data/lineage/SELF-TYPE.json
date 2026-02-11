@@ -520,6 +520,101 @@
           "file_enc": true
         }
       }
+    },
+    {
+      "job_id": "finance.SELF-TYPE_L1_JOB_011",
+      "upstreams": [
+        { "type": "table", "name": "raw.erp.payments", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.finance.revenue_forecast", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "finance-ops",
+        "name": "SELF-TYPE_L1_JOB_011",
+        "owner": ["alice"],
+        "job_meta": {
+          "logic_type": "sql",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "finance" }
+        }
+      }
+    },
+    {
+      "job_id": "hr.SELF-TYPE_L1_JOB_012",
+      "upstreams": [
+        { "type": "table", "name": "raw.hr.employees", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.hr.attrition_metrics", "write_mode": "overwrite" }
+      ],
+      "metadata": {
+        "project": "hr-analytics",
+        "name": "SELF-TYPE_L1_JOB_012",
+        "owner": ["alice", "BOB"],
+        "job_meta": {
+          "logic_type": "python",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "hr" }
+        }
+      }
+    },
+    {
+      "job_id": "supply-chain.SELF-TYPE_L2_JOB_013",
+      "upstreams": [
+        { "type": "table", "name": "analytics.inventory.daily_snapshot", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "reporting.supply_chain.optimization", "write_mode": "overwrite" }
+      ],
+      "metadata": {
+        "project_name": "supply-chain",
+        "name": "SELF-TYPE_L2_JOB_013",
+        "owner": ["alice"],
+        "job_meta": {
+          "logic_type": "spark",
+          "status": "RUNNING",
+          "labels": { "layer": "2", "type": "SELF-TYPE", "env": "prod", "team": "logistics" }
+        }
+      }
+    },
+    {
+      "job_id": "it-ops.SELF-TYPE_L1_JOB_014",
+      "upstreams": [
+        { "type": "table", "name": "raw.nagios.alerts", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "analytics.it.incident_summary", "write_mode": "append" }
+      ],
+      "metadata": {
+        "project": "it-infrastructure",
+        "name": "SELF-TYPE_L1_JOB_014",
+        "owner": ["charlie"],
+        "job_meta": {
+          "logic_type": "sql",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "it" }
+        }
+      }
+    },
+    {
+      "job_id": "legal.SELF-TYPE_L1_JOB_015",
+      "upstreams": [
+        { "type": "table", "name": "raw.legal.contracts", "trigger": true }
+      ],
+      "downstreams": [
+        { "type": "table", "name": "compliance.legal.review_queue", "write_mode": "overwrite" }
+      ],
+      "metadata": {
+        "project": "legal-tech",
+        "name": "SELF-TYPE_L1_JOB_015",
+        "owner": ["CHARLIE", "david"],
+        "job_meta": {
+          "logic_type": "python",
+          "status": "DEPLOYED",
+          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "legal" }
+        }
+      }
     }
   ]
 }

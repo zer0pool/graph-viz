@@ -97,14 +97,14 @@ class TestProjectService:
 
             meta = Mock(spec=JobNode)
             meta.project_id = "test-project"
-            meta.owner_id = f"user_{i}"
+            meta.owners = [f"user_{i}"]
             meta.properties = {
                 "display_name": f"Job {i}",
                 "status": "RUNNING",
                 "enabled": True,
             }
 
-            mock_results.append((node, meta))
+            mock_results.append((node, meta, "Test Project"))
 
         mock_uow.job_node.find_by_project.return_value = (mock_results, 3)
 
@@ -115,7 +115,7 @@ class TestProjectService:
         assert len(result["jobs"]) == 3
         assert result["jobs"][0]["job_id"] == "job_0"
         assert result["jobs"][0]["running_status"] == "RUNNING"
-        assert result["jobs"][0]["owner"] == "user_0"
+        assert result["jobs"][0]["owners"] == ["user_0"]
 
         mock_uow.job_node.find_by_project.assert_called_once_with("test-project", 20, 0)
 
@@ -160,7 +160,7 @@ class TestProjectService:
 
         meta = Mock(spec=JobNode)
         meta.project_id = "my-project"
-        meta.owner_id = "my-user"
+        meta.owners = ["my-user"]
         meta.properties = {
             "display_name": "My Test Job",
             "status": "COMPLETED",
@@ -173,7 +173,7 @@ class TestProjectService:
         assert formatted["job_id"] == "test_job"
         assert formatted["job_name"] == "My Test Job"
         assert formatted["running_status"] == "COMPLETED"
-        assert formatted["owner"] == "my-user"
+        assert formatted["owners"] == ["my-user"]
         assert formatted["enabled"] is False
 
     def test_generate_display_name(self, service):

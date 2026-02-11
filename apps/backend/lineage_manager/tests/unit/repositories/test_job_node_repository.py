@@ -37,14 +37,15 @@ class TestJobNodeRepository:
 
         job_node = repo.create_or_update(
             node_id=sample_job_node.id,
+            job_id="test_job_001",
             project_id="test-project",
-            owner_id="test_user",
+            owners=["test_user"],
             properties={"status": "RUNNING"},
         )
 
         assert job_node.node_id == sample_job_node.id
         assert job_node.project_id == "test-project"
-        assert job_node.owner_id == "test_user"
+        assert job_node.owners == ["test_user"]
         assert job_node.properties["status"] == "RUNNING"
 
     def test_update_job_node(self, db_session, sample_job_node):
@@ -53,16 +54,22 @@ class TestJobNodeRepository:
 
         # Create
         repo.create_or_update(
-            node_id=sample_job_node.id, project_id="project-a", owner_id="user_a"
+            node_id=sample_job_node.id, 
+            job_id="test_job_001",
+            project_id="project-a", 
+            owners=["user_a"]
         )
 
         # Update
         updated = repo.create_or_update(
-            node_id=sample_job_node.id, project_id="project-b", owner_id="user_b"
+            node_id=sample_job_node.id, 
+            job_id="test_job_001",
+            project_id="project-b", 
+            owners=["user_b"]
         )
 
         assert updated.project_id == "project-b"
-        assert updated.owner_id == "user_b"
+        assert updated.owners == ["user_b"]
 
     def test_find_by_project(self, db_session):
         """Test finding jobs by project ID."""
@@ -76,8 +83,9 @@ class TestJobNodeRepository:
 
             repo.create_or_update(
                 node_id=node.id,
+                job_id=f"job_{i}",
                 project_id="project-a" if i < 3 else "project-b",
-                owner_id=f"user_{i}",
+                owners=[f"user_{i}"],
             )
 
         db_session.commit()
@@ -88,7 +96,7 @@ class TestJobNodeRepository:
         assert total == 3
         assert len(results) == 3
 
-        for node, meta in results:
+        for node, meta, pname in results:
             assert meta.project_id == "project-a"
 
     def test_find_by_owner(self, db_session):
@@ -103,8 +111,9 @@ class TestJobNodeRepository:
 
             repo.create_or_update(
                 node_id=node.id,
+                job_id=f"job_{i}",
                 project_id=f"project-{i}",
-                owner_id="user_a" if i < 2 else "user_b",
+                owners=["user_a" if i < 2 else "user_b"],
             )
 
         db_session.commit()
@@ -116,7 +125,7 @@ class TestJobNodeRepository:
         assert len(results) == 2
 
         for node, meta in results:
-            assert meta.owner_id == "user_a"
+            assert "user_a" in meta.owners
 
     def test_pagination(self, db_session):
         """Test pagination in find_by_project."""
@@ -129,7 +138,7 @@ class TestJobNodeRepository:
             db_session.flush()
 
             repo.create_or_update(
-                node_id=node.id, project_id="test-project", owner_id=f"user_{i}"
+                node_id=node.id, job_id=f"job_{i}", project_id="test-project", owners=[f"user_{i}"]
             )
 
         db_session.commit()
@@ -144,8 +153,8 @@ class TestJobNodeRepository:
         assert len(results_page2) == 3
 
         # Ensure different results
-        page1_ids = {node.id for node, _ in results_page1}
-        page2_ids = {node.id for node, _ in results_page2}
+        page1_ids = {node.id for node, _, _ in results_page1}
+        page2_ids = {node.id for node, _, _ in results_page2}
         assert page1_ids.isdisjoint(page2_ids)
 
     def test_get_project_stats(self, db_session):
@@ -159,7 +168,7 @@ class TestJobNodeRepository:
             db_session.flush()
 
             repo.create_or_update(
-                node_id=node.id, project_id="stats-project", owner_id=f"user_{i}"
+                node_id=node.id, job_id=f"job_{i}", project_id="stats-project", owners=[f"user_{i}"]
             )
 
         db_session.commit()
@@ -179,7 +188,7 @@ class TestJobNodeRepository:
             db_session.flush()
 
             repo.create_or_update(
-                node_id=node.id, project_id=f"project-{i}", owner_id="stats-user"
+                node_id=node.id, job_id=f"job_{i}", project_id=f"project-{i}", owners=["stats-user"]
             )
 
         db_session.commit()
@@ -199,7 +208,7 @@ class TestJobNodeRepository:
             db_session.flush()
 
             repo.create_or_update(
-                node_id=node.id, project_id="test-project", owner_id="test-user"
+                node_id=node.id, job_id=f"job_{i}", project_id="test-project", owners=["test-user"]
             )
         db_session.commit()
 
