@@ -1,5 +1,11 @@
 # [Tech] Celery Beat Leader Election Pattern (Redis-based)
 
+> **Document Metadata**
+> - **Version**: 1.0.0
+> - **Last Updated**: 2026-02-14
+> - **Status**: Active Technical Guide
+
+
 This document describes a production-ready pattern for running Celery Beat in a multi-replica Kubernetes environment without task duplication.
 
 ---

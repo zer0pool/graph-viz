@@ -1,5 +1,11 @@
 # [Feature Spec] Feature-01: Top Rankings Dashboard (Jobs & Tables)
 
+> **Document Metadata**
+> - **Version**: 1.0.0
+> - **Last Updated**: 2026-02-14
+> - **Status**: Active Feature Spec
+
+
 This document specifies the requirements and design for the top-ranking metrics for both Jobs and Tables.
 
 ---

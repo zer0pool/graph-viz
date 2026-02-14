@@ -1,5 +1,11 @@
 # [Design] Metrics-Manager Specification (Query Side)
 
+> **Document Metadata**
+> - **Version**: 1.0.0
+> - **Last Updated**: 2026-02-14
+> - **Status**: Active Specifications
+
+
 This document provides a detailed technical specification for the `metrics-manager` service, designed as a dedicated Query-Side service using FastAPI, GraphQL (Strawberry), DDD, and CQRS.
 
 ---

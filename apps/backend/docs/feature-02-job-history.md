@@ -1,5 +1,11 @@
 # [Feature Spec] Feature-02: Job Run History & Advanced Filtering
 
+> **Document Metadata**
+> - **Version**: 1.0.0
+> - **Last Updated**: 2026-02-14
+> - **Status**: Active Feature Spec
+
+
 This document defines the requirements and technical design for the Job Explorer, similar to the GCP Console Job Explorer.
 
 ---
