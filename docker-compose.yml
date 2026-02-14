@@ -4,7 +4,7 @@ services:
   # --- Frontend Shell MFE ---
   shell:
     build:
-      context: ./apps/frontend/shell
+      context: ./apps/frontend/container
       dockerfile: deploy/docker/Dockerfile
     ports:
       - "${SHELL_PORT:-3000}:80"

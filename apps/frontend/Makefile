@@ -24,7 +24,7 @@ endif
 build-all:
 	@for app in $(APPS); do \
 		echo "Building $$app..."; \
-		(cd $$app/deploy/docker/Dockerfile && npm install && npm run build) || exit 1; \
+		(cd $$app && npm install && npm run build) || exit 1; \
 	done
 
 docker-build-all:
