@@ -5,14 +5,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class JobManagerClient:
     """
     Async Client for Job Manager API.
     Refactored from V1 JobManagerAdapter.
     """
+
     def __init__(self, base_url: str | None = None):
-        # TODO: Add JOB_MANAGER_URL to settings
-        self.base_url = base_url or "http://app-job-manager:8000" 
+        self.base_url = base_url or settings.JOB_MANAGER_URL
         self.timeout = 60.0
         self.client = httpx.AsyncClient(timeout=self.timeout)
 
@@ -41,14 +42,14 @@ class JobManagerClient:
         """
         # Assuming V1 API structure:
         # POST /api/v1/jobs/scheduling-lineage/by_ids {"jobs": [{"job_id": "..."}]}
-        
+
         # Requests format matching V1 adapter
         job_requests = [{"job_id": jid} for jid in job_ids]
-        
+
         data = await self._request(
-            "POST", 
-            "/api/v1/jobs/scheduling-lineage/by_ids", 
-            json={"jobs": job_requests}
+            "POST",
+            "/api/v1/jobs/scheduling-lineage/by_ids",
+            json={"jobs": job_requests},
         )
         # response format: {result: [...]}
         return data.get("result", [])

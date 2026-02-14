@@ -1170,7 +1170,64 @@ settings = Settings()
 
 ---
 
-## 15. Conclusion
+## 16. Coding Guidelines (DDD, DI, & UoW Patterns)
+
+To maintain consistency and testability, following code patterns must be strictly followed in V2.
+
+### 16.1 Domain Separation (Graph vs. Metadata)
+
+- **Graph Domain (`app/domain/graph`)**: Focuses solely on **connectivity and relationships**. Entities like `JobNode`, `DataNode`, and `Edge` should only contain attributes necessary for graph traversal.
+- **Metadata Domain (`app/domain/metadata`)**: Focuses on **rich attributes**. Entities like `TableMetadata` and `StorageMetadata` store schemas, paths, and technical details.
+- **Reference Pattern**: Graph nodes link to metadata via a shared `id` or a business key (`external_ref`).
+
+### 16.2 Dependency Injection (DI)
+
+We use `dependency-injector` for managing service lifecycles.
+
+- **Container Definition**: All providers are defined in `app/core/container.py`.
+- **API Injection**: Use `@inject` and `Provide` decorators in FastAPI endpoints.
+  
+```python
+@router.post("/")
+@inject
+async def create_job(
+    data: JobCreate, 
+    service: MetadataService = Depends(Provide[Container.metadata_service])
+):
+    return await service.create_job(data)
+```
+
+### 16.3 Service Layer & Transaction Management
+
+- **Business Logic Placement**: All business rules and cross-aggregate operations MUST reside in Service classes (`app/services/`).
+- **Unit of Work (UoW)**: Services use the UoW to guarantee atomicity. Every write operation must be wrapped in `async with self.uow:`.
+
+```python
+class MetadataService:
+    def __init__(self, uow: UnitOfWork):
+        self.uow = uow
+
+    async def create_job(self, job: Job) -> Job:
+        async with self.uow:
+            saved = await self.uow.jobs.save(job)
+            await self.uow.commit() # Explicit commit
+            return saved
+```
+
+### 16.4 Repository Pattern
+
+- **Aggregate per Repository**: Each repository manages one aggregate root.
+- **Entity Mapping**: Repositories are responsible for mapping between SQLAlchemy ORM models and pure Domain Entities.
+- **Session Handling**: Repositories must not close the session; the UoW manages the session lifecycle.
+
+### 16.5 Testing Patterns
+
+- **Provider Overriding**: In `conftest.py`, override the `uow` provider to inject a test session (e.g., in-memory SQLite).
+- **Service Mocking**: For complex integration tests, services can be mocked at the container level to isolate failures.
+
+---
+
+## 17. Conclusion
 
 Lineage-manager-v2 rethinks the command side of the lineage platform:
 
@@ -1188,4 +1245,4 @@ The design strikes a balance between **performance and flexibility**. A clear ma
 
 _Author: Antigravity (Capsule Corp)_  
 _Date: 2026-02-14_  
-_Version: 2.0 (Revised)_
+_Version: 2.1 (Revised with Coding Guidelines)_

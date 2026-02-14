@@ -3,7 +3,7 @@ APP_NAME=Lineage-Manager-v2
 PORT=5004
 
 VENV=.venv
-.PHONY: run dev test lint format db-revision db-upgrade
+.PHONY: run dev worker test lint format db-revision db-upgrade
 
 
 venv:
@@ -19,6 +19,10 @@ dev:
 # Run the app in production mode
 run:
 	PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $(PORT)
+
+# Run celery worker
+worker:
+	PYTHONPATH=. .venv/bin/python -m celery -A app.core.celery_app worker --loglevel=info --pool=solo
 
 # Run tests
 test:
