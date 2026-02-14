@@ -12,7 +12,7 @@ services:
       - PORT=5003
       - DB_HOST=mysql-db
       - DB_PORT=3306
-      - REDIS_HOST=cache-redis
+      - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
       - APP_JOB_MANAGER_URL=http://app-job-dummy:9000
       - FEATURE_REQUIRE_SIGNIN=false
@@ -23,7 +23,7 @@ services:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
     depends_on:
       - mysql-db
-      - cache-redis
+      - redis-cache
     networks:
       - backend-network
 
@@ -43,9 +43,9 @@ services:
     networks:
       - backend-network
 
-  cache-redis:
+  redis-cache:
     image: redis:alpine
-    container_name: cache-redis
+    container_name: redis-cache
     networks:
       - backend-network
 

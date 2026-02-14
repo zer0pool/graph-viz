@@ -13,19 +13,19 @@ This document outlines the step-by-step implementation plan for `lineage-manager
 
 **Goal**: Initialize a robust, async-ready FastAPI service backbone connected to the database.
 
-- [ ] **1.1 Project Structure Setup**
+- [x] **1.1 Project Structure Setup**
   - **Requirements**: Verify/Create folder structure (`app/api`, `app/core`, `app/domain`, `app/infrastructure`). Ensure `pyproject.toml` has necessary dependencies (`fastapi`, `sqlalchemy[asyncio]`, `alembic`, `pydantic-settings`).
   - **Test**: Run `uvicorn app.main:app` successfully.
 
-- [ ] **1.2 Configuration Management**
+- [x] **1.2 Configuration Management**
   - **Requirements**: Implement `app/core/config.py` using `pydantic-settings`. Load `DATABASE_URL`, `REDIS_URL` from `.env`.
   - **Test**: Verify `settings.DATABASE_URL` is loaded correctly in a python shell.
 
-- [ ] **1.3 Database Connection (Async)**
+- [x] **1.3 Database Connection (Async)**
   - **Requirements**: Configure `AsyncEngine` and `AsyncSession` factory in `app/infrastructure/database.py`.
   - **Test**: Create a script to connect to DB and execute `SELECT 1`.
 
-- [ ] **1.4 Health Check Endpoint**
+- [x] **1.4 Health Check Endpoint**
   - **Requirements**: Implement `GET /health` in `app/api/v2/endpoints/health.py`. Should check DB and Redis connectivity.
   - **Test**: `curl localhost:8000/api/v2/health` returns `{"status": "healthy", "database": "connected"}`.
 
