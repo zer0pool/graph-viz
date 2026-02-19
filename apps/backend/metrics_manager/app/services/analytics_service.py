@@ -53,16 +53,53 @@ class AnalyticsService:
 
     async def get_top_visited(self) -> Dict[str, Any]:
         """
-        Returns top visited pages. Currently mock data.
+        Returns top visited pages based on real data stored in Redis.
         """
-        return {
-            "window_hours": 4,
-            "items": [
-                {"path": "/tables/sales.orders", "title": "Sales Orders", "count": 150},
-                {"path": "/jobs/daily_etl", "title": "Daily ETL", "count": 120},
-                {"path": "/users/admin", "title": "Admin User", "count": 89},
-            ]
-        }
+        cache_key = "analytics:path_visits"
+        title_key = "analytics:path_titles"
+        
+        try:
+            # Get top 5 paths from Redis Sorted Set
+            # result is a list of (member, score)
+            top_paths = await self.redis.zrevrange(cache_key, 0, 4, withscores=True)
+            
+            items = []
+            for path, count in top_paths:
+                title = await self.redis.hget(title_key, path) or path.split("/")[-1]
+                items.append({
+                    "path": path,
+                    "title": title,
+                    "count": int(count)
+                })
+            
+            return {
+                "window_hours": 24, # Aggregate of all time for now
+                "items": items
+            }
+        except Exception as e:
+            logger.error(f"Error fetching top visited: {e}")
+            return {"window_hours": 0, "items": []}
+
+    async def track_event(self, event: Any) -> bool:
+        """
+        Tracks a visit event by incrementing its count in Redis.
+        """
+        visit_key = "analytics:path_visits"
+        title_key = "analytics:path_titles"
+        
+        try:
+            # 1. Increment the visit count
+            await self.redis.zincrby(visit_key, 1, event.path)
+            
+            # 2. Store title for the path if provided
+            if event.title:
+                await self.redis.hset(title_key, event.path, event.title)
+            
+            logger.debug(f"Tracked event: {event.path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to track event: {e}")
+            return False
 
     async def _get_bq_ingestion_stats(self) -> List[Dict[str, Any]]:
         table_name = settings.FEATURE_BIGQUERY_HISTORY_TABLE
