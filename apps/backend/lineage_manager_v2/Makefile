@@ -1,6 +1,6 @@
 PY=python3.12
 APP_NAME=Lineage-Manager-v2
-PORT=5004
+PORT=5003
 
 VENV=.venv
 .PHONY: run dev worker test lint format db-revision db-upgrade

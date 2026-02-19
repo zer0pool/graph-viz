@@ -76,19 +76,23 @@ export const useTracker = () => {
     // 3. Send to Backend (Remote Analytics)
     const trackRemote = async () => {
       try {
-        await fetch(`${config.API_BASE_URL}/api/v1/analytics/track`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            event_type: "page_view",
-            visitor_id: visitorId,
-            path: pathname,
-            title: pathname.split("/").pop() || "home",
-            timestamp: new Date().toISOString(),
-          }),
-        });
+        const payload = {
+          event_type: "page_view",
+          visitor_id: visitorId,
+          path: pathname,
+          title: pathname.split("/").pop() || "home",
+          timestamp: new Date().toISOString(),
+        };
+        await fetch(
+          `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/track`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
       } catch (e) {
         console.warn("[Tracker] Failed to send analytics", e);
       }

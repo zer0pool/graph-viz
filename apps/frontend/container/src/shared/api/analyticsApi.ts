@@ -18,17 +18,21 @@ export interface TopVisitedResponse {
 
 export const analyticsApi = {
   getDashboardMetrics: async (): Promise<DashboardMetricsResponse> => {
-    const response = await fetch(`${config.API_BASE_URL}/api/v1/analytics/dashboard-metrics`);
+    const response = await fetch(
+      `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/dashboard-metrics`
+    );
     if (!response.ok) {
-      throw new Error(`Failed to fetch dashboard metrics: ${response.status}`);
+      throw new Error("Failed to fetch dashboard metrics");
     }
     return response.json();
   },
 
   getTopVisited: async (): Promise<TopVisitedResponse> => {
-    const response = await fetch(`${config.API_BASE_URL}/api/v1/analytics/top-visited`);
+    const response = await fetch(
+      `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/top-visited`
+    );
     if (!response.ok) {
-      throw new Error(`Failed to fetch top visited: ${response.status}`);
+      throw new Error("Failed to fetch top visited");
     }
     return response.json();
   },

@@ -61,6 +61,51 @@ server {
         error_log /var/log/nginx/mfe_error.log debug;
     }
 
+    # 7. Backend Service Routing (MUST be before SPA routing)
+    # Using ^~ for exact prefix matching with highest priority
+    
+    # 7.1 Lineage Manager Backend (Port 5003)
+    location ^~ $BASE_URL_PREFIX/lineage-manager/ {
+        # Add detailed logging for debugging        
+        access_log /var/log/nginx/lineage_manager_access.log;
+        error_log /var/log/nginx/lineage_manager_error.log;
+
+        # Strip the admin-console prefix but keep /lineage-manager/api/v1/...
+        rewrite ^$BASE_URL_PREFIX(/lineage-manager/.*)$ $1 break;
+
+        # Log after rewrite
+        rewrite_log on;        
+
+        proxy_pass http://localhost:5003;
+
+        # Forward headers
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # 7.2 Metrics Manager Backend (Port 5002)
+    location ^~ $BASE_URL_PREFIX/metrics-manager/ {
+        # Add detailed logging for debugging        
+        access_log /var/log/nginx/metrics_manager_access.log;
+        error_log /var/log/nginx/metrics_manager_error.log;
+
+        # Strip the admin-console prefix but keep /metrics-manager/api/v1/...
+        rewrite ^$BASE_URL_PREFIX(/metrics-manager/.*)$ $1 break;
+
+        # Log after rewrite
+        rewrite_log on;        
+
+        proxy_pass http://localhost:5002;
+
+        # Forward headers
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
     # 2.1 Disable caching for Module Federation configs
     location ~* (remoteEntry\.js|config\.js)$ {
         rewrite ^$BASE_URL_PREFIX/(.*)$ /$1 break;
@@ -133,33 +178,7 @@ server {
         proxy_cookie_path off;
     }
     
-    # 7. API Proxying
-    location ~ ^(/admin-console)?/api {
-        # Add detailed logging for debugging        
-        access_log /var/log/nginx/api_access.log;
-        error_log /var/log/nginx/api_error.log;
-
-        # Strip the prefix if it exists and ADD the backend root_path
-        rewrite ^($BASE_URL_PREFIX)?/api/(.*)$ /api/$2 break;
-
-        # Log after rewrite
-        rewrite_log on;        
-
-        proxy_pass $BACKEND_HOST;
-
-        # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
-        # This ensures backend redirects use the correct external domain
-        proxy_set_header Host $http_host;
-        
-        # Forward the original protocol (HTTPS) from the Ingress
-        # This prevents Mixed Content errors and ensures OIDC redirects are HTTPS
-        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-        
-        # Standard forwarding headers
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
+    
     # SPA routing fallback for any other path starting with BASE_URL
     # (Redundant due to try_files in location block, but safer)
     # error_page 404 /index.html;

@@ -31,6 +31,25 @@ module.exports = {
       },
     },
     proxy: [
+      // Lineage Manager Backend (Port 5003)
+      {
+        context: ["/admin-console/lineage-manager"],
+        target: "http://localhost:5003",
+        pathRewrite: { "^/admin-console": "" },
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Metrics Manager Backend (Port 5002)
+      {
+        context: ["/admin-console/metrics-manager"],
+        target: "http://localhost:5002",
+        pathRewrite: { "^/admin-console": "" },
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Legacy API fallback (for backward compatibility)
       {
         context: ["/admin-console/api"],
         target: "http://localhost:5003",
@@ -38,6 +57,7 @@ module.exports = {
         changeOrigin: true,
         secure: false,
       },
+      // MFE Lineage
       {
         context: ["/admin-console/mfe-lineage"],
         target: "http://localhost:5101",
@@ -45,6 +65,7 @@ module.exports = {
         changeOrigin: true,
         secure: false,
       },
+      // MFE Catalog
       {
         context: ["/admin-console/mfe-catalog"],
         target: "http://localhost:5102",

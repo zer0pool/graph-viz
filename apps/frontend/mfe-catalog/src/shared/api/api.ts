@@ -151,7 +151,9 @@ export class ApiClient {
   }
 
   async fetchSummaryMetrics(): Promise<SummaryMetricsResponse> {
-    return this.request<SummaryMetricsResponse>("/api/v1/analytics/dashboard-metrics");
+    return this.request<SummaryMetricsResponse>(
+      "/metrics-manager/api/v1/analytics/dashboard-metrics"
+    );
   }
 
   // --- Graph/Generic Endpoints ---

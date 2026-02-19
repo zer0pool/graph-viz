@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Lineage Manager V2"
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/lineage-manager/api/v1"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]

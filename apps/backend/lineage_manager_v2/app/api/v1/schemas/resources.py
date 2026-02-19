@@ -60,8 +60,30 @@ class ResourceCreate(ResourceBase):
     pass
 
 
+
 class Resource(ResourceBase):
     id: int
+
+    class Config:
+        from_attributes = True
+
+
+class UserBase(BaseModel):
+    user_id: str
+    sub: str
+    login_id: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    roles: List[str] = []
+    department: Optional[str] = None
+    status: str
+
+
+class User(UserBase):
+    id: int
+    last_login_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

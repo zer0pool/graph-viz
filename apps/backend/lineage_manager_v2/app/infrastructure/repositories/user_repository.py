@@ -57,6 +57,12 @@ class UserRepository:
         result = await self.db.execute(select(func.count()).select_from(UserModel))
         return result.scalar() or 0
 
+    async def list_all(self, limit: int = 10, offset: int = 0) -> List[UserEntity]:
+        stmt = select(UserModel).limit(limit).offset(offset)
+        result = await self.db.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
     def _to_entity(self, model: UserModel) -> UserEntity:
         return UserEntity(
             user_id=model.user_id,

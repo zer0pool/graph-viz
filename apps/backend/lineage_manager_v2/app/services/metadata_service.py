@@ -63,3 +63,7 @@ class MetadataService:
     async def list_users_by_project(self, project_id: str) -> List[User]:
         async with self.uow:
             return await self.uow.users.list_by_project(project_id)
+
+    async def list_users(self, limit: int = 10, offset: int = 0) -> List[User]:
+        async with self.uow:
+            return await self.uow.users.list_all(limit, offset)

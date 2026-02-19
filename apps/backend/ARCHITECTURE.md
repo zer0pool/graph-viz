@@ -71,10 +71,12 @@ MM --> RDB
 📍 **Services**: `metrics-manager`, and parts of `lineage-manager` Query Handlers
 
 *   **Responsibilities**:
-    *   Graph traversal/queries
-    *   Dashboard statistics
+    *   Graph traversal/queries (lineage-manager)
+    *   Dashboard statistics (metrics-manager)
     *   Project summaries
     *   Aggregated data serving
+    *   Usage tracking & Visit statistics (metrics-manager)
+    *   KPI calculations (metrics-manager)
 *   **Characteristics**:
     *   Optimized for low-latency responses
     *   Denormalized data models (Projections)
@@ -170,9 +172,32 @@ ReadUpdater->>ReadDB: update projection
 ## 8. AdminConsole Service Roles Summary
 | Service | Role | CQRS Role | Features |
 | :--- | :--- | :--- | :--- |
-| **lineage-manager** | Metadata management & Commands | Write Side | Commands, Celery Workers |
-| **metrics-manager** | Metric aggregation & Dashboards | Read Side | GraphQL, Celery Skeleton |
-| **ai-advisor** | Insights & Intelligent guidance | Read Side (Extended) | AI Analysis |
+| **lineage-manager** | Metadata management & Commands | Write Side | Core Catalog, Lineage Graph |
+| **metrics-manager** | Analytics & Usage Tracking | Read Side | KPIs, Visit Stats, Dashboards |
+| **ai-advisor** | Insights & Guidance | Intelligence | AI Analysis |
+
+### 8.1 Metrics Manager Architecture Rationale
+
+The decision to separate `metrics-manager` as a dedicated service is driven by four key architectural principles:
+
+#### 1. Separation of Concerns
+*   **Lineage Manager**: Focuses on the core domain of the Data Catalog—managing Lineage Graphs, Jobs, Projects, and Data Resources. It handles the structural integrity of metadata.
+*   **Metrics Manager**: Focuses on the analytical domain—platform usage tracking, visit statistics, and KPI calculations. This cleanly separates operational metadata from behavioral analytics.
+
+#### 2. Scalability
+*   Analytical queries often involve resource-intensive aggregations and time-series data processing.
+*   By decoupling the metrics workload, we can scale the `metrics-manager` independently based on analytical demand without impacting the performance of core lineage operations.
+
+#### 3. Data Ownership
+*   **Operational Metadata vs. Behavioral Data**: Visit tracking and usage analytics are conceptually distinct from lineage metadata.
+*   **Dedicated Storage**: The `metrics-manager` can own its specialized data stores (e.g., Time-Series DB, Redis, or specific tables) optimized for analytics, preventing pollution of the core lineage schema.
+
+#### 4. Future Extensibility
+*   A dedicated service provides a flexible foundation for adding advanced analytical features:
+    *   User activity trends and behavioral analysis.
+    *   Resource usage patterns and capacity planning insights.
+    *   System performance metrics.
+    *   Customizable dashboards for different stakeholders.
 
 ---
 

@@ -1,0 +1,29 @@
+from fastapi import APIRouter, Depends, status
+from dependency_injector.wiring import inject, Provide
+from app.core.container import Container
+from app.services.analytics_service import AnalyticsService
+from typing import Dict, Any
+
+router = APIRouter()
+
+@router.get("/dashboard-metrics", response_model=Dict[str, Any])
+@inject
+async def get_dashboard_metrics(
+    service: AnalyticsService = Depends(Provide[Container.analytics_service])
+):
+    """
+    Get aggregated dashboard metrics (KPIs).
+    Includes BigQuery ingestion stats and database counts.
+    """
+    return await service.get_dashboard_metrics()
+
+@router.get("/top-visited", response_model=Dict[str, Any])
+@inject
+async def get_top_visited(
+    service: AnalyticsService = Depends(Provide[Container.analytics_service])
+):
+    """
+    Get top visited pages/resources.
+    Currently returns mock data until visit tracking is implemented.
+    """
+    return await service.get_top_visited()
