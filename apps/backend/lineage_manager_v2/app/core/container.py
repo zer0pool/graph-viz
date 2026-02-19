@@ -6,6 +6,7 @@ from app.infrastructure.unit_of_work import UnitOfWork
 from app.services.graph_service import GraphService
 from app.services.metadata_service import MetadataService
 from app.services.audit_service import AuditService
+from app.services.auth_service import AuthService
 
 
 class Container(containers.DeclarativeContainer):
@@ -30,3 +31,5 @@ class Container(containers.DeclarativeContainer):
     metadata_service = providers.Factory(MetadataService, uow=uow)
 
     audit_service = providers.Factory(AuditService, uow=uow)
+
+    auth_service = providers.Factory(AuthService, uow=uow)

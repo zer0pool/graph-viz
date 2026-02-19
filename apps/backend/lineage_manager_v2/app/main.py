@@ -38,9 +38,11 @@ def create_app() -> FastAPI:
         audits,
         graph,
         commands,
+        auth,
     )
 
     app.include_router(health.router, prefix=api_prefix, tags=["System"])
+    app.include_router(auth.router, prefix=api_prefix, tags=["Auth"])
     app.include_router(
         projects.router, prefix=f"{api_prefix}/projects", tags=["Resources"]
     )

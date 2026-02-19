@@ -4,10 +4,10 @@ from app.core.config import settings
 from app.infrastructure.gcp.client import GoogleCloudClient
 from app.infrastructure.gcp.bigquery import BigQueryClient
 from app.services.analytics_service import AnalyticsService
+from app.services.data_sync_service import DataSyncService
 from app.infrastructure.cache.redis import get_redis_client  # Import Redis factory
 
-# from app.infrastructure.database import create_session_factory
-# from app.infrastructure.unit_of_work import UnitOfWork
+from app.infrastructure.database import create_session_factory
 # Metrics Manager may need its own services later
 
 
@@ -16,8 +16,8 @@ class Container(containers.DeclarativeContainer):
 
     # Infrastructure
     # Session factory for future DB use
-    # session_factory = providers.Singleton(create_session_factory, db_url=settings.DATABASE_URL)
-    # uow = providers.Factory(UnitOfWork, session_factory=session_factory)
+    session_factory = providers.Singleton(create_session_factory, db_url=settings.DATABASE_URL)
+    lineage_session_factory = providers.Singleton(create_session_factory, db_url=settings.LINEAGE_DATABASE_URL)
 
     # Redis
     redis_pool = providers.Resource(
@@ -34,5 +34,12 @@ class Container(containers.DeclarativeContainer):
     analytics_service = providers.Factory(
         AnalyticsService,
         bq_client=bq_client,
-        redis=redis_pool
+        redis=redis_pool,
+        db_session_factory=lineage_session_factory
+    )
+
+    sync_service = providers.Factory(
+        DataSyncService,
+        bq_client=bq_client,
+        redis_client=redis_pool
     )

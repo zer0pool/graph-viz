@@ -65,7 +65,7 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
       <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90 overflow-visible">
         {data.map((item, idx) => {
           const val = Number(item.value);
-          const percent = (val / total) * 100;
+          const percent = parseFloat(((val / total) * 100).toFixed(2));
           
           const tailwindColors: Record<string, string> = {
             'bg-blue-500': '#3b82f6',
@@ -77,8 +77,8 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
           };
           const colorHex = tailwindColors[item.color || ''] || '#cbd5e1';
 
-          const dashArray = `${percent} ${100 - percent}`;
-          const dashOffset = -currentPercent;
+          const dashArray = `${percent.toFixed(2)} ${(100 - percent).toFixed(2)}`;
+          const dashOffset = -parseFloat(currentPercent.toFixed(2));
           currentPercent += percent;
 
           return (
@@ -86,17 +86,17 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
               key={idx}
               cx="18"
               cy="18"
-              r="15.915"              
+              r="15"              
               fill="transparent"
               stroke={colorHex}
-              strokeWidth="31.83" // Radius * 2 to fill center
+              strokeWidth="30" // Radius * 2 to fill center
               strokeDasharray={dashArray}
               strokeDashoffset={dashOffset}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
               className="transition-all duration-300 cursor-help"
               style={{
-                strokeWidth: hoveredIndex === idx ? '34' : '31.83',
+                strokeWidth: hoveredIndex === idx ? '32' : '30',
                 opacity: hoveredIndex !== null && hoveredIndex !== idx ? 0.6 : 1,
               }}
             />

@@ -36,3 +36,21 @@ class BigQueryClient:
         except Exception as e:
             logger.error(f"BigQuery Query Failed: {e}\nQuery: {query_string}")
             raise
+
+    def insert_rows(self, table_id: str, rows: List[Dict[str, Any]]) -> bool:
+        """
+        Stream rows into BigQuery.
+        """
+        if not self.client:
+             raise RuntimeError("BigQuery client is not initialized")
+        
+        try:
+            errors = self.client.insert_rows_json(table_id, rows)
+            if errors:
+                logger.error(f"Encountered errors while inserting rows: {errors}")
+                return False
+            logger.debug(f"Successfully inserted {len(rows)} rows into {table_id}")
+            return True
+        except Exception as e:
+            logger.error(f"BigQuery Insert Failed: {e}")
+            return False
