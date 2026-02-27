@@ -9,18 +9,18 @@ const JOB_TYPE_COLORS: Record<string, string> = {
 
 export const useDashboardMetrics = () => {
   const [metrics, setMetrics] = useState<MetricData[]>([
-    { type: "total_tables", value: 0, subtext: "Across all schemas" },
-    { type: "total_jobs", value: 0, subtext: "Active Jobs" },
-    { type: "total_users", value: 0, subtext: "Total Users" },
-    { type: "dummy_chart", value: 0, subtext: "Active Alerts", status: "warning" },
-    { type: "dummy_chart", value: "0 B", subtext: "Daily Ingestion" },
+    { type: "total_assets", value: 0, label: "Total Assets" },
+    { type: "active_users", value: 0, label: "Active Users" },
+    { type: "daily_ingestion", value: "0 B", label: "Daily Ingestion" },
+    { type: "system_health", value: "0%", label: "System Health" },
+    { type: "failed_jobs", value: 0, label: "Active Alerts" },
   ]);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await analyticsApi.getDashboardMetrics();
+      const data = await analyticsApi.getOverviewSummary();
       
       const enrichedMetrics = data.metrics.map(m => {
         if (m.type === "total_jobs" && m.breakdown) {

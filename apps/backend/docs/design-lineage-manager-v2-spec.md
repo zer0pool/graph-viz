@@ -5,7 +5,7 @@
 > - **Last Updated**: 2026-02-14
 > - **Status**: Active Specifications
 
-This document provides a complete design specification for `lineage-manager-v2`, the command-side service responsible for maintaining job and table metadata, ingesting and updating lineage graphs, and serving REST endpoints for DAG traversals and impact analysis. It reflects lessons learned from the original (v1) implementation and adjusts the architecture to work alongside the new `metrics-manager` query service.
+This document provides a complete design specification for `lineage-manager-v2`, the command-side service responsible for maintaining job and table metadata, ingesting and updating lineage graphs, and serving REST endpoints for DAG traversals and impact analysis. It reflects lessons learned from the original (v1) implementation and adjusts the architecture to work alongside the new `analytics-manager` query service.
 
 **Key Changes from V1**:
 - Fully asynchronous stack (FastAPI + SQLAlchemy 2.0 Async)
@@ -23,14 +23,14 @@ This document provides a complete design specification for `lineage-manager-v2`,
 |:---|:---|:---|
 | **Synchronous code paths** | Thread blocking, limited scalability | Full async I/O (AsyncSession, async Redis) |
 | **Layered architecture** | Business rules scattered across layers | DDD with domain services |
-| **Tight read/write coupling** | Same service handles CRUD and analytics | CQRS: v2 = command, metrics-manager = query |
+| **Tight read/write coupling** | Same service handles CRUD and analytics | CQRS: v2 = command, analytics-manager = query |
 | **Technical debt** | Organic growth, inconsistent patterns, limited tests | Clean DDD structure, 100% unit test coverage, explicit error handling |
 
 ### V2 Goals
 
 1. **Asynchronous I/O throughout** – FastAPI async endpoints, SQLAlchemy 2.0 AsyncSession, non-blocking Redis
 2. **Domain-Driven Design (DDD)** – Clear separation: entities, repositories, use-case handlers, infrastructure
-3. **Command/Query Responsibility Segregation (CQRS)** – lineage-manager v2 = command side (authoritative data, CRUD, ingestion, events); metrics-manager = query side (analytics, dashboards, GraphQL)
+3. **Command/Query Responsibility Segregation (CQRS)** – lineage-manager v2 = command side (authoritative data, CRUD, ingestion, events); analytics-manager = query side (analytics, dashboards, GraphQL)
 4. **Clean domain model** – Explicit Project→Job (1:N) and Project↔User (N:N) relationships
 5. **Testability** – 100% unit test coverage on domain rules
 
@@ -43,7 +43,7 @@ This document provides a complete design specification for `lineage-manager-v2`,
 | Service | Side | Protocol | Responsibilities |
 |:---|:---|:---|:---|
 | **lineage-manager v2** | Command | REST | Create/update/delete jobs and tables; ingest lineage graph; provide DAG traversal and impact analysis; publish events; maintain audit logs |
-| **metrics-manager** | Query | GraphQL | Dashboard metrics, performance analytics, historical trends, list filtering (widgets); consumes events from lineage-manager |
+| **analytics-manager** | Query | GraphQL | Dashboard metrics, performance analytics, historical trends, list filtering (widgets); consumes events from lineage-manager |
 
 ### 2.2 Component Diagram
 
@@ -53,8 +53,8 @@ Client (Frontend)
    ├── REST calls for CRUD & DAG traversal → lineage-manager-v2
    │     (Nginx routes /api/lineage-manager → lineage-manager-v2)
    │
-   └── GraphQL queries for dashboards, lists, metrics → metrics-manager
-         (Nginx routes /api/metrics-manager → metrics-manager)
+   └── GraphQL queries for dashboards, lists, metrics → analytics-manager
+         (Nginx routes /api/analytics-manager → analytics-manager)
 
 lineage-manager-v2
    ├── FastAPI REST API (auth & rate-limiting middleware)
@@ -63,9 +63,9 @@ lineage-manager-v2
    ├── Repositories (async MySQL)
    ├── Unit-of-Work (explicit transaction scope)
    ├── Redis (rate limiting & caching)
-   └── Event Publisher (async Redis Pub/Sub → metrics-manager)
+   └── Event Publisher (async Redis Pub/Sub → analytics-manager)
 
-metrics-manager
+analytics-manager
    ├── FastAPI + Strawberry GraphQL server
    ├── Query layer (Stats, Performances, History)
    ├── Projection DB (BigQuery + read replicas)
@@ -317,7 +317,7 @@ Create a new job.
 
 
 
-**Event**: Publishes `JOB_CREATED` to metrics-manager.
+**Event**: Publishes `JOB_CREATED` to analytics-manager.
 
 ---
 
@@ -525,7 +525,7 @@ Return a simplified graph for a given node.
 **Notes**:
 - Replaces v1's `/lineage/graph` and `/graph/table/{fqn}/dag`
 - Mermaid/Cytoscape-compatible response (without layout coordinates)
-- Frontend can render DAGs without re-querying metrics-manager
+- Frontend can render DAGs without re-querying analytics-manager
 
 ---
 
@@ -586,7 +586,7 @@ Return direct upstream and downstream neighbors for a job.
 
 ### 4.5 Search & Autocomplete
 
-Quick suggestions using simple LIKE queries on the write database. Not suitable for heavy analytics (use metrics-manager for complex filtering).
+Quick suggestions using simple LIKE queries on the write database. Not suitable for heavy analytics (use analytics-manager for complex filtering).
 
 #### `GET /api/v2/search/jobs`
 
@@ -676,7 +676,7 @@ Return service health and database connectivity.
 
 These endpoints provide navigational lookups across Project, Job, and User relationships. They live in `lineage-manager-v2` (REST) because they query **authoritative relationship data** in the write database — not analytics.
 
-> **Design Decision**: Simple relationship traversals (e.g., "which jobs belong to this project?") are CRUD-adjacent and belong in the command-side service. Complex aggregations (e.g., "top 10 users by job execution count with failure rates") belong in metrics-manager GraphQL.
+> **Design Decision**: Simple relationship traversals (e.g., "which jobs belong to this project?") are CRUD-adjacent and belong in the command-side service. Complex aggregations (e.g., "top 10 users by job execution count with failure rates") belong in analytics-manager GraphQL.
 
 #### `GET /api/v2/projects/{project_id}/jobs`
 
@@ -754,8 +754,8 @@ List all jobs owned by a user (across all projects).
 | Project → members list | **REST** (lineage-manager) | Simple join on `project_user` table |
 | User → projects list | **REST** (lineage-manager) | Simple reverse lookup |
 | User → owned jobs list | **REST** (lineage-manager) | Simple join on `job_owner` table |
-| User activity dashboard (job count, run stats, failure rates) | **GraphQL** (metrics-manager) | Aggregation across multiple data sources |
-| Project overview with performance trends | **GraphQL** (metrics-manager) | Requires BigQuery analytics data |
+| User activity dashboard (job count, run stats, failure rates) | **GraphQL** (analytics-manager) | Aggregation across multiple data sources |
+| Project overview with performance trends | **GraphQL** (analytics-manager) | Requires BigQuery analytics data |
 
 
 ---
@@ -771,7 +771,7 @@ The `POST /api/v2/graph/init` endpoint kicks off a complete rebuild of the linea
 3. **Parse dependencies** – For each job, parse SQL or dependency definitions to identify upstream tables
 4. **Construct edges** – Between jobs and tables (`produces`/`consumes`) and between tables (`dependency` for view definitions)
 5. **Persist** – Bulk-insert using SQLAlchemy async session
-6. **Publish event** – `GRAPH_INITIALISED` so metrics-manager can refresh projections
+6. **Publish event** – `GRAPH_INITIALISED` so analytics-manager can refresh projections
 
 ### Monitoring Progress
 
@@ -794,8 +794,8 @@ location /api/lineage-manager/ {
     proxy_pass http://lineage-manager-v2:5003/;
 }
 
-location /api/metrics-manager/ {
-    proxy_pass http://metrics-manager:5004/;
+location /api/analytics-manager/ {
+    proxy_pass http://analytics-manager:5004/;
 }
 ```
 
@@ -806,8 +806,8 @@ location /api/metrics-manager/ {
 | Create job | lineage-manager-v2 | REST | `POST /api/v2/jobs` |
 | View job DAG | lineage-manager-v2 | REST | `GET /api/v2/lineage/graph?node_id=job:123` |
 | Check impact | lineage-manager-v2 | REST | `GET /api/v2/lineage/table/{fqn}/impact` |
-| Dashboard metrics | metrics-manager | GraphQL | `query { stats { overview } }` |
-| Top N slowest jobs | metrics-manager | GraphQL | `query { performances { topSlotConsumers } }` |
+| Dashboard metrics | analytics-manager | GraphQL | `query { stats { overview } }` |
+| Top N slowest jobs | analytics-manager | GraphQL | `query { performances { topSlotConsumers } }` |
 
 ### Event-Driven Updates
 
@@ -820,23 +820,23 @@ lineage-manager-v2 (Command)
    │
    └── Publish Event → Redis Pub/Sub (lineage-events channel)
                               ↓
-                    metrics-manager (Query)
+                    analytics-manager (Query)
                               ↓
                     Update Projection DB
 ```
 
 ---
 
-## 7. Mapping of V1 API to V2 and Metrics-Manager
+## 7. Mapping of V1 API to V2 and analytics-manager
 
-| V1 Endpoint (api/v1) | Description | V2 REST | Metrics-Manager GraphQL | Notes |
+| V1 Endpoint (api/v1) | Description | V2 REST | analytics-manager GraphQL | Notes |
 |:---|:---|:---|:---|:---|
 | `GET /graph/initialize` | Initialise lineage graph | `POST /api/v2/graph/init` | — | Changed to async POST with Celery; added `drop_existing`, `concurrency`, date range params |
 | `GET /graph/health` | Health checks | `GET /api/v2/health` | — | New endpoint |
 | `GET /graph/table/{fqn}/dag` | Table DAG traversal | `GET /api/v2/lineage/graph` | — | Consolidated |
 | `GET /graph/job/{id}/neighbors` | Job neighbours | `GET /api/v2/lineage/job/{id}/neighbors` | — | Retained |
 | `POST /jobs/sync` | Sync lineage for jobs | `POST /api/v2/jobs/sync` | — | Combined and simplified |
-| `GET /jobs/{id}/runs` | Job run history | — | `history` domain query | Moved to metrics-manager |
+| `GET /jobs/{id}/runs` | Job run history | — | `history` domain query | Moved to analytics-manager |
 | `POST /jobs` | Create job | `POST /api/v2/jobs` | — | Retained |
 | `PUT /jobs/{id}` | Update job | `PUT /api/v2/jobs/{id}` | — | Retained |
 | `DELETE /jobs/{id}` | Archive job | `DELETE /api/v2/jobs/{id}` | — | Retained |
@@ -846,13 +846,13 @@ lineage-manager-v2 (Command)
 | `GET /tables/{fqn}/impact` | Impact analysis | `GET /api/v2/lineage/table/{fqn}/impact` | — | Retained with depth & include_jobs |
 | `GET /tables/{fqn}/hierarchy` | Full upstream/downstream path | **Needs review** | — | Could use repeated `/lineage/graph` calls |
 | `PATCH /tables/{fqn}/triggers` | Set table triggers | **Needs review** | — | Out of scope for MVP |
-| `GET /tables/{fqn}/load-history` | Load history | — | `history` domain query | Moved to metrics-manager |
-| `GET /tables/{fqn}/timelines` | Table timeline | — | `history` domain query | Moved to metrics-manager |
+| `GET /tables/{fqn}/load-history` | Load history | — | `history` domain query | Moved to analytics-manager |
+| `GET /tables/{fqn}/timelines` | Table timeline | — | `history` domain query | Moved to analytics-manager |
 | `GET /search?type=jobs` | Search suggestions | `GET /api/v2/search/jobs` | — | Retained |
 | `GET /lineage/graph?node_id=…` | Mermaid/Cytoscape viewer | `GET /api/v2/lineage/graph` | — | Response simplified |
-| `POST /graph/search-details` | Batch fetch node details | **Needs review** | — | Might be replaced by metrics-manager |
+| `POST /graph/search-details` | Batch fetch node details | **Needs review** | — | Might be replaced by analytics-manager |
 
-**Rows marked "Needs review"**: If UI still relies on these, implement in v2 or migrate to metrics-manager. Otherwise, remove.
+**Rows marked "Needs review"**: If UI still relies on these, implement in v2 or migrate to analytics-manager. Otherwise, remove.
 
 ---
 
@@ -920,7 +920,7 @@ Records user actions in `audit_logs` table:
 
 - **Channel**: `lineage-events` (Redis Pub/Sub)
 - **Events**: Job/graph changes with metadata
-- **Consumer**: metrics-manager updates projections
+- **Consumer**: analytics-manager updates projections
 - **Benefit**: Decouples services, prevents synchronous coupling
 
 ---
@@ -990,11 +990,11 @@ def test_cannot_pause_archived_job():
 - ☐ Implement job and table CRUD endpoints
 - ☐ Implement graph initialisation and incremental sync
 - ☐ Implement DAG traversal and impact analysis endpoints
-- ☐ Publish events to metrics-manager
+- ☐ Publish events to analytics-manager
 
-### Phase 3: Metrics-Manager Integration (Week 5)
+### Phase 3: analytics-manager Integration (Week 5)
 
-- ☐ Deploy metrics-manager GraphQL service
+- ☐ Deploy analytics-manager GraphQL service
 - ☐ Implement queries for dashboards and lists
 - ☐ Verify event propagation from lineage-manager
 
@@ -1003,7 +1003,7 @@ def test_cannot_pause_archived_job():
 - ☐ Update AdminConsole to call v2 endpoints
 - ☐ Use `/lineage/graph` for DAG rendering
 - ☐ Use `/lineage/table/{fqn}/impact` for impact analysis
-- ☐ Integrate metrics-manager GraphQL queries
+- ☐ Integrate analytics-manager GraphQL queries
 
 ### Phase 5: Cut-Over and Decommissioning (Week 8)
 
@@ -1070,7 +1070,7 @@ lineage_manager_v2/
 │   │   │   └── redis_client.py
 │   │   │
 │   │   └── external/
-│   │       └── metrics_publisher.py  # Event publishing to metrics-manager
+│   │       └── metrics_publisher.py  # Event publishing to analytics-manager
 │   │
 │   └── orchestration/             # Application Layer (Use Cases)
 │       ├── commands/              # Command handlers
@@ -1134,7 +1134,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 100
     
     # Event Publishing
-    EVENT_BROKER_URL: str  # For metrics-manager sync
+    EVENT_BROKER_URL: str  # For analytics-manager sync
     ENABLE_EVENT_PUBLISHING: bool = True
     
     # Graph Traversal Limits
@@ -1154,9 +1154,9 @@ settings = Settings()
 
 ---
 
-## 14. Key Differences from metrics-manager
+## 14. Key Differences from analytics-manager
 
-| Aspect | lineage-manager-v2 | metrics-manager |
+| Aspect | lineage-manager-v2 | analytics-manager |
 |:---|:---|:---|
 | **Purpose** | Command Side (Write) | Query Side (Read) |
 | **Protocol** | REST | GraphQL |
@@ -1170,17 +1170,74 @@ settings = Settings()
 
 ---
 
-## 15. Conclusion
+## 16. Coding Guidelines (DDD, DI, & UoW Patterns)
+
+To maintain consistency and testability, following code patterns must be strictly followed in V2.
+
+### 16.1 Domain Separation (Graph vs. Metadata)
+
+- **Graph Domain (`app/domain/graph`)**: Focuses solely on **connectivity and relationships**. Entities like `JobNode`, `DataNode`, and `Edge` should only contain attributes necessary for graph traversal.
+- **Metadata Domain (`app/domain/metadata`)**: Focuses on **rich attributes**. Entities like `TableMetadata` and `StorageMetadata` store schemas, paths, and technical details.
+- **Reference Pattern**: Graph nodes link to metadata via a shared `id` or a business key (`external_ref`).
+
+### 16.2 Dependency Injection (DI)
+
+We use `dependency-injector` for managing service lifecycles.
+
+- **Container Definition**: All providers are defined in `app/core/container.py`.
+- **API Injection**: Use `@inject` and `Provide` decorators in FastAPI endpoints.
+  
+```python
+@router.post("/")
+@inject
+async def create_job(
+    data: JobCreate, 
+    service: MetadataService = Depends(Provide[Container.metadata_service])
+):
+    return await service.create_job(data)
+```
+
+### 16.3 Service Layer & Transaction Management
+
+- **Business Logic Placement**: All business rules and cross-aggregate operations MUST reside in Service classes (`app/services/`).
+- **Unit of Work (UoW)**: Services use the UoW to guarantee atomicity. Every write operation must be wrapped in `async with self.uow:`.
+
+```python
+class MetadataService:
+    def __init__(self, uow: UnitOfWork):
+        self.uow = uow
+
+    async def create_job(self, job: Job) -> Job:
+        async with self.uow:
+            saved = await self.uow.jobs.save(job)
+            await self.uow.commit() # Explicit commit
+            return saved
+```
+
+### 16.4 Repository Pattern
+
+- **Aggregate per Repository**: Each repository manages one aggregate root.
+- **Entity Mapping**: Repositories are responsible for mapping between SQLAlchemy ORM models and pure Domain Entities.
+- **Session Handling**: Repositories must not close the session; the UoW manages the session lifecycle.
+
+### 16.5 Testing Patterns
+
+- **Provider Overriding**: In `conftest.py`, override the `uow` provider to inject a test session (e.g., in-memory SQLite).
+- **Service Mocking**: For complex integration tests, services can be mocked at the container level to isolate failures.
+
+---
+
+## 17. Conclusion
 
 Lineage-manager-v2 rethinks the command side of the lineage platform:
 
 ✅ **Clean, asynchronous architecture**  
 ✅ **Clean Project/Job/User relationship model**  
-✅ **Delegates analytics to metrics-manager**  
+✅ **Delegates analytics to analytics-manager**  
 ✅ **Keeps essential DAG and impact queries in REST**  
 ✅ **Shifts dashboard-style queries to GraphQL**  
 
-The design strikes a balance between **performance and flexibility**. A clear mapping of v1 functionalities to v2 and metrics-manager ensures nothing is lost.
+The design strikes a balance between **performance and flexibility**. A clear mapping of v1 functionalities to v2 and analytics-manager ensures nothing is lost.
 
 **Future enhancements** (table triggers, extended audit reports) can be added incrementally without polluting the core domain.
 
@@ -1188,4 +1245,4 @@ The design strikes a balance between **performance and flexibility**. A clear ma
 
 _Author: Antigravity (Capsule Corp)_  
 _Date: 2026-02-14_  
-_Version: 2.0 (Revised)_
+_Version: 2.1 (Revised with Coding Guidelines)_

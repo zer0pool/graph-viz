@@ -1,0 +1,43 @@
+# Build stage
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc python3-dev libmysqlclient-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+COPY pyproject.toml .
+
+# Generate wheels for dependencies
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+# Final stage
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies (like libmysqlclient for mysqlclient)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libmysqlclient21 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy wheels from builder and install
+COPY --from=builder /app/wheels /wheels
+RUN pip install --no-index --find-links=/wheels /wheels/*
+
+# Copy app code
+COPY . .
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV PORT=5002
+
+# Entrypoint
+COPY deploy/docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["backend"]

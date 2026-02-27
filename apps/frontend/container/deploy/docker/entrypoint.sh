@@ -39,12 +39,19 @@ else
     export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://frontend-mfe-catalog:80}"
 fi
 
+# Set specific service upstreams (Defaults to Host-Development friendly host.docker.internal)
+# This allows using 'make dev' on host while frontend is in docker.
+export LINEAGE_MANAGER_UPSTREAM="${LINEAGE_MANAGER_UPSTREAM:-$BACKEND_HOST}"
+export METRICS_MANAGER_UPSTREAM="${METRICS_MANAGER_UPSTREAM:-http://host.docker.internal:5004}"
+
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"
 echo " - BASE_URL_PREFIX: ${BASE_URL_PREFIX:-'/' (root)}"
 echo " - API_REGEX: ${API_LOCATION_REGEX}"
 echo " - NAMESERVER: ${NAMESERVER}"
 echo " - BACKEND_HOST: ${BACKEND_HOST}"
+echo " - LINEAGE_MANAGER_UPSTREAM: ${LINEAGE_MANAGER_UPSTREAM}"
+echo " - METRICS_MANAGER_UPSTREAM: ${METRICS_MANAGER_UPSTREAM}"
 echo " - MFE_LINEAGE_UPSTREAM: ${MFE_LINEAGE_UPSTREAM}"
 echo " - MFE_CATALOG_UPSTREAM: ${MFE_CATALOG_UPSTREAM}"
 

@@ -26,6 +26,7 @@
         "name": "SELF-TYPE_L1_JOB_001",
         "owner": ["alice"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -76,6 +77,7 @@
         "name": "SELF-TYPE_L1_JOB_002",
         "owner": ["bob", "charlie"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -127,6 +129,7 @@
         "name": "SELF-TYPE_L2_JOB_003",
         "owner": ["david"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "spark",
           "is_deleted": false,
           "is_dag_active": true,
@@ -178,6 +181,7 @@
         "name": "SELF-TYPE_L1_JOB_004",
         "owner": ["eve"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -234,6 +238,7 @@
         "name": "SELF-TYPE_L2_JOB_005",
         "owner": ["frank", "grace"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -285,6 +290,7 @@
         "name": "SELF-TYPE_L1_JOB_006",
         "owner": ["henry"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -340,6 +346,7 @@
         "name": "SELF-TYPE_L2_JOB_007",
         "owner": ["iris", "jack"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -390,6 +397,7 @@
         "name": "SELF-TYPE_L1_JOB_008",
         "owner": ["kate"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -441,6 +449,7 @@
         "name": "SELF-TYPE_L2_JOB_009",
         "owner": ["leo", "mary"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -492,6 +501,7 @@
         "name": "SELF-TYPE_L1_JOB_010",
         "owner": ["nancy"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -534,6 +544,7 @@
         "name": "SELF-TYPE_L1_JOB_011",
         "owner": ["alice"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "finance" }
@@ -553,6 +564,7 @@
         "name": "SELF-TYPE_L1_JOB_012",
         "owner": ["alice", "BOB"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "hr" }
@@ -572,6 +584,7 @@
         "name": "SELF-TYPE_L2_JOB_013",
         "owner": ["alice"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "spark",
           "status": "RUNNING",
           "labels": { "layer": "2", "type": "SELF-TYPE", "env": "prod", "team": "logistics" }
@@ -591,6 +604,7 @@
         "name": "SELF-TYPE_L1_JOB_014",
         "owner": ["charlie"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "it" }
@@ -610,6 +624,7 @@
         "name": "SELF-TYPE_L1_JOB_015",
         "owner": ["CHARLIE", "david"],
         "job_meta": {
+          "type": "SELF-TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "legal" }

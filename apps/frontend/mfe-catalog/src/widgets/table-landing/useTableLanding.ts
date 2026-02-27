@@ -14,84 +14,26 @@ const DEFAULT_TABLE_METRICS: TableMetric[] = [
   { type: "lineage_coverage", value: "80.7%", subtext: "1124 / 1392" }
 ];
 
+import { useLandingPageData } from "../../shared/hooks/useLandingPageData";
+
 export function useTableLanding() {
-  const api = useApiClient();
-  const [metrics, setMetrics] = useState<TableMetric[]>(DEFAULT_TABLE_METRICS);
-  const [datasets, setDatasets] = useState<any[]>(datasetsData);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { 
+    metrics, 
+    entities, 
+    loading, 
+    error, 
+    refresh 
+  } = useLandingPageData("tables", { first: 20 });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 1. Fetch Summary Metrics
-      const summary = await api.fetchSummaryMetrics();
-      
-      // 2. Fetch Tables (Datasets)
-      const tablesData = await api.fetchTables(20, 0);
-      const tables = tablesData.tables || tablesData || [];
-      
-      // 3. Transform Summary into TableMetrics
-      const metricsList = summary?.metrics || [];
-      
-      if (metricsList.length > 0) {
-        const findMetric = (type: string) => metricsList.find((m: MetricEntry) => m.type === type);
-        const getMetricVal = (type: string) => findMetric(type)?.value;
-        const getMetricSub = (type: string, def: string) => findMetric(type)?.subtext || def;
-
-        const formattedMetrics: TableMetric[] = [
-          { 
-            type: "total_tables", 
-            value: getMetricVal("total_tables") ?? 1392, 
-            subtext: getMetricSub("total_tables", "+23 today") 
-          },
-          { 
-            type: "total_datasets", 
-            value: getMetricVal("total_datasets") ?? 8, 
-            subtext: getMetricSub("total_datasets", "6 schemas") 
-          },
-          { 
-            type: "total_size", 
-            value: getMetricVal("total_size") ?? "148.0 TB", 
-            subtext: getMetricSub("total_size", "+2.1 TB/day") 
-          },
-          { 
-            type: "expiring_soon", 
-            value: getMetricVal("expiring_soon") ?? 23, 
-            subtext: getMetricSub("expiring_soon", "< 7 days left") 
-          },
-          { 
-            type: "lineage_coverage", 
-            value: getMetricVal("lineage_coverage") ?? "80.7%", 
-            subtext: getMetricSub("lineage_coverage", "1124 / 1392") 
-          }
-        ];
-        setMetrics(formattedMetrics);
-      } else {
-        setMetrics(DEFAULT_TABLE_METRICS);
-      }
-
-      setDatasets(tables.length > 0 ? tables : datasetsData);
-    } catch (err: any) {
-      console.error("[useTableLanding] Error fetching data:", err);
-      setMetrics(DEFAULT_TABLE_METRICS);
-      setDatasets(datasetsData);
-      setError("Failed to load catalog data");
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const datasets = useMemo(() => {
+    return (entities?.edges || []).map(edge => edge.node);
+  }, [entities]);
 
   return {
     metrics,
-    datasets,
+    datasets: datasets.length > 0 ? datasets : datasetsData, // Fallback to mock if empty
     loading,
-    error,
-    refresh: fetchData,
+    error: error ? error.message : null,
+    refresh,
   };
 }

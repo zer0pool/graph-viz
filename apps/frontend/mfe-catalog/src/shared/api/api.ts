@@ -30,6 +30,27 @@ export class ApiClient {
     return data.result !== undefined ? data.result : data;
   }
 
+  public async graphqlRequest<T>(query: string, variables: Record<string, any> = {}): Promise<T> {
+    const url = "/analytics-manager/graphql";
+    const res = await this.auth.fetchWithAuth(`${this.baseUrl}${url}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`GraphQL Request failed: ${res.status}`);
+    }
+
+    const { data, errors } = await res.json();
+    if (errors && errors.length > 0) {
+      throw new Error(errors[0].message);
+    }
+    return data;
+  }
+
   // --- Job Endpoints ---
 
   async fetchJobDetail(jobId: string): Promise<JobDetail> {
@@ -150,8 +171,26 @@ export class ApiClient {
     return this.request<any>(`/api/v1/tables?${params.toString()}`);
   }
 
+  async fetchOverviewSummary(): Promise<SummaryMetricsResponse> {
+    return this.request<SummaryMetricsResponse>("/analytics-manager/api/v1/metrics/summary/overview");
+  }
+
+  async fetchJobsSummary(): Promise<SummaryMetricsResponse> {
+    return this.request<SummaryMetricsResponse>("/analytics-manager/api/v1/metrics/summary/jobs");
+  }
+
+  async fetchTablesSummary(): Promise<SummaryMetricsResponse> {
+    return this.request<SummaryMetricsResponse>("/analytics-manager/api/v1/metrics/summary/tables");
+  }
+
+  async fetchUsersSummary(): Promise<SummaryMetricsResponse> {
+    return this.request<SummaryMetricsResponse>("/analytics-manager/api/v1/metrics/summary/users");
+  }
+
   async fetchSummaryMetrics(): Promise<SummaryMetricsResponse> {
-    return this.request<SummaryMetricsResponse>("/api/v1/analytics/dashboard-metrics");
+    return this.request<SummaryMetricsResponse>(
+      "/analytics-manager/api/v1/analytics/dashboard-metrics"
+    );
   }
 
   // --- Graph/Generic Endpoints ---

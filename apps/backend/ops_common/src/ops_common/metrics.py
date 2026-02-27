@@ -3,7 +3,7 @@ from enum import Enum
 class MetricKey(str, Enum):
     """
     Standard keys for metrics shared across the platform.
-    Used by metrics-manager for querying and lineage-manager for data production.
+    Used by analytics-manager for querying and lineage-manager for data production.
     """
     # Summary Metrics
     TOTAL_JOBS = "total_jobs"

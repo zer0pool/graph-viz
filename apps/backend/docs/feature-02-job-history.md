@@ -80,7 +80,7 @@ extend type Query {
 - Mandatory `date_range` limits should be enforced if none are provided, to prevent full table scans.
 
 ### 4.2 Metadata Enrichment (lineage-manager)
-- Because `lineage-manager` is the owner of metadata (Job Name, Owner Team), the `metrics-manager` will perform a batch lookup of job IDs retrieved from the history query to fill in human-readable details.
+- Because `lineage-manager` is the owner of metadata (Job Name, Owner Team), the `analytics-manager` will perform a batch lookup of job IDs retrieved from the history query to fill in human-readable details.
 
 ### 4.3 Caching Strategy
 - **Short-term Result Cache**: Cached for **5 minutes** per unique filter combination to handle UI paging/refreshes.

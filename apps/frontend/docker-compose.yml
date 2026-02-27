@@ -21,6 +21,8 @@ services:
     depends_on:
       - frontend-mfe-lineage
       - frontend-mfe-catalog
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - frontend-network
       - backend-network

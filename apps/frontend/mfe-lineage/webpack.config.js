@@ -27,6 +27,23 @@ module.exports = {
       },
     },
     proxy: [
+      // Lineage Manager Backend (Port 5003)
+      {
+        context: ["/lineage-manager"],
+        target: "http://127.0.0.1:5003",
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Analytics Manager Backend (Port 5002)
+      {
+        context: ["/analytics-manager"],
+        target: "http://127.0.0.1:5002",
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Legacy API fallback (for backward compatibility)
       {
         context: ["/api"],
         target: "http://127.0.0.1:5003",

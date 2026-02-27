@@ -9,24 +9,22 @@ from alembic import context
 # Ensure the parent directory is on sys.path so that 'lineage_manager' can be imported
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_DIR = os.path.dirname(CURRENT_DIR)
-PARENT_DIR = os.path.dirname(PACKAGE_DIR)
-if PARENT_DIR not in sys.path:
-    sys.path.insert(0, PARENT_DIR)
+# Ensure the current directory is on sys.path
+sys.path.insert(0, PACKAGE_DIR)
 
-from lineage_manager.core.config import get_settings
-
-# Import models to register them with Base.metadata
-from lineage_manager.models import (
-    GraphClosure,
-    GraphEdge,
+from app.core.config import settings
+from app.infrastructure.base import Base
+# Import all models to ensure they are registered with Base.metadata
+from app.infrastructure.models import (
     GraphNode,
+    GraphEdge,
+    GraphClosure,
     JobNode,
     DataNode,
     Project,
     UserAccount,
-    ProjectUser,
+    AuditLog
 )
-from lineage_manager.models.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -42,8 +40,9 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Get database URL from settings
-settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Use pymysql for sync migration context
+sync_url = settings.DATABASE_URL.replace("aiomysql", "pymysql")
+config.set_main_option("sqlalchemy.url", sync_url)
 
 
 def run_migrations_offline() -> None:

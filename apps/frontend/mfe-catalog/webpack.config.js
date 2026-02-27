@@ -28,10 +28,29 @@ module.exports = {
       },
     },
     proxy: [
+      // Lineage Manager Backend (Port 5003)
       {
-        context: ["/admin-console/api"],
+        context: ["/admin-console/lineage-manager", "/lineage-manager"],
         target: "http://127.0.0.1:5003",
-        pathRewrite: { "^/admin-console/api": "/lineage-manager/api" },
+        pathRewrite: { "^/admin-console": "" },
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Analytics Manager Backend (Port 5002)
+      {
+        context: ["/admin-console/analytics-manager", "/analytics-manager"],
+        target: "http://127.0.0.1:5002",
+        pathRewrite: { "^/admin-console": "" },
+        changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
+      },
+      // Legacy API fallback (for backward compatibility)
+      {
+        context: ["/admin-console/api", "/api"],
+        target: "http://127.0.0.1:5003",
+        pathRewrite: { "^/admin-console/api": "/lineage-manager/api", "^/api": "/lineage-manager/api" },
         changeOrigin: true,
       },
     ],
