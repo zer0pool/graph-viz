@@ -1,7 +1,7 @@
 import { config } from "./config";
 import { MetricData } from "../ui/SummaryGrid";
 
-interface DashboardMetricsResponse {
+interface SummaryMetricsResponse {
   metrics: MetricData[];
 }
 
@@ -17,9 +17,33 @@ export interface TopVisitedResponse {
 }
 
 export const analyticsApi = {
-  getDashboardMetrics: async (): Promise<DashboardMetricsResponse> => {
+  getOverviewSummary: async (): Promise<SummaryMetricsResponse> => {
+    const response = await fetch(`${config.API_BASE_URL}/analytics-manager/api/v1/metrics/summary/overview`);
+    if (!response.ok) throw new Error("Failed to fetch overview summary");
+    return response.json();
+  },
+
+  getJobsSummary: async (): Promise<SummaryMetricsResponse> => {
+    const response = await fetch(`${config.API_BASE_URL}/analytics-manager/api/v1/metrics/summary/jobs`);
+    if (!response.ok) throw new Error("Failed to fetch jobs summary");
+    return response.json();
+  },
+
+  getTablesSummary: async (): Promise<SummaryMetricsResponse> => {
+    const response = await fetch(`${config.API_BASE_URL}/analytics-manager/api/v1/metrics/summary/tables`);
+    if (!response.ok) throw new Error("Failed to fetch tables summary");
+    return response.json();
+  },
+
+  getUsersSummary: async (): Promise<SummaryMetricsResponse> => {
+    const response = await fetch(`${config.API_BASE_URL}/analytics-manager/api/v1/metrics/summary/users`);
+    if (!response.ok) throw new Error("Failed to fetch users summary");
+    return response.json();
+  },
+
+  getDashboardMetrics: async (): Promise<SummaryMetricsResponse> => {
     const response = await fetch(
-      `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/dashboard-metrics`
+      `${config.API_BASE_URL}/analytics-manager/api/v1/analytics/dashboard-metrics`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch dashboard metrics");
@@ -29,7 +53,7 @@ export const analyticsApi = {
 
   getTopVisited: async (): Promise<TopVisitedResponse> => {
     const response = await fetch(
-      `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/top-visited`
+      `${config.API_BASE_URL}/analytics-manager/api/v1/analytics/top-visited`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch top visited");

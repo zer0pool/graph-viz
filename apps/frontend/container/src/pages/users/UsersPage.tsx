@@ -3,6 +3,7 @@ import { Search, RefreshCw, Save, X, ChevronLeft, ChevronRight, User as UserIcon
 import { useNavigate, useLocation } from "react-router-dom";
 import { config } from '../../shared/api/config';
 import { SummaryGrid } from '../../shared/ui/SummaryGrid';
+import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
 
 // --- Types ---
 type Role = "PM" | "OPERATOR" | "DEVELOPER" | "VIEWER";
@@ -65,7 +66,11 @@ export function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
-
+  
+  const { metrics: summaryMetrics, loading: loadingMetrics, refresh: refreshSummary } = useLandingPageData("users");
+  const { metrics: plots } = useLandingPageData("users"); // For analytics/trends if needed
+  
+  // Existing local state and effects for user list
   // Update searchQuery when URL changes
   useEffect(() => {
     const q = new URLSearchParams(location.search).get("q") || "";
@@ -165,10 +170,13 @@ export function UsersPage() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => fetchUsers()}
+            onClick={() => {
+              fetchUsers();
+              refreshSummary();
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-all shadow-sm"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading || loadingMetrics ? "animate-spin" : ""}`} />
             Refresh
           </button>
         </div>
@@ -176,29 +184,7 @@ export function UsersPage() {
 
       <SummaryGrid 
         cols={4}
-        metrics={[
-          { 
-            type: "total_users", 
-            value: loading ? "-" : error ? "N/A" : total, 
-            subtext: "Total accounts" 
-          },
-          { 
-            type: "active_users", 
-            value: loading ? "-" : error ? "N/A" : users.filter(u => u.status === "ACTIVE").length, 
-            subtext: "Active status" 
-          },
-          { 
-            type: "new_users", 
-            value: loading ? "-" : "0", 
-            subtext: "Last 7 days" 
-          },
-          { 
-            type: "inactive_users", 
-            value: loading ? "-" : users.filter(u => u.status === "INACTIVE").length, 
-            subtext: "Inactive accounts", 
-            status: "warning" 
-          },
-        ]}
+        metrics={summaryMetrics}
       />
 
       {/* Users Table */}

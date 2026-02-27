@@ -15,6 +15,8 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{api_prefix}/openapi.json",
+        root_path="/admin-console",
+        servers=[{"url": "/admin-console", "description": "Proxy Server"}],
     )
 
     # Middleware
@@ -39,7 +41,9 @@ def create_app() -> FastAPI:
         graph,
         commands,
         auth,
+        analytics,
     )
+    from app.api.internal.v1.endpoints import stats as internal_stats
 
     app.include_router(health.router, prefix=api_prefix, tags=["System"])
     app.include_router(auth.router, prefix=api_prefix, tags=["Auth"])
@@ -66,6 +70,12 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         commands.router, prefix=f"{api_prefix}/commands", tags=["System"]
+    )
+    app.include_router(
+        analytics.router, prefix=f"{api_prefix}/analytics", tags=["System"]
+    )
+    app.include_router(
+        internal_stats.router, prefix=f"{api_prefix}/internal", tags=["Internal"]
     )
 
     # Mount Static Files for Legacy Console

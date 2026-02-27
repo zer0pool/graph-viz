@@ -14,6 +14,10 @@ module.exports = {
   devServer: {
     port: 5100,
     historyApiFallback: {
+      rewrites: [
+        // Serve static Swagger UI page — do NOT fall back to SPA index
+        { from: /^\/admin-console\/docs$/, to: '/admin-console/docs.html' },
+      ],
       index: "/admin-console/index.html",
       disableDotRule: true, // Fix for routes with dots (e.g. emails, table names)
     },
@@ -40,10 +44,9 @@ module.exports = {
         secure: false,
         logLevel: "debug",
       },
-      // Metrics Manager Backend (Port 5002)
       {
-        context: ["/admin-console/metrics-manager"],
-        target: "http://localhost:5002",
+        context: ["/admin-console/analytics-manager"],
+        target: "http://localhost:5004",
         pathRewrite: { "^/admin-console": "" },
         changeOrigin: true,
         secure: false,
@@ -130,6 +133,11 @@ module.exports = {
         },
         { from: "public/config.template.js", to: "config.template.js" },
         { from: "public/config.js", to: "config.js", noErrorOnMissing: true },
+        {
+          from: "public/admin-console/docs.html",
+          to: "admin-console/docs.html",
+          noErrorOnMissing: true,
+        },
       ],
     }),
     new ModuleFederationPlugin({

@@ -54,7 +54,7 @@ POST   /lineage-manager/api/v1/projects/
 POST   /lineage-manager/api/v1/resources/
 ```
 
-### **Metrics Manager (Port 5002)**
+### **Analytics Manager (Port 5002)**
 
 Currently: **NOT IMPLEMENTED** (no backend service exists yet)
 
@@ -122,15 +122,15 @@ Currently: **NOT IMPLEMENTED** (no backend service exists yet)
 
 ## 🎯 Service Responsibility Assignment
 
-### **Metrics Manager** (Port 5002) - **RECOMMENDED**
+### **Analytics Manager** (Port 5002) - **RECOMMENDED**
 
-Both missing APIs should be implemented in a **new Metrics Manager service**:
+Both missing APIs should be implemented in a **new Analytics Manager service**:
 
 #### **Rationale:**
 
 1. **Separation of Concerns**
    - **Lineage Manager**: Handles lineage graph, jobs, projects, resources (core data catalog)
-   - **Metrics Manager**: Handles analytics, usage tracking, visit statistics, KPIs
+   - **Analytics Manager**: Handles analytics, usage tracking, visit statistics, KPIs
 
 2. **Scalability**
    - Analytics queries can be resource-intensive (aggregations, time-series data)
@@ -138,7 +138,7 @@ Both missing APIs should be implemented in a **new Metrics Manager service**:
 
 3. **Data Ownership**
    - Visit tracking and analytics data is conceptually different from lineage metadata
-   - Metrics Manager can have its own database/cache for analytics data
+   - Analytics Manager can have its own database/cache for analytics data
 
 4. **Future Extensibility**
    - Easy to add more analytics endpoints:
@@ -150,12 +150,12 @@ Both missing APIs should be implemented in a **new Metrics Manager service**:
 #### **Endpoints to Implement:**
 
 ```
-Metrics Manager (Port 5002):
-├── GET  /metrics-manager/api/v1/health
-├── GET  /metrics-manager/api/v1/analytics/dashboard-metrics
-├── GET  /metrics-manager/api/v1/analytics/top-visited
-├── POST /metrics-manager/api/v1/analytics/track-visit (future)
-└── GET  /metrics-manager/api/v1/analytics/user-activity (future)
+Analytics Manager (Port 5002):
+├── GET  /analytics-manager/api/v1/health
+├── GET  /analytics-manager/api/v1/analytics/dashboard-metrics
+├── GET  /analytics-manager/api/v1/analytics/top-visited
+├── POST /analytics-manager/api/v1/analytics/track-visit (future)
+└── GET  /analytics-manager/api/v1/analytics/user-activity (future)
 ```
 
 ---
@@ -248,7 +248,7 @@ LIMIT 5;
 
 ## 🚀 Recommended Implementation Plan
 
-### **Phase 1: Create Metrics Manager Service**
+### **Phase 1: Create Analytics Manager Service**
 
 1. **Setup New Service**
    ```bash
@@ -261,13 +261,13 @@ LIMIT 5;
 
 2. **Update Configuration**
    - Port: 5002
-   - API Prefix: `/metrics-manager/api/v1`
+   - API Prefix: `/analytics-manager/api/v1`
    - Database: Share with lineage_manager or use separate analytics DB
 
 3. **Implement Endpoints**
-   - `GET /metrics-manager/api/v1/health`
-   - `GET /metrics-manager/api/v1/analytics/dashboard-metrics`
-   - `GET /metrics-manager/api/v1/analytics/top-visited`
+   - `GET /analytics-manager/api/v1/health`
+   - `GET /analytics-manager/api/v1/analytics/dashboard-metrics`
+   - `GET /analytics-manager/api/v1/analytics/top-visited`
 
 4. **Create Visit Tracking Table**
    ```sql
@@ -290,21 +290,21 @@ LIMIT 5;
    // src/shared/api/analyticsApi.ts
    getDashboardMetrics: async () => {
      const response = await fetch(
-       `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/dashboard-metrics`
+       `${config.API_BASE_URL}/analytics-manager/api/v1/analytics/dashboard-metrics`
      );
      return response.json();
    },
    
    getTopVisited: async () => {
      const response = await fetch(
-       `${config.API_BASE_URL}/metrics-manager/api/v1/analytics/top-visited`
+       `${config.API_BASE_URL}/analytics-manager/api/v1/analytics/top-visited`
      );
      return response.json();
    },
    ```
 
 2. **Test with Webpack Proxy**
-   - Already configured to route `/metrics-manager` to port 5002
+   - Already configured to route `/analytics-manager` to port 5002
 
 ### **Phase 3: Add Visit Tracking**
 
@@ -333,15 +333,15 @@ LIMIT 5;
 
 | API Endpoint | Status | Recommended Service | Priority | Complexity |
 |--------------|--------|---------------------|----------|------------|
-| `GET /analytics/dashboard-metrics` | ❌ Missing | **Metrics Manager** | 🔴 High | Medium |
-| `GET /analytics/top-visited` | ❌ Missing | **Metrics Manager** | 🔴 High | Medium |
-| `POST /analytics/track-visit` | ❌ Missing | **Metrics Manager** | 🟡 Medium | Low |
+| `GET /analytics/dashboard-metrics` | ❌ Missing | **Analytics Manager** | 🔴 High | Medium |
+| `GET /analytics/top-visited` | ❌ Missing | **Analytics Manager** | 🔴 High | Medium |
+| `POST /analytics/track-visit` | ❌ Missing | **Analytics Manager** | 🟡 Medium | Low |
 
 ---
 
 ## 🎯 Final Recommendation
 
-**Create a dedicated Metrics Manager service (Port 5002)** for the following reasons:
+**Create a dedicated Analytics Manager service (Port 5002)** for the following reasons:
 
 1. ✅ Clean separation of concerns
 2. ✅ Independent scalability
@@ -351,5 +351,5 @@ LIMIT 5;
 
 This approach aligns with your existing architecture where you have:
 - **Lineage Manager** (5003): Core data catalog and lineage
-- **Metrics Manager** (5002): Analytics and usage tracking
+- **Analytics Manager** (5002): Analytics and usage tracking
 - **Frontend** (5100): User interface orchestration

@@ -1,0 +1,25 @@
+[project]
+name = "analytics-manager"
+version = "0.1.0"
+description = "Production-grade Metrics & Analytics service using GraphQL and CQRS"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "strawberry-graphql[fastapi]>=0.200.0",
+    "dependency-injector",
+    "pydantic-settings",
+    "google-cloud-bigquery",
+    "redis",
+    "sqlalchemy",
+    "httpx",
+    "python-multipart",
+    "celery",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

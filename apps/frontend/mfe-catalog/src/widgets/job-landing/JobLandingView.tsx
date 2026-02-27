@@ -42,7 +42,7 @@ export const JobLandingView: React.FC<JobLandingViewProps> = ({
       </header>
 
       <div className="animate-fade-in-up delay-100">
-        <JobSummary metrics={metrics} />
+        <JobSummary metrics={metrics} loading={loading} />
       </div>
 
       <div className="animate-fade-in-up delay-200">
@@ -145,9 +145,9 @@ export const JobLandingView: React.FC<JobLandingViewProps> = ({
                       ) : (
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500">
-                              {job.owner?.charAt(0).toUpperCase() || "?"}
+                              {job.owners && job.owners.length > 0 ? job.owners[0].charAt(0).toUpperCase() : "?"}
                           </div>
-                          <span className="text-slate-600">{job.owner || "-"}</span>
+                          <span className="text-slate-600">{job.owners && job.owners.length > 0 ? job.owners[0] : "-"}</span>
                         </div>
                       )}
                     </td>

@@ -57,6 +57,11 @@ class AuditRepository:
         result = await self.db.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    async def count(self) -> int:
+        from sqlalchemy import func
+        result = await self.db.execute(select(func.count()).select_from(AuditLogModel))
+        return result.scalar() or 0
+
     def _to_entity(self, model: AuditLogModel) -> AuditLogEntity:
         return AuditLogEntity(
             id=model.id,

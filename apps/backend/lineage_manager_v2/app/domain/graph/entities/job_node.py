@@ -19,5 +19,5 @@ class JobNode:
     def __post_init__(self):
         if not self.job_id:
             self.job_id = (
-                self.properties.get("job_id") or f"{self.project_id}.{self.name}"
+                self.properties.get("job_id") or f"{self.project_id}-{self.name}"
             )

@@ -24,6 +24,20 @@ class JobRepository:
 
         return self._to_entity(model, model.owners or [])
 
+    async def get_batch(self, job_ids: List[str]) -> List[JobEntity]:
+        """Fetch multiple jobs by their job_id in one query."""
+        if not job_ids:
+            return []
+
+        query = (
+            select(JobNode)
+            .options(selectinload(JobNode.node))
+            .where(JobNode.job_id.in_(job_ids))
+        )
+        result = await self.db.execute(query)
+        models = result.scalars().all()
+        return [self._to_entity(m, m.owners or []) for m in models]
+
     async def save(self, entity: JobEntity) -> JobEntity:
         # 1. Ensure GraphNode exists
         node_query = select(GraphNode).where(
@@ -47,7 +61,7 @@ class JobRepository:
         job_node_model = job_node_result.scalar_one_or_none()
 
         # Use entity.job_id or business logic
-        job_id_val = entity.job_id or f"{entity.project_id}.{entity.name}"
+        job_id_val = entity.job_id or f"{entity.project_id}-{entity.name}"
 
         if job_node_model:
             job_node_model.job_id = job_id_val
@@ -97,6 +111,17 @@ class JobRepository:
         result = await self.db.execute(select(func.count()).select_from(JobNode))
         return result.scalar() or 0
 
+    async def count_distribution(self) -> Dict[str, int]:
+        """Get distribution of jobs by type stored in properties JSON."""
+        # Use JSON_UNQUOTE(JSON_EXTRACT(...)) style for MySQL
+        type_field = func.json_unquote(func.json_extract(JobNode.properties, "$.type"))
+        stmt = (
+            select(type_field, func.count(JobNode.node_id))
+            .group_by(type_field)
+        )
+        result = await self.db.execute(stmt)
+        return {row[0]: row[1] for row in result.all() if row[0]}
+
     def _to_entity(
         self, model: JobNode, owners: List[str], name: Optional[str] = None
     ) -> JobEntity:
@@ -106,7 +131,7 @@ class JobRepository:
             if hasattr(model, "node") and model.node:
                 entity_name = model.node.name
             else:
-                entity_name = model.job_id.split(".")[-1]
+                entity_name = model.job_id.split("-")[-1]
 
         return JobEntity(
             id=model.node_id,

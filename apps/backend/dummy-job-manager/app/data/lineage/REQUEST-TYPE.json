@@ -21,6 +21,7 @@
         "name": "REQUEST-TYPE_L1_JOB_001",
         "owner": ["oliver"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -67,6 +68,7 @@
         "name": "REQUEST-TYPE_L1_JOB_002",
         "owner": ["paul", "quinn"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -113,6 +115,7 @@
         "name": "REQUEST-TYPE_L1_JOB_003",
         "owner": ["rachel"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -214,6 +217,7 @@
         "name": "REQUEST-TYPE_L1_JOB_005",
         "owner": ["uma"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "spark",
           "is_deleted": false,
           "is_dag_active": true,
@@ -260,6 +264,7 @@
         "name": "REQUEST-TYPE_L1_JOB_006",
         "owner": ["victor", "wendy"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -315,6 +320,7 @@
         "name": "REQUEST-TYPE_L2_JOB_007",
         "owner": ["xavier"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -361,6 +367,7 @@
         "name": "REQUEST-TYPE_L1_JOB_008",
         "owner": ["yara", "zack"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -412,6 +419,7 @@
         "name": "REQUEST-TYPE_L2_JOB_009",
         "owner": ["adam"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -458,6 +466,7 @@
         "name": "REQUEST-TYPE_L1_JOB_010",
         "owner": ["bella", "carlos"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -496,6 +505,7 @@
         "name": "REQUEST-TYPE_L1_JOB_011",
         "owner": ["alice"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "finance" }
@@ -515,6 +525,7 @@
         "name": "REQUEST-TYPE_L1_JOB_012",
         "owner": ["alice", "bob"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "status": "RUNNING",
           "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "support" }
@@ -534,6 +545,7 @@
         "name": "REQUEST-TYPE_L1_JOB_013",
         "owner": ["charlie"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "spark",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "data" }
@@ -554,6 +566,7 @@
         "name": "REQUEST-TYPE_L2_JOB_014",
         "owner": ["charlie", "david"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
           "labels": { "layer": "2", "type": "REQUEST-TYPE", "env": "prod", "team": "ml" }
@@ -573,6 +586,7 @@
         "name": "REQUEST-TYPE_L1_JOB_015",
         "owner": ["Frank"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "sre" }
@@ -592,6 +606,7 @@
         "name": "REQUEST-TYPE_L1_JOB_016",
         "owner": ["frank"],
         "job_meta": {
+          "type": "REQUEST-TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
           "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "security" }

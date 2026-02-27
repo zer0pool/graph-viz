@@ -7,10 +7,13 @@ from app.services.graph_service import GraphService
 from app.services.metadata_service import MetadataService
 from app.services.audit_service import AuditService
 from app.services.auth_service import AuthService
+from app.services.analytics_service import AnalyticsService
 
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(packages=["app.api.v1.endpoints"])
+    wiring_config = containers.WiringConfiguration(
+        packages=["app.api.v1.endpoints", "app.api.internal.v1.endpoints"]
+    )
 
     # Infrastructure
     session_factory = providers.Singleton(
@@ -33,3 +36,5 @@ class Container(containers.DeclarativeContainer):
     audit_service = providers.Factory(AuditService, uow=uow)
 
     auth_service = providers.Factory(AuthService, uow=uow)
+
+    analytics_service = providers.Factory(AnalyticsService, uow=uow)

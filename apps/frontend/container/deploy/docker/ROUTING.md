@@ -26,24 +26,24 @@ Nginx Processing:
 - `/lineage-manager/api/v1/projects` - Project management
 - `/lineage-manager/api/v1/lineage/*` - Lineage queries
 
-### 2. Metrics Manager Backend (Port 5002)
-**Pattern:** `/metrics-manager/*`
+### 2. Analytics Manager Backend (Port 5002)
+**Pattern:** `/analytics-manager/*`
 
 **Examples:**
 ```
 External Request:
-http://localhost:5100/admin-console/metrics-manager/api/v1/analytics/top-visited
+http://localhost:5100/admin-console/analytics-manager/api/v1/analytics/top-visited
 
 Nginx Processing:
-1. Matches: ^(/admin-console)?/metrics-manager/
-2. Rewrites: /admin-console/metrics-manager/api/v1/analytics/top-visited → /metrics-manager/api/v1/analytics/top-visited
-3. Proxies to: http://localhost:5002/metrics-manager/api/v1/analytics/top-visited
+1. Matches: ^(/admin-console)?/analytics-manager/
+2. Rewrites: /admin-console/analytics-manager/api/v1/analytics/top-visited → /analytics-manager/api/v1/analytics/top-visited
+3. Proxies to: http://localhost:5002/analytics-manager/api/v1/analytics/top-visited
 ```
 
 **Endpoints:**
-- `/metrics-manager/api/v1/analytics/top-visited` - Top visited resources
-- `/metrics-manager/api/v1/analytics/user-activity` - User activity metrics
-- `/metrics-manager/api/v1/health` - Health check
+- `/analytics-manager/api/v1/analytics/top-visited` - Top visited resources
+- `/analytics-manager/api/v1/analytics/user-activity` - User activity metrics
+- `/analytics-manager/api/v1/health` - Health check
 
 ### 3. Legacy API Fallback
 **Pattern:** `/api/*` (without service prefix)
@@ -83,7 +83,7 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
 |---------|------|-----------|
 | Frontend (Nginx) | 5100 | `/admin-console` |
 | Lineage Manager | 5003 | `/lineage-manager` |
-| Metrics Manager | 5002 | `/metrics-manager` |
+| Analytics Manager | 5002 | `/analytics-manager` |
 
 ## Request Flow Example
 
@@ -104,18 +104,18 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
 4. Response ← Returns job data
 ```
 
-### Metrics Manager Request
+### Analytics Manager Request
 ```
-1. Browser → http://localhost:5100/admin-console/metrics-manager/api/v1/analytics/top-visited
+1. Browser → http://localhost:5100/admin-console/analytics-manager/api/v1/analytics/top-visited
 
 2. Nginx (Port 5100)
-   - Matches: location ~ ^(/admin-console)?/metrics-manager/
+   - Matches: location ~ ^(/admin-console)?/analytics-manager/
    - Strips: /admin-console
-   - Keeps: /metrics-manager/api/v1/analytics/top-visited
+   - Keeps: /analytics-manager/api/v1/analytics/top-visited
    
 3. Backend (Port 5002)
-   - Receives: /metrics-manager/api/v1/analytics/top-visited
-   - FastAPI routes with prefix: /metrics-manager/api/v1
+   - Receives: /analytics-manager/api/v1/analytics/top-visited
+   - FastAPI routes with prefix: /analytics-manager/api/v1
    - Handles: /analytics/top-visited endpoint
    
 4. Response ← Returns analytics data
@@ -129,9 +129,9 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
 tail -f /var/log/nginx/lineage_manager_access.log
 tail -f /var/log/nginx/lineage_manager_error.log
 
-# Metrics Manager requests
-tail -f /var/log/nginx/metrics_manager_access.log
-tail -f /var/log/nginx/metrics_manager_error.log
+# Analytics Manager requests
+tail -f /var/log/nginx/analytics_manager_access.log
+tail -f /var/log/nginx/analytics_manager_error.log
 
 # Legacy API requests
 tail -f /var/log/nginx/api_access.log
@@ -143,19 +143,19 @@ tail -f /var/log/nginx/api_error.log
 # Test Lineage Manager
 curl http://localhost:5100/admin-console/lineage-manager/api/v1/health
 
-# Test Metrics Manager
-curl http://localhost:5100/admin-console/metrics-manager/api/v1/health
+# Test Analytics Manager
+curl http://localhost:5100/admin-console/analytics-manager/api/v1/health
 
 # Direct backend access (bypass nginx)
 curl http://localhost:5003/lineage-manager/api/v1/health
-curl http://localhost:5002/metrics-manager/api/v1/health
+curl http://localhost:5002/analytics-manager/api/v1/health
 ```
 
 ## Configuration Files
 
 - **Nginx Template:** `container/deploy/docker/nginx.conf.template`
 - **Lineage Manager Config:** `apps/backend/lineage_manager_v2/app/core/config.py`
-- **Metrics Manager Config:** `apps/backend/metrics_manager/app/core/config.py`
+- **Analytics Manager Config:** `apps/backend/analytics_manager/app/core/config.py`
 
 ## Notes
 

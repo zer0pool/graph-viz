@@ -20,8 +20,9 @@ import {
 export interface MetricData {
   type: string;
   value: number | string;
-  subtext: string;
-  status?: "default" | "warning" | "critical";
+  label?: string; // Optional dynamic label
+  subtext?: string;
+  status?: "default" | "warning" | "critical" | "success" | "info" | "destructive";
   breakdown?: { label: string; value: number | string; color?: string }[];
 }
 
@@ -44,6 +45,19 @@ const RESOURCE_MAP: Record<string, { label: string; icon: any; color: string }> 
   total_tables: { label: "Total Tables", icon: Table2, color: "text-blue-600" },
   total_jobs: { label: "Total Jobs", icon: Briefcase, color: "text-indigo-500" },
   dummy_chart: { label: "Dummy Chart", icon: Activity, color: "text-slate-400" },
+
+  // New Summary Metrics
+  total_assets: { label: "Total Assets", icon: Activity, color: "text-indigo-600" },
+  daily_ingestion: { label: "Daily Ingestion", icon: Activity, color: "text-blue-500" },
+  system_health: { label: "System Health", icon: CheckCircle2, color: "text-emerald-500" },
+  running_jobs: { label: "Running Now", icon: Activity, color: "text-emerald-500" },
+  failed_jobs: { label: "Failed (24h)", icon: AlertTriangle, color: "text-red-500" },
+  avg_duration: { label: "Avg. Duration", icon: Clock, color: "text-blue-400" },
+  bq_tables: { label: "BigQuery Source", icon: Table2, color: "text-sky-500" },
+  storage_size: { label: "Metadata Size", icon: Table2, color: "text-slate-500" },
+  freshness: { label: "Data Freshness", icon: Activity, color: "text-emerald-600" },
+  admin_users: { label: "Admins", icon: Shield, color: "text-orange-500" },
+  api_keys: { label: "API Keys", icon: Terminal, color: "text-blue-600" },
   
   default: { label: "Metric", icon: Activity, color: "text-slate-400" },
 };
@@ -140,7 +154,7 @@ function MetricCard({ data }: { data: MetricData }) {
         <div className="flex flex-col space-y-1.5 flex-1">
           <p className="text-xs text-gray-500 flex items-center gap-2">
             <Icon className={`h-3.5 w-3.5 ${config.color}`} />
-            {config.label}
+            {data.label || config.label}
           </p>
           <div className="flex items-center gap-4">
             <div className="flex-1">

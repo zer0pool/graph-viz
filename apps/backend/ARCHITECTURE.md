@@ -19,7 +19,7 @@ subgraph Write_Service
 end
 
 subgraph Query_Services
-  MM[metrics-manager<br/>Query Only]
+  AM[analytics-manager<br/>Query Only]
 end
 
 subgraph Data
@@ -35,17 +35,17 @@ end
 
 F1 --> LW
 F3 --> LW
-F2 --> MM
+F2 --> AM
 
 LW --> WDB
 LW --> BUS
 
 BUS --> RDB
-BUS --> MM
+BUS --> AM
 
-MM --> BQ
-MM --> REDIS
-MM --> RDB
+AM --> BQ
+AM --> REDIS
+AM --> RDB
 ```
 
 ---
@@ -68,15 +68,15 @@ MM --> RDB
     *   Normalized data model
 
 ### Read Side (Query Model)
-📍 **Services**: `metrics-manager`, and parts of `lineage-manager` Query Handlers
+📍 **Services**: `analytics-manager`, and parts of `lineage-manager` Query Handlers
 
 *   **Responsibilities**:
     *   Graph traversal/queries (lineage-manager)
-    *   Dashboard statistics (metrics-manager)
+    *   Dashboard statistics (analytics-manager)
     *   Project summaries
     *   Aggregated data serving
-    *   Usage tracking & Visit statistics (metrics-manager)
-    *   KPI calculations (metrics-manager)
+    *   Usage tracking & Visit statistics (analytics-manager)
+    *   KPI calculations (analytics-manager)
 *   **Characteristics**:
     *   Optimized for low-latency responses
     *   Denormalized data models (Projections)
@@ -173,24 +173,24 @@ ReadUpdater->>ReadDB: update projection
 | Service | Role | CQRS Role | Features |
 | :--- | :--- | :--- | :--- |
 | **lineage-manager** | Metadata management & Commands | Write Side | Core Catalog, Lineage Graph |
-| **metrics-manager** | Analytics & Usage Tracking | Read Side | KPIs, Visit Stats, Dashboards |
+| **analytics-manager** | Analytics & Usage Tracking | Read Side | KPIs, Visit Stats, Dashboards |
 | **ai-advisor** | Insights & Guidance | Intelligence | AI Analysis |
 
-### 8.1 Metrics Manager Architecture Rationale
+### 8.1 Analytics Manager Architecture Rationale
 
-The decision to separate `metrics-manager` as a dedicated service is driven by four key architectural principles:
+The decision to separate `analytics-manager` as a dedicated service is driven by four key architectural principles:
 
 #### 1. Separation of Concerns
 *   **Lineage Manager**: Focuses on the core domain of the Data Catalog—managing Lineage Graphs, Jobs, Projects, and Data Resources. It handles the structural integrity of metadata.
-*   **Metrics Manager**: Focuses on the analytical domain—platform usage tracking, visit statistics, and KPI calculations. This cleanly separates operational metadata from behavioral analytics.
+*   **Analytics Manager**: Focuses on the analytical domain—platform usage tracking, visit statistics, and KPI calculations. This cleanly separates operational metadata from behavioral analytics.
 
 #### 2. Scalability
 *   Analytical queries often involve resource-intensive aggregations and time-series data processing.
-*   By decoupling the metrics workload, we can scale the `metrics-manager` independently based on analytical demand without impacting the performance of core lineage operations.
+*   By decoupling the analytics workload, we can scale the `analytics-manager` independently based on analytical demand without impacting the performance of core lineage operations.
 
 #### 3. Data Ownership
 *   **Operational Metadata vs. Behavioral Data**: Visit tracking and usage analytics are conceptually distinct from lineage metadata.
-*   **Dedicated Storage**: The `metrics-manager` can own its specialized data stores (e.g., Time-Series DB, Redis, or specific tables) optimized for analytics, preventing pollution of the core lineage schema.
+*   **Dedicated Storage**: The `analytics-manager` can own its specialized data stores (e.g., Time-Series DB, Redis, or specific tables) optimized for analytics, preventing pollution of the core lineage schema.
 
 #### 4. Future Extensibility
 *   A dedicated service provides a flexible foundation for adding advanced analytical features:
@@ -234,16 +234,15 @@ This architecture is optimized for **scalability, fault isolation, analytical ex
 To maintain a robust and scalable MSA environment, we follow the **"One Image, Multiple Processes"** and **"Independent Deployment"** patterns.
 
 ### 13.1 Deployment Unit
-- **Single Source of Truth**: Each service (`lineage-manager`, `metrics-manager`) produces a single Docker image.
+- **Single Source of Truth**: Each service (`lineage-manager`, `analytics-manager`) produces a single Docker image.
 - **Process Separation**: The same image is deployed as multiple independent services (Containers/Pods) by changing the startup command.
     - **API Node**: Runs the FastAPI application (e.g., `uvicorn`).
     - **Worker Node**: Runs the Celery worker (e.g., `celery worker`).
 
 ### 13.2 Independent Scaling & Isolation
-- **No Shared Pods**: Workers for different services (e.g., `lineage-worker` and `metrics-worker`) are **NEVER** bundled in the same Pod/Package.
 - **Independent Resource Allocation**:
     - High-load workers (e.g., `lineage-worker`) can be scaled up (HPA) and assigned more CPU/Memory.
-    - Low-load workers (e.g., `metrics-worker`) can run on minimal resources.
+    - Low-load workers (e.g., `analytics-worker`) can run on minimal resources.
 - **Failure-Isolation**: A crash or memory leak in one worker does not impact others or the API's responsiveness.
 
 ### 13.3 Logical Grouping

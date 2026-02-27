@@ -1,7 +1,7 @@
 # Root Makefile for Lineage Platform
 # Delegates most tasks to individual apps
 
-LM_DIR=apps/backend/lineage_manager
+LM_DIR=apps/backend/lineage_manager_v2
 DJM_DIR=apps/backend/dummy-job-manager
 
 .PHONY: all venv-lm venv-djm venv-all run-lm run-djm kill-lm kill-djm test-lm test-djm test-all lint-all format-all clean-all help test-integration
@@ -23,6 +23,7 @@ help:
 	@echo "  backend-up          - Start backend services"
 	@echo "  backend-down        - Stop backend services"
 	@echo "  backend-rebuild     - Rebuild and restart backend apps"
+	@echo "  infra-up            - Start only DB/Cache infrastructure"
 	@echo "  backend-logs        - View backend logs"
 	@echo "  venv-all            - Setup python environments for all backends"
 	@echo "  test-all            - Run all backend unit tests"
@@ -95,6 +96,9 @@ backend-down:
 
 backend-rebuild:
 	docker compose -f apps/backend/docker-compose.yml up -d --build lineage-manager app-job-dummy
+
+infra-up:
+	docker compose -f apps/backend/docker-compose.yml up -d redis-cache mysql-db
 
 backend-logs:
 	docker compose -f apps/backend/docker-compose.yml logs -f

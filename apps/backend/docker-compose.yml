@@ -1,13 +1,13 @@
 services:
   lineage-manager:
     build:
-      context: ./lineage_manager
+      context: ./lineage_manager_v2
       dockerfile: deploy/docker/Dockerfile
     container_name: lineage-manager
     ports:
       - "${BACKEND_PORT:-5003}:5003"
     env_file:
-      - ./lineage_manager/.env
+      - ./lineage_manager_v2/.env
     environment:
       - PORT=5003
       - DB_HOST=mysql-db
@@ -19,7 +19,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
       - GOOGLE_CLOUD_PROJECT=gizmopool
     volumes:
-      - ./lineage_manager:/app/src/lineage_manager:ro
+      - ./lineage_manager_v2:/app:ro
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
     depends_on:
       - mysql-db
@@ -32,7 +32,7 @@ services:
     container_name: mysql-db
     command: --default-authentication-plugin=mysql_native_password
     env_file:
-      - ./lineage_manager/.env
+      - ./lineage_manager_v2/.env
     environment:
       MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
       MYSQL_USER: ${DB_USER:-ss_admin}
@@ -46,6 +46,8 @@ services:
   redis-cache:
     image: redis:alpine
     container_name: redis-cache
+    ports:
+      - "6379:6379"
     networks:
       - backend-network
 

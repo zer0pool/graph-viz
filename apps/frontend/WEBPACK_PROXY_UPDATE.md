@@ -17,9 +17,9 @@ proxy: [
     target: "http://localhost:5003",
     pathRewrite: { "^/admin-console": "" },
   },
-  // Metrics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5002)
   {
-    context: ["/admin-console/metrics-manager"],
+    context: ["/admin-console/analytics-manager"],
     target: "http://localhost:5002",
     pathRewrite: { "^/admin-console": "" },
   },
@@ -44,9 +44,9 @@ proxy: [
     context: ["/lineage-manager"],
     target: "http://127.0.0.1:5003",
   },
-  // Metrics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5002)
   {
-    context: ["/metrics-manager"],
+    context: ["/analytics-manager"],
     target: "http://127.0.0.1:5002",
   },
   // Legacy API fallback
@@ -70,9 +70,9 @@ proxy: [
     target: "http://127.0.0.1:5003",
     pathRewrite: { "^/admin-console": "" },
   },
-  // Metrics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5002)
   {
-    context: ["/admin-console/metrics-manager", "/metrics-manager"],
+    context: ["/admin-console/analytics-manager", "/analytics-manager"],
     target: "http://127.0.0.1:5002",
     pathRewrite: { "^/admin-console": "" },
   },
@@ -163,5 +163,5 @@ For production, ensure the nginx configuration in `/apps/frontend/container/depl
 
 - All webpack dev servers now support the new microservice routing pattern
 - The `/admin-console` prefix is stripped before forwarding to backends
-- Service identifiers (`/lineage-manager`, `/metrics-manager`) are preserved
+- Service identifiers (`/lineage-manager`, `/analytics-manager`) are preserved
 - This ensures consistency between development and production environments

@@ -184,6 +184,14 @@ class GraphRepository:
         await self.db.execute(text("DELETE FROM graph_node"))
         await self.db.flush()
 
+    async def count_nodes_by_type(self, node_type: str) -> int:
+        """Count nodes of a specific type in the GraphNode table."""
+        from sqlalchemy import func
+        result = await self.db.execute(
+            select(func.count(GraphNode.id)).where(GraphNode.node_type == node_type)
+        )
+        return result.scalar() or 0
+
     async def get_stats(self) -> Dict[str, int]:
         from sqlalchemy import func
 

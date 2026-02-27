@@ -49,6 +49,14 @@ class Job(JobBase):
         from_attributes = True
 
 
+class JobBatchRequest(BaseModel):
+    job_ids: List[str]
+
+
+class JobBatchResponse(BaseModel):
+    results: Dict[str, Job]
+
+
 class ResourceBase(BaseModel):
     project_id: str
     fqn: str
@@ -87,3 +95,30 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class UserSummary(BaseModel):
+    owned_jobs: int
+    project_count: int
+
+
+class UserDetail(BaseModel):
+    user: User
+    summary: UserSummary
+
+
+class UserProjectResponse(BaseModel):
+    projects: List[Project]
+    total: int
+
+
+class UserJobResponse(BaseModel):
+    jobs: List[Job]
+    total: int
+
+
+class UserListResponse(BaseModel):
+    users: List[User]
+    total: int
+    limit: int
+    offset: int

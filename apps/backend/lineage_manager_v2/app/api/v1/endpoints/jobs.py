@@ -22,10 +22,20 @@ async def create_job(
         name=data.name,
         properties={
             **data.properties,
-            "job_id": data.properties.get("job_id") or f"{data.project_id}.{data.name}",
+            "job_id": data.properties.get("job_id") or f"{data.project_id}-{data.name}",
         },
     )
     return await service.create_job(job)
+
+
+@router.post("/batch", response_model=schemas.JobBatchResponse)
+@inject
+async def get_jobs_batch(
+    request: schemas.JobBatchRequest,
+    service: MetadataService = Depends(Provide[Container.metadata_service]),
+):
+    jobs = await service.get_jobs_batch(request.job_ids)
+    return schemas.JobBatchResponse(results={job.job_id: job for job in jobs})
 
 
 @router.get("/{job_id}", response_model=schemas.Job)

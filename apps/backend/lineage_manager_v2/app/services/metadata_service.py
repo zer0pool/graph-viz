@@ -36,6 +36,10 @@ class MetadataService:
         async with self.uow:
             return await self.uow.jobs.get_by_id(job_id)
 
+    async def get_jobs_batch(self, job_ids: List[str]) -> List[Job]:
+        async with self.uow:
+            return await self.uow.jobs.get_batch(job_ids)
+
     async def list_jobs_by_project(self, project_id: str) -> List[Job]:
         async with self.uow:
             return await self.uow.jobs.list_by_project(project_id)
@@ -64,6 +68,37 @@ class MetadataService:
         async with self.uow:
             return await self.uow.users.list_by_project(project_id)
 
-    async def list_users(self, limit: int = 10, offset: int = 0) -> List[User]:
+    async def list_users(self, limit: int = 10, offset: int = 0):
         async with self.uow:
-            return await self.uow.users.list_all(limit, offset)
+            users = await self.uow.users.list_all(limit, offset)
+            total = await self.uow.users.count()
+            return users, total
+
+    async def get_user_detail(self, user_id: str):
+        async with self.uow:
+            user = await self.uow.users.get_by_user_id(user_id)
+            if not user:
+                return None
+            
+            # Derive counts from jobs
+            jobs = await self.uow.jobs.list_by_owner(user_id)
+            project_ids = {j.project_id for j in jobs}
+            
+            return {
+                "user": user,
+                "summary": {
+                    "owned_jobs": len(jobs),
+                    "project_count": len(project_ids)
+                }
+            }
+
+    async def list_user_projects(self, user_id: str) -> List[Project]:
+        async with self.uow:
+            jobs = await self.uow.jobs.list_by_owner(user_id)
+            project_ids = {j.project_id for j in jobs}
+            projects = []
+            for pid in project_ids:
+                p = await self.uow.projects.get(pid)
+                if p:
+                    projects.append(p)
+            return projects

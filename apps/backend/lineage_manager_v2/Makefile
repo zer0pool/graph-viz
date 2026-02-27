@@ -14,11 +14,18 @@ venv:
 
 # Run the app in development mode
 dev:
-	PYTHONPATH=. uvicorn app.main:app --reload --port $(PORT)
+	$(MAKE) kill
+	PYTHONPATH=. $(VENV)/bin/uvicorn app.main:app --reload --port $(PORT)
 
 # Run the app in production mode
 run:
-	PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $(PORT)
+	$(MAKE) kill
+	PYTHONPATH=.. $(VENV)/bin/python -m uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT)
+
+kill:
+	@echo "Killing process on port $(PORT)..."
+	-fuser -k -9 $(PORT)/tcp || true
+	@sleep 1
 
 # Run celery worker
 worker:

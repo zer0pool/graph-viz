@@ -43,6 +43,7 @@ coverage/
 .stylelintcache
 .prettiercache
 public/config.js
+apps/frontend/figma_frontend/
 
 # --- Logs & Temp ---
 logs/

@@ -35,9 +35,9 @@ module.exports = {
         secure: false,
         logLevel: "debug",
       },
-      // Metrics Manager Backend (Port 5002)
+      // Analytics Manager Backend (Port 5002)
       {
-        context: ["/metrics-manager"],
+        context: ["/analytics-manager"],
         target: "http://127.0.0.1:5002",
         changeOrigin: true,
         secure: false,
