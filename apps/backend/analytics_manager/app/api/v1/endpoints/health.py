@@ -1,7 +1,7 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
-from app.api.v1.schemas.health import HealthResponse, GoogleCloudStatus
+from app.api.v1.schemas.health import GoogleCloudStatus, HealthResponse
 from app.core.container import Container
 from app.infrastructure.gcp.client import GoogleCloudClient
 
@@ -23,7 +23,7 @@ async def health(
 
     # Ensure correct mapping for Pydantic validation
     return HealthResponse(
-        status="healthy", 
-        service="analytics-manager", 
-        google_cloud=GoogleCloudStatus(**google_status)
+        status="healthy",
+        service="analytics-manager",
+        google_cloud=GoogleCloudStatus(**google_status),
     )

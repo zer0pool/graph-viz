@@ -1,7 +1,9 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, func
 from sqlalchemy.orm import selectinload
+
 from app.domain.graph.entities.job_node import JobNode as JobEntity
 from app.infrastructure.models import GraphNode, JobNode
 
@@ -112,7 +114,10 @@ class JobRepository:
             select(JobNode)
             .options(selectinload(JobNode.node))
             .join(GraphNode, GraphNode.id == JobNode.node_id)
-            .where((JobNode.job_id.ilike(f"%{prefix}%")) | (GraphNode.name.ilike(f"%{prefix}%")))
+            .where(
+                (JobNode.job_id.ilike(f"%{prefix}%"))
+                | (GraphNode.name.ilike(f"%{prefix}%"))
+            )
             .limit(limit)
         )
         result = await self.db.execute(query)
@@ -127,26 +132,22 @@ class JobRepository:
         """Get distribution of jobs by type stored in properties JSON."""
         # Use JSON_UNQUOTE(JSON_EXTRACT(...)) style for MySQL
         type_field = func.json_unquote(func.json_extract(JobNode.properties, "$.type"))
-        stmt = (
-            select(type_field, func.count(JobNode.node_id))
-            .group_by(type_field)
-        )
+        stmt = select(type_field, func.count(JobNode.node_id)).group_by(type_field)
         result = await self.db.execute(stmt)
         return {row[0]: row[1] for row in result.all() if row[0]}
 
     async def count_by_department(self) -> Dict[str, int]:
         """Get distribution of jobs by owner department."""
         from app.infrastructure.models import UserAccount
-        
+
         # Join UserAccount on JobNode.owners (JSON list of user_ids)
         stmt = (
             select(UserAccount.department, func.count(func.distinct(JobNode.node_id)))
             .join(
                 UserAccount,
                 func.json_contains(
-                    JobNode.owners,
-                    func.json_quote(UserAccount.user_id)
-                )
+                    JobNode.owners, func.json_quote(UserAccount.user_id)
+                ),
             )
             .group_by(UserAccount.department)
         )
@@ -156,15 +157,14 @@ class JobRepository:
     async def count_by_owner(self) -> Dict[str, int]:
         """Get distribution of jobs by individual owner name."""
         from app.infrastructure.models import UserAccount
-        
+
         stmt = (
             select(UserAccount.name, func.count(func.distinct(JobNode.node_id)))
             .join(
                 UserAccount,
                 func.json_contains(
-                    JobNode.owners,
-                    func.json_quote(UserAccount.user_id)
-                )
+                    JobNode.owners, func.json_quote(UserAccount.user_id)
+                ),
             )
             .group_by(UserAccount.name)
         )
@@ -177,12 +177,12 @@ class JobRepository:
         # For SQLite: strftime('%Y-%m', created_at)
         # For MySQL: DATE_FORMAT(created_at, '%Y-%m')
         # We'll use extract for cross-compatibility if possible, or specialized for SQLite/MySQL.
-        # Since this project seems to use SQLite locally (based on previous logs) but might use MySQL elsewhere, 
+        # Since this project seems to use SQLite locally (based on previous logs) but might use MySQL elsewhere,
         # I'll use extract.
-        
+
         year = func.extract("year", JobNode.created_at)
         month = func.extract("month", JobNode.created_at)
-        
+
         stmt = (
             select(year, month, func.count(JobNode.node_id))
             .group_by(year, month)
@@ -191,7 +191,8 @@ class JobRepository:
         result = await self.db.execute(stmt)
         return [
             {"year": int(row[0]), "month": int(row[1]), "count": int(row[2])}
-            for row in result.all() if row[0] is not None
+            for row in result.all()
+            if row[0] is not None
         ]
 
     def _to_entity(

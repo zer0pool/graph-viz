@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
+
 
 class TrackEvent(BaseModel):
     event_type: str = "page_view"
@@ -10,9 +12,11 @@ class TrackEvent(BaseModel):
     timestamp: Optional[datetime] = None
     properties: Dict[str, Any] = {}
 
+
 class TrackResponse(BaseModel):
     status: str = "success"
     message: Optional[str] = None
+
 
 class MetricItem(BaseModel):
     type: str
@@ -21,6 +25,7 @@ class MetricItem(BaseModel):
     subtext: Optional[str] = None
     status: str = "default"
     breakdown: Optional[List[Dict[str, Any]]] = None
+
 
 class SummaryResponse(BaseModel):
     metrics: List[MetricItem]

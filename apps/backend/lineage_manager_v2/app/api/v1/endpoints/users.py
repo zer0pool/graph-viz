@@ -25,10 +25,7 @@ async def list_users(
     try:
         users, total = await service.list_users(limit, offset)
         return schemas.UserListResponse(
-            users=users,
-            total=total,
-            limit=limit,
-            offset=offset
+            users=users, total=total, limit=limit, offset=offset
         )
     except Exception as e:
         logger.error(f"Error listing users: {str(e)}", exc_info=True)
@@ -74,7 +71,9 @@ async def get_user_detail(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting user detail for {user_id}: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error getting user detail for {user_id}: {str(e)}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user details",

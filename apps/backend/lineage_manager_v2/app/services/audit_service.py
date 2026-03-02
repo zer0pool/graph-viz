@@ -1,4 +1,5 @@
-from typing import List, Any
+from typing import Any, List
+
 from app.infrastructure.unit_of_work import UnitOfWork
 
 

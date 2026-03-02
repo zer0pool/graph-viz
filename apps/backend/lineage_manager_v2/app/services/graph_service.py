@@ -1,13 +1,14 @@
-from typing import List, Dict, Any, Optional
-from sqlalchemy import select
-from app.infrastructure.unit_of_work import UnitOfWork
-from app.api.v1.schemas.lineage import LineageRegistration, GraphResponse
+from typing import Any, Dict, List, Optional
 
-from app.infrastructure.external.job_manager_client import JobManagerClient
-from app.domain.project.entities import Project
-from app.domain.user.entities import User
+from sqlalchemy import select
+
+from app.api.v1.schemas.lineage import GraphResponse, LineageRegistration
 from app.domain.graph.entities.job_node import JobNode as Job
 from app.domain.metadata.entities.resource import ResourceMetadata
+from app.domain.project.entities import Project
+from app.domain.user.entities import User
+from app.infrastructure.external.job_manager_client import JobManagerClient
+from app.infrastructure.unit_of_work import UnitOfWork
 
 
 class GraphService:
@@ -97,14 +98,14 @@ class GraphService:
                 for up in item.get("upstreams", []):
                     u_type = up.get("type", "table")
                     u_name = up.get("name")
-                    
+
                     # If it's a data node (table/storage), ensure DataNode exists
                     if u_type in ("table", "storage"):
                         t_entity = ResourceMetadata(
-                            id=0, # placeholder, repository will handle
+                            id=0,  # placeholder, repository will handle
                             project_id=project_id,
                             fqn=u_name,
-                            data_type=u_type.upper()
+                            data_type=u_type.upper(),
                         )
                         saved_table = await self.uow.data_nodes.save(t_entity)
                         u_node_id = saved_table.id
@@ -130,7 +131,7 @@ class GraphService:
                             id=0,
                             project_id=project_id,
                             fqn=d_name,
-                            data_type=d_type.upper()
+                            data_type=d_type.upper(),
                         )
                         saved_table = await self.uow.data_nodes.save(t_entity)
                         d_node_id = saved_table.id

@@ -1,6 +1,12 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
+from app.api.v1.schemas.analytics import (
+    DashboardMetricsResponse,
+    MetricBreakdown,
+    MetricItem,
+)
 from app.infrastructure.unit_of_work import UnitOfWork
-from app.api.v1.schemas.analytics import DashboardMetricsResponse, MetricItem, MetricBreakdown
+
 
 class AnalyticsService:
     def __init__(self, uow: UnitOfWork):
@@ -24,7 +30,7 @@ class AnalyticsService:
                     type="total_tables",
                     value=total_tables,
                     subtext="Across all schemas",
-                    status="default"
+                    status="default",
                 ),
                 # Jobs with Breakdown
                 MetricItem(
@@ -33,31 +39,35 @@ class AnalyticsService:
                     subtext="Active Jobs",
                     status="default",
                     breakdown=[
-                        MetricBreakdown(label="Self-Type", value=job_dist.get("SELF-TYPE", 0)),
-                        MetricBreakdown(label="Request-Type", value=job_dist.get("REQUEST-TYPE", 0)),
-                    ]
+                        MetricBreakdown(
+                            label="Self-Type", value=job_dist.get("SELF-TYPE", 0)
+                        ),
+                        MetricBreakdown(
+                            label="Request-Type", value=job_dist.get("REQUEST-TYPE", 0)
+                        ),
+                    ],
                 ),
                 # Users
                 MetricItem(
                     type="total_users",
                     value=total_users,
                     subtext="Total Users",
-                    status="default"
+                    status="default",
                 ),
                 # Active Alerts (Mock/Placeholder)
                 MetricItem(
                     type="dummy_chart",
                     value=12,
                     subtext="Active Alerts",
-                    status="warning"
+                    status="warning",
                 ),
                 # Daily Ingestion (Mock/Placeholder - BigQuery not yet integrated in V2)
                 MetricItem(
                     type="dummy_chart",
                     value="2.4 TB",
                     subtext="Daily Ingestion",
-                    status="default"
-                )
+                    status="default",
+                ),
             ]
             return DashboardMetricsResponse(metrics=metrics)
 
@@ -78,21 +88,11 @@ class AnalyticsService:
                     "type_counts": await self.uow.jobs.count_by_type(),
                     "department_counts": await self.uow.jobs.count_by_department(),
                     "owner_counts": await self.uow.jobs.count_by_owner(),
-                    "monthly_counts": await self.uow.jobs.count_by_created_month()
+                    "monthly_counts": await self.uow.jobs.count_by_created_month(),
                 },
-                "tables": {
-                    "total": total_tables
-                },
-                "users": {
-                    "total": total_users
-                },
-                "projects": {
-                    "total": total_projects
-                },
-                "data_assets": {
-                    "total": total_data_assets
-                },
-                "audits": {
-                    "total": total_audits
-                }
+                "tables": {"total": total_tables},
+                "users": {"total": total_users},
+                "projects": {"total": total_projects},
+                "data_assets": {"total": total_data_assets},
+                "audits": {"total": total_audits},
             }

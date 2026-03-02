@@ -1,10 +1,11 @@
 import asyncio
+import traceback
+
+from app.api.v1.schemas.graph import CommandResponse
 from app.core.celery_app import celery_app
 from app.core.container import Container
-from app.services.graph_service import GraphService
 from app.services.audit_service import AuditService
-from app.api.v1.schemas.graph import CommandResponse
-import traceback
+from app.services.graph_service import GraphService
 
 
 @celery_app.task(name="app.tasks.graph_tasks.initialize_graph_task", bind=True)

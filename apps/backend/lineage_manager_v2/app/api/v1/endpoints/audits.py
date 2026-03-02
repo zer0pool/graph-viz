@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
-from pydantic import BaseModel
 from datetime import datetime
-from dependency_injector.wiring import inject, Provide
+from typing import List, Optional
+
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+
 from app.core.container import Container
 from app.services.audit_service import AuditService
 

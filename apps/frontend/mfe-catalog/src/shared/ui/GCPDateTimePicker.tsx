@@ -22,12 +22,12 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-export const GCPDateTimePicker: React.FC<GCPDateTimePickerProps> = ({
+export function GCPDateTimePicker({
   label,
   value,
   onChange,
   minDate,
-}) => {
+}: GCPDateTimePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [showHourPicker, setShowHourPicker] = React.useState(false);
   const [viewYear, setViewYear] = React.useState(() => value?.getFullYear() ?? new Date().getFullYear());

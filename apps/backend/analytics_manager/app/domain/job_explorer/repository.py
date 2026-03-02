@@ -1,5 +1,7 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from app.infrastructure.gcp.bigquery import BigQueryClient
+
 
 class JobExplorerRepository:
     def __init__(self, bq_client: BigQueryClient):

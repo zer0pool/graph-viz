@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
 from app.core.config import settings
 from app.core.container import Container
 
@@ -30,54 +31,42 @@ def create_app() -> FastAPI:
         )
 
     # Include V1 Routers
+    from app.api.internal.v1.endpoints import stats as internal_stats
     from app.api.v1.endpoints import (
+        analytics,
+        audits,
+        auth,
+        commands,
+        graph,
         health,
         jobs,
-        projects,
-        users,
-        resources,
         lineage,
-        audits,
-        graph,
-        commands,
-        auth,
-        analytics,
+        projects,
+        resources,
         search,
+        users,
     )
-    from app.api.internal.v1.endpoints import stats as internal_stats
 
     app.include_router(health.router, prefix=api_prefix, tags=["System"])
     app.include_router(auth.router, prefix=api_prefix, tags=["Auth"])
     app.include_router(
         projects.router, prefix=f"{api_prefix}/projects", tags=["Resources"]
     )
-    app.include_router(
-        users.router, prefix=f"{api_prefix}/users", tags=["Resources"]
-    )
-    app.include_router(
-        jobs.router, prefix=f"{api_prefix}/jobs", tags=["Resources"]
-    )
+    app.include_router(users.router, prefix=f"{api_prefix}/users", tags=["Resources"])
+    app.include_router(jobs.router, prefix=f"{api_prefix}/jobs", tags=["Resources"])
     app.include_router(
         resources.router, prefix=f"{api_prefix}/resources", tags=["Resources"]
     )
-    app.include_router(
-        lineage.router, prefix=f"{api_prefix}/lineage", tags=["Graph"]
-    )
-    app.include_router(
-        audits.router, prefix=f"{api_prefix}/audits", tags=["System"]
-    )
-    app.include_router(
-        graph.router, prefix=f"{api_prefix}/graph", tags=["Graph"]
-    )
+    app.include_router(lineage.router, prefix=f"{api_prefix}/lineage", tags=["Graph"])
+    app.include_router(audits.router, prefix=f"{api_prefix}/audits", tags=["System"])
+    app.include_router(graph.router, prefix=f"{api_prefix}/graph", tags=["Graph"])
     app.include_router(
         commands.router, prefix=f"{api_prefix}/commands", tags=["System"]
     )
     app.include_router(
         analytics.router, prefix=f"{api_prefix}/analytics", tags=["System"]
     )
-    app.include_router(
-        search.router, prefix=f"{api_prefix}/search", tags=["Search"]
-    )
+    app.include_router(search.router, prefix=f"{api_prefix}/search", tags=["Search"])
     app.include_router(
         internal_stats.router, prefix=f"{api_prefix}/internal", tags=["Internal"]
     )

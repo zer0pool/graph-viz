@@ -1,8 +1,10 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.metadata.entities.resource import ResourceMetadata
-from app.infrastructure.models import GraphNode, DataNode
+from app.infrastructure.models import DataNode, GraphNode
 
 
 class DataNodeRepository:
@@ -21,15 +23,17 @@ class DataNodeRepository:
             return None
         return self._to_entity(model, model.data_info.get("project", "unknown"))
 
-    async def search_by_prefix(self, prefix: str, limit: int = 10) -> List[ResourceMetadata]:
+    async def search_by_prefix(
+        self, prefix: str, limit: int = 10
+    ) -> List[ResourceMetadata]:
         query = (
-            select(DataNode)
-            .where(DataNode.data_id.ilike(f"%{prefix}%"))
-            .limit(limit)
+            select(DataNode).where(DataNode.data_id.ilike(f"%{prefix}%")).limit(limit)
         )
         result = await self.db.execute(query)
         models = result.scalars().all()
-        return [self._to_entity(m, m.data_info.get("project", "unknown")) for m in models]
+        return [
+            self._to_entity(m, m.data_info.get("project", "unknown")) for m in models
+        ]
 
     async def save(self, entity: ResourceMetadata) -> ResourceMetadata:
         # 1. Ensure GraphNode exists
@@ -75,6 +79,7 @@ class DataNodeRepository:
 
     async def count(self) -> int:
         from sqlalchemy import func
+
         result = await self.db.execute(select(func.count()).select_from(DataNode))
         return result.scalar() or 0
 

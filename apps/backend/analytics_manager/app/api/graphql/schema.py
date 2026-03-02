@@ -1,8 +1,10 @@
-import strawberry
 from enum import Enum
 from typing import List, Optional
 
+import strawberry
 from strawberry.types import Info
+
+
 @strawberry.enum
 class MetricStatus(Enum):
     DEFAULT = "default"
@@ -16,6 +18,7 @@ class MetricStatus(Enum):
 @strawberry.type
 class MetricDimensions:
     """Dimensions for breakdown/Top N data."""
+
     type: Optional[str] = None
     project: Optional[str] = None
     status: Optional[str] = None
@@ -25,6 +28,7 @@ class MetricDimensions:
 @strawberry.type
 class TrendPoint:
     """Single point in a time-series chart."""
+
     time: str
     value: float
     series: Optional[str] = None  # e.g., "2025" or "2026"
@@ -33,6 +37,7 @@ class TrendPoint:
 @strawberry.type
 class MetricBreakdown:
     """Detailed breakdown items for a metric."""
+
     label: str
     value: float
     color: Optional[str] = None
@@ -44,6 +49,7 @@ class MetricGroups:
     Consolidated Analytics Group (Cloudflare Style).
     Supports simple aggregates, dimensions, and history.
     """
+
     id: strawberry.ID
     label: Optional[str] = None
     count: Optional[int] = None
@@ -58,6 +64,7 @@ class MetricGroups:
 @strawberry.type
 class JobConfig:
     """Static configuration for a job (Lineage Manager)."""
+
     owner: Optional[str] = None
     schedule: Optional[str] = None
     project_id: Optional[str] = None
@@ -92,6 +99,7 @@ class MonthCount:
 @strawberry.type
 class JobAggregation:
     """Consolidated job statistics across multiple dimensions."""
+
     total: int
     by_department: List[DepartmentCount]
     by_type: List[TypeCount]
@@ -102,6 +110,7 @@ class JobAggregation:
 @strawberry.type
 class JobStats:
     """Dynamic execution stats (Analytics Manager/BigQuery)."""
+
     avg_slots: Optional[float] = None
     max_slots: Optional[int] = None
     total_duration_24h: Optional[int] = None
@@ -114,6 +123,7 @@ class JobStats:
 @strawberry.type
 class JobRun:
     """Represents a single execution record for a job."""
+
     job_id: str
     dag_id: str
     project_id: Optional[str] = None
@@ -128,9 +138,11 @@ class JobRun:
     hour: Optional[str] = None
     publish_time: Optional[str] = None
 
+
 @strawberry.input
 class JobRunFilter:
     """Filters for job runs."""
+
     job_id: Optional[str] = None
     dag_id: Optional[str] = None
     types: Optional[List[str]] = strawberry.field(default_factory=list)
@@ -143,23 +155,28 @@ class JobRunFilter:
     started_at_since: Optional[str] = None
     started_at_until: Optional[str] = None
 
+
 @strawberry.type
 class JobRunFilterFacets:
     """Unique values for filtering job runs."""
+
     owners: List[str]
     projects: List[str]
     types: List[str]
     issuers: List[str]
     statuses: List[str]
 
+
 @strawberry.enum
 class SortOrder(Enum):
     ASC = "ASC"
     DESC = "DESC"
 
+
 @strawberry.type
 class RecentJobRunsResponse:
     """Paginated response for recent job runs."""
+
     items: List[JobRun]
     total_count: int
     facets: Optional[JobRunFilterFacets] = None
@@ -170,6 +187,7 @@ class RecentJobRunsResponse:
 @strawberry.type
 class Job:
     """Unified Job entity (Combined Config + Stats)."""
+
     id: strawberry.ID
     display_label: str
     config: JobConfig
@@ -179,6 +197,7 @@ class Job:
 @strawberry.type
 class TableConfig:
     """Static configuration for a table (Lineage Manager)."""
+
     owners: List[str] = strawberry.field(default_factory=list)
     upstream_jobs: List[str] = strawberry.field(default_factory=list)
     downstream_jobs: List[str] = strawberry.field(default_factory=list)
@@ -187,6 +206,7 @@ class TableConfig:
 @strawberry.type
 class TableStats:
     """Dynamic metadata for a table (BigQuery/Metrics)."""
+
     row_count: Optional[int] = None
     total_size_bytes: Optional[int] = None
     last_update_time: Optional[str] = None
@@ -197,6 +217,7 @@ class TableStats:
 @strawberry.type
 class Table:
     """Unified Table entity (Combined Config + Stats)."""
+
     id: strawberry.ID
     fqn: str
     config: TableConfig
@@ -206,6 +227,7 @@ class Table:
 @strawberry.type
 class PageInfo:
     """Relay-style pagination info."""
+
     has_next_page: bool
     next_offset: Optional[int] = None
     end_cursor: Optional[str] = None
@@ -214,6 +236,7 @@ class PageInfo:
 @strawberry.type
 class JobEdge:
     """Relay-style edge for jobs connection."""
+
     node: Job
     cursor: str
 
@@ -221,6 +244,7 @@ class JobEdge:
 @strawberry.type
 class JobConnection:
     """Relay-style connection for job lists (Layer 3)."""
+
     edges: List[JobEdge]
     page_info: PageInfo
     total_count: int
@@ -229,6 +253,7 @@ class JobConnection:
 @strawberry.type
 class TableEdge:
     """Relay-style edge for tables connection."""
+
     node: Table
     cursor: str
 
@@ -236,6 +261,7 @@ class TableEdge:
 @strawberry.type
 class TableConnection:
     """Relay-style connection for table lists (Layer 3)."""
+
     edges: List[TableEdge]
     page_info: PageInfo
     total_count: int
@@ -244,6 +270,7 @@ class TableConnection:
 @strawberry.input
 class JobFilter:
     """Advanced filtering for Job explorer."""
+
     search_term: Optional[str] = None
     project_id: Optional[str] = None
     owner: Optional[str] = None
@@ -255,6 +282,7 @@ class JobFilter:
 @strawberry.input
 class TableFilter:
     """Advanced filtering for Table explorer."""
+
     search_term: Optional[str] = None
     owner: Optional[str] = None
     updated_after: Optional[str] = None  # ISO format
@@ -265,6 +293,7 @@ class TableFilter:
 @strawberry.type
 class User:
     """Represents a user entity."""
+
     id: strawberry.ID
     username: str
     full_name: Optional[str] = None
@@ -275,13 +304,14 @@ class User:
         # Mocking: In reality, call a service like user_service.get_user_projects(self.id)
         return [
             Project(id=strawberry.ID("p1"), display_name="Sales Analytics"),
-            Project(id=strawberry.ID("p2"), display_name="Platform Monitoring")
+            Project(id=strawberry.ID("p2"), display_name="Platform Monitoring"),
         ]
 
 
 @strawberry.type
 class Project:
     """Represents a project entity."""
+
     id: strawberry.ID
     display_name: str
     description: Optional[str] = None
@@ -291,5 +321,5 @@ class Project:
         # Mocking: In reality, call a service like project_service.get_project_members(self.id)
         return [
             User(id=strawberry.ID("u1"), username="admin", full_name="Administrator"),
-            User(id=strawberry.ID("u2"), username="viewer", full_name="Data Viewer")
+            User(id=strawberry.ID("u2"), username="viewer", full_name="Data Viewer"),
         ]

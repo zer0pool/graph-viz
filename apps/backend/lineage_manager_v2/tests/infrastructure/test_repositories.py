@@ -1,8 +1,9 @@
 import pytest
-from app.infrastructure.unit_of_work import UnitOfWork
+
+from app.domain.graph.entities.job_node import JobNode as JobEntity
 from app.domain.project.entities import Project as ProjectEntity
 from app.domain.user.entities import User as UserEntity
-from app.domain.graph.entities.job_node import JobNode as JobEntity
+from app.infrastructure.unit_of_work import UnitOfWork
 
 
 @pytest.mark.asyncio

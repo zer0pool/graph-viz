@@ -1,6 +1,8 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.audit.entities import AuditLog as AuditLogEntity
 from app.infrastructure.models import AuditLog as AuditLogModel
 
@@ -59,6 +61,7 @@ class AuditRepository:
 
     async def count(self) -> int:
         from sqlalchemy import func
+
         result = await self.db.execute(select(func.count()).select_from(AuditLogModel))
         return result.scalar() or 0
 

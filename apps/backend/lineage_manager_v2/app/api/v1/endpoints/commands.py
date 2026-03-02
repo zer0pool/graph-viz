@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from app.tasks.graph_tasks import send_notification_email_task
+
 from app.api.v1.schemas.graph import CommandResponse
+from app.tasks.graph_tasks import send_notification_email_task
 
 router = APIRouter()
 

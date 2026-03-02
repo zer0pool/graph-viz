@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.infrastructure.database import get_db
 from app.infrastructure.redis import check_redis
 

@@ -1,6 +1,7 @@
 import pytest
-from httpx import AsyncClient
 from fastapi import status
+from httpx import AsyncClient
+
 
 @pytest.mark.asyncio
 async def test_initialize_graph(client: AsyncClient):
@@ -12,6 +13,7 @@ async def test_initialize_graph(client: AsyncClient):
     data = response.json()
     assert data["status"] == "accepted"
     assert "task_id" in data
+
 
 @pytest.mark.asyncio
 async def test_diagnose_graph(client: AsyncClient):

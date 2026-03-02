@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { GCPDateTimePicker } from "../../shared/ui/GCPDateTimePicker";
 import { RefreshCw, Filter, X, Columns3, CheckSquare, Square, MinusSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { JobSummary } from "../../entities/job/JobSummary";
 import { JobTopLists } from "../../entities/job/JobTopLists";
 import { Job, JobMetric, JobRunFilterFacets } from "./useJobLanding";
+import { useJobLandingState } from "./useJobLandingState";
 
 interface JobLandingViewProps {
   jobs: Job[];
@@ -61,7 +62,7 @@ const availableColumns = [
   { id: "status", label: "Status" },
 ];
 
-export const JobLandingView: React.FC<JobLandingViewProps> = ({
+export function JobLandingView({
   jobs,
   metrics,
   facets,
@@ -72,176 +73,62 @@ export const JobLandingView: React.FC<JobLandingViewProps> = ({
   onFetchData,
   onNavigateToJob,
   getStatusColor,
-}) => {
-  // pagination state
-  const ITEMS_PER_PAGE = 10;
-  const [currentPage, setCurrentPage] = React.useState(1);
+}: JobLandingViewProps) {
+  const {
+    ITEMS_PER_PAGE,
+    currentPage,
+    totalPages,
+    handlePageChange,
+    sortState,
+    handleSort,
+    showFilter, setShowFilter,
+    filters, setFilters,
+    activeFilters,
+    handleApplyFilters,
+    handleClearFilters,
+    showColumns, setShowColumns,
+    visibleColumns, setVisibleColumns,
+    tempVisibleColumns, setTempVisibleColumns,
+    ownerSearch, setOwnerSearch,
+    showOwnerDropdown, setShowOwnerDropdown,
+    tempOwners, setTempOwners,
+    filteredOwners,
+    projectSearch, setProjectSearch,
+    showProjectDropdown, setShowProjectDropdown,
+    tempProjects, setTempProjects,
+    filteredProjects,
+    statusSearch, setStatusSearch,
+    showStatusDropdown, setShowStatusDropdown,
+    tempStatuses, setTempStatuses,
+    filteredStatuses,
+    timeRange, setTimeRange,
+    showCustomRange, setShowCustomRange,
+    customRange, setCustomRange,
+    handleApplyCustomRange,
+    getTimeRangeFilter,
+  } = useJobLandingState(facets, onFetchData);
 
-  // sorting state
-  const [sortState, setSortState] = React.useState<{ sortBy: string; sortOrder: "ASC" | "DESC" }>({
-    sortBy: "publish_time",
-    sortOrder: "DESC"
-  });
-
-  // filter panel state
-  const [showFilter, setShowFilter] = React.useState(false);
-  const [filters, setFilters] = React.useState({
-    jobId: "",
-    dagId: "",
-    types: [] as string[],
-    destination: "",
-    owners: [] as string[],
-    issuers: [] as string[],
-    period: "",
-    projects: [] as string[],
-    statuses: [] as string[],
-  });
-  const [activeFilters, setActiveFilters] = React.useState<any>(null);
-  const [showColumns, setShowColumns] = React.useState(false);
-  const [ownerSearch, setOwnerSearch] = React.useState("");
-  const [showOwnerDropdown, setShowOwnerDropdown] = React.useState(false);
-  const [tempOwners, setTempOwners] = React.useState<string[]>([]);
-  
-  const [projectSearch, setProjectSearch] = React.useState("");
-  const [showProjectDropdown, setShowProjectDropdown] = React.useState(false);
-  const [tempProjects, setTempProjects] = React.useState<string[]>([]);
-
-  const [statusSearch, setStatusSearch] = React.useState("");
-  const [showStatusDropdown, setShowStatusDropdown] = React.useState(false);
-  const [tempStatuses, setTempStatuses] = React.useState<string[]>([]);
-  const [visibleColumns, setVisibleColumns] = React.useState<string[]>(
-    availableColumns.map((c) => c.id)
-  );
-  const [tempVisibleColumns, setTempVisibleColumns] = React.useState<string[]>([]);
-  
-  // Time Range Filter State
-  const [timeRange, setTimeRange] = React.useState<string>("12h");
-  const [showCustomRange, setShowCustomRange] = React.useState(false);
-  const [customRange, setCustomRange] = React.useState<{
-    since: Date | null;
-    until: Date | null;
-  }>({
-    since: null,
-    until: null
-  });
-
-  const getTimeRangeFilter = (range: string) => {
-    const until = new Date();
-    let since = new Date();
-    
-    if (range === "1h") since.setHours(until.getHours() - 1);
-    else if (range === "12h") since.setHours(until.getHours() - 12);
-    else if (range === "1d") since.setDate(until.getDate() - 1);
-    else if (range === "7d") since.setDate(until.getDate() - 7);
-    else if (range === "30d") since.setDate(until.getDate() - 30);
-    else if (range === "custom") {
-        try {
-            if (!customRange.since || !customRange.until) return {};
-            return {
-                startedAtSince: customRange.since.toISOString(),
-                startedAtUntil: customRange.until.toISOString()
-            };
-        } catch (e) {
-            return {};
-        }
-    }
-    
-    return {
-        startedAtSince: since.toISOString(),
-        startedAtUntil: until.toISOString()
-    };
-  };
-
+  // Initialize visible columns once availableColumns is defined
   React.useEffect(() => {
-    const timeFilter = getTimeRangeFilter(timeRange);
-    onFetchData({ 
-        offset: (currentPage - 1) * ITEMS_PER_PAGE, 
-        limit: ITEMS_PER_PAGE, 
-        filter: { ...activeFilters, ...timeFilter },
-        sortBy: sortState.sortBy,
-        sortOrder: sortState.sortOrder
+    if (visibleColumns.length === 0) {
+      setVisibleColumns(availableColumns.map((c) => c.id));
+    }
+  }, []);
+
+  const isColumnVisible = (colId: string) => visibleColumns.includes(colId);
+
+  const totalPageCount = totalPages(totalCount);
+
+  useEffect(() => {
+    const timeFilter = getTimeRangeFilter();
+    onFetchData({
+      offset: (currentPage - 1) * ITEMS_PER_PAGE,
+      limit: ITEMS_PER_PAGE,
+      filter: { ...activeFilters, ...timeFilter },
+      sortBy: sortState.sortBy,
+      sortOrder: sortState.sortOrder,
     });
   }, [currentPage, activeFilters, timeRange, customRange.since, customRange.until, sortState]);
-
-  const handleApplyCustomRange = () => {
-    setTimeRange("custom");
-    setShowCustomRange(false);
-  };
-
-  const isColumnVisible = (colId: string) =>
-    visibleColumns.includes(colId);
-
-  const handleSort = (colId: string) => {
-    setSortState(prev => ({
-      sortBy: colId,
-      sortOrder: prev.sortBy === colId && prev.sortOrder === "DESC" ? "ASC" : "DESC"
-    }));
-    setCurrentPage(1);
-  };
-
-  const handleApplyFilters = () => {
-    // Clean empty filters before applying
-    const cleanFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => {
-        if (Array.isArray(v)) return v.length > 0;
-        return v !== "";
-      })
-    );
-    const filterToApply = Object.keys(cleanFilters).length > 0 ? cleanFilters : null;
-    
-    setActiveFilters(filterToApply);
-    setCurrentPage(1); // Reset to first page
-    setShowFilter(false);
-  };
-
-  // Filtered dropdown lists using global facets
-  const filteredOwners = React.useMemo(() => {
-    return (facets?.owners || []).filter(o => 
-      o.toLowerCase().includes(ownerSearch.toLowerCase())
-    );
-  }, [facets?.owners, ownerSearch]);
-
-  const filteredProjects = React.useMemo(() => {
-    return (facets?.projects || []).filter(p => 
-      p.toLowerCase().includes(projectSearch.toLowerCase())
-    );
-  }, [facets?.projects, projectSearch]);
-
-  const filteredStatuses = React.useMemo(() => {
-    return (facets?.statuses || []).filter(s => 
-      s.toLowerCase().includes(statusSearch.toLowerCase())
-    );
-  }, [facets?.statuses, statusSearch]);
-
-  const handleClearFilters = () => {
-    setFilters({
-      jobId: "",
-      dagId: "",
-      types: [],
-      destination: "",
-      owners: [] as string[],
-      issuers: [],
-      period: "",
-      projects: [] as string[],
-      statuses: [] as string[],
-    });
-    setActiveFilters(null);
-    setCurrentPage(1);
-    onFetchData({ 
-        offset: 0, 
-        limit: ITEMS_PER_PAGE, 
-        filter: null,
-        sortBy: sortState.sortBy,
-        sortOrder: sortState.sortOrder
-    });
-    setShowFilter(false);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
-
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
     <div className="p-6">
@@ -589,11 +476,11 @@ export const JobLandingView: React.FC<JobLandingViewProps> = ({
                 Previous
               </button>
               <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, totalPageCount) }, (_, i) => {
                   let pageNum = currentPage;
-                  if (totalPages <= 5) pageNum = i + 1;
+                  if (totalPageCount <= 5) pageNum = i + 1;
                   else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else if (currentPage >= totalPageCount - 2) pageNum = totalPageCount - 4 + i;
                   else pageNum = currentPage - 2 + i;
 
                   return (
@@ -612,7 +499,7 @@ export const JobLandingView: React.FC<JobLandingViewProps> = ({
                 })}
               </div>
               <button
-                disabled={currentPage === totalPages || loading}
+                disabled={currentPage === totalPageCount || loading}
                 onClick={() => handlePageChange(currentPage + 1)}
                 className="px-3 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
