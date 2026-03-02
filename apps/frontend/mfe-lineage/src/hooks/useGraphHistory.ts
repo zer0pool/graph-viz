@@ -2,9 +2,7 @@ import { useState, useCallback, useMemo, useRef } from "react";
 import { GraphState } from "../types/graph";
 
 export function useGraphHistory(initialState?: GraphState) {
-  const [history, setHistory] = useState<GraphState[]>(
-    initialState ? [initialState] : [],
-  );
+  const [history, setHistory] = useState<GraphState[]>(initialState ? [initialState] : []);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Use a ref to track the index for stable callbacks
@@ -14,10 +12,7 @@ export function useGraphHistory(initialState?: GraphState) {
     setHistory((prev) => {
       // Deduplicate: Compare with current head
       const currentHead = prev[indexRef.current];
-      if (
-        currentHead &&
-        JSON.stringify(currentHead) === JSON.stringify(state)
-      ) {
+      if (currentHead && JSON.stringify(currentHead) === JSON.stringify(state)) {
         return prev;
       }
 
@@ -63,6 +58,6 @@ export function useGraphHistory(initialState?: GraphState) {
       historyIndex,
       historyLength: history.length,
     }),
-    [pushToHistory, resetHistory, historyIndex, history],
+    [pushToHistory, resetHistory, historyIndex, history]
   );
 }

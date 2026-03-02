@@ -409,9 +409,15 @@
   background: rgba(95, 99, 104, 0.05);
 }
 
-.text-blue-600 { color: #1a73e8; }
-.text-indigo-600 { color: #673ab7; }
-.text-slate-600 { color: #5f6368; }
+.text-blue-600 {
+  color: #1a73e8;
+}
+.text-indigo-600 {
+  color: #673ab7;
+}
+.text-slate-600 {
+  color: #5f6368;
+}
 
 /* Loading State (GCP Style) */
 .impact-loading-container {
@@ -430,17 +436,28 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes skeleton-pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.4; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-.skeleton-box, .skeleton-pill {
+.skeleton-box,
+.skeleton-pill {
   animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background-color: #f1f3f4;
   display: inline-block;

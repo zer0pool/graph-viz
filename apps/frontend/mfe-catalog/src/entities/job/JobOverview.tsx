@@ -1,5 +1,17 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Clock, Info, Shield, Zap, CheckCircle2, XCircle, Play, PanelLeft, Tag } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Info,
+  Shield,
+  Zap,
+  CheckCircle2,
+  XCircle,
+  Play,
+  PanelLeft,
+  Tag,
+} from "lucide-react";
 import { JobDetail } from "../../shared/types/job";
 import { Badge } from "../../shared/ui/badge";
 import { Card, CardContent } from "../../shared/ui/card";
@@ -13,7 +25,11 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
 
   if (loading) {
-    return <div className="p-8 flex items-center justify-center text-slate-500 animate-pulse">Loading job details...</div>;
+    return (
+      <div className="p-8 flex items-center justify-center text-slate-500 animate-pulse">
+        Loading job details...
+      </div>
+    );
   }
 
   const properties = job.properties || {};
@@ -39,43 +55,53 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <h3 className="font-semibold text-slate-800">Job Profile</h3>
               </div>
               <div className="p-5 space-y-2">
-                 <PropertyRow label="Job ID" value={job.job_id || job.id} />
-                 <PropertyRow label="Project" value={properties.project || job.project_id} />
-                 <PropertyRow label="Type" value={job.type || properties.type} />
-                 <PropertyRow label="Logic" value={properties.logic_type || "Standard"} />
-                  <PropertyRow 
-                    label="Owners" 
-                    value={
-                      (properties.owners && properties.owners.length > 0) ? (
-                        <div className="flex flex-wrap gap-1">
-                          {properties.owners.map((ownerId: string, idx: number) => (
-                            <React.Fragment key={ownerId}>
-                              <button 
-                                onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-                                  detail: { path: `/users/${encodeURIComponent(ownerId)}` } 
-                                }))}
-                                className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                              >
-                                {ownerId}
-                              </button>
-                              {idx < properties.owners.length - 1 && <span className="text-slate-400">, </span>}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      ) : (
-                        properties.owner ? (
-                          <button 
-                            onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-                              detail: { path: `/users/${encodeURIComponent(properties.owner)}` } 
-                            }))}
-                            className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                          >
-                            {properties.owner}
-                          </button>
-                        ) : "—"
-                      )
-                    } 
-                  />
+                <PropertyRow label="Job ID" value={job.job_id || job.id} />
+                <PropertyRow label="Project" value={properties.project || job.project_id} />
+                <PropertyRow label="Type" value={job.type || properties.type} />
+                <PropertyRow label="Logic" value={properties.logic_type || "Standard"} />
+                <PropertyRow
+                  label="Owners"
+                  value={
+                    properties.owners && properties.owners.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {properties.owners.map((ownerId: string, idx: number) => (
+                          <React.Fragment key={ownerId}>
+                            <button
+                              onClick={() =>
+                                window.dispatchEvent(
+                                  new CustomEvent("mfe:navigate", {
+                                    detail: { path: `/users/${encodeURIComponent(ownerId)}` },
+                                  })
+                                )
+                              }
+                              className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                            >
+                              {ownerId}
+                            </button>
+                            {idx < properties.owners.length - 1 && (
+                              <span className="text-slate-400">, </span>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : properties.owner ? (
+                      <button
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("mfe:navigate", {
+                              detail: { path: `/users/${encodeURIComponent(properties.owner)}` },
+                            })
+                          )
+                        }
+                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      >
+                        {properties.owner}
+                      </button>
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
               </div>
             </CardContent>
           </Card>
@@ -88,9 +114,12 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <h3 className="font-semibold text-slate-800">Schedule</h3>
               </div>
               <div className="p-5 space-y-2">
-                 <PropertyRow label="Interval" value={properties.schedule?.interval || job.schedule} />
-                 <PropertyRow label="Start" value={properties.schedule?.start_date} />
-                 <PropertyRow label="End" value={properties.schedule?.end_date} />
+                <PropertyRow
+                  label="Interval"
+                  value={properties.schedule?.interval || job.schedule}
+                />
+                <PropertyRow label="Start" value={properties.schedule?.start_date} />
+                <PropertyRow label="End" value={properties.schedule?.end_date} />
               </div>
             </CardContent>
           </Card>
@@ -106,32 +135,26 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <h3 className="font-semibold text-slate-800">Execution Status</h3>
               </div>
               <div className="p-5 space-y-2">
-                 <PropertyRow 
-                    label="Status" 
-                    value={
-                      <Badge variant={getStatusVariant(status)} className="font-bold">
-                        {status}
-                      </Badge>
-                    } 
-                 />
-                 <PropertyRow 
-                    label="Enabled" 
-                    value={
-                       <BooleanIndicator value={properties.enabled} />
-                    } 
-                 />
-                 <PropertyRow 
-                    label="DAG Active" 
-                    value={
-                       <BooleanIndicator value={properties.is_dag_active} />
-                    } 
-                 />
-                 <PropertyRow 
-                    label="Deleted" 
-                    value={
-                       <BooleanIndicator value={properties.is_deleted} reverse />
-                    } 
-                 />
+                <PropertyRow
+                  label="Status"
+                  value={
+                    <Badge variant={getStatusVariant(status)} className="font-bold">
+                      {status}
+                    </Badge>
+                  }
+                />
+                <PropertyRow
+                  label="Enabled"
+                  value={<BooleanIndicator value={properties.enabled} />}
+                />
+                <PropertyRow
+                  label="DAG Active"
+                  value={<BooleanIndicator value={properties.is_dag_active} />}
+                />
+                <PropertyRow
+                  label="Deleted"
+                  value={<BooleanIndicator value={properties.is_deleted} reverse />}
+                />
               </div>
             </CardContent>
           </Card>
@@ -146,12 +169,19 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <Shield className="w-4 h-4 text-slate-400" />
                 <h3 className="font-semibold text-slate-700">Metadata</h3>
               </div>
-              {isMetadataExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+              {isMetadataExpanded ? (
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              )}
             </button>
             {isMetadataExpanded && (
               <CardContent className="p-6 space-y-4 animate-in slide-in-from-top-1 duration-200">
                 <PropertyRow label="Created" value={properties.created_datetime} />
-                <PropertyRow label="Updated" value={properties.updated_datetime || properties.update_datetime} />
+                <PropertyRow
+                  label="Updated"
+                  value={properties.updated_datetime || properties.update_datetime}
+                />
               </CardContent>
             )}
           </Card>
@@ -159,17 +189,20 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
           {/* Labels Section (Extra) */}
           <Card className="border-slate-200/60 shadow-sm bg-white">
             <CardContent className="p-4 flex flex-wrap gap-2">
-               {properties.labels ? (
-                 Object.entries(properties.labels).map(([key, value]) => (
-                   <div key={key} className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-600 rounded border border-slate-200 text-xs">
-                     <Tag className="w-3 h-3 opacity-50" />
-                     <span className="font-semibold">{key}:</span>
-                     <span>{String(value)}</span>
-                   </div>
-                 ))
-               ) : (
-                 <span className="text-sm text-slate-400 italic px-2">No labels</span>
-               )}
+              {properties.labels ? (
+                Object.entries(properties.labels).map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-600 rounded border border-slate-200 text-xs"
+                  >
+                    <Tag className="w-3 h-3 opacity-50" />
+                    <span className="font-semibold">{key}:</span>
+                    <span>{String(value)}</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-sm text-slate-400 italic px-2">No labels</span>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -187,11 +220,14 @@ const PropertyRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ lab
   </div>
 );
 
-const BooleanIndicator: React.FC<{ value?: boolean | null; reverse?: boolean }> = ({ value, reverse }) => {
+const BooleanIndicator: React.FC<{ value?: boolean | null; reverse?: boolean }> = ({
+  value,
+  reverse,
+}) => {
   if (value === null || value === undefined) return <span className="text-slate-400">—</span>;
-  
+
   const isPositive = reverse ? !value : value;
-  
+
   return (
     <div className="flex items-center gap-2">
       {isPositive ? (
@@ -205,4 +241,3 @@ const BooleanIndicator: React.FC<{ value?: boolean | null; reverse?: boolean }> 
     </div>
   );
 };
-

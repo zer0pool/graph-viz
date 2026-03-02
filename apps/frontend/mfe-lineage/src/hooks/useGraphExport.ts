@@ -83,10 +83,7 @@ export function useGraphExport(mermaidRef: React.RefObject<HTMLDivElement>) {
         foreignObject > div { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100%; height: 100%; }
       `;
 
-      const style = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "style"
-      );
+      const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
       style.textContent = css;
       clonedSvg.insertBefore(style, clonedSvg.firstChild);
 

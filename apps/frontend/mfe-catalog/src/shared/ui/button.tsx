@@ -4,39 +4,26 @@ import { cn } from "../lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
-  variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant = "default",
-      size = "default",
-      asChild = false,
-      ...props
-    },
-    ref,
-  ) => {
+  ({ className, variant = "default", size = "default", asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
 
     const baseStyles =
       "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
     const variants = {
-      default: "bg-slate-900 text-white hover:bg-slate-800 shadow-md active:scale-95 transition-all duration-200",
+      default:
+        "bg-slate-900 text-white hover:bg-slate-800 shadow-md active:scale-95 transition-all duration-200",
       destructive:
         "bg-red-600 text-white hover:bg-red-700 shadow-sm active:scale-95 transition-all duration-200",
       outline:
         "border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 shadow-sm active:scale-95 transition-all duration-200",
-      secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200/50 transition-all duration-200",
+      secondary:
+        "bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200/50 transition-all duration-200",
       ghost: "hover:bg-slate-100 hover:text-slate-900 transition-colors duration-200",
       link: "text-blue-600 underline-offset-4 hover:underline",
     };
@@ -55,7 +42,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       />
     );
-  },
+  }
 );
 Button.displayName = "Button";
 

@@ -12,9 +12,7 @@ const MessageView: React.FC<{ message: string }> = ({ message }) => (
   <div className="p-8 text-center text-slate-500 italic">{message}</div>
 );
 
-export const TableDetailViewer: React.FC<{ selection: Selection | null }> = ({
-  selection,
-}) => {
+export const TableDetailViewer: React.FC<{ selection: Selection | null }> = ({ selection }) => {
   const { pathname: path } = useLocation();
 
   // 1. Path-based Dispatching (Static Landing & Project Context)
@@ -28,12 +26,10 @@ export const TableDetailViewer: React.FC<{ selection: Selection | null }> = ({
   // If no selection prop but at a detail URL, try to extract from current URL (for direct deep links)
   if (!selection) {
     const jobMatch = path.match(/^\/jobs\/([^/]+)/);
-    if (jobMatch)
-      return <JobDetailView jobId={jobMatch[1]} mode="STANDALONE" />;
+    if (jobMatch) return <JobDetailView jobId={jobMatch[1]} mode="STANDALONE" />;
 
     const tableMatch = path.match(/^\/tables\/([^/]+)/);
-    if (tableMatch)
-      return <TableDetailView tableName={tableMatch[1]} mode="STANDALONE" />;
+    if (tableMatch) return <TableDetailView tableName={tableMatch[1]} mode="STANDALONE" />;
 
     return <MessageView message="Select a job or table to view details" />;
   }

@@ -8,33 +8,25 @@ describe("MermaidDslService", () => {
       expect(
         MermaidDslService.getShortenedName(
           "db.schema.very_long_table_name_that_needs_truncation",
-          "table",
-        ),
+          "table"
+        )
       ).toBe("very_long_table_name_t...");
     });
 
     it("should handle s3 paths", () => {
-      expect(
-        MermaidDslService.getShortenedName(
-          "s3://my-bucket/path/to/data",
-          "table",
-        ),
-      ).toBe("s3://my-bucket");
+      expect(MermaidDslService.getShortenedName("s3://my-bucket/path/to/data", "table")).toBe(
+        "s3://my-bucket"
+      );
     });
 
     it("should handle dot-separated names", () => {
-      expect(
-        MermaidDslService.getShortenedName("database.schema.table", "table"),
-      ).toBe("table");
+      expect(MermaidDslService.getShortenedName("database.schema.table", "table")).toBe("table");
     });
 
     it("should handle slash-separated names", () => {
-      expect(
-        MermaidDslService.getShortenedName(
-          "projects/p1/datasets/d1/table1",
-          "table",
-        ),
-      ).toBe("table1");
+      expect(MermaidDslService.getShortenedName("projects/p1/datasets/d1/table1", "table")).toBe(
+        "table1"
+      );
     });
 
     it("should handle empty name", () => {
@@ -44,9 +36,7 @@ describe("MermaidDslService", () => {
 
   describe("sanitizeId", () => {
     it("should replace dots and colons with underscores", () => {
-      expect(MermaidDslService.sanitizeId("table:my.db.name")).toBe(
-        "table_my_db_name",
-      );
+      expect(MermaidDslService.sanitizeId("table:my.db.name")).toBe("table_my_db_name");
     });
 
     it("should handle leading numbers", () => {
@@ -61,7 +51,7 @@ describe("MermaidDslService", () => {
           graphData: { nodes: [], edges: [] },
           orientation: "LR",
           layout: "dagre",
-        }),
+        })
       ).toBe("");
     });
 

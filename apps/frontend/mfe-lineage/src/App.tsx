@@ -90,7 +90,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
       if (!selectedNode) return;
       await fetchGraph(selectedNode.type, selectedNode.id, true, dir);
     },
-    [selectedNode, fetchGraph],
+    [selectedNode, fetchGraph]
   );
 
   const { handleDownload } = useGraphExport(mermaidRef);
@@ -114,11 +114,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
       lastFetchedNode.current?.id !== rootNode.id ||
       lastFetchedNode.current?.type !== rootNode.type
     ) {
-      console.log(
-        "[Lineage App] Fetching graph for:",
-        rootNode.type,
-        rootNode.id,
-      );
+      console.log("[Lineage App] Fetching graph for:", rootNode.type, rootNode.id);
       const controller = new AbortController();
       fetchGraph(rootNode.type, rootNode.id, false, "both", true, controller.signal);
       lastFetchedNode.current = { type: rootNode.type, id: rootNode.id };
@@ -134,9 +130,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
       const { nodeId } = e.detail;
       if (!nodeId) return;
 
-      const [type, id] = nodeId.includes(":")
-        ? nodeId.split(":")
-        : ["job", nodeId];
+      const [type, id] = nodeId.includes(":") ? nodeId.split(":") : ["job", nodeId];
       fetchGraph(type, id, false, "both", true);
     };
 
@@ -144,14 +138,8 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
     document.addEventListener("table-detail:view-in-graph", handleViewInGraph);
 
     return () => {
-      document.removeEventListener(
-        "job-detail:view-in-graph",
-        handleViewInGraph,
-      );
-      document.removeEventListener(
-        "table-detail:view-in-graph",
-        handleViewInGraph,
-      );
+      document.removeEventListener("job-detail:view-in-graph", handleViewInGraph);
+      document.removeEventListener("table-detail:view-in-graph", handleViewInGraph);
     };
   }, [fetchGraph]);
 
@@ -219,12 +207,9 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
               <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
                 <GitBranch className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Welcome to Data Lineage
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to Data Lineage</h2>
               <p className="text-gray-500 max-w-md">
-                Search for a table or job to explore its upstream and downstream
-                dependencies.
+                Search for a table or job to explore its upstream and downstream dependencies.
               </p>
             </div>
           ) : (
@@ -249,10 +234,7 @@ const App: React.FC<AppProps> = ({ rootNode, onSelect }) => {
                   type: node.type as any,
                   id: node.id,
                   jobId: node.type === "job" ? node.id : undefined,
-                  tableName:
-                    node.type === "table"
-                      ? node.full_name || node.name
-                      : undefined,
+                  tableName: node.type === "table" ? node.full_name || node.name : undefined,
                 });
               }
             }}

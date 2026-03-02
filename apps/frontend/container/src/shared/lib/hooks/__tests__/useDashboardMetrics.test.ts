@@ -11,7 +11,7 @@ describe("useDashboardMetrics", () => {
 
   it("should return initial loadd state and default metrics", () => {
     const { result } = renderHook(() => useDashboardMetrics());
-    
+
     expect(result.current.loading).toBe(true);
     expect(result.current.metrics).toHaveLength(5); // Default metrics count
     expect(result.current.metrics[0].type).toBe("total_tables");
@@ -19,9 +19,7 @@ describe("useDashboardMetrics", () => {
 
   it("should return fetched metrics on success", async () => {
     const mockData = {
-      metrics: [
-        { type: "total_jobs", value: 100, subtext: "Active Jobs" }
-      ]
+      metrics: [{ type: "total_jobs", value: 100, subtext: "Active Jobs" }],
     };
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -32,7 +30,7 @@ describe("useDashboardMetrics", () => {
     const { result } = renderHook(() => useDashboardMetrics());
 
     await waitFor(() => {
-        expect(result.current.loading).toBe(false);
+      expect(result.current.loading).toBe(false);
     });
 
     expect(result.current.metrics).toHaveLength(1);

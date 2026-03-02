@@ -11,14 +11,13 @@ export function mount(el: HTMLElement, props: any) {
     const auth = props?.auth || {
       user: null,
       getToken: async () => null,
-      fetchWithAuth: async (url: string, init?: RequestInit) =>
-        fetch(url, init),
+      fetchWithAuth: async (url: string, init?: RequestInit) => fetch(url, init),
     };
 
     root.render(
       <ApiProvider auth={auth}>
         <ViewApp />
-      </ApiProvider>,
+      </ApiProvider>
     );
 
     return () => {

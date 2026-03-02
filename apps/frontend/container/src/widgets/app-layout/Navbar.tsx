@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
-import { config } from '../../shared/api/config';
+import { config } from "../../shared/api/config";
 import { SearchBox } from "../search/GlobalSearch";
 import { UserMenu } from "../../features/auth/UserMenu";
 import "../../styles/layout/Navbar.css";
@@ -52,9 +52,7 @@ export const Navbar: React.FC<{
             alt="OPS Console"
             className="h-10 w-10 object-contain"
           />
-          <span className="font-medium text-lg whitespace-nowrap tracking-tight">
-            OPS Console
-          </span>
+          <span className="font-medium text-lg whitespace-nowrap tracking-tight">OPS Console</span>
         </a>
       </div>
 

@@ -4,7 +4,7 @@ export interface AnalyticsMetric {
   type: string;
   value: number | string;
   subtext: string;
-  status?: 'default' | 'warning' | 'critical';
+  status?: "default" | "warning" | "critical";
 }
 
 export interface VisitHistoryItem {

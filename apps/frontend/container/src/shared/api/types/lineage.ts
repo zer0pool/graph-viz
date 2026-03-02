@@ -1,4 +1,3 @@
-
 // Basic Lineage Types (Legacy)
 export interface LineageNode {
   id: string;

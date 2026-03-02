@@ -33,14 +33,14 @@ const RESOURCE_MAP: Record<string, { label: string; icon: any; color: string }> 
   active_users: { label: "Active Users", icon: UserCheck, color: "text-green-500" },
   inactive_users: { label: "Inactive Users", icon: UserMinus, color: "text-slate-400" },
   privileged_users: { label: "Privileged Users", icon: Shield, color: "text-indigo-600" },
-  
+
   // Audit related
   total_commands: { label: "Total Commands", icon: Terminal, color: "text-blue-600" },
   success_ops: { label: "Success Ops", icon: CheckCircle2, color: "text-green-600" },
   failed_ops: { label: "Failed Ops", icon: XCircle, color: "text-red-500" },
   delayed_ops: { label: "Delayed", icon: Clock, color: "text-orange-500" },
   sla_breach: { label: "SLA Breach", icon: AlertTriangle, color: "text-red-600" },
-  
+
   // Dashboard exclusive
   total_tables: { label: "Total Tables", icon: Table2, color: "text-blue-600" },
   total_jobs: { label: "Total Jobs", icon: Briefcase, color: "text-indigo-500" },
@@ -58,7 +58,7 @@ const RESOURCE_MAP: Record<string, { label: string; icon: any; color: string }> 
   freshness: { label: "Data Freshness", icon: Activity, color: "text-emerald-600" },
   admin_users: { label: "Admins", icon: Shield, color: "text-orange-500" },
   api_keys: { label: "API Keys", icon: Terminal, color: "text-blue-600" },
-  
+
   default: { label: "Metric", icon: Activity, color: "text-slate-400" },
 };
 
@@ -68,7 +68,11 @@ const Card = ({ children, className }: { children: React.ReactNode; className?: 
   </div>
 );
 
-const MetricPie = ({ data }: { data: { label: string; value: number | string; color?: string }[] }) => {
+const MetricPie = ({
+  data,
+}: {
+  data: { label: string; value: number | string; color?: string }[];
+}) => {
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
   const total = data.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
   if (total === 0) return null;
@@ -80,16 +84,16 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
         {data.map((item, idx) => {
           const val = Number(item.value);
           const percent = parseFloat(((val / total) * 100).toFixed(2));
-          
+
           const tailwindColors: Record<string, string> = {
-            'bg-blue-500': '#3b82f6',
-            'bg-blue-600': '#2563eb',
-            'bg-indigo-500': '#6366f1',
-            'bg-amber-500': '#f59e0b',
-            'bg-emerald-500': '#10b981',
-            'bg-orange-500': '#f97316',
+            "bg-blue-500": "#3b82f6",
+            "bg-blue-600": "#2563eb",
+            "bg-indigo-500": "#6366f1",
+            "bg-amber-500": "#f59e0b",
+            "bg-emerald-500": "#10b981",
+            "bg-orange-500": "#f97316",
           };
-          const colorHex = tailwindColors[item.color || ''] || '#cbd5e1';
+          const colorHex = tailwindColors[item.color || ""] || "#cbd5e1";
 
           const dashArray = `${percent.toFixed(2)} ${(100 - percent).toFixed(2)}`;
           const dashOffset = -parseFloat(currentPercent.toFixed(2));
@@ -100,7 +104,7 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
               key={idx}
               cx="18"
               cy="18"
-              r="15"              
+              r="15"
               fill="transparent"
               stroke={colorHex}
               strokeWidth="30" // Radius * 2 to fill center
@@ -110,14 +114,14 @@ const MetricPie = ({ data }: { data: { label: string; value: number | string; co
               onMouseLeave={() => setHoveredIndex(null)}
               className="transition-all duration-300 cursor-help"
               style={{
-                strokeWidth: hoveredIndex === idx ? '32' : '30',
+                strokeWidth: hoveredIndex === idx ? "32" : "30",
                 opacity: hoveredIndex !== null && hoveredIndex !== idx ? 0.6 : 1,
               }}
             />
           );
         })}
       </svg>
-      
+
       {/* Tooltip */}
       {hoveredIndex !== null && (
         <div className="absolute top-0 left-1/2 z-[500] bg-gray-900 text-white text-[10px] px-2 py-1 rounded shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-[120%] whitespace-nowrap border border-gray-700 animate-in fade-in slide-in-from-bottom-1 duration-200">
@@ -165,25 +169,27 @@ function MetricCard({ data }: { data: MetricData }) {
             </div>
           </div>
         </div>
-        
+
         {data.breakdown && (
           <div className="flex-1 flex justify-center">
             <MetricPie data={data.breakdown} />
           </div>
         )}
       </div>
-      
+
       {data.breakdown && data.breakdown.length > 0 && (
         <div className="mt-3 pt-2 border-t border-gray-100 flex flex-col">
-          <button 
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center justify-between w-full text-[10px] font-semibold text-gray-400 hover:text-gray-600 transition-colors py-1"
           >
             <span>DETAILS</span>
             {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
-          
-          <div className={`flex flex-col gap-1.5 transition-all duration-300 ease-in-out origin-top ${isExpanded ? "max-h-20 opacity-100 mt-1" : "max-h-0 opacity-0 pointer-events-none"}`}>
+
+          <div
+            className={`flex flex-col gap-1.5 transition-all duration-300 ease-in-out origin-top ${isExpanded ? "max-h-20 opacity-100 mt-1" : "max-h-0 opacity-0 pointer-events-none"}`}
+          >
             {data.breakdown.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-1.5 text-gray-500">
@@ -206,10 +212,11 @@ interface SummaryGridProps {
 }
 
 export function SummaryGrid({ metrics, cols = 4 }: SummaryGridProps) {
-  const gridColsClass = {
-    4: "grid-cols-4",
-    5: "grid-cols-5",
-  }[cols] || "grid-cols-4";
+  const gridColsClass =
+    {
+      4: "grid-cols-4",
+      5: "grid-cols-5",
+    }[cols] || "grid-cols-4";
 
   return (
     <div className={`grid ${gridColsClass} gap-4 mb-6`}>

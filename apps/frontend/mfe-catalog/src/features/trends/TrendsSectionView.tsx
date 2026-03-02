@@ -8,13 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../shared/ui/card";
 
 interface TrendsSectionViewProps {
   totalTables: number;
@@ -41,9 +35,7 @@ export function TrendsSectionView({
     <Card>
       <CardHeader>
         <CardTitle>Trends (Last 30 Days)</CardTitle>
-        <CardDescription>
-          Historical data for tables, storage, and issues
-        </CardDescription>
+        <CardDescription>Historical data for tables, storage, and issues</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -56,11 +48,7 @@ export function TrendsSectionView({
             <div className="h-[120px] w-full bg-slate-50/50 rounded-lg border border-slate-100/50">
               <ResponsiveContainer width="100%" height="100%" minHeight={120}>
                 <LineChart data={tablesTrend || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e5e7eb"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="day" hide />
                   <YAxis hide domain={["dataMin - 10", "dataMax + 10"]} />
                   <Tooltip
@@ -98,11 +86,7 @@ export function TrendsSectionView({
             <div className="h-[120px] w-full bg-slate-50/50 rounded-lg border border-slate-100/50">
               <ResponsiveContainer width="100%" height="100%" minHeight={120}>
                 <LineChart data={storageTrend || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e5e7eb"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="day" hide />
                   <YAxis hide domain={["dataMin - 2", "dataMax + 2"]} />
                   <Tooltip
@@ -125,9 +109,7 @@ export function TrendsSectionView({
             </div>
             <div className="flex items-center justify-between text-xs px-1">
               <span className="text-muted-foreground font-medium italic">Started: 135.2 TB</span>
-              <span className="font-bold text-green-600">
-                Current: {totalSize.toFixed(1)} TB
-              </span>
+              <span className="font-bold text-green-600">Current: {totalSize.toFixed(1)} TB</span>
             </div>
           </div>
 
@@ -140,11 +122,7 @@ export function TrendsSectionView({
             <div className="h-[120px] w-full bg-slate-50/50 rounded-lg border border-slate-100/50">
               <ResponsiveContainer width="100%" height="100%" minHeight={120}>
                 <LineChart data={issuesTrend || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e5e7eb"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="day" hide />
                   <YAxis hide />
                   <Tooltip

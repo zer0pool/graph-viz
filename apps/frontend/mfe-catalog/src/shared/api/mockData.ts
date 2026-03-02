@@ -33,26 +33,16 @@ export const mockProjects: Project[] = [
   {
     id: "proj-analytics",
     name: "User Analytics Flow",
-    description:
-      "Core analytics pipeline for user event processing and insights.",
+    description: "Core analytics pipeline for user event processing and insights.",
     owner: "James Wilson",
     createdAt: "2025-10-01",
-    jobIds: [
-      "job-ingest-events",
-      "job-aggregate-daily",
-      "job-user-segmentation",
-    ],
-    tableIds: [
-      "user_events.raw",
-      "user_events.daily_agg",
-      "analytics.segments",
-    ],
+    jobIds: ["job-ingest-events", "job-aggregate-daily", "job-user-segmentation"],
+    tableIds: ["user_events.raw", "user_events.daily_agg", "analytics.segments"],
   },
   {
     id: "proj-finance",
     name: "Financial Reporting",
-    description:
-      "End-of-month financial consolidation and reporting automation.",
+    description: "End-of-month financial consolidation and reporting automation.",
     owner: "Sarah Chen",
     createdAt: "2025-11-15",
     jobIds: ["job-finance-reconcile", "job-tax-calc"],
@@ -146,7 +136,7 @@ export const datasetsData = [
     dataset_name: "analytics",
     project_name: "bq-prod",
     tables: 15,
-    service: "BigQuery"
+    service: "BigQuery",
   },
   {
     id: "ds-2",
@@ -165,7 +155,7 @@ export const datasetsData = [
     dataset_name: "analytics",
     project_name: "bq-prod",
     tables: 24,
-    service: "BigQuery"
+    service: "BigQuery",
   },
   {
     id: "ds-3",
@@ -184,7 +174,7 @@ export const datasetsData = [
     dataset_name: "finance",
     project_name: "bq-prod",
     tables: 120,
-    service: "PostgreSQL"
+    service: "PostgreSQL",
   },
   {
     id: "ds-4",
@@ -203,7 +193,7 @@ export const datasetsData = [
     dataset_name: "marketing",
     project_name: "bq-prod",
     tables: 8,
-    service: "S3"
+    service: "S3",
   },
   {
     id: "ds-5",
@@ -222,7 +212,7 @@ export const datasetsData = [
     dataset_name: "oms",
     project_name: "bq-prod",
     tables: 32,
-    service: "BigQuery"
+    service: "BigQuery",
   },
   {
     id: "ds-6",
@@ -241,7 +231,7 @@ export const datasetsData = [
     dataset_name: "sales",
     project_name: "bq-prod",
     tables: 540,
-    service: "MySQL"
+    service: "MySQL",
   },
   {
     id: "ds-7",
@@ -260,7 +250,7 @@ export const datasetsData = [
     dataset_name: "hr",
     project_name: "bq-prod",
     tables: 1,
-    service: "Oracle"
+    service: "Oracle",
   },
   {
     id: "ds-8",
@@ -279,6 +269,6 @@ export const datasetsData = [
     dataset_name: "sys",
     project_name: "bq-prod",
     tables: 64,
-    service: "Kafka"
-  }
+    service: "Kafka",
+  },
 ];

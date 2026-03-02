@@ -25,24 +25,18 @@ export const JobLineageLayout: React.FC<JobLineageLayoutProps> = ({
       )}
 
       {/* 2. Health Metric Panel (Collapsible if needed) */}
-      <div className="flex-none px-6 py-4 bg-slate-50/50">
-        {healthPanel}
-      </div>
+      <div className="flex-none px-6 py-4 bg-slate-50/50">{healthPanel}</div>
 
       {/* 3. Main Body (Vertical Stack) */}
       <div className="flex-1 flex flex-col min-h-0 px-6 pb-6 gap-6 overflow-y-auto">
         {/* Upstream Inputs */}
         <div className="flex-none flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md py-2 px-4">
-          <div className="flex-1 overflow-y-auto p-2 max-h-[300px]">
-            {inputPanel}
-          </div>
+          <div className="flex-1 overflow-y-auto p-2 max-h-[300px]">{inputPanel}</div>
         </div>
 
         {/* Downstream Outputs */}
         <div className="flex-none flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md py-2 px-4">
-          <div className="flex-1 overflow-y-auto p-2 max-h-[300px]">
-            {outputPanel}
-          </div>
+          <div className="flex-1 overflow-y-auto p-2 max-h-[300px]">{outputPanel}</div>
         </div>
 
         {/* Graph (Bottom) */}

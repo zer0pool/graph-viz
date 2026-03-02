@@ -12,7 +12,7 @@ export function mount(
     initialSelection?: any;
     eventTarget?: EventTarget;
     auth?: AuthClient;
-  } = {},
+  } = {}
 ) {
   console.log("[TableDetailViewer] mount() called", { options });
   const root = createRoot(el);
@@ -22,19 +22,15 @@ export function mount(
     const auth = props.auth || {
       user: null,
       getToken: async () => null,
-      fetchWithAuth: async (url: string, init?: RequestInit) =>
-        fetch(url, init),
+      fetchWithAuth: async (url: string, init?: RequestInit) => fetch(url, init),
     };
 
     root.render(
       <ApiProvider auth={auth}>
         <BrowserRouter>
-          <App
-            eventTarget={props.eventTarget}
-            initialSelection={props.initialSelection}
-          />
+          <App eventTarget={props.eventTarget} initialSelection={props.initialSelection} />
         </BrowserRouter>
-      </ApiProvider>,
+      </ApiProvider>
     );
   };
 
@@ -47,10 +43,7 @@ export function mount(
     // Shell sends the whole mountProps in e.detail or e.detail.detail
     const newSelection = e.detail;
     if (newSelection) {
-      console.log(
-        "[TableDetailViewer] Performing reactive update with:",
-        newSelection,
-      );
+      console.log("[TableDetailViewer] Performing reactive update with:", newSelection);
       render({ ...options, initialSelection: newSelection });
     }
   };

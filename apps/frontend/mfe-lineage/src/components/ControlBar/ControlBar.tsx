@@ -73,20 +73,14 @@ export const ControlBar: React.FC<ControlBarProps> = ({
         <>
           {/* Group 2: Export */}
           <div className="control-group">
-            <DownloadControls
-              onDownloadSVG={onDownloadSVG}
-              onCopyMermaid={onCopyMermaid}
-            />
+            <DownloadControls onDownloadSVG={onDownloadSVG} onCopyMermaid={onCopyMermaid} />
           </div>
 
           <span className="toolbar-divider"></span>
 
           {/* Group 3: Orientation & Layout */}
           <div className="control-group">
-            <OrientationControls
-              orientation={orientation}
-              onChange={onRotate}
-            />
+            <OrientationControls orientation={orientation} onChange={onRotate} />
             <LayoutControls layout={layout} onChange={onLayoutChange} />
           </div>
 
@@ -107,12 +101,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
           {/* Group 5: History */}
           <div className="control-group">
-            <HistoryControls
-              onUndo={onUndo}
-              onRedo={onRedo}
-              canUndo={canUndo}
-              canRedo={canRedo}
-            />
+            <HistoryControls onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
           </div>
 
           <span className="toolbar-divider"></span>

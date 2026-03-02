@@ -47,13 +47,13 @@ export function Drawer({ open, onClose, children }: DrawerProps) {
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div 
-        className="drawer-content" 
-        style={{ width: width, transition: isResizing ? 'none' : 'width 0.2s ease' }}
+      <div
+        className="drawer-content"
+        style={{ width: width, transition: isResizing ? "none" : "width 0.2s ease" }}
         ref={sidebarRef}
       >
         <div
-          className={`drawer-resizer ${isResizing ? 'resizing' : ''}`}
+          className={`drawer-resizer ${isResizing ? "resizing" : ""}`}
           onMouseDown={startResizing}
           style={{
             position: "absolute",
@@ -66,12 +66,19 @@ export function Drawer({ open, onClose, children }: DrawerProps) {
             backgroundColor: isResizing ? "#1a73e8" : "transparent",
             transition: "background-color 0.2s",
           }}
-          onMouseEnter={(e) => { if(!isResizing) e.currentTarget.style.backgroundColor = 'rgba(26, 115, 232, 0.3)'; }}
-          onMouseLeave={(e) => { if(!isResizing) e.currentTarget.style.backgroundColor = 'transparent'; }}
+          onMouseEnter={(e) => {
+            if (!isResizing) e.currentTarget.style.backgroundColor = "rgba(26, 115, 232, 0.3)";
+          }}
+          onMouseLeave={(e) => {
+            if (!isResizing) e.currentTarget.style.backgroundColor = "transparent";
+          }}
         />
         {/* dbt style: Integrated close button in CompactDetailLayout would be better, but let's just make this header consistent */}
         <div className="flex justify-end p-2 border-b border-[#e5e7eb]">
-          <button className="p-2 text-[#6b7280] hover:bg-gray-100 rounded-lg transition-colors" onClick={onClose}>
+          <button
+            className="p-2 text-[#6b7280] hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={onClose}
+          >
             ✕
           </button>
         </div>

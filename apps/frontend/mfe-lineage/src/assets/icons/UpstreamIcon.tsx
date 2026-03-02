@@ -18,33 +18,11 @@ export function UpstreamIcon(props: SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      
+
       {/* Table */}
-      <rect
-        x="4"
-        y="12"
-        width="16"
-        height="10"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <line
-        x1="4"
-        y1="16"
-        x2="20"
-        y2="16"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <line
-        x1="12"
-        y1="12"
-        x2="12"
-        y2="22"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <rect x="4" y="12" width="16" height="10" rx="1" stroke="currentColor" strokeWidth="2" />
+      <line x1="4" y1="16" x2="20" y2="16" stroke="currentColor" strokeWidth="2" />
+      <line x1="12" y1="12" x2="12" y2="22" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }

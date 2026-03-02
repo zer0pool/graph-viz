@@ -13,7 +13,7 @@ export const CompactDetailLayout: React.FC<{
   actions?: React.ReactNode;
 }> = ({ title, tabs, activeTab, onTabChange, children, owner, type = "table", actions }) => {
   const isJob = type === "job";
-  
+
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Compact Header for Embedded - GCP style */}
@@ -21,10 +21,16 @@ export const CompactDetailLayout: React.FC<{
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
-                isJob ? "bg-green-50 text-green-700 border-green-100" : "bg-[#f0f7ff] text-[#0061ff] border-[#d0e4ff]"
-              }`}>
-                <span className="text-[10px] font-bold uppercase tracking-wider">{type === "job" ? "Job" : "Table"}</span>
+              <div
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
+                  isJob
+                    ? "bg-green-50 text-green-700 border-green-100"
+                    : "bg-[#f0f7ff] text-[#0061ff] border-[#d0e4ff]"
+                }`}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider">
+                  {type === "job" ? "Job" : "Table"}
+                </span>
               </div>
             </div>
             <h1 className="text-xl font-bold text-[#111827] mb-0.5">{title}</h1>
@@ -41,9 +47,7 @@ export const CompactDetailLayout: React.FC<{
 
       {/* Main Content - No background, cleaner look */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-full mx-auto">
-          {children}
-        </div>
+        <div className="max-w-full mx-auto">{children}</div>
       </main>
     </div>
   );

@@ -72,9 +72,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
   if (errorJob)
     return (
       <div className="p-8 text-center bg-red-50 rounded-lg m-4 border border-red-100">
-        <div className="text-red-500 font-bold mb-2">
-          Error loading job details
-        </div>
+        <div className="text-red-500 font-bold mb-2">Error loading job details</div>
         <div className="text-sm text-red-600 font-mono">{errorJob.message}</div>
       </div>
     );
@@ -92,54 +90,69 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
   };
 
   const headerActions = (
-    <HeaderActionButtons 
+    <HeaderActionButtons
       onSync={() => console.log("Sync clicked")}
-      onLineage={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-        detail: { path: `/lineage/job:${encodeURIComponent(job?.job_id || job?.id || jobId)}` } 
-      }))}
+      onLineage={() =>
+        window.dispatchEvent(
+          new CustomEvent("mfe:navigate", {
+            detail: { path: `/lineage/job:${encodeURIComponent(job?.job_id || job?.id || jobId)}` },
+          })
+        )
+      }
     />
   );
- 
+
   const metadata = [
     { icon: Clock, label: properties.schedule?.interval || job?.schedule || "No Schedule" },
-    { 
-      icon: PanelLeft, 
+    {
+      icon: PanelLeft,
       label: (
-        <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-            detail: { path: `/projects/${encodeURIComponent(properties.project || job?.project_id || "N/A")}` } 
-          }))}
+        <button
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent("mfe:navigate", {
+                detail: {
+                  path: `/projects/${encodeURIComponent(properties.project || job?.project_id || "N/A")}`,
+                },
+              })
+            )
+          }
           className="hover:text-blue-600 transition-colors text-left"
         >
           {properties.project || job?.project_name || properties.project_name || "N/A"}
         </button>
-      )
+      ),
     },
-    { 
-      icon: User, 
+    {
+      icon: User,
       label: (
-        <button 
+        <button
           onClick={() => {
-            const ownerId = (properties.owners && properties.owners.length > 0) 
-              ? properties.owners[0] 
-              : (properties.owner || job?.owner);
+            const ownerId =
+              properties.owners && properties.owners.length > 0
+                ? properties.owners[0]
+                : properties.owner || job?.owner;
             if (ownerId) {
-              window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-                detail: { path: `/users/${encodeURIComponent(ownerId)}` } 
-              }));
+              window.dispatchEvent(
+                new CustomEvent("mfe:navigate", {
+                  detail: { path: `/users/${encodeURIComponent(ownerId)}` },
+                })
+              );
             }
           }}
           className="hover:text-amber-600 transition-colors text-left"
         >
-          {(properties.owners && properties.owners.length > 0) 
-            ? properties.owners[0] 
-            : (properties.owner || job?.owner || "N/A")}
-          {(properties.owners && properties.owners.length > 1) ? ` +${properties.owners.length - 1}` : ""}
+          {properties.owners && properties.owners.length > 0
+            ? properties.owners[0]
+            : properties.owner || job?.owner || "N/A"}
+          {properties.owners && properties.owners.length > 1
+            ? ` +${properties.owners.length - 1}`
+            : ""}
         </button>
-      )
+      ),
     },
   ];
- 
+
   const jobHeaderSummary = (
     <EntityHeader
       icon={Zap}
@@ -178,60 +191,69 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                      Other Jobs in Project: <span className="text-blue-600">{job.project_name || job.project_id}</span>
+                      Other Jobs in Project:{" "}
+                      <span className="text-blue-600">{job.project_name || job.project_id}</span>
                     </h3>
                   </div>
-                  
+
                   {loadingProjectJobs ? (
                     <div className="text-sm text-gray-500">Loading other jobs...</div>
                   ) : (
                     <div className="space-y-2">
-                       {projectJobs?.filter((j: any) => j.id !== jobId).length === 0 && (
-                         <div className="text-sm text-gray-400 italic">No other jobs found in this project.</div>
-                       )}
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {projectJobs?.filter((j: any) => j.id !== jobId).map((otherJob: any) => (
-                          <div 
-                            key={otherJob.id}
-                            onClick={() => onNavigateToJob(otherJob.id)}
-                            className="p-3 border border-gray-100 rounded-lg hover:border-blue-200 hover:bg-blue-50 cursor-pointer transition-all flex justify-between items-center group"
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium text-gray-900 group-hover:text-blue-700">{otherJob.name || otherJob.id}</span>
-                              <span className="text-[10px] text-gray-500">{otherJob.id}</span>
+                      {projectJobs?.filter((j: any) => j.id !== jobId).length === 0 && (
+                        <div className="text-sm text-gray-400 italic">
+                          No other jobs found in this project.
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {projectJobs
+                          ?.filter((j: any) => j.id !== jobId)
+                          .map((otherJob: any) => (
+                            <div
+                              key={otherJob.id}
+                              onClick={() => onNavigateToJob(otherJob.id)}
+                              className="p-3 border border-gray-100 rounded-lg hover:border-blue-200 hover:bg-blue-50 cursor-pointer transition-all flex justify-between items-center group"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                                  {otherJob.name || otherJob.id}
+                                </span>
+                                <span className="text-[10px] text-gray-500">{otherJob.id}</span>
+                              </div>
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                  otherJob.status === "RUNNING" || otherJob.status === "active"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {otherJob.status}
+                              </span>
                             </div>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                              otherJob.status === 'RUNNING' || otherJob.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {otherJob.status}
-                            </span>
-                          </div>
-                        ))}
-                       </div>
+                          ))}
+                      </div>
 
-                       {totalProjectJobs > pageSize && (
-                         <div className="flex justify-center items-center gap-4 mt-4 pt-4 border-t border-gray-50">
-                           <button 
+                      {totalProjectJobs > pageSize && (
+                        <div className="flex justify-center items-center gap-4 mt-4 pt-4 border-t border-gray-50">
+                          <button
                             disabled={page === 0}
                             onClick={onPrevPage}
                             className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
-                           >
-                             Previous
-                           </button>
-                           <span className="text-xs text-gray-500">
-                             Page {page + 1} of {Math.ceil(totalProjectJobs / pageSize)}
-                           </span>
-                           <button 
+                          >
+                            Previous
+                          </button>
+                          <span className="text-xs text-gray-500">
+                            Page {page + 1} of {Math.ceil(totalProjectJobs / pageSize)}
+                          </span>
+                          <button
                             disabled={(page + 1) * pageSize >= totalProjectJobs}
                             onClick={onNextPage}
                             className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
-                           >
-                             Next
-                           </button>
-                         </div>
-                       )}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -249,7 +271,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
           {tab === "runs" && (
             <div className="space-y-6 animate-fade-in">
               <JobRunTimeline runs={runs} onRunSelect={onSetSelectedRun} />
-              
+
               <JobRunHistory
                 runs={runs}
                 summary={summary}

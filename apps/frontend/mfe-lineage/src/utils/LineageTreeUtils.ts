@@ -24,11 +24,7 @@ export const LineageTreeUtils = {
    * Converts a flat list of items (BFS) into a hierarchically ordered list
    * with 'treePrefix' for visual indentation.
    */
-  buildFlatTree(
-    items: any[],
-    expandedGroupIds?: Set<string>,
-    limit: number = 20,
-  ): LineageItem[] {
+  buildFlatTree(items: any[], expandedGroupIds?: Set<string>, limit: number = 20): LineageItem[] {
     if (!items || items.length === 0) return [];
 
     // 1. Convert List to Tree (Map ID -> Node with children)
@@ -60,11 +56,7 @@ export const LineageTreeUtils = {
     const flatList: LineageItem[] = [];
 
     // Recursive helper
-    const traverseLogical = (
-      nodes: LineageItem[],
-      prefix: string,
-      parentId: string,
-    ) => {
+    const traverseLogical = (nodes: LineageItem[], prefix: string, parentId: string) => {
       // Flatten: Table -> [Jobs] -> [Tables]. We want Table -> [Tables]
       let visibleChildren: LineageItem[] = [];
       nodes.forEach((job) => {
@@ -82,9 +74,7 @@ export const LineageTreeUtils = {
       const isExpanded = expandedGroupIds?.has(parentId);
       const totalCount = visibleChildren.length;
       const shouldTruncate = !isExpanded && totalCount > limit;
-      const displayList = shouldTruncate
-        ? visibleChildren.slice(0, limit)
-        : visibleChildren;
+      const displayList = shouldTruncate ? visibleChildren.slice(0, limit) : visibleChildren;
 
       displayList.forEach((table, index) => {
         const isLast = !shouldTruncate && index === displayList.length - 1;
@@ -130,12 +120,10 @@ export const LineageTreeUtils = {
   getCounts(items: any[]) {
     if (!items) return { t: 0, j: 0 };
     const tableCount = items.filter(
-      (i) => (i.type && i.type.toLowerCase() === "table") || i.depth === 0,
+      (i) => (i.type && i.type.toLowerCase() === "table") || i.depth === 0
     ).length;
     const uniqueJobs = new Set(
-      items
-        .filter((i) => i.type && i.type.toLowerCase() === "job")
-        .map((i) => i.name),
+      items.filter((i) => i.type && i.type.toLowerCase() === "job").map((i) => i.name)
     );
     return { t: tableCount, j: uniqueJobs.size };
   },

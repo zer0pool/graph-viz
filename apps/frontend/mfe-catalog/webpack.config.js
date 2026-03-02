@@ -50,7 +50,10 @@ module.exports = {
       {
         context: ["/admin-console/api", "/api"],
         target: "http://host.docker.internal:5003",
-        pathRewrite: { "^/admin-console/api": "/lineage-manager/api", "^/api": "/lineage-manager/api" },
+        pathRewrite: {
+          "^/admin-console/api": "/lineage-manager/api",
+          "^/api": "/lineage-manager/api",
+        },
         changeOrigin: true,
       },
     ],
@@ -77,13 +80,9 @@ module.exports = {
 
   plugins: [
     new webpack.DefinePlugin({
-      "import.meta.env.NODE_ENV": JSON.stringify(
-        process.env.NODE_ENV || "development",
-      ),
+      "import.meta.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       "import.meta.env.DEV": JSON.stringify(!isProd),
-      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || "",
-      ),
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || ""),
     }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
@@ -135,7 +134,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: (isProd || isDeploy) ? "/admin-console/mfe-catalog/" : "http://localhost:5102/",
+    publicPath: isProd || isDeploy ? "/admin-console/mfe-catalog/" : "http://localhost:5102/",
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[contenthash].js",
     chunkFilename: "[name].[contenthash].js",

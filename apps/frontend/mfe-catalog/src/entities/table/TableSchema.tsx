@@ -22,13 +22,9 @@ const SchemaRow: React.FC<{
           style={{ paddingLeft: `${1.5 + level * 2}rem` }}
         >
           <div className="flex items-center gap-2">
-            {level > 0 && (
-              <span className="text-[#dadce0]">⌞</span>
-            )}
+            {level > 0 && <span className="text-[#dadce0]">⌞</span>}
             <span
-              className={`text-sm font-medium ${
-                isNested ? "text-[#1a73e8]" : "text-[#202124]"
-              }`}
+              className={`text-sm font-medium ${isNested ? "text-[#1a73e8]" : "text-[#202124]"}`}
             >
               {column.name}
             </span>
@@ -45,8 +41,8 @@ const SchemaRow: React.FC<{
               column.mode === "REQUIRED"
                 ? "text-[#d93025]"
                 : column.mode === "REPEATED"
-                ? "text-[#1a73e8]"
-                : "text-[#5f6368]"
+                  ? "text-[#1a73e8]"
+                  : "text-[#5f6368]"
             }`}
           >
             {column.mode}
@@ -68,10 +64,7 @@ const SchemaRow: React.FC<{
   );
 };
 
-export const TableSchema: React.FC<TableSchemaProps> = ({
-  columns,
-  loading,
-}) => {
+export const TableSchema: React.FC<TableSchemaProps> = ({ columns, loading }) => {
   if (loading) {
     return (
       <div className="p-12 text-center animate-pulse">

@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Clock, Zap, Dumbbell, Activity, CheckCircle2, XCircle, AlertCircle, Network } from "lucide-react";
+import {
+  Clock,
+  Zap,
+  Dumbbell,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Network,
+} from "lucide-react";
 import { JobDetail } from "../../shared/types/job";
 import { Card, CardContent } from "../../shared/ui/card";
 import { Button } from "../../shared/ui/button";
@@ -38,27 +47,26 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
 
   useEffect(() => {
     if (job?.job_id) {
-       // Fetch Health and Lineage in parallel
-       const fetchData = async () => {
-         setIsFetching(true);
-         try {
-           const [healthData, lineageData] = await Promise.all([
-             api.fetchJobHealth(job.job_id),
-             api.fetchJobLineageHybrid(job.job_id),
-           ]);
-           setHealth(healthData.health); // API returns wrapped response
-           setLineage(lineageData);
-         } catch (err) {
-           console.error("Failed to fetch lineage data", err);
-           setError("Failed to load lineage data.");
-         } finally {
-           setIsFetching(false);
-         }
-       };
-       fetchData();
+      // Fetch Health and Lineage in parallel
+      const fetchData = async () => {
+        setIsFetching(true);
+        try {
+          const [healthData, lineageData] = await Promise.all([
+            api.fetchJobHealth(job.job_id),
+            api.fetchJobLineageHybrid(job.job_id),
+          ]);
+          setHealth(healthData.health); // API returns wrapped response
+          setLineage(lineageData);
+        } catch (err) {
+          console.error("Failed to fetch lineage data", err);
+          setError("Failed to load lineage data.");
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchData();
     }
   }, [job?.job_id]);
-
 
   if (loading || isFetching) {
     return (
@@ -90,26 +98,32 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
           <Activity className="w-5 h-5 text-amber-500 fill-amber-100" />
           <span className="font-semibold text-slate-800 text-base">Health</span>
         </div>
-        
+
         <div className="h-6 w-px bg-slate-200 mx-2 hidden sm:block"></div>
 
         <div className="flex items-center gap-6 flex-1 flex-wrap">
           {/* Freshness Group */}
           <div className="flex items-center gap-4">
-             <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
-               <span className="text-xs font-semibold text-slate-500 uppercase">Updated</span>
-               <span className="font-mono font-medium text-slate-900">{health?.health?.freshness?.last_updated || "-"}</span>
-             </div>
-             <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
-               <span className="text-xs font-semibold text-slate-500 uppercase">SLA</span>
-               <span className="font-mono text-slate-600">{health?.health?.freshness?.sla || "-"}</span>
-             </div>
-             <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
-               <span className="text-xs font-semibold text-slate-500 uppercase">Delay</span>
-               <span className={`font-mono font-bold ${(health?.health?.freshness?.delay || 0) > 0 ? "text-red-600" : "text-slate-700"}`}>
-                 {health?.health?.freshness?.delay || 0}m
-               </span>
-             </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Updated</span>
+              <span className="font-mono font-medium text-slate-900">
+                {health?.health?.freshness?.last_updated || "-"}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">SLA</span>
+              <span className="font-mono text-slate-600">
+                {health?.health?.freshness?.sla || "-"}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Delay</span>
+              <span
+                className={`font-mono font-bold ${(health?.health?.freshness?.delay || 0) > 0 ? "text-red-600" : "text-slate-700"}`}
+              >
+                {health?.health?.freshness?.delay || 0}m
+              </span>
+            </div>
           </div>
 
           <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
@@ -117,13 +131,18 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
           {/* Last Run Group */}
           <div className="flex items-center gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-               <span className="text-xs font-semibold text-slate-500 uppercase">Last</span>
-               <Badge variant={getStatusVariant(health?.health?.last_run?.result)} className="h-5 px-1.5 text-[10px] font-bold">
-                 {health?.health?.last_run?.result || "UNKNOWN"}
-               </Badge>
+              <span className="text-xs font-semibold text-slate-500 uppercase">Last</span>
+              <Badge
+                variant={getStatusVariant(health?.health?.last_run?.result)}
+                className="h-5 px-1.5 text-[10px] font-bold"
+              >
+                {health?.health?.last_run?.result || "UNKNOWN"}
+              </Badge>
             </div>
             {health?.health?.last_run?.duration && (
-               <span className="text-xs text-slate-400 font-mono">({health?.health?.last_run?.duration})</span>
+              <span className="text-xs text-slate-400 font-mono">
+                ({health?.health?.last_run?.duration})
+              </span>
             )}
           </div>
 
@@ -131,18 +150,20 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
 
           {/* Execution Group */}
           <div className="flex items-center gap-4">
-             <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
-               <span className="text-xs font-semibold text-slate-500 uppercase">Mode</span>
-               <span className="font-medium text-slate-900">{health?.health?.execution?.mode || "-"}</span>
-             </div>
-             {health?.health?.execution?.partition && (
-               <div className="flex items-center gap-1">
-                 <span className="text-xs text-slate-400">Partition:</span>
-                 <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-mono text-slate-600">
-                   {health?.health?.execution?.partition}
-                 </code>
-               </div>
-             )}
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Mode</span>
+              <span className="font-medium text-slate-900">
+                {health?.health?.execution?.mode || "-"}
+              </span>
+            </div>
+            {health?.health?.execution?.partition && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-slate-400">Partition:</span>
+                <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-mono text-slate-600">
+                  {health?.health?.execution?.partition}
+                </code>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
@@ -153,7 +174,9 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-2">
         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-        <span className="font-semibold text-sm text-slate-700">Upstream Inputs ({lineage?.inputs?.length || 0})</span>
+        <span className="font-semibold text-sm text-slate-700">
+          Upstream Inputs ({lineage?.inputs?.length || 0})
+        </span>
       </div>
       <div className="rounded-md border border-slate-200 overflow-hidden">
         <Table>
@@ -167,16 +190,21 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
           </TableHeader>
           <TableBody>
             {lineage?.inputs?.map((input) => (
-              <TableRow 
-                key={input.id} 
+              <TableRow
+                key={input.id}
                 className="cursor-pointer hover:bg-slate-50/50"
                 onClick={() => navigate(`/tables/${encodeURIComponent(input.name)}`)}
               >
                 <TableCell className="font-medium py-2">
-                  <div className="truncate max-w-[400px]" title={input.name}>{input.name}</div>
+                  <div className="truncate max-w-[400px]" title={input.name}>
+                    {input.name}
+                  </div>
                 </TableCell>
                 <TableCell className="py-2 text-right">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal bg-blue-50 text-blue-700 border-blue-200 inline-flex">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 h-5 font-normal bg-blue-50 text-blue-700 border-blue-200 inline-flex"
+                  >
                     {input.read_mode}
                   </Badge>
                 </TableCell>
@@ -212,8 +240,10 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
   const OutputPanel = (
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-2">
-         <span className="w-2 h-2 rounded-full bg-teal-500"></span>
-         <span className="font-semibold text-sm text-slate-700">Downstream Outputs ({lineage?.outputs?.length || 0})</span>
+        <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+        <span className="font-semibold text-sm text-slate-700">
+          Downstream Outputs ({lineage?.outputs?.length || 0})
+        </span>
       </div>
       <div className="rounded-md border border-slate-200 overflow-hidden">
         <Table>
@@ -227,16 +257,21 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
           </TableHeader>
           <TableBody>
             {lineage?.outputs?.map((output) => (
-              <TableRow 
-                key={output.id} 
+              <TableRow
+                key={output.id}
                 className="cursor-pointer hover:bg-slate-50/50"
                 onClick={() => navigate(`/tables/${encodeURIComponent(output.name)}`)}
               >
                 <TableCell className="font-medium py-2">
-                   <div className="truncate max-w-[400px]" title={output.name}>{output.name}</div>
+                  <div className="truncate max-w-[400px]" title={output.name}>
+                    {output.name}
+                  </div>
                 </TableCell>
                 <TableCell className="py-2 text-right">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal bg-teal-50 text-teal-700 border-teal-200 inline-flex">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 h-5 font-normal bg-teal-50 text-teal-700 border-teal-200 inline-flex"
+                  >
                     {output.write_mode}
                   </Badge>
                 </TableCell>
@@ -246,12 +281,12 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
                   </span>
                 </TableCell>
                 <TableCell className="text-right font-mono text-xs text-slate-600 py-2">
-                   {/* API does not provide updated time for outputs yet, using placeholder or other metric */}
-                   -
+                  {/* API does not provide updated time for outputs yet, using placeholder or other metric */}
+                  -
                 </TableCell>
               </TableRow>
             ))}
-             {(!lineage?.outputs || lineage.outputs.length === 0) && (
+            {(!lineage?.outputs || lineage.outputs.length === 0) && (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-slate-400 italic h-24">
                   No downstream outputs
@@ -265,24 +300,24 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
   );
 
   const GraphPanel = (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-8">
-          <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-            <Network className="w-12 h-12 text-slate-300" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-600 mb-2">Interactive Lineage Graph</h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-md text-center">
-            Visualize dependencies and data flow for this job.
-            Current graph contains {lineage?.graph?.nodes?.length || 0} nodes and {lineage?.graph?.edges?.length || 0} edges.
-          </p>
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.job_id)}`)}
-          >
-            <Network className="w-4 h-4" />
-            Open Graph Explorer
-          </Button>
+    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-8">
+      <div className="bg-white p-6 rounded-full shadow-sm mb-4">
+        <Network className="w-12 h-12 text-slate-300" />
       </div>
+      <h3 className="text-lg font-semibold text-slate-600 mb-2">Interactive Lineage Graph</h3>
+      <p className="text-sm text-slate-500 mb-6 max-w-md text-center">
+        Visualize dependencies and data flow for this job. Current graph contains{" "}
+        {lineage?.graph?.nodes?.length || 0} nodes and {lineage?.graph?.edges?.length || 0} edges.
+      </p>
+      <Button
+        variant="outline"
+        className="gap-2"
+        onClick={() => navigate(`/lineage/job:${encodeURIComponent(job.job_id)}`)}
+      >
+        <Network className="w-4 h-4" />
+        Open Graph Explorer
+      </Button>
+    </div>
   );
 
   return (

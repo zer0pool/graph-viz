@@ -28,9 +28,7 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
     return (
       <div className="p-12 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#1a73e8] border-t-transparent mb-4"></div>
-        <div className="text-gray-500 font-medium font-sans">
-          Loading execution logs...
-        </div>
+        <div className="text-gray-500 font-medium font-sans">Loading execution logs...</div>
       </div>
     );
   }
@@ -45,7 +43,7 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      const pad = (n: number) => String(n).padStart(2, '0');
+      const pad = (n: number) => String(n).padStart(2, "0");
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     } catch {
       return dateStr;
@@ -53,12 +51,15 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
   };
 
   // Calculate period string
-  const sortedByTime = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  const sortedByTime = [...runs].sort(
+    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
   const startTimeRaw = sortedByTime[0]?.start_time;
   const endTimeRaw = sortedByTime[sortedByTime.length - 1]?.start_time;
-  const periodStr = startTimeRaw && endTimeRaw 
-    ? `${formatDate(startTimeRaw)} ~ ${formatDate(endTimeRaw)}` 
-    : "No runs in this period";
+  const periodStr =
+    startTimeRaw && endTimeRaw
+      ? `${formatDate(startTimeRaw)} ~ ${formatDate(endTimeRaw)}`
+      : "No runs in this period";
 
   return (
     <div className="space-y-6">
@@ -72,21 +73,29 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
       {summary && (
         <div className="flex gap-16 py-5 px-8 bg-[#f8f9fa] border border-[#dadce0] rounded-xl shadow-sm">
           <div>
-            <div className="text-[11px] font-bold text-[#5f6368] uppercase tracking-wider mb-1">Total Runs</div>
+            <div className="text-[11px] font-bold text-[#5f6368] uppercase tracking-wider mb-1">
+              Total Runs
+            </div>
             <div className="text-2xl font-medium text-[#202124]">{summary.total}</div>
           </div>
           <div className="w-px h-10 bg-[#dadce0] self-center" />
           <div className="flex gap-12">
             <div>
-              <div className="text-[11px] font-bold text-[#1e8e3e] uppercase tracking-wider mb-1">Success</div>
+              <div className="text-[11px] font-bold text-[#1e8e3e] uppercase tracking-wider mb-1">
+                Success
+              </div>
               <div className="text-2xl font-medium text-[#1e8e3e]">{summary.success}</div>
             </div>
             <div>
-              <div className="text-[11px] font-bold text-[#d93025] uppercase tracking-wider mb-1">Failed</div>
+              <div className="text-[11px] font-bold text-[#d93025] uppercase tracking-wider mb-1">
+                Failed
+              </div>
               <div className="text-2xl font-medium text-[#d93025]">{summary.failed}</div>
             </div>
             <div>
-              <div className="text-[11px] font-bold text-[#1a73e8] uppercase tracking-wider mb-1">Running</div>
+              <div className="text-[11px] font-bold text-[#1a73e8] uppercase tracking-wider mb-1">
+                Running
+              </div>
               <div className="text-2xl font-medium text-[#1a73e8]">{summary.running}</div>
             </div>
           </div>
@@ -96,9 +105,7 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
       {/* 3. Detailed Table */}
       {runs.length === 0 ? (
         <div className="p-16 text-center bg-[#f8f9fa] rounded-xl border-2 border-dashed border-[#dadce0]">
-          <div className="text-gray-400 font-medium">
-            No run history found for this period.
-          </div>
+          <div className="text-gray-400 font-medium">No run history found for this period.</div>
         </div>
       ) : (
         <>
@@ -140,13 +147,15 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
                       {formatDate(run.end_time)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#5f6368] font-mono">
-                      {run.run_id.replace(/^scheduled_?_/, '')}
+                      {run.run_id.replace(/^scheduled_?_/, "")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusPill status={run.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#5f6368] font-mono">
-                      {run.duration || (run as any).duration_sec ? formatDuration(run.duration || (run as any).duration_sec) : "-"}
+                      {run.duration || (run as any).duration_sec
+                        ? formatDuration(run.duration || (run as any).duration_sec)
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-[10px] px-2 py-1 bg-[#f1f3f4] text-[#5f6368] rounded font-bold uppercase tracking-tight border border-[#dadce0]">
@@ -163,8 +172,10 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
             <div className="flex items-center justify-between px-6 py-3 bg-white border border-[#dadce0] rounded-xl shadow-sm">
               <div className="text-xs text-[#5f6368] font-sans">
                 Showing <span className="font-bold text-[#202124]">{startIdx + 1}</span>-
-                <span className="font-bold text-[#202124]">{Math.min(startIdx + PAGE_SIZE, runs.length)}</span> of{" "}
-                <span className="font-bold text-[#202124]">{runs.length}</span> runs
+                <span className="font-bold text-[#202124]">
+                  {Math.min(startIdx + PAGE_SIZE, runs.length)}
+                </span>{" "}
+                of <span className="font-bold text-[#202124]">{runs.length}</span> runs
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -175,12 +186,11 @@ export const JobRunHistory: React.FC<JobRunHistoryProps> = ({
                   Previous
                 </button>
                 <div className="text-xs text-[#5f6368] px-3 font-sans">
-                  Page <span className="font-bold text-[#202124]">{currentPage + 1}</span> / {pageCount}
+                  Page <span className="font-bold text-[#202124]">{currentPage + 1}</span> /{" "}
+                  {pageCount}
                 </div>
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(pageCount - 1, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(pageCount - 1, p + 1))}
                   disabled={currentPage === pageCount - 1}
                   className="px-4 py-1.5 text-xs font-medium text-[#3c4043] bg-white border border-[#dadce0] rounded hover:bg-[#f1f3f4] disabled:opacity-40 transition-all font-sans"
                 >
@@ -215,10 +225,10 @@ const StatusPill: React.FC<{ status: string }> = ({ status }) => {
           isSuccess
             ? "bg-green-600"
             : isFailed
-            ? "bg-red-600"
-            : isRunning
-            ? "bg-blue-600"
-            : "bg-gray-500"
+              ? "bg-red-600"
+              : isRunning
+                ? "bg-blue-600"
+                : "bg-gray-500"
         }`}
       ></span>
       {status}

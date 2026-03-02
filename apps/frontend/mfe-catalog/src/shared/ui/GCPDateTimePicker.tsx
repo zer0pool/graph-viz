@@ -10,8 +10,18 @@ interface GCPDateTimePickerProps {
 
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function getDaysInMonth(year: number, month: number) {
@@ -22,16 +32,15 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-export function GCPDateTimePicker({
-  label,
-  value,
-  onChange,
-  minDate,
-}: GCPDateTimePickerProps) {
+export function GCPDateTimePicker({ label, value, onChange, minDate }: GCPDateTimePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [showHourPicker, setShowHourPicker] = React.useState(false);
-  const [viewYear, setViewYear] = React.useState(() => value?.getFullYear() ?? new Date().getFullYear());
-  const [viewMonth, setViewMonth] = React.useState(() => value?.getMonth() ?? new Date().getMonth());
+  const [viewYear, setViewYear] = React.useState(
+    () => value?.getFullYear() ?? new Date().getFullYear()
+  );
+  const [viewMonth, setViewMonth] = React.useState(
+    () => value?.getMonth() ?? new Date().getMonth()
+  );
   const [dateInputVal, setDateInputVal] = React.useState(() =>
     value ? formatDateInput(value) : ""
   );
@@ -95,7 +104,15 @@ export function GCPDateTimePicker({
     setDateInputVal(raw);
     const parsed = new Date(raw);
     if (!isNaN(parsed.getTime())) {
-      const d = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), selectedHour, 0, 0, 0);
+      const d = new Date(
+        parsed.getFullYear(),
+        parsed.getMonth(),
+        parsed.getDate(),
+        selectedHour,
+        0,
+        0,
+        0
+      );
       onChange(d);
       setViewYear(d.getFullYear());
       setViewMonth(d.getMonth());
@@ -103,12 +120,16 @@ export function GCPDateTimePicker({
   };
 
   const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else setViewMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else setViewMonth((m) => m + 1);
   };
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
@@ -118,12 +139,14 @@ export function GCPDateTimePicker({
   );
 
   const today = new Date();
-  const minAllowed = minDate ?? (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 90);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })();
+  const minAllowed =
+    minDate ??
+    (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 90);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
   const maxAllowed = new Date();
   maxAllowed.setDate(maxAllowed.getDate() + 1);
   maxAllowed.setHours(23, 59, 59, 999);
@@ -136,14 +159,14 @@ export function GCPDateTimePicker({
 
   const isDisabled = (day: number) => {
     const d = new Date(viewYear, viewMonth, day);
-    return d < new Date(minAllowed.getFullYear(), minAllowed.getMonth(), minAllowed.getDate())
-        || d > new Date(maxAllowed.getFullYear(), maxAllowed.getMonth(), maxAllowed.getDate());
+    return (
+      d < new Date(minAllowed.getFullYear(), minAllowed.getMonth(), minAllowed.getDate()) ||
+      d > new Date(maxAllowed.getFullYear(), maxAllowed.getMonth(), maxAllowed.getDate())
+    );
   };
 
   const isToday = (day: number) =>
-    today.getFullYear() === viewYear &&
-    today.getMonth() === viewMonth &&
-    today.getDate() === day;
+    today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day;
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -152,19 +175,23 @@ export function GCPDateTimePicker({
         className={`relative w-full border rounded-md cursor-pointer transition-colors ${
           isOpen ? "border-blue-500" : "border-slate-300 hover:border-slate-400"
         } bg-white`}
-        onClick={() => setIsOpen(o => !o)}
+        onClick={() => setIsOpen((o) => !o)}
       >
         {/* Floating label */}
-        <span className={`absolute -top-2 left-3 px-1 text-[10px] font-medium bg-white leading-none ${
-          isOpen ? "text-blue-500" : "text-slate-500"
-        }`}>
+        <span
+          className={`absolute -top-2 left-3 px-1 text-[10px] font-medium bg-white leading-none ${
+            isOpen ? "text-blue-500" : "text-slate-500"
+          }`}
+        >
           {label}
         </span>
         <div className="flex items-center justify-between px-3 py-2.5">
           <span className={`text-xs font-medium ${value ? "text-slate-800" : "text-slate-400"}`}>
             {value ? formatDisplay(value) : "Select date and time"}
           </span>
-          <Calendar className={`w-4 h-4 flex-shrink-0 ml-2 ${isOpen ? "text-blue-500" : "text-slate-400"}`} />
+          <Calendar
+            className={`w-4 h-4 flex-shrink-0 ml-2 ${isOpen ? "text-blue-500" : "text-slate-400"}`}
+          />
         </div>
       </div>
       <p className="mt-1 text-[10px] text-slate-400">Requires a date in the past (max 90 days)</p>
@@ -185,7 +212,7 @@ export function GCPDateTimePicker({
                 onChange={handleDateInput}
                 placeholder="MM/DD/YYYY"
                 className="w-full border border-slate-300 rounded-md py-2 px-2 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
             {/* Hour outlined custom dropdown */}
@@ -195,14 +222,17 @@ export function GCPDateTimePicker({
               </span>
               <div
                 className="w-full border border-slate-300 rounded-md py-2 px-2 text-xs outline-none focus:border-blue-500 bg-white cursor-pointer text-center select-none hover:border-slate-400 transition-colors"
-                onClick={e => { e.stopPropagation(); setShowHourPicker(v => !v); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowHourPicker((v) => !v);
+                }}
               >
                 {String(selectedHour).padStart(2, "0")}:00
               </div>
               {showHourPicker && (
                 <div
                   className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-[100] max-h-48 overflow-y-auto"
-                  onClick={e => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {Array.from({ length: 24 }, (_, i) => (
                     <div
@@ -232,7 +262,10 @@ export function GCPDateTimePicker({
             {/* Month nav */}
             <div className="flex items-center justify-between mb-3">
               <button
-                onClick={e => { e.stopPropagation(); prevMonth(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevMonth();
+                }}
                 className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors text-sm font-bold"
               >
                 ‹
@@ -241,7 +274,10 @@ export function GCPDateTimePicker({
                 {MONTHS[viewMonth]} {viewYear}
               </span>
               <button
-                onClick={e => { e.stopPropagation(); nextMonth(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextMonth();
+                }}
                 className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors text-sm font-bold"
               >
                 ›
@@ -266,17 +302,21 @@ export function GCPDateTimePicker({
                 return (
                   <button
                     key={i}
-                    onClick={e => { e.stopPropagation(); if (!disabled) handleDayClick(day); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!disabled) handleDayClick(day);
+                    }}
                     disabled={disabled}
                     className={`
                       mx-auto w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all
-                      ${selected
-                        ? "bg-blue-600 text-white font-bold shadow-sm"
-                        : disabled
-                          ? "text-slate-200 cursor-not-allowed"
-                          : isToday(day)
-                            ? "border border-blue-400 text-blue-600 font-bold hover:bg-blue-50 cursor-pointer"
-                            : "text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
+                      ${
+                        selected
+                          ? "bg-blue-600 text-white font-bold shadow-sm"
+                          : disabled
+                            ? "text-slate-200 cursor-not-allowed"
+                            : isToday(day)
+                              ? "border border-blue-400 text-blue-600 font-bold hover:bg-blue-50 cursor-pointer"
+                              : "text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
                       }
                     `}
                   >
@@ -290,7 +330,10 @@ export function GCPDateTimePicker({
           {/* Footer */}
           <div className="flex justify-end px-3 pb-3">
             <button
-              onClick={e => { e.stopPropagation(); setIsOpen(false); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
               className="text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-colors"
             >
               Close
@@ -300,4 +343,4 @@ export function GCPDateTimePicker({
       )}
     </div>
   );
-};
+}

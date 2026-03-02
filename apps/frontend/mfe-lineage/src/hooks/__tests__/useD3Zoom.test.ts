@@ -90,9 +90,7 @@ describe("useD3Zoom", () => {
     container.appendChild(svg);
     const mermaidRef = { current: container };
 
-    const { result } = renderHook(() =>
-      useD3Zoom({ mermaidRef, onInteractionStart }),
-    );
+    const { result } = renderHook(() => useD3Zoom({ mermaidRef, onInteractionStart }));
 
     if (eventHandlers["zoom"]) {
       act(() => {
@@ -161,9 +159,7 @@ describe("useD3Zoom", () => {
     const container = document.createElement("div");
     const mermaidRef = { current: container };
 
-    renderHook(() =>
-      useD3Zoom({ mermaidRef, onInteractionStart, onInteractionEnd }),
-    );
+    renderHook(() => useD3Zoom({ mermaidRef, onInteractionStart, onInteractionEnd }));
 
     if (eventHandlers["start"]) {
       act(() => {

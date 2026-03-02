@@ -52,12 +52,9 @@ export const ListView: React.FC<ListViewProps> = ({
       }
 
       // Fallback: If no direct write edge found yet, maybe any connected table
-      const anyEdge = graphData.edges.find(
-        (e: any) => e.source === jobId || e.target === jobId
-      );
+      const anyEdge = graphData.edges.find((e: any) => e.source === jobId || e.target === jobId);
       if (anyEdge) {
-        const otherId =
-          anyEdge.source === jobId ? anyEdge.target : anyEdge.source;
+        const otherId = anyEdge.source === jobId ? anyEdge.target : anyEdge.source;
         const targetNode = graphData.nodes.find(
           (n: GraphNode) => n.id === otherId && n.type === "table"
         );
@@ -71,8 +68,7 @@ export const ListView: React.FC<ListViewProps> = ({
   // 2. Final rootNode decision for the List View
   // - If a Table is explicitly selected -> Use it.
   // - If a Job is selected, or nothing is selected -> Fallback to Initial Search Root Table.
-  const rootNode =
-    selectedNode?.type === "table" ? selectedNode : initialRootTable;
+  const rootNode = selectedNode?.type === "table" ? selectedNode : initialRootTable;
 
   return (
     <div className="list-view-container">

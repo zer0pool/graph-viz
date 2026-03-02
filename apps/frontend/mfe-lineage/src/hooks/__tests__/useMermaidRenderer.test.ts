@@ -62,7 +62,7 @@ describe("useMermaidRenderer", () => {
 
     let dslCounter = 0;
     (MermaidDslService.generate as any).mockImplementation(
-      () => `flowchart LR\n  n1[Node ${++dslCounter}]`,
+      () => `flowchart LR\n  n1[Node ${++dslCounter}]`
     );
 
     (mermaid.render as any).mockResolvedValue({
@@ -136,7 +136,7 @@ describe("useMermaidRenderer", () => {
         }),
       {
         initialProps: { gData: mockGraphData, orient: "LR", lay: "dagre" },
-      },
+      }
     );
 
     // Set ref
@@ -157,7 +157,7 @@ describe("useMermaidRenderer", () => {
     expect(mermaid.initialize).toHaveBeenCalledWith(
       expect.objectContaining({
         flowchart: expect.objectContaining({ defaultRenderer: "elk" }),
-      }),
+      })
     );
 
     // 1. Test Node Interaction
@@ -227,7 +227,7 @@ describe("useMermaidRenderer", () => {
         }),
       {
         initialProps: { orient: "LR" },
-      },
+      }
     );
 
     Object.defineProperty(result.current.mermaidRef, "current", {

@@ -74,13 +74,9 @@ module.exports = {
 
   plugins: [
     new webpack.DefinePlugin({
-      "import.meta.env.NODE_ENV": JSON.stringify(
-        process.env.NODE_ENV || "development",
-      ),
+      "import.meta.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       "import.meta.env.DEV": JSON.stringify(!isProd),
-      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || "",
-      ),
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || ""),
     }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
@@ -131,7 +127,7 @@ module.exports = {
   ],
 
   output: {
-    publicPath: (isProd || isDeploy) ? "/admin-console/mfe-lineage/" : "http://localhost:5101/",
+    publicPath: isProd || isDeploy ? "/admin-console/mfe-lineage/" : "http://localhost:5101/",
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[contenthash].js",
     chunkFilename: "[name].[contenthash].js",

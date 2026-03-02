@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { config } from '../../shared/api/config';
+import { config } from "../../shared/api/config";
 import "../../styles/components/SearchBox.css";
 
 interface SearchSuggestion {
@@ -76,7 +76,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion, onSear
       if (data.owners) {
         data.owners.forEach((owner: any) => {
           // Robust handling: if owner is an object (e.g. {name: '...', ...}), extract name
-          const ownerName = typeof owner === "string" ? owner : (owner.name || String(owner));
+          const ownerName = typeof owner === "string" ? owner : owner.name || String(owner);
           results.push({
             type: "owner" as const,
             id: ownerName,
@@ -132,11 +132,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion, onSear
       {showSuggestions && (
         <div id="suggestions" className="suggestions">
           {suggestions.map((suggestion, idx) => (
-            <div
-              key={idx}
-              className="suggestion-item"
-              onClick={() => internalOnSelect(suggestion)}
-            >
+            <div key={idx} className="suggestion-item" onClick={() => internalOnSelect(suggestion)}>
               <div className="suggestion-name">{suggestion.name}</div>
               <div className="suggestion-type">{suggestion.type}</div>
             </div>

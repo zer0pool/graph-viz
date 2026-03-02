@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Search, RefreshCw, Save, X, ChevronLeft, ChevronRight, User as UserIcon } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  Save,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  User as UserIcon,
+} from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { config } from '../../shared/api/config';
-import { SummaryGrid } from '../../shared/ui/SummaryGrid';
+import { config } from "../../shared/api/config";
+import { SummaryGrid } from "../../shared/ui/SummaryGrid";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
 
 // --- Types ---
@@ -27,10 +35,8 @@ const Badge = ({
 }) => {
   let baseClass =
     "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors";
-  if (variant === "secondary")
-    baseClass += " border-transparent bg-blue-100 text-blue-800";
-  else if (variant === "destructive")
-    baseClass += " border-transparent bg-red-100 text-red-800";
+  if (variant === "secondary") baseClass += " border-transparent bg-blue-100 text-blue-800";
+  else if (variant === "destructive") baseClass += " border-transparent bg-red-100 text-red-800";
   else if (variant === "outline") baseClass += " border-gray-200 text-gray-700";
   else if (variant === "success") baseClass += " border-transparent bg-green-100 text-green-800";
   else baseClass += " border-transparent bg-gray-100 text-gray-800";
@@ -66,10 +72,14 @@ export function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
-  
-  const { metrics: summaryMetrics, loading: loadingMetrics, refresh: refreshSummary } = useLandingPageData("users");
+
+  const {
+    metrics: summaryMetrics,
+    loading: loadingMetrics,
+    refresh: refreshSummary,
+  } = useLandingPageData("users");
   const { metrics: plots } = useLandingPageData("users"); // For analytics/trends if needed
-  
+
   // Existing local state and effects for user list
   // Update searchQuery when URL changes
   useEffect(() => {
@@ -89,15 +99,15 @@ export function UsersPage() {
       const offset = (page - 1) * pageSize;
       const qParam = query ? `&q=${encodeURIComponent(query)}` : "";
       const url = `${config.API_BASE_URL}/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
-      
+
       const response = await fetch(url, {
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
-      
+
       if (data && Array.isArray(data.users)) {
         setUsers(data.users);
         setTotal(data.total || 0);
@@ -113,10 +123,10 @@ export function UsersPage() {
     } catch (error: any) {
       console.error("Error fetching users:", error);
       setUsers([]);
-      if (error.name === 'AbortError') {
-         setError("Failed to get users (Timeout)");
+      if (error.name === "AbortError") {
+        setError("Failed to get users (Timeout)");
       } else {
-         setError("Failed to get users");
+        setError("Failed to get users");
       }
     } finally {
       setLoading(false);
@@ -140,7 +150,7 @@ export function UsersPage() {
 
   const handleToggleRole = (role: Role) => {
     setSelectedRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
   };
 
@@ -148,8 +158,8 @@ export function UsersPage() {
     if (editingUser) {
       setUsers((prev) =>
         prev.map((u) =>
-          u.user_id === editingUser.user_id ? { ...u, roles: [...selectedRoles] } : u,
-        ),
+          u.user_id === editingUser.user_id ? { ...u, roles: [...selectedRoles] } : u
+        )
       );
       setEditingUser(null);
       setSelectedRoles([]);
@@ -161,9 +171,7 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Users
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Users</h1>
           <p className="text-muted-foreground mt-1 text-sm text-gray-500">
             Manage user access and permissions
           </p>
@@ -182,19 +190,14 @@ export function UsersPage() {
         </div>
       </div>
 
-      <SummaryGrid 
-        cols={4}
-        metrics={summaryMetrics}
-      />
+      <SummaryGrid cols={4} metrics={summaryMetrics} />
 
       {/* Users Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">All Users</h3>
-            <p className="text-sm text-gray-500">
-              {total} users found
-            </p>
+            <p className="text-sm text-gray-500">{total} users found</p>
           </div>
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative w-80">
@@ -216,7 +219,10 @@ export function UsersPage() {
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => { setSearchQuery(""); fetchUsers(1, ""); }}
+                onClick={() => {
+                  setSearchQuery("");
+                  fetchUsers(1, "");
+                }}
                 className="p-2 text-gray-400 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
@@ -250,41 +256,40 @@ export function UsersPage() {
                 <tr>
                   <td colSpan={5} className="px-6 py-20 text-center text-red-500 bg-red-50/50">
                     <div className="flex flex-col items-center gap-2">
-                       <X className="h-8 w-8" />
-                       <span className="font-medium">{error}</span>
-                       <button onClick={() => fetchUsers()} className="mt-2 text-sm text-blue-600 underline">Try again</button>
+                      <X className="h-8 w-8" />
+                      <span className="font-medium">{error}</span>
+                      <button
+                        onClick={() => fetchUsers()}
+                        className="mt-2 text-sm text-blue-600 underline"
+                      >
+                        Try again
+                      </button>
                     </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-20 text-center text-gray-400"
-                  >
+                  <td colSpan={5} className="px-6 py-20 text-center text-gray-400">
                     No users matching your search
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr
-                    key={user.user_id}
-                    className="hover:bg-blue-50/30 transition-colors group"
-                  >
+                  <tr key={user.user_id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-6 py-4">
-                      <div 
+                      <div
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => navigate(`/users/${encodeURIComponent(user.user_id)}`)}
                       >
-                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            <UserIcon className="w-4 h-4" />
-                         </div>
-                         <div>
-                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                              {user.name}
-                            </div>
-                            <div className="text-xs text-gray-400">{user.user_id}</div>
-                         </div>
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <UserIcon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {user.name}
+                          </div>
+                          <div className="text-xs text-gray-400">{user.user_id}</div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{user.email}</td>
@@ -315,19 +320,21 @@ export function UsersPage() {
         {!loading && !error && total > pageSize && (
           <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-white">
             <p className="text-sm text-gray-500">
-              Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, total)}</span> of <span className="font-medium">{total}</span> users
+              Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+              <span className="font-medium">{Math.min(currentPage * pageSize, total)}</span> of{" "}
+              <span className="font-medium">{total}</span> users
             </p>
             <div className="flex gap-2">
               <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
+                onClick={() => setCurrentPage((p) => p - 1)}
                 className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <button
                 disabled={currentPage * pageSize >= total}
-                onClick={() => setCurrentPage(p => p + 1)}
+                onClick={() => setCurrentPage((p) => p + 1)}
                 className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -343,9 +350,7 @@ export function UsersPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  Edit User Roles
-                </h3>
+                <h3 className="text-xl font-bold text-gray-900">Edit User Roles</h3>
                 <p className="text-sm text-gray-500 mt-1">
                   Modify permissions for <strong>{editingUser.name}</strong>
                 </p>
@@ -378,8 +383,10 @@ export function UsersPage() {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {role === "PM" && "View-only access to dashboards and data"}
-                      {role === "OPERATOR" && "Execute jobs, manage pipelines, respond to incidents"}
-                      {role === "DEVELOPER" && "Full access including schema changes and deployments"}
+                      {role === "OPERATOR" &&
+                        "Execute jobs, manage pipelines, respond to incidents"}
+                      {role === "DEVELOPER" &&
+                        "Full access including schema changes and deployments"}
                       {role === "VIEWER" && "Basic read-only access"}
                     </p>
                   </div>
@@ -407,4 +414,4 @@ export function UsersPage() {
       )}
     </div>
   );
-};
+}

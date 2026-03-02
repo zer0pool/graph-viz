@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { config } from '../../shared/api/config';
+import { config } from "../../shared/api/config";
 import { AuthClient, UserProfile } from "../../entities/user/types";
 
 const AuthContext = createContext<AuthClient | undefined>(undefined);
@@ -70,18 +70,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const fetchWithAuth = useCallback(
-    async (url: string, options: RequestInit = {}) => {
-      // In BFF mode, cookies are handled automatically by the browser.
-      // credentials: 'same-origin' is default for fetch, which works for our MFE setup.
-      return fetch(url, options);
-    },
-    [],
-  );
+  const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
+    // In BFF mode, cookies are handled automatically by the browser.
+    // credentials: 'same-origin' is default for fetch, which works for our MFE setup.
+    return fetch(url, options);
+  }, []);
 
   const getToken = useCallback(
     async () => null, // Tokens are hidden in BFF mode
-    [],
+    []
   );
 
   const value = React.useMemo(
@@ -96,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       config: null, // Minimal config exposed to frontend
       isAuthenticated: !!user && !user.is_anonymous,
     }),
-    [user, login, logout, fetchWithAuth, getToken],
+    [user, login, logout, fetchWithAuth, getToken]
   );
 
   if (isInitializing) {
@@ -108,7 +105,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined)
-    throw new Error("useAuth must be used within AuthProvider");
+  if (context === undefined) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };

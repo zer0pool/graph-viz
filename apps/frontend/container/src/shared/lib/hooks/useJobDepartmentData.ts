@@ -30,7 +30,7 @@ export const useJobDepartmentData = () => {
         jobStats: {
           total: number;
           byDepartment: { department: string; count: number }[];
-        }
+        };
       }>(JOB_DEPT_QUERY);
 
       const sortedItems = (response.jobStats?.byDepartment || []).sort((a, b) => b.count - a.count);

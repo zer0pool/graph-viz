@@ -40,21 +40,24 @@ export const EntityHeader: React.FC<EntityHeaderProps> = ({
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             {onFavoriteToggle && (
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onFavoriteToggle();
                 }}
                 className={`transition-colors p-1 -ml-1 rounded-md hover:bg-slate-100 group ${isFavorite ? "text-amber-400" : "text-slate-300"}`}
               >
-                <Star className={`w-5 h-5 ${isFavorite ? "fill-current" : "fill-none"} group-hover:scale-110 transition-transform`} />
+                <Star
+                  className={`w-5 h-5 ${isFavorite ? "fill-current" : "fill-none"} group-hover:scale-110 transition-transform`}
+                />
               </button>
             )}
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight ml-1">
-              {title}
-            </h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight ml-1">{title}</h1>
             {badge && (
-              <Badge variant={badgeVariant} className="uppercase text-[10px] tracking-widest font-extrabold px-2 py-0">
+              <Badge
+                variant={badgeVariant}
+                className="uppercase text-[10px] tracking-widest font-extrabold px-2 py-0"
+              >
                 {badge}
               </Badge>
             )}
@@ -71,11 +74,9 @@ export const EntityHeader: React.FC<EntityHeaderProps> = ({
           </div>
         </div>
       </div>
-      
+
       {actions && (
-        <div className="flex items-center gap-4 ml-8 border-l border-slate-100 pl-8">
-          {actions}
-        </div>
+        <div className="flex items-center gap-4 ml-8 border-l border-slate-100 pl-8">{actions}</div>
       )}
     </div>
   );

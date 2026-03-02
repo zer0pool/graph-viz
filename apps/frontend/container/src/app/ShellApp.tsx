@@ -6,7 +6,7 @@ import { AppRouter } from "./router/Router";
 import { ErrorBoundary } from "../shared/ui/ErrorBoundary";
 import { Drawer } from "../shared/ui/Drawer";
 import { RemoteMount } from "../features/mfe-loader/RemoteMount";
-import { config } from '../shared/api/config';
+import { config } from "../shared/api/config";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTracker } from "../shared/lib/hooks/useTracker";
 import "../styles/global.css";
@@ -23,16 +23,13 @@ const GlobalNavSync = () => {
     const handleMfeNavigate = (e: any) => {
       const { path } = e.detail;
       if (path && path !== pathname) {
-        console.log(
-          `[Shell:NavSync] Syncing Shell route: ${pathname} -> ${path}`,
-        );
+        console.log(`[Shell:NavSync] Syncing Shell route: ${pathname} -> ${path}`);
         navigate(path);
       }
     };
 
     window.addEventListener(MFE_NAVIGATE_EVENT, handleMfeNavigate);
-    return () =>
-      window.removeEventListener(MFE_NAVIGATE_EVENT, handleMfeNavigate);
+    return () => window.removeEventListener(MFE_NAVIGATE_EVENT, handleMfeNavigate);
   }, [navigate, pathname]);
 
   return null;
@@ -45,7 +42,6 @@ const VisitTracker = () => {
 };
 
 export function ShellApp() {
-
   // 🟢 Step 4: Reintegration into the real Shell
   const [activeGraphNode, setActiveGraphNode] = useState<any>(null); // Selected node from search
   const [selection, setSelection] = useState<any>(null); // Node clicked on the graph
@@ -102,4 +98,4 @@ export function ShellApp() {
       </ErrorBoundary>
     </BrowserRouter>
   );
-};
+}

@@ -1,14 +1,17 @@
 # Frontend Nginx Routing Configuration
 
 ## Overview
+
 The frontend nginx acts as a reverse proxy, routing requests to different backend microservices based on URL patterns.
 
 ## Routing Rules
 
 ### 1. Lineage Manager Backend (Port 5003)
+
 **Pattern:** `/lineage-manager/*`
 
 **Examples:**
+
 ```
 External Request:
 http://localhost:5100/admin-console/lineage-manager/api/v1/health
@@ -20,6 +23,7 @@ Nginx Processing:
 ```
 
 **Endpoints:**
+
 - `/lineage-manager/api/v1/health` - Health check
 - `/lineage-manager/api/v1/graph/diagnose` - Graph diagnostics
 - `/lineage-manager/api/v1/jobs` - Job management
@@ -27,9 +31,11 @@ Nginx Processing:
 - `/lineage-manager/api/v1/lineage/*` - Lineage queries
 
 ### 2. Analytics Manager Backend (Port 5002)
+
 **Pattern:** `/analytics-manager/*`
 
 **Examples:**
+
 ```
 External Request:
 http://localhost:5100/admin-console/analytics-manager/api/v1/analytics/top-visited
@@ -41,16 +47,19 @@ Nginx Processing:
 ```
 
 **Endpoints:**
+
 - `/analytics-manager/api/v1/analytics/top-visited` - Top visited resources
 - `/analytics-manager/api/v1/analytics/user-activity` - User activity metrics
 - `/analytics-manager/api/v1/health` - Health check
 
 ### 3. Legacy API Fallback
+
 **Pattern:** `/api/*` (without service prefix)
 
 **Purpose:** Backward compatibility for old API calls
 
 **Example:**
+
 ```
 External Request:
 http://localhost:5100/admin-console/api/v1/some-endpoint
@@ -64,6 +73,7 @@ Nginx Processing:
 ## URL Structure
 
 ### Production (with Gateway)
+
 ```
 https://example.com/admin-console/{service-name}/api/v1/{resource}
                      └─────┬─────┘ └─────┬──────┘ └──┬──┘ └───┬───┘
@@ -72,6 +82,7 @@ https://example.com/admin-console/{service-name}/api/v1/{resource}
 ```
 
 ### Local Development
+
 ```
 http://localhost:5100/admin-console/{service-name}/api/v1/{resource}
 http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
@@ -79,15 +90,16 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
 
 ## Service Port Mapping
 
-| Service | Port | Base Path |
-|---------|------|-----------|
-| Frontend (Nginx) | 5100 | `/admin-console` |
-| Lineage Manager | 5003 | `/lineage-manager` |
+| Service           | Port | Base Path            |
+| ----------------- | ---- | -------------------- |
+| Frontend (Nginx)  | 5100 | `/admin-console`     |
+| Lineage Manager   | 5003 | `/lineage-manager`   |
 | Analytics Manager | 5002 | `/analytics-manager` |
 
 ## Request Flow Example
 
 ### Lineage Manager Request
+
 ```
 1. Browser → http://localhost:5100/admin-console/lineage-manager/api/v1/jobs
 
@@ -95,16 +107,17 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
    - Matches: location ~ ^(/admin-console)?/lineage-manager/
    - Strips: /admin-console
    - Keeps: /lineage-manager/api/v1/jobs
-   
+
 3. Backend (Port 5003)
    - Receives: /lineage-manager/api/v1/jobs
    - FastAPI routes with prefix: /lineage-manager/api/v1
    - Handles: /jobs endpoint
-   
+
 4. Response ← Returns job data
 ```
 
 ### Analytics Manager Request
+
 ```
 1. Browser → http://localhost:5100/admin-console/analytics-manager/api/v1/analytics/top-visited
 
@@ -112,18 +125,19 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
    - Matches: location ~ ^(/admin-console)?/analytics-manager/
    - Strips: /admin-console
    - Keeps: /analytics-manager/api/v1/analytics/top-visited
-   
+
 3. Backend (Port 5002)
    - Receives: /analytics-manager/api/v1/analytics/top-visited
    - FastAPI routes with prefix: /analytics-manager/api/v1
    - Handles: /analytics/top-visited endpoint
-   
+
 4. Response ← Returns analytics data
 ```
 
 ## Debugging
 
 ### Check Nginx Logs
+
 ```bash
 # Lineage Manager requests
 tail -f /var/log/nginx/lineage_manager_access.log
@@ -139,6 +153,7 @@ tail -f /var/log/nginx/api_error.log
 ```
 
 ### Test Routing
+
 ```bash
 # Test Lineage Manager
 curl http://localhost:5100/admin-console/lineage-manager/api/v1/health

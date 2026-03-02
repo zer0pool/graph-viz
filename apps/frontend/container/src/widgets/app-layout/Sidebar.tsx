@@ -9,7 +9,7 @@ import {
   Shield,
   Settings,
 } from "lucide-react";
-import { cn } from '../../shared/lib/utils';
+import { cn } from "../../shared/lib/utils";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     <aside
       className={cn(
         "bg-white text-[#5f6368] border-r border-border shadow-[0_14px_25px_rgba(15,23,42,0.08)] overflow-y-auto flex flex-col shrink-0 transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-[64px]" : "w-[256px]",
+        isCollapsed ? "w-[64px]" : "w-[256px]"
       )}
     >
       <nav className="mt-2 text-center">
@@ -52,13 +52,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                     isCollapsed ? "justify-center px-0" : "gap-3 px-3",
                     isActive
                       ? "bg-[#e8f0fe] text-[#1a73e8]"
-                      : "text-[#5f6368] hover:bg-[#f8f9fa] hover:text-[#202124]",
+                      : "text-[#5f6368] hover:bg-[#f8f9fa] hover:text-[#202124]"
                   )}
                 >
                   <Icon
                     className={cn(
                       "w-5 h-5 shrink-0",
-                      isActive ? "text-[#1a73e8]" : "text-[#5f6368]",
+                      isActive ? "text-[#1a73e8]" : "text-[#5f6368]"
                     )}
                   />
                   {!isCollapsed && (

@@ -7,9 +7,9 @@ export interface Job {
   project_id?: string;
   enabled?: boolean;
   updated_at?: string | null;
-  duration?: number;        // seconds running
-  progress?: number;        // 0-1 fraction
-  
+  duration?: number; // seconds running
+  progress?: number; // 0-1 fraction
+
   // Job Run fields
   dag_id?: string;
   type?: string;

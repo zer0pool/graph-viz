@@ -10,9 +10,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ loading, error }) => {
 
   return (
     <div id="graph-status" className="floating-panel graph-status">
-      <span id="graph-status-text">
-        {loading ? "Loading..." : error ? `Error: ${error}` : ""}
-      </span>
+      <span id="graph-status-text">{loading ? "Loading..." : error ? `Error: ${error}` : ""}</span>
     </div>
   );
 };

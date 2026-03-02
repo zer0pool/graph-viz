@@ -1,7 +1,7 @@
 // Search entity types
 
 export interface SearchSuggestion {
-  type: 'job' | 'table' | 'owner';
+  type: "job" | "table" | "owner";
   id: string;
   name: string;
 }

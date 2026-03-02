@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getRecentlyVisited } from "./useTracker";
-import { VisitHistoryItem } from '../../ui/VisitHistoryCard';
+import { VisitHistoryItem } from "../../ui/VisitHistoryCard";
 import { analyticsApi } from "../../api/analyticsApi";
 
 // Time formatting helper
@@ -21,12 +21,14 @@ export const useAnalyticsData = () => {
   const [loadingTop, setLoadingTop] = useState(true);
 
   const fetchRecentHistory = useCallback(() => {
-    const localData = getRecentlyVisited().slice(0, 5).map(item => ({
-      path: item.path,
-      title: item.title,
-      type: item.type,
-      meta: formatDistance(item.timestamp)
-    }));
+    const localData = getRecentlyVisited()
+      .slice(0, 5)
+      .map((item) => ({
+        path: item.path,
+        title: item.title,
+        type: item.type,
+        meta: formatDistance(item.timestamp),
+      }));
     setRecentHistory(localData);
   }, []);
 
@@ -35,12 +37,12 @@ export const useAnalyticsData = () => {
     try {
       const data = await analyticsApi.getTopVisited();
       setWindowHours(data.window_hours);
-      
+
       const mappedData: VisitHistoryItem[] = (data.items || []).map((item) => {
         // Infer type for remote data since backend doesn't provide it yet
         let type = "other";
         const normalizedPath = item.path.endsWith("/") ? item.path.slice(0, -1) : item.path;
-        
+
         if (normalizedPath === "/jobs") type = "jobs_landing";
         else if (normalizedPath.startsWith("/jobs/")) type = "job";
         else if (normalizedPath === "/tables") type = "tables_landing";
@@ -58,7 +60,7 @@ export const useAnalyticsData = () => {
           path: item.path,
           title: item.title,
           type: type,
-          meta: `${item.count} times`
+          meta: `${item.count} times`,
         };
       });
       setTopVisited(mappedData);
@@ -86,6 +88,6 @@ export const useAnalyticsData = () => {
     topVisited,
     windowHours,
     loadingTop,
-    refresh
+    refresh,
   };
 };

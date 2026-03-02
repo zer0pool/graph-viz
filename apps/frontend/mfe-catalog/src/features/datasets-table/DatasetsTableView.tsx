@@ -9,13 +9,7 @@ import {
   TableRow,
 } from "../../shared/ui/table";
 import { Badge } from "../../shared/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../shared/ui/card";
 import { Input } from "../../shared/ui/input";
 import { Button } from "../../shared/ui/button";
 
@@ -48,9 +42,9 @@ export function DatasetsTableView({
         </div>
         <div className="relative w-72 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-          <Input 
-            placeholder="Search datasets..." 
-            className="pl-10 bg-white border-slate-200 focus:ring-primary/20 transition-all" 
+          <Input
+            placeholder="Search datasets..."
+            className="pl-10 bg-white border-slate-200 focus:ring-primary/20 transition-all"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -61,19 +55,31 @@ export function DatasetsTableView({
           <TableHeader className="bg-slate-50/30">
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[200px] text-slate-600 font-semibold h-12">Dataset</TableHead>
-              <TableHead className="text-center text-slate-600 font-semibold h-12">#Tables</TableHead>
-              <TableHead className="w-[220px] text-slate-600 font-semibold h-12">Total Size</TableHead>
-              <TableHead className="text-center text-slate-600 font-semibold h-12">Delayed</TableHead>
-              <TableHead className="text-center text-slate-600 font-semibold h-12">Expiring</TableHead>
+              <TableHead className="text-center text-slate-600 font-semibold h-12">
+                #Tables
+              </TableHead>
+              <TableHead className="w-[220px] text-slate-600 font-semibold h-12">
+                Total Size
+              </TableHead>
+              <TableHead className="text-center text-slate-600 font-semibold h-12">
+                Delayed
+              </TableHead>
+              <TableHead className="text-center text-slate-600 font-semibold h-12">
+                Expiring
+              </TableHead>
               <TableHead className="text-slate-600 font-semibold h-12">Last Modified</TableHead>
               <TableHead className="text-slate-600 font-semibold h-12">Service</TableHead>
-              <TableHead className="text-right text-slate-600 font-semibold h-12 pr-6">Actions</TableHead>
+              <TableHead className="text-right text-slate-600 font-semibold h-12 pr-6">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {datasets.map((dataset) => (
               <TableRow key={dataset.name} className="group hover:bg-slate-50/80 transition-colors">
-                <TableCell className="font-semibold text-slate-900 py-4 px-4">{dataset.name}</TableCell>
+                <TableCell className="font-semibold text-slate-900 py-4 px-4">
+                  {dataset.name}
+                </TableCell>
                 <TableCell className="text-center text-slate-600">{dataset.tables}</TableCell>
                 <TableCell className="py-4">
                   <div className="space-y-1.5">
@@ -141,11 +147,11 @@ export function DatasetsTableView({
               </TableRow>
             ))}
             {datasets.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-slate-400 italic">
-                        No datasets found matching your search criteria
-                    </TableCell>
-                </TableRow>
+              <TableRow>
+                <TableCell colSpan={8} className="h-32 text-center text-slate-400 italic">
+                  No datasets found matching your search criteria
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>

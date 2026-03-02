@@ -84,15 +84,15 @@ export class MermaidDslService {
         dsl += `  ${safeId}("${label}")\n`;
         dsl += `  ${safeId}:::groupNode\n`;
       } else {
-        const displayName = this.getShortenedName(
-          node.label || node.name,
-          node.type,
-        );
+        const displayName = this.getShortenedName(node.label || node.name, node.type);
         const platform =
-          (node as any).platform ||
-          (node.type === "table" ? "bigquery" : "bigquery");
+          (node as any).platform || (node.type === "table" ? "bigquery" : "bigquery");
 
-        const richLabel = `<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;padding:10px 12px;margin:0;height:auto;min-width:120px;white-space:nowrap;box-sizing:border-box;'><div style='font-weight:bold;font-size:11px;margin:0;'>${displayName}</div><div style='width:100%;height:1px;background:rgba(0,0,0,0.1);margin:4px 0;'></div><div style='font-size:10px;color:#666;margin:0;'>${node.type} | ${platform}</div></div>`.replace(/>\s+</g, '><');
+        const richLabel =
+          `<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;padding:10px 12px;margin:0;height:auto;min-width:120px;white-space:nowrap;box-sizing:border-box;'><div style='font-weight:bold;font-size:11px;margin:0;'>${displayName}</div><div style='width:100%;height:1px;background:rgba(0,0,0,0.1);margin:4px 0;'></div><div style='font-size:10px;color:#666;margin:0;'>${node.type} | ${platform}</div></div>`.replace(
+            />\s+</g,
+            "><"
+          );
         const escapedLabel = richLabel.replace(/"/g, '\\"');
         const tooltip = (node.label || node.name).replace(/"/g, '\\"');
 
@@ -111,11 +111,9 @@ export class MermaidDslService {
 
       // Label logic including group nodes
       const isUpstreamGroup =
-        sourceNode?.type === "group" &&
-        sourceNode.properties?.direction === "upstream";
+        sourceNode?.type === "group" && sourceNode.properties?.direction === "upstream";
       const isDownstreamGroup =
-        targetNode?.type === "group" &&
-        targetNode.properties?.direction === "downstream";
+        targetNode?.type === "group" && targetNode.properties?.direction === "downstream";
 
       if (sourceNode?.type === "table" || isDownstreamGroup) {
         if (targetNode?.type === "job" || isDownstreamGroup) label = "reads";

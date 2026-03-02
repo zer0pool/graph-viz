@@ -10,12 +10,8 @@ describe("ExportUtils", () => {
 
     // Mock document.createElement and body methods
     vi.spyOn(document, "createElement");
-    vi.spyOn(document.body, "appendChild").mockImplementation(
-      () => ({}) as any,
-    );
-    vi.spyOn(document.body, "removeChild").mockImplementation(
-      () => ({}) as any,
-    );
+    vi.spyOn(document.body, "appendChild").mockImplementation(() => ({}) as any);
+    vi.spyOn(document.body, "removeChild").mockImplementation(() => ({}) as any);
   });
 
   it("should export to excel when data is provided", () => {

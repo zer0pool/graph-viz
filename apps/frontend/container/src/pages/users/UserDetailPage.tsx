@@ -9,45 +9,73 @@ import {
   Clock,
   Briefcase,
   FolderKanban,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
-import { config } from '../../shared/api/config';
+import { config } from "../../shared/api/config";
 
 // --- Local UI Components (Matched with Project Style) ---
 
-const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div
+    className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`}
+  >
     {children}
   </div>
 );
 
-const CardHeader = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`px-6 py-5 border-b border-gray-100 ${className}`}>{children}</div>
-);
+const CardHeader = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`px-6 py-5 border-b border-gray-100 ${className}`}>{children}</div>;
 
-const CardTitle = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <h3 className={`text-base font-semibold text-gray-900 ${className}`}>{children}</h3>
-);
+const CardTitle = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <h3 className={`text-base font-semibold text-gray-900 ${className}`}>{children}</h3>;
 
-const CardDescription = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <p className={`text-xs text-gray-500 mt-1 ${className}`}>{children}</p>
-);
+const CardDescription = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <p className={`text-xs text-gray-500 mt-1 ${className}`}>{children}</p>;
 
-const CardContent = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`p-6 ${className}`}>{children}</div>
-);
+const CardContent = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`p-6 ${className}`}>{children}</div>;
 
-const Badge = ({ children, variant = "default", className = "" }: { children: React.ReactNode, variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning", className?: string }) => {
+const Badge = ({
+  children,
+  variant = "default",
+  className = "",
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
+  className?: string;
+}) => {
   const variants = {
     default: "bg-gray-100 text-gray-800 border-transparent",
     secondary: "bg-blue-100 text-blue-800 border-transparent",
     destructive: "bg-red-100 text-red-800 border-transparent",
     outline: "border-gray-200 text-gray-700",
     success: "bg-green-100 text-green-800 border-transparent",
-    warning: "bg-amber-100 text-amber-800 border-transparent"
+    warning: "bg-amber-100 text-amber-800 border-transparent",
   };
   return (
-    <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${variants[variant]} ${className}`}>
+    <div
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${variants[variant]} ${className}`}
+    >
       {children}
     </div>
   );
@@ -113,11 +141,11 @@ export function UserDetailPage() {
       const [userRes, projectsRes, jobsRes] = await Promise.all([
         fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(decodedUserId)}`),
         fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(decodedUserId)}/projects`),
-        fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`)
+        fetch(`${config.API_BASE_URL}/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`),
       ]);
 
       if (!userRes.ok) throw new Error("Failed to fetch user details");
-      
+
       const userData = await userRes.json();
       setData(userData);
 
@@ -132,10 +160,10 @@ export function UserDetailPage() {
           job_id: j.job_id,
           job_name: j.name,
           project_id: j.project_id, // Mapping project_id
-          running_status: j.properties?.status || 'unknown',
+          running_status: j.properties?.status || "unknown",
           enabled: j.properties?.enabled !== false,
-          type: j.properties?.type || 'N/A',
-          updated_at: j.updated_at
+          type: j.properties?.type || "N/A",
+          updated_at: j.updated_at,
         }));
         setJobs(mappedJobs);
       }
@@ -179,13 +207,22 @@ export function UserDetailPage() {
   }
 
   const { user, summary } = data;
-  const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??';
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "??";
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
       {/* Breadcrumb */}
       <nav className="flex items-center text-sm text-gray-500 gap-2 mb-2">
-        <Link to="/users" className="hover:text-blue-600 transition-colors">Users</Link>
+        <Link to="/users" className="hover:text-blue-600 transition-colors">
+          Users
+        </Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-gray-900 font-medium">{user.name}</span>
       </nav>
@@ -201,14 +238,16 @@ export function UserDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
-            <p className="text-sm text-gray-500 mt-0.5">View user information, projects, and owned jobs</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              View user information, projects, and owned jobs
+            </p>
           </div>
         </div>
         <button
           onClick={fetchUserDetail}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </div>
@@ -221,7 +260,10 @@ export function UserDetailPage() {
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-semibold text-gray-900">{user.name}</h2>
-                <Badge variant={user.status === 'ACTIVE' ? 'success' : 'outline'} className="text-[10px] py-0.5">
+                <Badge
+                  variant={user.status === "ACTIVE" ? "success" : "outline"}
+                  className="text-[10px] py-0.5"
+                >
                   {user.status}
                 </Badge>
               </div>
@@ -244,9 +286,15 @@ export function UserDetailPage() {
                     Access Roles
                   </label>
                   <div className="flex flex-wrap gap-1">
-                    {user.roles?.map(role => (
-                      <Badge key={role} variant="secondary" className="text-[9px] px-2">{role}</Badge>
-                    )) || <Badge variant="outline" className="text-[9px] px-2">Viewer</Badge>}
+                    {user.roles?.map((role) => (
+                      <Badge key={role} variant="secondary" className="text-[9px] px-2">
+                        {role}
+                      </Badge>
+                    )) || (
+                      <Badge variant="outline" className="text-[9px] px-2">
+                        Viewer
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -254,7 +302,9 @@ export function UserDetailPage() {
                     <FolderKanban className="w-3.5 h-3.5 text-gray-400" />
                     Project Membership
                   </label>
-                  <p className="text-sm font-semibold text-blue-600">{summary.project_count} Projects</p>
+                  <p className="text-sm font-semibold text-blue-600">
+                    {summary.project_count} Projects
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
@@ -293,8 +343,8 @@ export function UserDetailPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {projects.length > 0 ? (
                   projects.map((proj) => (
-                    <tr 
-                      key={proj.project_id} 
+                    <tr
+                      key={proj.project_id}
                       className="hover:bg-gray-50 transition-all cursor-pointer group"
                       onClick={() => navigate(`/projects/${proj.project_id}`)}
                     >
@@ -305,7 +355,10 @@ export function UserDetailPage() {
                         {proj.display_name}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <Badge variant={proj.status === 'ACTIVE' ? 'success' : 'outline'} className="text-[9px] px-2 py-0">
+                        <Badge
+                          variant={proj.status === "ACTIVE" ? "success" : "outline"}
+                          className="text-[9px] px-2 py-0"
+                        >
                           {proj.status}
                         </Badge>
                       </td>
@@ -346,26 +399,33 @@ export function UserDetailPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {jobs.length > 0 ? (
                   jobs.map((job) => (
-                    <tr 
-                      key={job.job_id} 
+                    <tr
+                      key={job.job_id}
                       className="hover:bg-gray-50 transition-all cursor-pointer group"
                       onClick={() => navigate(`/jobs/${job.job_id}`)}
                     >
                       <td className="px-6 py-4 font-mono text-[11px] text-gray-500 group-hover:text-blue-600 transition-colors whitespace-nowrap">
                         {job.job_id}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-900 text-sm">
-                        {user.name}
-                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-900 text-sm">{user.name}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <div className={`w-1.5 h-1.5 rounded-full ${
-                            ['RUNNING', 'success', 'ACTIVE'].includes(job.running_status) ? 'bg-green-500' : 
-                            ['failed', 'ERROR'].includes(job.running_status) ? 'bg-red-500' : 
-                            ['PAUSED', 'STALLED'].includes(job.running_status) ? 'bg-amber-500' :
-                            ['DEPLOYED', 'CREATED'].includes(job.running_status) ? 'bg-blue-500' : 'bg-gray-300'
-                          }`} />
-                          <span className="text-[10px] font-medium uppercase text-gray-500">{job.running_status}</span>
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              ["RUNNING", "success", "ACTIVE"].includes(job.running_status)
+                                ? "bg-green-500"
+                                : ["failed", "ERROR"].includes(job.running_status)
+                                  ? "bg-red-500"
+                                  : ["PAUSED", "STALLED"].includes(job.running_status)
+                                    ? "bg-amber-500"
+                                    : ["DEPLOYED", "CREATED"].includes(job.running_status)
+                                      ? "bg-blue-500"
+                                      : "bg-gray-300"
+                            }`}
+                          />
+                          <span className="text-[10px] font-medium uppercase text-gray-500">
+                            {job.running_status}
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -394,4 +454,4 @@ export function UserDetailPage() {
       `}</style>
     </div>
   );
-};
+}

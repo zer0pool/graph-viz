@@ -113,26 +113,19 @@ export function useJobLandingState(
 
   // --- Computed facet dropdowns ---
   const filteredOwners = useMemo(
-    () =>
-      (facets?.owners ?? []).filter((o) =>
-        o.toLowerCase().includes(ownerSearch.toLowerCase())
-      ),
+    () => (facets?.owners ?? []).filter((o) => o.toLowerCase().includes(ownerSearch.toLowerCase())),
     [facets?.owners, ownerSearch]
   );
 
   const filteredProjects = useMemo(
     () =>
-      (facets?.projects ?? []).filter((p) =>
-        p.toLowerCase().includes(projectSearch.toLowerCase())
-      ),
+      (facets?.projects ?? []).filter((p) => p.toLowerCase().includes(projectSearch.toLowerCase())),
     [facets?.projects, projectSearch]
   );
 
   const filteredStatuses = useMemo(
     () =>
-      (facets?.statuses ?? []).filter((s) =>
-        s.toLowerCase().includes(statusSearch.toLowerCase())
-      ),
+      (facets?.statuses ?? []).filter((s) => s.toLowerCase().includes(statusSearch.toLowerCase())),
     [facets?.statuses, statusSearch]
   );
 
@@ -140,16 +133,13 @@ export function useJobLandingState(
   const totalPages = (totalCount: number) => Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   // --- Handlers ---
-  const handleSort = useCallback(
-    (colId: string) => {
-      setSortState((prev) => ({
-        sortBy: colId,
-        sortOrder: prev.sortBy === colId && prev.sortOrder === "DESC" ? "ASC" : "DESC",
-      }));
-      setCurrentPage(1);
-    },
-    []
-  );
+  const handleSort = useCallback((colId: string) => {
+    setSortState((prev) => ({
+      sortBy: colId,
+      sortOrder: prev.sortBy === colId && prev.sortOrder === "DESC" ? "ASC" : "DESC",
+    }));
+    setCurrentPage(1);
+  }, []);
 
   const handleApplyCustomRange = useCallback(() => {
     setTimeRange("custom");
@@ -158,9 +148,7 @@ export function useJobLandingState(
 
   const handleApplyFilters = useCallback(() => {
     const clean = Object.fromEntries(
-      Object.entries(filters).filter(([, v]) =>
-        Array.isArray(v) ? v.length > 0 : v !== ""
-      )
+      Object.entries(filters).filter(([, v]) => (Array.isArray(v) ? v.length > 0 : v !== ""))
     );
     setActiveFilters(Object.keys(clean).length > 0 ? clean : null);
     setCurrentPage(1);

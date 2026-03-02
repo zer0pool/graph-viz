@@ -8,10 +8,7 @@ interface JobRunTimelineProps {
   onRunSelect?: (run: JobRun) => void;
 }
 
-export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
-  runs,
-  onRunSelect,
-}) => {
+export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({ runs, onRunSelect }) => {
   const sortedRuns = [...runs].sort((a, b) => {
     const tA = new Date(a.start_time).getTime() || 0;
     const tB = new Date(b.start_time).getTime() || 0;
@@ -20,7 +17,7 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
 
   const COLORS = {
     SUCCESS: "#4ADE80", // Success (Green-400) - Clear positive indicator
-    FAILED: "#FCA5A5",  // Highlight Issue (Soft Red)
+    FAILED: "#FCA5A5", // Highlight Issue (Soft Red)
     RUNNING: "#93C5FD", // Active State (Soft Blue)
     UNKNOWN: "#F3F4F6", // Neutral (Very Light Gray)
   };
@@ -42,7 +39,8 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
       backgroundColor: "rgba(32, 33, 36, 0.95)",
       borderColor: "#3c4043",
       textStyle: { color: "#fff" },
-      extraCssText: "z-index: 100000; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);",
+      extraCssText:
+        "z-index: 100000; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);",
       formatter: (params: any) => {
         const run = params.data.data;
         return `
@@ -80,8 +78,7 @@ export const JobRunTimeline: React.FC<JobRunTimelineProps> = ({
         style={{ height: "12px", width: "100%" }}
         onEvents={{
           click: (params: any) => {
-            if (params.data && params.data.data)
-              onRunSelect?.(params.data.data);
+            if (params.data && params.data.data) onRunSelect?.(params.data.data);
           },
         }}
       />

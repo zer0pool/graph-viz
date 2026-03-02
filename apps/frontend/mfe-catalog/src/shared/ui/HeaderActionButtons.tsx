@@ -13,7 +13,7 @@ export const HeaderActionButtons: React.FC<HeaderActionButtonsProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2">
-      <button 
+      <button
         onClick={onSync}
         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
         title="Sync Data"
@@ -21,7 +21,7 @@ export const HeaderActionButtons: React.FC<HeaderActionButtonsProps> = ({
         <RefreshCcw className="w-4 h-4" />
       </button>
       {onLineage && (
-        <button 
+        <button
           onClick={onLineage}
           className="flex items-center gap-2 px-3 py-1.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-medium rounded shadow-sm transition-all shadow-[#3c404326] ml-2"
         >

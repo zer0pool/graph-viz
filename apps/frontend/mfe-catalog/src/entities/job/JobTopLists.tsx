@@ -1,12 +1,6 @@
 import React, { useState } from "react";
 import { TrendingUp, Clock, Cpu } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../shared/ui/card";
 import { Badge } from "../../shared/ui/badge";
 import { cn } from "../../shared/lib/utils";
 
@@ -53,7 +47,12 @@ const topLongRunningJobs = [
   { name: "Multi_Touch_Attribution", value: "3h 20m", seconds: 12000, project: "marketing" },
   { name: "Network_Topology_Crawler", value: "2h 45m", seconds: 9900, project: "security" },
   { name: "Ecom_Inventory_Reconciliation", value: "2h 15m", seconds: 8100, project: "erp_sync" },
-  { name: "Deep_Learning_Inference_Batch", value: "1h 55m", seconds: 6900, project: "data_science" },
+  {
+    name: "Deep_Learning_Inference_Batch",
+    value: "1h 55m",
+    seconds: 6900,
+    project: "data_science",
+  },
   { name: "Internal_Slack_Bot_Analytics", value: "1h 30m", seconds: 5400, project: "platform" },
   { name: "External_Partner_Export", value: "1h 25m", seconds: 5100, project: "integration" },
   { name: "Legacy_Archive_Cleanup", value: "1h 20m", seconds: 4800, project: "infra" },
@@ -113,8 +112,12 @@ export function JobTopLists() {
                   <Cpu className="h-4 w-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-slate-800">Top {limit} Jobs by Slot Usage</CardTitle>
-                  <CardDescription className="text-[11px] font-medium text-slate-500">Jobs consuming highest peak slots</CardDescription>
+                  <CardTitle className="text-lg text-slate-800">
+                    Top {limit} Jobs by Slot Usage
+                  </CardTitle>
+                  <CardDescription className="text-[11px] font-medium text-slate-500">
+                    Jobs consuming highest peak slots
+                  </CardDescription>
                 </div>
               </div>
               <LimitSelector />
@@ -127,7 +130,9 @@ export function JobTopLists() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 max-w-[70%]">
                       <span className="text-slate-400 font-medium w-5">#{index + 1}</span>
-                      <span className="font-semibold text-slate-700 truncate" title={job.name}>{job.name}</span>
+                      <span className="font-semibold text-slate-700 truncate" title={job.name}>
+                        {job.name}
+                      </span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">
                         {job.project}
                       </span>
@@ -161,7 +166,9 @@ export function JobTopLists() {
                 </div>
                 <div>
                   <CardTitle className="text-lg">Top {limit} Long Running Jobs</CardTitle>
-                  <CardDescription className="text-xs">Jobs with longest execution time</CardDescription>
+                  <CardDescription className="text-xs">
+                    Jobs with longest execution time
+                  </CardDescription>
                 </div>
               </div>
               <LimitSelector />
@@ -174,7 +181,9 @@ export function JobTopLists() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 max-w-[70%]">
                       <span className="text-slate-400 font-medium w-5">#{index + 1}</span>
-                      <span className="font-semibold text-slate-700 truncate" title={job.name}>{job.name}</span>
+                      <span className="font-semibold text-slate-700 truncate" title={job.name}>
+                        {job.name}
+                      </span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">
                         {job.project}
                       </span>

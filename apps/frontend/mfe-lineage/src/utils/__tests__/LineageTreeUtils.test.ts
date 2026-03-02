@@ -9,9 +9,7 @@ describe("LineageTreeUtils", () => {
     });
 
     it("should build a simple tree with one root", () => {
-      const items = [
-        { id: "root", name: "Root Table", type: "table", depth: 0 },
-      ];
+      const items = [{ id: "root", name: "Root Table", type: "table", depth: 0 }];
       const result = LineageTreeUtils.buildFlatTree(items);
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("root");

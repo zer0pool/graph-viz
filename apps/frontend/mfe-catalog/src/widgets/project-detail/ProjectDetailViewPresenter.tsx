@@ -6,9 +6,7 @@ import { EntityHeader } from "../../shared/ui/EntityHeader";
 import { HeaderActionButtons } from "../../shared/ui/HeaderActionButtons";
 import { Boxes, Users, Briefcase, Box, User, ExternalLink, ShieldCheck } from "lucide-react";
 
-const PROJECT_TABS: Tab[] = [
-  { id: "overview", label: "Overview" },
-];
+const PROJECT_TABS: Tab[] = [{ id: "overview", label: "Overview" }];
 
 interface ProjectDetailViewPresenterProps {
   projectId: string;
@@ -54,11 +52,7 @@ export const ProjectDetailViewPresenter: React.FC<ProjectDetailViewPresenterProp
 
   const Layout = mode === "EMBEDDED" ? CompactDetailLayout : (DetailLayout as any);
 
-  const headerActions = (
-    <HeaderActionButtons 
-      onSync={() => console.log("Sync clicked")}
-    />
-  );
+  const headerActions = <HeaderActionButtons onSync={() => console.log("Sync clicked")} />;
 
   const metadata = [
     { icon: Briefcase, label: project.business_unit || "General" },
@@ -91,8 +85,10 @@ export const ProjectDetailViewPresenter: React.FC<ProjectDetailViewPresenterProp
       <div className="p-8 space-y-8 animate-fade-in">
         {project.description && (
           <div className="bg-slate-50 border border-slate-100 p-4 rounded-lg">
-             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Description</h3>
-             <p className="text-slate-700 leading-relaxed">{project.description}</p>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+              Description
+            </h3>
+            <p className="text-slate-700 leading-relaxed">{project.description}</p>
           </div>
         )}
 
@@ -110,11 +106,13 @@ export const ProjectDetailViewPresenter: React.FC<ProjectDetailViewPresenterProp
             </div>
             <div className="divide-y divide-slate-100">
               {projectJobs.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic">No jobs assigned to this project.</div>
+                <div className="p-8 text-center text-slate-400 italic">
+                  No jobs assigned to this project.
+                </div>
               ) : (
                 projectJobs.map((job) => (
-                  <div 
-                    key={job.job_id || job.id} 
+                  <div
+                    key={job.job_id || job.id}
                     onClick={() => onNavigateToJob(job.job_id || job.id)}
                     className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex justify-between items-center group"
                   >
@@ -122,10 +120,21 @@ export const ProjectDetailViewPresenter: React.FC<ProjectDetailViewPresenterProp
                       <span className="font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {job.job_name || job.name}
                       </span>
-                      <span className="text-xs text-slate-500 font-mono">{job.job_id || job.id}</span>
+                      <span className="text-xs text-slate-500 font-mono">
+                        {job.job_id || job.id}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant={job.running_status?.toUpperCase().includes('ACTIVE') || job.running_status?.toUpperCase().includes('RUNNING') || job.running_status?.toUpperCase().includes('SUCCESS') ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                      <Badge
+                        variant={
+                          job.running_status?.toUpperCase().includes("ACTIVE") ||
+                          job.running_status?.toUpperCase().includes("RUNNING") ||
+                          job.running_status?.toUpperCase().includes("SUCCESS")
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="text-[10px] px-1.5 py-0"
+                      >
                         {job.running_status || job.status || "UNKNOWN"}
                       </Badge>
                       <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all" />
@@ -149,11 +158,13 @@ export const ProjectDetailViewPresenter: React.FC<ProjectDetailViewPresenterProp
             </div>
             <div className="divide-y divide-slate-100">
               {projectUsers.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic">No members found in this project.</div>
+                <div className="p-8 text-center text-slate-400 italic">
+                  No members found in this project.
+                </div>
               ) : (
                 projectUsers.map((user) => (
-                  <div 
-                    key={user.user_id} 
+                  <div
+                    key={user.user_id}
                     onClick={() => onNavigateToUser(user.user_id)}
                     className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex justify-between items-center group"
                   >
@@ -189,7 +200,9 @@ const Badge = ({ children, variant = "default", className = "" }: any) => {
   };
 
   return (
-    <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${variants[variant]} ${className}`}>
+    <span
+      className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${variants[variant]} ${className}`}
+    >
       {children}
     </span>
   );

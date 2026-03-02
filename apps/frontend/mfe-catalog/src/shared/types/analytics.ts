@@ -4,7 +4,7 @@ export interface MetricGroup {
   count?: number;
   sum?: number;
   avg?: number;
-  status: 'default' | 'success' | 'info' | 'warning' | 'critical' | 'destructive';
+  status: "default" | "success" | "info" | "warning" | "critical" | "destructive";
   breakdown?: Array<{
     label: string;
     value: number;

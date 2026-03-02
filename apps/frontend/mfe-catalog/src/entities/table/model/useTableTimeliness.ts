@@ -3,9 +3,7 @@ import { TableTimelinessResponse } from "../../../shared/types/table";
 import { useApiClient } from "../../../shared/api/ApiContext";
 
 export function useTableTimeliness(tableName: string, days: number = 7) {
-  const [timeliness, setTimeliness] = useState<TableTimelinessResponse | null>(
-    null
-  );
+  const [timeliness, setTimeliness] = useState<TableTimelinessResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const api = useApiClient();

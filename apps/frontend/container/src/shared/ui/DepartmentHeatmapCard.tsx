@@ -95,7 +95,11 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   );
 }
 
-export function DepartmentHeatmapCard({ items, total, loading = false }: DepartmentHeatmapCardProps) {
+export function DepartmentHeatmapCard({
+  items,
+  total,
+  loading = false,
+}: DepartmentHeatmapCardProps) {
   // Items are already sorted descending by count from the hook
   const data = items.map((item) => ({
     name: item.department,
@@ -110,9 +114,7 @@ export function DepartmentHeatmapCard({ items, total, loading = false }: Departm
           <BarChart3 className="h-4 w-4 text-indigo-500" />
           Jobs by Department
         </h3>
-        {total > 0 && (
-          <span className="text-xs text-gray-400 font-medium">{total} total jobs</span>
-        )}
+        {total > 0 && <span className="text-xs text-gray-400 font-medium">{total} total jobs</span>}
       </div>
 
       {/* Chart */}

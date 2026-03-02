@@ -31,18 +31,12 @@ export const LineageTable: React.FC<LineageTableProps> = ({
   jobTooltip,
   iconType,
 }) => {
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
-    new Set()
-  );
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set());
 
   if (!items || items.length === 0) return null;
 
   const limit = config.PROGRESSIVE_LOADING_LIMIT;
-  const flatList = LineageTreeUtils.buildFlatTree(
-    items,
-    expandedGroupIds,
-    limit
-  );
+  const flatList = LineageTreeUtils.buildFlatTree(items, expandedGroupIds, limit);
   const counts = LineageTreeUtils.getCounts(items);
 
   const handleExpand = (parentId: string) => {
@@ -77,9 +71,7 @@ export const LineageTable: React.FC<LineageTableProps> = ({
             {iconType === "upstream" ? <UpstreamIcon /> : <DownstreamIcon />}
           </span>
         )}
-        <span className="apa-table-label">
-          {title}
-        </span>
+        <span className="apa-table-label">{title}</span>
       </div>
       <div className="lineage-card-body">
         <table className="apa-table">
@@ -134,8 +126,7 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                     key={item.id}
                     className="row-more"
                     onClick={() =>
-                      item.properties?.parentId &&
-                      handleExpand(item.properties.parentId)
+                      item.properties?.parentId && handleExpand(item.properties.parentId)
                     }
                   >
                     <td colSpan={9}>
@@ -167,13 +158,9 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                     <div className="node-label-container">
                       {renderPrefix(item.treePrefix)}
                       {item.depth === 0 ? (
-                        <span className="root-table-badge">
-                          {cleanId(item.id)}
-                        </span>
+                        <span className="root-table-badge">{cleanId(item.id)}</span>
                       ) : (
-                        <span className="node-label-text">
-                          {cleanId(item.id)}
-                        </span>
+                        <span className="node-label-text">{cleanId(item.id)}</span>
                       )}
                     </div>
                   </td>
@@ -183,35 +170,19 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                   <td className="col-table">{props.storage || "-"}</td>
                   <td className="col-table">{props.write_mode || "-"}</td>
                   <td className="col-job">
-                    {itemLoading ? (
-                      <div className="skeleton-box" />
-                    ) : job ? (
-                      cleanId(job.name)
-                    ) : (
-                      "-"
-                    )}
+                    {itemLoading ? <div className="skeleton-box" /> : job ? cleanId(job.name) : "-"}
                   </td>
                   <td className="col-job">
-                    {itemLoading ? (
-                      <div className="skeleton-box" />
-                    ) : (
-                      jobProps.owner || "-"
-                    )}
+                    {itemLoading ? <div className="skeleton-box" /> : jobProps.owner || "-"}
                   </td>
                   <td className="col-job">
-                    {itemLoading ? (
-                      <div className="skeleton-box" />
-                    ) : (
-                      jobProps.schedule || "-"
-                    )}
+                    {itemLoading ? <div className="skeleton-box" /> : jobProps.schedule || "-"}
                   </td>
                   <td className="col-job">
                     {itemLoading ? (
                       <div className="skeleton-pill" />
                     ) : jobProps.status ? (
-                      <span
-                        className={`status-pill status-${jobProps.status.toLowerCase()}`}
-                      >
+                      <span className={`status-pill status-${jobProps.status.toLowerCase()}`}>
                         {jobProps.status}
                       </span>
                     ) : (
@@ -219,11 +190,7 @@ export const LineageTable: React.FC<LineageTableProps> = ({
                     )}
                   </td>
                   <td className="col-job">
-                    {itemLoading ? (
-                      <div className="skeleton-box" />
-                    ) : (
-                      props.lifecycle || "-"
-                    )}
+                    {itemLoading ? <div className="skeleton-box" /> : props.lifecycle || "-"}
                   </td>
                 </tr>
               );

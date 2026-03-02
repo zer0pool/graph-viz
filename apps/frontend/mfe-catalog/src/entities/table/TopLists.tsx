@@ -1,12 +1,6 @@
 import React from "react";
 import { TrendingUp, Activity } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../shared/ui/card";
 import { Badge } from "../../shared/ui/badge";
 import { datasetsData } from "../../shared/api/mockData";
 
@@ -40,9 +34,7 @@ export function TopLists() {
               <div key={dataset.name} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-6">
-                      #{index + 1}
-                    </span>
+                    <span className="text-muted-foreground w-6">#{index + 1}</span>
                     <span className="font-medium">{dataset.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -50,19 +42,14 @@ export function TopLists() {
                       <TrendingUp className="h-3 w-3" />
                       {dataset.growth}
                     </Badge>
-                    <span className="font-mono font-medium">
-                      {dataset.size}
-                    </span>
+                    <span className="font-mono font-medium">{dataset.size}</span>
                   </div>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full"
                     style={{
-                      width: `${
-                        (dataset.sizeBytes / topCapacityDatasets[0].sizeBytes) *
-                        100
-                      }%`,
+                      width: `${(dataset.sizeBytes / topCapacityDatasets[0].sizeBytes) * 100}%`,
                     }}
                   />
                 </div>
@@ -76,21 +63,14 @@ export function TopLists() {
       <Card>
         <CardHeader>
           <CardTitle>Top 10 Active Datasets</CardTitle>
-          <CardDescription>
-            Most active datasets based on recent changes
-          </CardDescription>
+          <CardDescription>Most active datasets based on recent changes</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {topActivityDatasets.map((dataset, index) => (
-              <div
-                key={dataset.name}
-                className="flex items-center justify-between"
-              >
+              <div key={dataset.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-1">
-                  <span className="text-muted-foreground w-6 text-sm">
-                    #{index + 1}
-                  </span>
+                  <span className="text-muted-foreground w-6 text-sm">#{index + 1}</span>
                   <div className="flex-1">
                     <p className="font-medium text-sm">{dataset.name}</p>
                     <div className="flex gap-2 mt-1">
@@ -114,9 +94,7 @@ export function TopLists() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-right">
-                    <p className="font-mono font-medium text-sm">
-                      {dataset.activityScore}
-                    </p>
+                    <p className="font-mono font-medium text-sm">{dataset.activityScore}</p>
                     <p className="text-xs text-muted-foreground">activity</p>
                   </div>
                   <Badge

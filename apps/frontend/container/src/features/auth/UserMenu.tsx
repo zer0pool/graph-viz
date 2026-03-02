@@ -10,10 +10,7 @@ export const UserMenu: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(e.target as Node)
-      ) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setShowProfile(false);
       }
     };
@@ -34,11 +31,7 @@ export const UserMenu: React.FC = () => {
           Sign in
         </button>
       ) : (
-        <div
-          id="user-chip"
-          className="user-chip"
-          onClick={() => setShowProfile(!showProfile)}
-        >
+        <div id="user-chip" className="user-chip" onClick={() => setShowProfile(!showProfile)}>
           {user.picture ? (
             <img id="user-avatar" src={user.picture} alt="User profile" />
           ) : (
@@ -60,22 +53,18 @@ export const UserMenu: React.FC = () => {
               src={
                 user.picture ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user.name || user.email || user.sub,
+                  user.name || user.email || user.sub
                 )}&background=3b82f6&color=fff&size=64`
               }
               alt="Profile"
               className="profile-avatar-large"
             />
-            <h3 className="profile-name">
-              {user.name || user.preferred_username || user.sub}
-            </h3>
+            <h3 className="profile-name">{user.name || user.preferred_username || user.sub}</h3>
             <div className="profile-email">{user.email}</div>
             {(user.title || user.jobTitle) && (
               <div className="profile-info">{user.title || user.jobTitle}</div>
             )}
-            {user.department && (
-              <div className="profile-info">{user.department}</div>
-            )}
+            {user.department && <div className="profile-info">{user.department}</div>}
             <div className="profile-id">ID: {user.sub}</div>
           </div>
           <button

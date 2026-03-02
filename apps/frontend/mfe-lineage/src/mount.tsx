@@ -26,10 +26,7 @@ export function mount(el: HTMLElement, options: MountOptions = {}) {
     if (detail) {
       // 1. If shell sends the whole mountProps (contains rootNode)
       if (detail.rootNode) {
-        console.log(
-          "[Lineage MFE] Updating rootNode from detail.rootNode:",
-          detail.rootNode,
-        );
+        console.log("[Lineage MFE] Updating rootNode from detail.rootNode:", detail.rootNode);
         render({ ...options, rootNode: detail.rootNode });
         return;
       }

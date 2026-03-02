@@ -1,10 +1,6 @@
 import { AuthClient } from "../types/auth";
 import { JobDetail, JobRunHistoryResponse, Job } from "../types/job";
-import {
-  TableDetail,
-  TableSchemaResponse,
-  TableTimelinessResponse,
-} from "../types/table";
+import { TableDetail, TableSchemaResponse, TableTimelinessResponse } from "../types/table";
 import { JobHealthResponse, JobLineageHybridResponse } from "./types/lineage";
 import { SummaryMetricsResponse, PaginatedResponse } from "../types";
 
@@ -76,7 +72,9 @@ export class ApiClient {
   }
 
   async fetchJobLineageHybrid(jobId: string): Promise<JobLineageHybridResponse> {
-    return this.request<JobLineageHybridResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}/lineage`);
+    return this.request<JobLineageHybridResponse>(
+      `/api/v1/jobs/${encodeURIComponent(jobId)}/lineage`
+    );
   }
 
   async fetchProjectJobs(
@@ -104,9 +102,7 @@ export class ApiClient {
   // --- Table Endpoints ---
 
   async fetchTableDetail(tableName: string): Promise<TableDetail> {
-    const raw = await this.request<any>(
-      `/api/v1/tables/${encodeURIComponent(tableName)}/detail`
-    );
+    const raw = await this.request<any>(`/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
 
     // Map Backend Response to Frontend Interface
     return {
@@ -135,15 +131,10 @@ export class ApiClient {
     );
   }
 
-  async fetchTableTimeliness(
-    tableName: string,
-    days: number = 7
-  ): Promise<any> {
+  async fetchTableTimeliness(tableName: string, days: number = 7): Promise<any> {
     const params = new URLSearchParams({ days: String(days) });
     return this.request<any>(
-      `/api/v1/tables/${encodeURIComponent(
-        tableName
-      )}/timelines?${params.toString()}`
+      `/api/v1/tables/${encodeURIComponent(tableName)}/timelines?${params.toString()}`
     );
   }
 
@@ -172,7 +163,9 @@ export class ApiClient {
   }
 
   async fetchOverviewSummary(): Promise<SummaryMetricsResponse> {
-    return this.request<SummaryMetricsResponse>("/analytics-manager/api/v1/metrics/summary/overview");
+    return this.request<SummaryMetricsResponse>(
+      "/analytics-manager/api/v1/metrics/summary/overview"
+    );
   }
 
   async fetchJobsSummary(): Promise<SummaryMetricsResponse> {

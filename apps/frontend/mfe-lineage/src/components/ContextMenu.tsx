@@ -1,9 +1,4 @@
-import {
-  ExpandUpIcon,
-  ExpandDownIcon,
-  DetailIcon,
-  TrashIcon,
-} from "../assets/icons";
+import { ExpandUpIcon, ExpandDownIcon, DetailIcon, TrashIcon } from "../assets/icons";
 import { ContextMenuState } from "../types/graph";
 
 interface ContextMenuProps {
