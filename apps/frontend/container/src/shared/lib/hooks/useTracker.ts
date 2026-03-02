@@ -84,7 +84,7 @@ export const useTracker = () => {
           timestamp: new Date().toISOString(),
         };
         await fetch(
-          `${config.API_BASE_URL}/analytics-manager/api/v1/analytics/track`,
+          `${config.BASE_URL}/analytics-manager/api/v1/analytics/track`,
           {
             method: "POST",
             headers: {

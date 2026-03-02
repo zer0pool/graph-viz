@@ -65,6 +65,41 @@ class JobConfig:
 
 
 @strawberry.type
+class DepartmentCount:
+    department: str
+    count: int
+
+
+@strawberry.type
+class TypeCount:
+    type: str
+    count: int
+
+
+@strawberry.type
+class OwnerCount:
+    owner: str
+    count: int
+
+
+@strawberry.type
+class MonthCount:
+    year: int
+    month: int
+    count: int
+
+
+@strawberry.type
+class JobAggregation:
+    """Consolidated job statistics across multiple dimensions."""
+    total: int
+    by_department: List[DepartmentCount]
+    by_type: List[TypeCount]
+    by_owner: List[OwnerCount]
+    by_created_month: List[MonthCount]
+
+
+@strawberry.type
 class JobStats:
     """Dynamic execution stats (Analytics Manager/BigQuery)."""
     avg_slots: Optional[float] = None
@@ -72,6 +107,64 @@ class JobStats:
     total_duration_24h: Optional[int] = None
     last_run_status: Optional[str] = None
     updated_at: Optional[str] = None
+    duration: Optional[int] = None  # seconds since start
+    progress: Optional[float] = None  # fraction 0.0-1.0
+
+
+@strawberry.type
+class JobRun:
+    """Represents a single execution record for a job."""
+    job_id: str
+    dag_id: str
+    project_id: Optional[str] = None
+    type: Optional[str] = None
+    destination: Optional[str] = None
+    owners: List[str] = strawberry.field(default_factory=list)
+    issuer: Optional[str] = None
+    start_time: str
+    next_start_time: Optional[str] = None
+    period: Optional[str] = None
+    date: Optional[str] = None
+    hour: Optional[str] = None
+    publish_time: Optional[str] = None
+
+@strawberry.input
+class JobRunFilter:
+    """Filters for job runs."""
+    job_id: Optional[str] = None
+    dag_id: Optional[str] = None
+    types: Optional[List[str]] = strawberry.field(default_factory=list)
+    destination: Optional[str] = None
+    owners: Optional[List[str]] = strawberry.field(default_factory=list)
+    issuers: Optional[List[str]] = strawberry.field(default_factory=list)
+    period: Optional[str] = None
+    projects: Optional[List[str]] = strawberry.field(default_factory=list)
+    statuses: Optional[List[str]] = strawberry.field(default_factory=list)
+    started_at_since: Optional[str] = None
+    started_at_until: Optional[str] = None
+
+@strawberry.type
+class JobRunFilterFacets:
+    """Unique values for filtering job runs."""
+    owners: List[str]
+    projects: List[str]
+    types: List[str]
+    issuers: List[str]
+    statuses: List[str]
+
+@strawberry.enum
+class SortOrder(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+@strawberry.type
+class RecentJobRunsResponse:
+    """Paginated response for recent job runs."""
+    items: List[JobRun]
+    total_count: int
+    facets: Optional[JobRunFilterFacets] = None
+    sort_by: Optional[str] = None
+    sort_order: Optional[SortOrder] = None
 
 
 @strawberry.type

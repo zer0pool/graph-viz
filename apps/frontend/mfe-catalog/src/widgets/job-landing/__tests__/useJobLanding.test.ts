@@ -1,57 +1,60 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useJobLanding } from '../useJobLanding';
-import { useApiClient } from '../../../shared/api/ApiContext';
+import { useLandingPageData } from '../../../shared/hooks/useLandingPageData';
 
-// Mock the API client hook
-vi.mock('../../../shared/api/ApiContext', () => ({
-  useApiClient: vi.fn(),
+// Mock the landing page data hook
+vi.mock('../../../shared/hooks/useLandingPageData', () => ({
+  useLandingPageData: vi.fn(),
 }));
 
 describe('useJobLanding hook', () => {
-  const mockApi = {
-    fetchJobs: vi.fn(),
-    fetchSummaryMetrics: vi.fn(),
+const baseResponse = {
+    metrics: [],
+    entities: null,
+    loading: false,
+    error: null,
+    refresh: vi.fn()
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useApiClient as any).mockReturnValue(mockApi);
-    // Baseline mock
-    mockApi.fetchSummaryMetrics.mockResolvedValue({});
-    mockApi.fetchJobs.mockResolvedValue([]);
+    (useLandingPageData as any).mockReturnValue({ ...baseResponse });
   });
 
-  it('should fetch jobs and update state on mount', async () => {
-    const mockJobs = [{ job_id: 'job-1', job_name: 'Test Job' }];
-    const mockSummary = { total_jobs: 10, jobs_today: 2 };
-    
-    mockApi.fetchSummaryMetrics.mockResolvedValue(mockSummary);
-    mockApi.fetchJobs.mockResolvedValue({ jobs: mockJobs });
+  it('should map landing page data into hook output', async () => {
+    const mockJobs = [{ id: 'j1', displayLabel: 'Job One', config: { owner: 'alice', projectId: 'proj' }, stats: { lastRunStatus: 'SUCCESS', updatedAt: '2026-02-25T00:00:00Z', duration: 200, progress: 0.5 } }];
+    const mockMetrics = [{ type: 'total_jobs', value: 5, label: 'Total Jobs' }];
+
+    (useLandingPageData as any).mockReturnValue({
+      ...baseResponse,
+      metrics: mockMetrics,
+      entities: { edges: [{ node: mockJobs[0] }] }
+    });
 
     const { result } = renderHook(() => useJobLanding());
 
-    // Initial state
-    expect(result.current.loading).toBe(true);
-
-    // Wait for fetch to complete
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
+    expect(result.current.loading).toBe(false);
     expect(result.current.jobs).toEqual(mockJobs);
-    expect(result.current.metrics).toHaveLength(5);
-    expect(result.current.metrics[0].value).toBe(10);
+    expect(result.current.metrics).toHaveLength(1);
+    expect(result.current.metrics[0].value).toBe(5);
+    // job stats should include our dummy duration and progress
+    expect(result.current.jobs[0].stats?.duration).toBe(200);
+    expect(result.current.jobs[0].stats?.progress).toBe(0.5);
     expect(result.current.error).toBeNull();
   });
 
-  it('should handle API errors gracefully', async () => {
-    mockApi.fetchSummaryMetrics.mockRejectedValue(new Error('API error'));
+  it('should surface errors from landing page hook', async () => {
+    (useLandingPageData as any).mockReturnValue({
+      ...baseResponse,
+      error: new Error('bad things')
+    });
 
     const { result } = renderHook(() => useJobLanding());
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
+    expect(result.current.loading).toBe(false);
     expect(result.current.jobs).toEqual([]);
-    expect(result.current.error).toBe('Failed to load dashboard data');
+    expect(result.current.error).toBe('bad things');
   });
 
   it('should return correct status colors', () => {

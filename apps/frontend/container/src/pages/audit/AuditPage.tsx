@@ -133,10 +133,11 @@ export function AuditPage() {
   const fetchAuditData = async () => {
     setLoading(true);
     try {
-      // Use config.API_BASE_URL which is correctly set to /admin-console
-      // The proxy will route /admin-console/api/v1/audit/commands -> backend/api/v1/audit/commands
+      // previous implementation hit the analytics audit endpoint which was incorrect
+      // we now query the lineage-manager service directly for audit records
+      // example: /admin-console/lineage-manager/api/v1/audits?limit=100
       const response = await fetch(
-        `${config.API_BASE_URL}/api/v1/audit/commands?range=${dateFilter}`,
+        `${config.BASE_URL}/lineage-manager/api/v1/audits?limit=100`,
       );
       if (!response.ok) throw new Error("Failed to fetch audit logs");
       const data = await response.json();

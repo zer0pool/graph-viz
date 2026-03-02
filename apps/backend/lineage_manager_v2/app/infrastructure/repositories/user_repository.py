@@ -63,6 +63,16 @@ class UserRepository:
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
+    async def search_by_name_prefix(self, prefix: str, limit: int = 10) -> List[str]:
+        query = (
+            select(UserModel.name)
+            .where(UserModel.name.ilike(f"%{prefix}%"))
+            .distinct()
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
     def _to_entity(self, model: UserModel) -> UserEntity:
         return UserEntity(
             user_id=model.user_id,

@@ -38,7 +38,7 @@ module.exports = {
       // Lineage Manager Backend (Port 5003)
       {
         context: ["/admin-console/lineage-manager"],
-        target: "http://localhost:5003",
+        target: "http://host.docker.internal:5003",
         pathRewrite: { "^/admin-console": "" },
         changeOrigin: true,
         secure: false,
@@ -46,7 +46,7 @@ module.exports = {
       },
       {
         context: ["/admin-console/analytics-manager"],
-        target: "http://localhost:5004",
+        target: "http://host.docker.internal:5004",
         pathRewrite: { "^/admin-console": "" },
         changeOrigin: true,
         secure: false,
@@ -55,7 +55,7 @@ module.exports = {
       // Legacy API fallback (for backward compatibility)
       {
         context: ["/admin-console/api"],
-        target: "http://localhost:5003",
+        target: "http://host.docker.internal:5003",
         pathRewrite: { "^/admin-console/api": "/lineage-manager/api" },
         changeOrigin: true,
         secure: false,
@@ -63,7 +63,7 @@ module.exports = {
       // MFE Lineage
       {
         context: ["/admin-console/mfe-lineage"],
-        target: "http://localhost:5101",
+        target: "http://host.docker.internal:5101",
         pathRewrite: { "^/admin-console/mfe-lineage": "/mfe-lineage" },
         changeOrigin: true,
         secure: false,
@@ -71,7 +71,7 @@ module.exports = {
       // MFE Catalog
       {
         context: ["/admin-console/mfe-catalog"],
-        target: "http://localhost:5102",
+        target: "http://host.docker.internal:5102",
         pathRewrite: { "^/admin-console/mfe-catalog": "/mfe-catalog" },
         changeOrigin: true,
         secure: false,

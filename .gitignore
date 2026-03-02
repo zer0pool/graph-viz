@@ -44,6 +44,7 @@ coverage/
 .prettiercache
 public/config.js
 apps/frontend/figma_frontend/
+apps/figma_example/
 
 # --- Logs & Temp ---
 logs/

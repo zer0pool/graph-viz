@@ -1,19 +1,19 @@
 
 // Basic Lineage Types (Legacy)
 export interface LineageNode {
-  id: str;
+  id: string;
   type: string;
-  name: str;
-  job_id?: str | null;
-  full_name?: str | null;
+  name: string;
+  job_id?: string | null;
+  full_name?: string | null;
   owners?: string[];
   status?: string | null;
   enabled?: boolean | null;
 }
 
 export interface LineageEdge {
-  source: str;
-  target: str;
+  source: string;
+  target: string;
   io?: string | null;
 }
 

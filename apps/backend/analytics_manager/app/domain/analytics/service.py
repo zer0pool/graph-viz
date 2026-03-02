@@ -45,6 +45,7 @@ class AnalyticsService:
             "active_users_yoy_comparison": self._resolve_active_users_yoy,
             "top_visited_pages": self._resolve_top_visited,
             "job_type_breakdown": self._resolve_job_distribution,
+            "job_department_distribution": self._resolve_job_department_distribution,
         }
 
     async def get_metrics_by_ids(self, ids: List[str]) -> List[MetricGroups]:
@@ -143,6 +144,20 @@ class AnalyticsService:
                 label=jtype,
                 count=count,
                 dimensions=MetricDimensions(type=jtype)
+            ))
+        return results
+
+    async def _resolve_job_department_distribution(self) -> List[MetricGroups]:
+        """Resolves distribution of jobs by owner department."""
+        stats = await self._get_internal_stats()
+        dist = stats.get("jobs", {}).get("department_counts", {})
+        results = []
+        for dept, count in dist.items():
+            results.append(MetricGroups(
+                id=strawberry.ID(f"job_dept_{dept}"),
+                label=dept,
+                count=count,
+                dimensions=MetricDimensions(name=dept) # Use name dimension for heatmap labels
             ))
         return results
 
@@ -245,16 +260,59 @@ class AnalyticsService:
             "failed_24h": next((m.count for m in metrics if str(m.id) == "failed_24h"), 0),
         }
 
+    async def get_job_aggregation_stats(self) -> Any:
+        """Fetch multi-dimension job statistics for GraphQL consumption."""
+        from app.api.graphql.schema import (
+            JobAggregation, DepartmentCount, TypeCount, OwnerCount, MonthCount
+        )
+        stats = await self._get_internal_stats()
+        job_data = stats.get("jobs", {})
+        
+        return JobAggregation(
+            total=job_data.get("total", 0),
+            by_department=[DepartmentCount(department=k, count=v) for k, v in job_data.get("department_counts", {}).items()],
+            by_type=[TypeCount(type=k, count=v) for k, v in job_data.get("type_counts", {}).items()],
+            by_owner=[OwnerCount(owner=k, count=v) for k, v in job_data.get("owner_counts", {}).items()],
+            by_created_month=[MonthCount(year=m["year"], month=m["month"], count=m["count"]) for m in job_data.get("monthly_counts", [])]
+        )
+
+
     async def get_top_visited(self) -> Dict[str, Any]:
         """Provides top visited pages for the legacy REST API."""
-        metric = await self._resolve_top_visited()
         # Integration with existing Redis logic for detailed items
         visit_key = "analytics:path_visits"
         top_paths = await self.redis.zrevrange(visit_key, 0, 4, withscores=True)
-        items = [{"path": path.decode() if isinstance(path, bytes) else path, "visits": int(score)} for path, score in top_paths]
+        
+        # Mapping for display titles
+        title_map = {
+            "/": "dashboard",
+            "/projects": "projects",
+            "/users": "users",
+            "/jobs": "jobs",
+            "/tables": "tables",
+            "/lineage": "lineage",
+            "/audit": "audit",
+            "/settings": "settings"
+        }
+        
+        items = []
+        for path_bytes, score in top_paths:
+            path = path_bytes.decode() if isinstance(path_bytes, bytes) else path_bytes
+            # Use title from map or derive from path
+            title = title_map.get(path)
+            if not title:
+                 # Fallback: /jobs/foo -> jobs
+                 title = path.strip("/").split("/")[0] or "dashboard"
+
+            items.append({
+                "path": path,
+                "title": title,
+                "count": int(score)
+            })
+
         return {
-            "total": metric.sum,
-            "items": items
+            "items": items,
+            "window_hours": 168 # As requested in example
         }
 
     async def track_event(self, event: TrackEvent) -> bool:

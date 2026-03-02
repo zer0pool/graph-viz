@@ -31,7 +31,7 @@ module.exports = {
       // Lineage Manager Backend (Port 5003)
       {
         context: ["/admin-console/lineage-manager", "/lineage-manager"],
-        target: "http://127.0.0.1:5003",
+        target: "http://host.docker.internal:5003",
         pathRewrite: { "^/admin-console": "" },
         changeOrigin: true,
         secure: false,
@@ -40,7 +40,7 @@ module.exports = {
       // Analytics Manager Backend (Port 5002)
       {
         context: ["/admin-console/analytics-manager", "/analytics-manager"],
-        target: "http://127.0.0.1:5002",
+        target: "http://host.docker.internal:5004",
         pathRewrite: { "^/admin-console": "" },
         changeOrigin: true,
         secure: false,
@@ -49,7 +49,7 @@ module.exports = {
       // Legacy API fallback (for backward compatibility)
       {
         context: ["/admin-console/api", "/api"],
-        target: "http://127.0.0.1:5003",
+        target: "http://host.docker.internal:5003",
         pathRewrite: { "^/admin-console/api": "/lineage-manager/api", "^/api": "/lineage-manager/api" },
         changeOrigin: true,
       },

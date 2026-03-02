@@ -46,7 +46,7 @@ const LANDING_PAGE_QUERY = `
           id
           displayLabel
           config { owner schedule projectId type }
-          stats { avgSlots maxSlots totalDuration24h lastRunStatus updatedAt }
+          stats { avgSlots maxSlots totalDuration24h lastRunStatus updatedAt duration progress }
         }
         cursor
       }

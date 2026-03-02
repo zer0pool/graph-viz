@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
         commands,
         auth,
         analytics,
+        search,
     )
     from app.api.internal.v1.endpoints import stats as internal_stats
 
@@ -73,6 +74,9 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         analytics.router, prefix=f"{api_prefix}/analytics", tags=["System"]
+    )
+    app.include_router(
+        search.router, prefix=f"{api_prefix}/search", tags=["Search"]
     )
     app.include_router(
         internal_stats.router, prefix=f"{api_prefix}/internal", tags=["Internal"]
