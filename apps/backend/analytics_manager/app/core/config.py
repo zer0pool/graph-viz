@@ -12,14 +12,6 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
 
-    # Database
-    DB_HOST: str = "127.0.0.1"
-    DB_PORT: int = 33306
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "root123"
-    DB_NAME: str = "analytics_manager_v1"
-    LINEAGE_DB_NAME: str = "lineage_manager"
-
     # Redis
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379

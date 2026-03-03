@@ -1,0 +1,97 @@
+replicaCount: 2
+fullnameOverride: "lineage-manager-v2"
+
+image:
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/lineage-manager-v2
+  pullPolicy: Always
+  tag: "latest"
+
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
+namespace: "self-scheduling-dev1"
+
+service:
+  type: NodePort
+  port: 5003
+  targetPort: 5003
+
+livenessProbe:
+  httpGet:
+    path: /lineage-manager/api/v1/health
+    port: 5003
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 10
+  successThreshold: 1
+  timeoutSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /lineage-manager/api/v1/health
+    port: 5003
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 10
+  successThreshold: 1
+  timeoutSeconds: 30
+
+resources:
+  api:
+    limits:
+      cpu: 3000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  worker:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+cloudSqlProxy:
+  enabled: true
+  image: "gcr.io/cloudsql-docker/gce-proxy:latest"
+  instanceConnectionName: "sec-bdp-dev:asia-northeast3:bdp-d-sql-selfschedule-an3"
+  port: 3306
+
+env:
+  # Database Settings
+  DB_HOST: "127.0.0.1"
+  DB_PORT: "3306"
+  DB_NAME: "lineage_manager_v2"
+  DB_USER: "ss_admin"
+  DB_PASSWORD: "Samsungpw1!"
+
+  # App Settings
+  ENV_STATE: "dev"
+  LOG_LEVEL: "INFO"  
+  ANALYTICS_HOST: "http://analytics-manager:5002"
+
+  # Redis Settings
+  REDIS_ENABLED: "true"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+
+  # GCP Settings
+  GCP_PROJECT: "sec-bdp-dev"
+  GCP_LOCATION: "asia-northeast3"
+
+  # Feature Settings
+  FEATURE_HISTORY_TABLE: "sec-bdp.dev.bod_000.fin_history"
+  FEATURE_ENABLE_BIGQUERY: "true"
+  FEATURE_REQUIRE_SIGNIN: "true"
+
+  # Authentication Settings
+  APP_REQUIRE_AUTHENTICATION: "false"
+
+  # OIDC Settings
+  OIDC_ISSUER_URL: "https://sts.secsso.net/adfs"
+  OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"  
+  OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
+  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/authorized"
+  OIDC_SCOPES: '["openid", "profile", "email"]'

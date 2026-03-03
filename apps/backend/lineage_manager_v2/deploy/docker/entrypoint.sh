@@ -86,6 +86,11 @@ case "$CMD" in
     backend)
         echo "Starting Lineage Manager V2..."
         wait_for_mysql
+        # Run migrations
+        if [ -f "alembic.ini" ]; then
+            echo "Running database migrations..."
+            alembic upgrade head
+        fi
         # In V2, the app is in 'app' folder and PYTHONPATH should include root
         exec uvicorn app.main:app --host 0.0.0.0 --port 5003 --workers 1 --log-level warning
         ;;

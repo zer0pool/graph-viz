@@ -1,0 +1,65 @@
+replicaCount: 2
+fullnameOverride: "analytics-manager"
+
+image:
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/analytics-manager
+  pullPolicy: Always
+  tag: "latest"
+
+serviceAccount:
+  create: false
+  name: "self-scheduling"
+
+namespace: "self-scheduling-dev1"
+
+service:
+  type: NodePort
+  port: 5002
+  targetPort: 5002
+
+livenessProbe:
+  httpGet:
+    path: /analytics-manager/api/v1/health
+    port: 5002
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 10
+  successThreshold: 1
+  timeoutSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /analytics-manager/api/v1/health
+    port: 5002
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 10
+  successThreshold: 1
+  timeoutSeconds: 30
+
+resources:
+  api:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+env:
+  # App Settings
+  ENV_STATE: "dev"
+  LOG_LEVEL: "INFO"  
+  LINEAGE_MANAGER_V2_URL: "http://lineage-manager-v2:5003"
+
+  # Redis Settings
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "2"
+
+  # GCP Settings
+  GOOGLE_PROJECT_ID: "sec-bdp-dev"
+  
+  # BigQuery Settings
+  FEATURE_HISTORY_TABLE: "sec-bdp.dev.bod_000.fin_history"
+  BIGQUERY_VISIT_LOG_TABLE: "sec-bdp.dev.bod_000.visit_logs"

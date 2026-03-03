@@ -12,6 +12,7 @@ from app.infrastructure.gcp.bigquery import BigQueryClient
 from app.infrastructure.gcp.client import GoogleCloudClient
 from app.infrastructure.lineage_client import LineageClient
 
+
 # Analytics Manager may need its own services later
 
 
@@ -48,6 +49,7 @@ class Container(containers.DeclarativeContainer):
         AnalyticsRepository,
         bq_client=bq_client,
         db_session_factory=lineage_session_factory,
+        bq_client=bq_client
     )
 
     analytics_service = providers.Factory(

@@ -5,23 +5,23 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev libmysqlclient-dev && \
+    apt-get install -y --no-install-recommends gcc python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 COPY pyproject.toml .
 
 # Generate wheels for dependencies
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Final stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies (like libmysqlclient for mysqlclient)
+# Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libmysqlclient21 && \
+    apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder and install
