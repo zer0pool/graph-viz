@@ -7,7 +7,6 @@ from app.domain.data_sync.service import DataSyncService
 from app.domain.job_explorer.repository import JobExplorerRepository
 from app.domain.job_explorer.service import JobExplorerService
 from app.infrastructure.cache.redis import get_redis_client
-from app.infrastructure.database import create_session_factory
 from app.infrastructure.gcp.bigquery import BigQueryClient
 from app.infrastructure.gcp.client import GoogleCloudClient
 from app.infrastructure.lineage_client import LineageClient
@@ -22,13 +21,6 @@ class Container(containers.DeclarativeContainer):
     )
 
     # Infrastructure
-    # Session factory for future DB use
-    session_factory = providers.Singleton(
-        create_session_factory, db_url=settings.DATABASE_URL
-    )
-    lineage_session_factory = providers.Singleton(
-        create_session_factory, db_url=settings.LINEAGE_DATABASE_URL
-    )
 
     # Redis
     redis_pool = providers.Resource(
@@ -48,8 +40,6 @@ class Container(containers.DeclarativeContainer):
     analytics_repository = providers.Factory(
         AnalyticsRepository,
         bq_client=bq_client,
-        db_session_factory=lineage_session_factory,
-        bq_client=bq_client
     )
 
     analytics_service = providers.Factory(
