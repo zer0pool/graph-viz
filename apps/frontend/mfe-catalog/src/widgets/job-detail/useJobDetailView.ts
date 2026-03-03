@@ -12,34 +12,32 @@ export function useJobDetailView(jobId: string) {
 
   // Data Hooks
   const { job, loading: loadingJob, error: errorJob } = useJobOverview(jobId);
+  const { runs, summary, loading: loadingRuns, error: errorRuns } = useJobRunHistory(jobId);
+
   const {
-    runs,
-    summary,
-    loading: loadingRuns,
-    error: errorRuns,
-  } = useJobRunHistory(jobId);
+    jobs: projectJobs,
+    total: totalProjectJobs,
+    loading: loadingProjectJobs,
+  } = useProjectJobs(job?.project_id || job?.properties?.project_id, pageSize, page * pageSize);
 
-  const { jobs: projectJobs, total: totalProjectJobs, loading: loadingProjectJobs } = useProjectJobs(
-    job?.project_id || job?.properties?.project_id,
-    pageSize,
-    page * pageSize
+  const handleRunSelect = useCallback(
+    (runId: string) => {
+      const run = runs.find((r) => r.run_id === runId);
+      if (run) setSelectedRun(run);
+    },
+    [runs]
   );
-
-  const handleRunSelect = useCallback((runId: string) => {
-    const run = runs.find((r) => r.run_id === runId);
-    if (run) setSelectedRun(run);
-  }, [runs]);
 
   const handleCloseDrawer = useCallback(() => {
     setSelectedRun(null);
   }, []);
 
   const handleNextPage = useCallback(() => {
-    setPage(p => p + 1);
+    setPage((p) => p + 1);
   }, []);
 
   const handlePrevPage = useCallback(() => {
-    setPage(p => p - 1);
+    setPage((p) => p - 1);
   }, []);
 
   return {
@@ -62,6 +60,6 @@ export function useJobDetailView(jobId: string) {
     handleRunSelect,
     handleCloseDrawer,
     handleNextPage,
-    handlePrevPage
+    handlePrevPage,
   };
 }

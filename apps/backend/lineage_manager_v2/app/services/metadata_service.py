@@ -1,9 +1,10 @@
 from typing import List, Optional
-from app.infrastructure.unit_of_work import UnitOfWork
-from app.domain.project.entities import Project
+
 from app.domain.graph.entities.job_node import JobNode as Job
 from app.domain.metadata.entities.resource import ResourceMetadata as Resource
+from app.domain.project.entities import Project
 from app.domain.user.entities import User
+from app.infrastructure.unit_of_work import UnitOfWork
 
 
 class MetadataService:
@@ -79,17 +80,14 @@ class MetadataService:
             user = await self.uow.users.get_by_user_id(user_id)
             if not user:
                 return None
-            
+
             # Derive counts from jobs
             jobs = await self.uow.jobs.list_by_owner(user_id)
             project_ids = {j.project_id for j in jobs}
-            
+
             return {
                 "user": user,
-                "summary": {
-                    "owned_jobs": len(jobs),
-                    "project_count": len(project_ids)
-                }
+                "summary": {"owned_jobs": len(jobs), "project_count": len(project_ids)},
             }
 
     async def list_user_projects(self, user_id: str) -> List[Project]:
@@ -102,6 +100,7 @@ class MetadataService:
                 if p:
                     projects.append(p)
             return projects
+
     # --- Search ---
     async def search_suggestions(self, q: str, limit: int = 10) -> dict:
         async with self.uow:
@@ -124,7 +123,7 @@ class MetadataService:
                         "full_name": t.fqn,
                         "table_name": t.fqn.split(".")[-1],
                         "project": t.project_id,
-                        "dataset": "unknown", # V2 doesn't always have dataset easily extracted
+                        "dataset": "unknown",  # V2 doesn't always have dataset easily extracted
                     }
                     for t in tables
                 ],

@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { JobDetail } from "../../../shared/types/job";
 import { useApiClient } from "../../../shared/api/ApiContext";
 
-export function useProjectJobs(projectId: string | undefined, limit: number = 20, offset: number = 0) {
+export function useProjectJobs(
+  projectId: string | undefined,
+  limit: number = 20,
+  offset: number = 0
+) {
   const [jobs, setJobs] = useState<JobDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);

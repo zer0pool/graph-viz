@@ -47,39 +47,42 @@ export function useJobFilter(): JobFilterResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const search = useCallback(async (filter: JobFilterInput) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.graphqlRequest<{ jobs: { edges: { node: GqlJob }[] } }>(
-        JOB_FILTER_QUERY,
-        { filter: filter || null }
-      );
-      const adaptedJobs = data.jobs.edges.map(e => {
-        const node = e.node;
-        return {
-          job_id: node.id,
-          job_name: node.displayLabel,
-          project_id: node.config?.projectId,
-          owners: node.config?.owner ? [node.config.owner] : [],
-          running_status: node.stats?.lastRunStatus,
-          updated_at: node.stats?.updatedAt,
-          duration: node.stats?.duration,
-          progress: node.stats?.progress,
-          // Newly added fields (mocked or empty for metadata search)
-          type: "N/A",
-          issuer: "System",
-          startTime: node.stats?.updatedAt
-        };
-      });
-      setJobs(adaptedJobs);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+  const search = useCallback(
+    async (filter: JobFilterInput) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await api.graphqlRequest<{ jobs: { edges: { node: GqlJob }[] } }>(
+          JOB_FILTER_QUERY,
+          { filter: filter || null }
+        );
+        const adaptedJobs = data.jobs.edges.map((e) => {
+          const node = e.node;
+          return {
+            job_id: node.id,
+            job_name: node.displayLabel,
+            project_id: node.config?.projectId,
+            owners: node.config?.owner ? [node.config.owner] : [],
+            running_status: node.stats?.lastRunStatus,
+            updated_at: node.stats?.updatedAt,
+            duration: node.stats?.duration,
+            progress: node.stats?.progress,
+            // Newly added fields (mocked or empty for metadata search)
+            type: "N/A",
+            issuer: "System",
+            startTime: node.stats?.updatedAt,
+          };
+        });
+        setJobs(adaptedJobs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        setJobs([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
 
   return { jobs, loading, error, search };
 }

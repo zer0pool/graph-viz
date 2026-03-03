@@ -1,8 +1,9 @@
-import time
 import json
 import logging
-from celery import Celery
-from celery.schedules import crontab
+import time
+
+from celery import Celery  # type: ignore
+from celery.schedules import crontab  # type: ignore
 from redis import Redis
 
 from app.core.config import settings
@@ -15,9 +16,7 @@ logger = logging.getLogger(__name__)
 # Core Celery app configuration
 # We use db 0 for broker by default in settings, and db 2 for backend (app cache)
 celery_app = Celery(
-    "analytics_worker",
-    broker=settings.CELERY_BROKER_URL,
-    backend=settings.REDIS_URL
+    "analytics_worker", broker=settings.CELERY_BROKER_URL, backend=settings.REDIS_URL
 )
 
 celery_app.conf.update(
@@ -36,6 +35,7 @@ celery_app.conf.beat_schedule = {
     },
 }
 
+
 @celery_app.task(name="app.worker.sync_events_to_bq")
 def sync_events_to_bq():
     """
@@ -43,50 +43,51 @@ def sync_events_to_bq():
     Delegates work to DataSyncService.
     """
     logger.info("Triggering periodic BigQuery sync...")
-    
+
     try:
         from app.domain.data_sync.service import DataSyncService
-        
+
         # Instantiate dependencies
         # In a more advanced setup, we could use a DI container here as well
         bq_client = BigQueryClient()
         redis_client = Redis(
-            host=settings.REDIS_HOST, 
-            port=settings.REDIS_PORT, 
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
             db=settings.REDIS_DB,
-            decode_responses=True
+            decode_responses=True,
         )
-        
+
         sync_service = DataSyncService(bq_client, redis_client)
-        
+
         synced_count = sync_service.sync_redis_queue_to_bigquery(
             queue_key="analytics:raw_events",
             table_id=settings.BIGQUERY_VISIT_LOG_TABLE,
-            batch_size=100
+            batch_size=100,
         )
-        
+
         if synced_count > 0:
             logger.info(f"Sync task completed. {synced_count} events processed.")
         else:
             logger.info("Sync task completed. No events processed.")
-            
+
         return synced_count
-            
+
     except Exception as e:
         logger.exception(f"Critical failure in sync_events_to_bq task: {e}")
         return 0
+
 
 if __name__ == "__main__":
     import argparse
     import sys
 
-    parser = argparse.ArgumentParser(description="Analytics Manager - Manual Task Runner")
-    parser.add_argument(
-        "task", 
-        choices=["sync"], 
-        help="The name of the task to execute manually."
+    parser = argparse.ArgumentParser(
+        description="Analytics Manager - Manual Task Runner"
     )
-    
+    parser.add_argument(
+        "task", choices=["sync"], help="The name of the task to execute manually."
+    )
+
     args = parser.parse_args()
 
     if args.task == "sync":

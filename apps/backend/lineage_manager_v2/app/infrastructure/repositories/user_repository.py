@@ -1,6 +1,8 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.user.entities import User as UserEntity
 from app.infrastructure.models import UserAccount as UserModel
 
@@ -54,6 +56,7 @@ class UserRepository:
 
     async def count(self) -> int:
         from sqlalchemy import func
+
         result = await self.db.execute(select(func.count()).select_from(UserModel))
         return result.scalar() or 0
 

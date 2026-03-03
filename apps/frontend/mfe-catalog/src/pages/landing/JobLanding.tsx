@@ -5,21 +5,15 @@ import { JobLandingView } from "../../widgets/job-landing/JobLandingView";
 
 export const JobLanding: React.FC = () => {
   const navigate = useMfeNavigate();
-  const { 
-    jobs, 
-    metrics, 
-    facets,
-    loading, 
-    error, 
-    totalCount,
-    fetchData,
-    refresh, 
-    getStatusColor 
-  } = useJobLanding();
+  const { jobs, metrics, facets, loading, error, totalCount, fetchData, refresh, getStatusColor } =
+    useJobLanding();
 
-  const handleNavigateToJob = useCallback((jobId: string) => {
-    navigate(`/jobs/${encodeURIComponent(jobId)}`);
-  }, [navigate]);
+  const handleNavigateToJob = useCallback(
+    (jobId: string) => {
+      navigate(`/jobs/${encodeURIComponent(jobId)}`);
+    },
+    [navigate]
+  );
 
   return (
     <JobLandingView

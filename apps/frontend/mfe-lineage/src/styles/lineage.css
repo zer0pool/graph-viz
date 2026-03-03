@@ -601,19 +601,25 @@ foreignObject {
   overflow: visible !important;
 }
 
-.tableNode > rect, .tableNode > polygon, .tableNode > path, .tableNode > circle {
-  fill: #E6F4EA !important; /* Green */
-  stroke: #1E8E3E !important;
+.tableNode > rect,
+.tableNode > polygon,
+.tableNode > path,
+.tableNode > circle {
+  fill: #e6f4ea !important; /* Green */
+  stroke: #1e8e3e !important;
   stroke-width: 1.5px !important;
 }
 
-.jobNode > rect, .jobNode > polygon, .jobNode > path, .jobNode > circle {
-  fill: #E8F0FE !important; /* Blue */
-  stroke: #1A73E8 !important;
+.jobNode > rect,
+.jobNode > polygon,
+.jobNode > path,
+.jobNode > circle {
+  fill: #e8f0fe !important; /* Blue */
+  stroke: #1a73e8 !important;
   stroke-width: 1.5px !important;
 }
 
-.tableNode .nodeLabel, 
+.tableNode .nodeLabel,
 .jobNode .nodeLabel {
   color: #111827 !important;
   padding: 0 !important;
@@ -694,7 +700,7 @@ g.table text {
   background-color: #ffffff;
   background-image: radial-gradient(#dadce0 1px, transparent 1px);
   background-size: 20px 20px;
-  padding: 0; 
+  padding: 0;
   box-sizing: border-box;
   position: relative;
 }

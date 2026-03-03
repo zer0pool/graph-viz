@@ -1,0 +1,4 @@
+dist
+node_modules
+deploy/helm
+package-lock.json

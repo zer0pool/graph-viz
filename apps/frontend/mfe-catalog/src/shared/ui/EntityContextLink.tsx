@@ -29,14 +29,9 @@ export const EntityContextLink: React.FC<EntityLinkProps> = ({
   return (
     <div className="flex flex-col">
       {title && (
-        <span className="text-[11px] uppercase tracking-wider text-slate-400 mb-0.5">
-          {title}
-        </span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-400 mb-0.5">{title}</span>
       )}
-      <button
-        onClick={() => navigate(path)}
-        className={`${baseStyles} ${variants[variant]}`}
-      >
+      <button onClick={() => navigate(path)} className={`${baseStyles} ${variants[variant]}`}>
         {label}
       </button>
     </div>

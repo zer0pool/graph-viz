@@ -55,25 +55,28 @@ export function useJobLanding() {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchData = useCallback(async (options: { 
-    offset?: number; 
-    limit?: number; 
-    refresh?: boolean; 
-    sortBy?: string;
-    sortOrder?: "ASC" | "DESC";
-    filter?: JobRunFilter 
-  } = {}) => {
-    const { 
-      offset = 0, 
-      limit = 10, 
-      refresh = false, 
-      sortBy = null, 
-      sortOrder = "DESC", 
-      filter = null 
-    } = options;
-    setLoading(true);
-    try {
-      const query = `
+  const fetchData = useCallback(
+    async (
+      options: {
+        offset?: number;
+        limit?: number;
+        refresh?: boolean;
+        sortBy?: string;
+        sortOrder?: "ASC" | "DESC";
+        filter?: JobRunFilter;
+      } = {}
+    ) => {
+      const {
+        offset = 0,
+        limit = 10,
+        refresh = false,
+        sortBy = null,
+        sortOrder = "DESC",
+        filter = null,
+      } = options;
+      setLoading(true);
+      try {
+        const query = `
         query GetJobLandingData($offset: Int, $limit: Int, $refresh: Boolean, $sortBy: ID, $sortOrder: SortOrder, $filter: JobRunFilter) {
           topMetrics: metrics(ids: ["total_jobs", "running_now", "failed_24h", "avg_duration", "queued_jobs"]) {
             id label count sum avg status
@@ -106,46 +109,52 @@ export function useJobLanding() {
           }
         }
       `;
-      const result = await api.graphqlRequest<{ 
-        topMetrics: any[], 
-        recentJobRuns: { items: any[], totalCount: number, facets: JobRunFilterFacets } 
-      }>(query, { offset, limit, refresh, sortBy, sortOrder, filter });
+        const result = await api.graphqlRequest<{
+          topMetrics: any[];
+          recentJobRuns: { items: any[]; totalCount: number; facets: JobRunFilterFacets };
+        }>(query, { offset, limit, refresh, sortBy, sortOrder, filter });
 
-      setMetrics(result.topMetrics.map(m => ({
-        type: m.id,
-        value: m.count ?? 0,
-        label: m.label,
-        status: m.status,
-        breakdown: m.breakdown
-      })));
+        setMetrics(
+          result.topMetrics.map((m) => ({
+            type: m.id,
+            value: m.count ?? 0,
+            label: m.label,
+            status: m.status,
+            breakdown: m.breakdown,
+          }))
+        );
 
-      setFacets(result.recentJobRuns.facets);
-      setTotalCount(result.recentJobRuns.totalCount);
-      setJobs(result.recentJobRuns.items.map(r => ({
-        job_id: r.jobId,
-        dag_id: r.dagId,
-        project_id: r.projectId,
-        type: r.type,
-        destination: r.destination,
-        owners: r.owners,
-        issuer: r.issuer,
-        start_time: r.startTime,
-        next_start_time: r.nextStartTime,
-        period: r.period,
-        date: r.date,
-        hour: r.hour,
-        publish_time: r.publishTime,
-        status: r.status || "Completed",
-        updated_at: r.startTime,
-        job_name: r.jobId.split('.').pop() || r.jobId
-      })));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch data");
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+        setFacets(result.recentJobRuns.facets);
+        setTotalCount(result.recentJobRuns.totalCount);
+        setJobs(
+          result.recentJobRuns.items.map((r) => ({
+            job_id: r.jobId,
+            dag_id: r.dagId,
+            project_id: r.projectId,
+            type: r.type,
+            destination: r.destination,
+            owners: r.owners,
+            issuer: r.issuer,
+            start_time: r.startTime,
+            next_start_time: r.nextStartTime,
+            period: r.period,
+            date: r.date,
+            hour: r.hour,
+            publish_time: r.publishTime,
+            status: r.status || "Completed",
+            updated_at: r.startTime,
+            job_name: r.jobId.split(".").pop() || r.jobId,
+          }))
+        );
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     fetchData();

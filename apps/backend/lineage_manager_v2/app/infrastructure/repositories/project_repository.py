@@ -1,6 +1,8 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.project.entities import Project as ProjectEntity
 from app.infrastructure.models import Project as ProjectModel
 
@@ -50,6 +52,7 @@ class ProjectRepository:
 
     async def count(self) -> int:
         from sqlalchemy import func
+
         result = await self.db.execute(select(func.count()).select_from(ProjectModel))
         return result.scalar() or 0
 

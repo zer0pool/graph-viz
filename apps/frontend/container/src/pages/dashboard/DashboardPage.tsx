@@ -1,17 +1,28 @@
 import React from "react";
-import { SummaryGrid } from '../../shared/ui/SummaryGrid';
+import { SummaryGrid } from "../../shared/ui/SummaryGrid";
 import { RefreshCw, MapPin, Clock } from "lucide-react";
 import { useAnalyticsData } from "../../shared/lib/hooks/useAnalyticsData";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
 import { useJobDepartmentData } from "../../shared/lib/hooks/useJobDepartmentData";
-import { VisitHistoryCard } from '../../shared/ui/VisitHistoryCard';
-import { DepartmentHeatmapCard } from '../../shared/ui/DepartmentHeatmapCard';
+import { VisitHistoryCard } from "../../shared/ui/VisitHistoryCard";
+import { DepartmentHeatmapCard } from "../../shared/ui/DepartmentHeatmapCard";
 import { formatWindowHours } from "../../shared/lib/utils";
 
 export function DashboardPage() {
-  const { recentHistory, topVisited, windowHours, loadingTop, refresh: refreshAnalytics } = useAnalyticsData();
+  const {
+    recentHistory,
+    topVisited,
+    windowHours,
+    loadingTop,
+    refresh: refreshAnalytics,
+  } = useAnalyticsData();
   const { metrics, refresh: refreshLanding } = useLandingPageData("overview");
-  const { items: deptItems, total: deptTotal, loading: deptLoading, refresh: refreshDept } = useJobDepartmentData();
+  const {
+    items: deptItems,
+    total: deptTotal,
+    loading: deptLoading,
+    refresh: refreshDept,
+  } = useJobDepartmentData();
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
@@ -37,10 +48,7 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Section */}
-      <SummaryGrid 
-        cols={5}
-        metrics={metrics}
-      />
+      <SummaryGrid cols={5} metrics={metrics} />
 
       {/* History & Recommendations Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -66,13 +74,8 @@ export function DashboardPage() {
 
       {/* Department Heatmap Section */}
       <div className="grid grid-cols-2 gap-6">
-        <DepartmentHeatmapCard
-          items={deptItems}
-          total={deptTotal}
-          loading={deptLoading}
-        />
+        <DepartmentHeatmapCard items={deptItems} total={deptTotal} loading={deptLoading} />
       </div>
     </div>
   );
 }
-

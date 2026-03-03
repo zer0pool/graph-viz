@@ -45,14 +45,13 @@ export function useMermaidRenderer({
             type: node.type as any,
             id: node.id,
             jobId: node.type === "job" ? node.id : undefined,
-            tableName:
-              node.type === "table" ? node.full_name || node.name : undefined,
+            tableName: node.type === "table" ? node.full_name || node.name : undefined,
             action,
           });
         }
       }
     },
-    [onSelect],
+    [onSelect]
   );
 
   const {
@@ -75,10 +74,7 @@ export function useMermaidRenderer({
     if (!mermaidRef.current) return;
     d3.select(mermaidRef.current as any).on("click", (event) => {
       const target = event.target as HTMLElement;
-      if (
-        target.tagName.toLowerCase() === "svg" ||
-        target.id === "mermaid-container"
-      ) {
+      if (target.tagName.toLowerCase() === "svg" || target.id === "mermaid-container") {
         selectNode(null);
         setContextMenu(null);
       }
@@ -95,7 +91,7 @@ export function useMermaidRenderer({
 
     if (selectedNode) {
       const nodeEls = container.querySelectorAll(
-        "g.node, .jobNode, .tableNode, [id*='flowchart-']",
+        "g.node, .jobNode, .tableNode, [id*='flowchart-']"
       );
       const safeId = MermaidDslService.sanitizeId(selectedNode.id);
 
@@ -134,7 +130,6 @@ export function useMermaidRenderer({
         container.innerHTML = "";
         container.setAttribute("data-layout", layout);
 
-
         // Set stable config
         mermaid.initialize({
           startOnLoad: false,
@@ -165,7 +160,7 @@ export function useMermaidRenderer({
 
         const renderId = "mermaid-svg-" + Math.floor(Math.random() * 10000);
         const { svg } = await (mermaid as any).render(renderId, dsl, container);
-        
+
         if (isCancelled) return;
         container.innerHTML = svg;
 
@@ -180,10 +175,7 @@ export function useMermaidRenderer({
 
           let innerG = newSvg.querySelector("g");
           if (!innerG) {
-            innerG = document.createElementNS(
-              "http://www.w3.org/2000/svg",
-              "g",
-            );
+            innerG = document.createElementNS("http://www.w3.org/2000/svg", "g");
             innerG.innerHTML = newSvg.innerHTML;
             newSvg.innerHTML = "";
             newSvg.appendChild(innerG);
@@ -193,8 +185,7 @@ export function useMermaidRenderer({
           const containerRect = container.getBoundingClientRect();
           const graphBBox = (innerG as SVGGraphicsElement).getBBox();
 
-          const isOrientationChange =
-            prevOrientationRef.current !== orientation;
+          const isOrientationChange = prevOrientationRef.current !== orientation;
           const isLayoutChange = prevLayoutRef.current !== layout;
           const isInitialLoad = pan.x === 0 && pan.y === 0 && zoomLevel === 1;
           const isFullReload = graphData ? graphData.nodes.length < 5 : true;
@@ -210,10 +201,7 @@ export function useMermaidRenderer({
             d3.select(innerG).attr("transform", transform.toString());
 
             if (zoomBehaviorRef.current && container) {
-              d3.select(container).call(
-                zoomBehaviorRef.current.transform as any,
-                transform,
-              );
+              d3.select(container).call(zoomBehaviorRef.current.transform as any, transform);
             }
             setZoomLevel(scale);
             setPan({ x, y });
@@ -229,23 +217,18 @@ export function useMermaidRenderer({
             d3.select(innerG).attr("transform", transform.toString());
 
             if (zoomBehaviorRef.current && container) {
-              d3.select(container).call(
-                zoomBehaviorRef.current.transform as any,
-                transform,
-              );
+              d3.select(container).call(zoomBehaviorRef.current.transform as any, transform);
             }
             setPan({ x, y });
             prevOrientationRef.current = orientation;
           } else {
-            const transform = d3.zoomIdentity
-              .translate(pan.x, pan.y)
-              .scale(zoomLevel);
+            const transform = d3.zoomIdentity.translate(pan.x, pan.y).scale(zoomLevel);
             d3.select(innerG).attr("transform", transform.toString());
           }
         }
 
         const nodeEls = container.querySelectorAll(
-          "g.node, .jobNode, .tableNode, [id*='flowchart-']",
+          "g.node, .jobNode, .tableNode, [id*='flowchart-']"
         );
         nodeEls.forEach((el) => {
           const matches =

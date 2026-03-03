@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from app.domain.graph.value_objects.data_source_type import DataSourceType
 
 

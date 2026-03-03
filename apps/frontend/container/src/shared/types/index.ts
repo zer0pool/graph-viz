@@ -1,7 +1,7 @@
 // Shared type definitions for Container app
 
 export interface SearchSuggestion {
-  type: 'job' | 'table' | 'owner';
+  type: "job" | "table" | "owner";
   id: string;
   name: string;
 }
@@ -9,7 +9,7 @@ export interface SearchSuggestion {
 export interface VisitHistoryItem {
   id: string;
   name: string;
-  type: 'job' | 'table' | 'project';
+  type: "job" | "table" | "project";
   visitedAt?: string;
 }
 
@@ -17,5 +17,5 @@ export interface AnalyticsMetric {
   type: string;
   value: number | string;
   subtext?: string;
-  status?: 'success' | 'warning' | 'error';
+  status?: "success" | "warning" | "error";
 }

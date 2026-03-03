@@ -33,11 +33,7 @@ export interface AuthClient {
   login: () => Promise<void>;
   logout: () => void;
   handleCallback: (code: string, state: string) => Promise<void>;
-  handleImplicitCallback: (
-    accessToken: string,
-    idToken: string,
-    state: string
-  ) => Promise<void>;
+  handleImplicitCallback: (accessToken: string, idToken: string, state: string) => Promise<void>;
   config: OidcConfig | null;
   isAuthenticated: boolean;
 }
@@ -47,12 +43,7 @@ export interface OidcProvider {
     authEndpoint: string;
     tokenEndpoint: string;
   };
-  generateAuthUrl(
-    config: OidcConfig,
-    state: string,
-    nonce: string,
-    challenge: string
-  ): string;
+  generateAuthUrl(config: OidcConfig, state: string, nonce: string, challenge: string): string;
   exchangeCode(
     code: string,
     verifier: string,

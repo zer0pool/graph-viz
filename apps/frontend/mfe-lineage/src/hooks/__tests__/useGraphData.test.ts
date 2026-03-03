@@ -34,7 +34,7 @@ describe("useGraphData", () => {
         expect(result.current.graphData).not.toBeNull();
         expect(result.current.graphData?.nodes).toHaveLength(5);
       },
-      { timeout: 3000 },
+      { timeout: 3000 }
     );
 
     // Test resetToInitial
@@ -46,9 +46,7 @@ describe("useGraphData", () => {
   });
 
   it("should handle fetch errors", async () => {
-    vi.mocked(GraphApiService.fetchExpand).mockRejectedValue(
-      new Error("Network Error"),
-    );
+    vi.mocked(GraphApiService.fetchExpand).mockRejectedValue(new Error("Network Error"));
     const { result } = renderHook(() => useGraphData());
 
     await act(async () => {
@@ -62,7 +60,7 @@ describe("useGraphData", () => {
       () => {
         expect(result.current.loading).toBe(false);
       },
-      { timeout: 3000 },
+      { timeout: 3000 }
     );
   });
 
@@ -93,7 +91,7 @@ describe("useGraphData", () => {
       () => {
         expect(result.current.graphData?.nodes).toHaveLength(8);
       },
-      { timeout: 3000 },
+      { timeout: 3000 }
     );
   });
 
@@ -112,9 +110,7 @@ describe("useGraphData", () => {
       timeout: 3000,
     });
 
-    const groupNode = result.current.graphData?.nodes.find(
-      (n) => n.type === "group",
-    );
+    const groupNode = result.current.graphData?.nodes.find((n) => n.type === "group");
     expect(groupNode).toBeDefined();
 
     await act(async () => {
@@ -126,7 +122,7 @@ describe("useGraphData", () => {
       () => {
         expect(result.current.graphData?.nodes).toHaveLength(6);
       },
-      { timeout: 3000 },
+      { timeout: 3000 }
     );
   });
 

@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, status, HTTPException
-from dependency_injector.wiring import inject, Provide
-from app.domain.analytics.schemas import TrackEvent, TrackResponse
+from typing import Any, Dict
+
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.core.container import Container
+from app.domain.analytics.schemas import TrackEvent, TrackResponse
 from app.domain.analytics.service import AnalyticsService
-from typing import Dict, Any
 
 router = APIRouter()
 
 
-@router.post("/track", response_model=TrackResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/track", response_model=TrackResponse, status_code=status.HTTP_201_CREATED
+)
 @inject
 async def track_event(
     event: TrackEvent,
@@ -29,7 +33,7 @@ async def track_event(
 @router.get("/dashboard-metrics", response_model=Dict[str, Any])
 @inject
 async def get_dashboard_metrics(
-    service: AnalyticsService = Depends(Provide[Container.analytics_service])
+    service: AnalyticsService = Depends(Provide[Container.analytics_service]),
 ):
     """
     Get aggregated dashboard metrics (KPIs).
@@ -37,16 +41,14 @@ async def get_dashboard_metrics(
     """
     return await service.get_dashboard_metrics()
 
+
 @router.get("/top-visited", response_model=Dict[str, Any])
 @inject
 async def get_top_visited(
-    service: AnalyticsService = Depends(Provide[Container.analytics_service])
+    service: AnalyticsService = Depends(Provide[Container.analytics_service]),
 ):
     """
     Get top visited pages/resources.
     Currently returns mock data until visit tracking is implemented.
     """
     return await service.get_top_visited()
-
-
-

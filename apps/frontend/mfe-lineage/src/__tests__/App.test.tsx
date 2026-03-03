@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  waitFor,
-  fireEvent,
-  act,
-} from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import App from "../App";
 import { useGraphData } from "../hooks/useGraphData";
@@ -42,9 +36,7 @@ vi.mock("../components/ListView/ListView", () => ({
         >
           Select Table
         </button>
-        <button
-          onClick={() => onSelectNode({ id: "j1", type: "job", name: "J1" })}
-        >
+        <button onClick={() => onSelectNode({ id: "j1", type: "job", name: "J1" })}>
           Select Job
         </button>
       </div>
@@ -118,9 +110,7 @@ describe("App", () => {
       },
     } as any);
 
-    const { container, rerender } = render(
-      <App rootNode={{ type: "table", id: "n1" }} />,
-    );
+    const { container, rerender } = render(<App rootNode={{ type: "table", id: "n1" }} />);
 
     // Rerender with SAME rootNode to hit coverage for same-node skip
     rerender(<App rootNode={{ type: "table", id: "n1" }} />);
@@ -136,17 +126,14 @@ describe("App", () => {
     // 1. Switch to List View
     const listBtn = screen.getByTitle("List View");
     fireEvent.click(listBtn);
-    expect(container.querySelector(".lineage-container")).toHaveAttribute(
-      "data-view-mode",
-      "list",
-    );
+    expect(container.querySelector(".lineage-container")).toHaveAttribute("data-view-mode", "list");
 
     // 2. Switch back to Graph View
     const graphBtn = screen.getByTitle("Graph View");
     fireEvent.click(graphBtn);
     expect(container.querySelector(".lineage-container")).toHaveAttribute(
       "data-view-mode",
-      "graph",
+      "graph"
     );
 
     // 3. Test Zoom/Reset/Fit
@@ -157,18 +144,14 @@ describe("App", () => {
     await waitFor(() => expect(mockResetView).toHaveBeenCalled());
 
     // 4. Test Layout/Orientation/Export
-    const dirBtn = container.querySelector(
-      '[data-tooltip="Change Direction"]',
-    )!;
+    const dirBtn = container.querySelector('[data-tooltip="Change Direction"]')!;
     fireEvent.click(dirBtn);
     fireEvent.click(screen.getByText("Top to bottom"));
     fireEvent.click(dirBtn); // reopen
     fireEvent.click(screen.getByText("Left to right"));
     fireEvent.mouseDown(document); // click outside
 
-    const layoutBtn = container.querySelector(
-      '[data-tooltip="Change Layout"]',
-    )!;
+    const layoutBtn = container.querySelector('[data-tooltip="Change Layout"]')!;
     fireEvent.click(layoutBtn);
     fireEvent.click(screen.getByText("Adaptive"));
     fireEvent.click(layoutBtn); // reopen
@@ -197,9 +180,7 @@ describe("App", () => {
 
   it("should handle custom events and list selection", async () => {
     const mockOnSelect = vi.fn();
-    render(
-      <App rootNode={{ type: "table", id: "n1" }} onSelect={mockOnSelect} />,
-    );
+    render(<App rootNode={{ type: "table", id: "n1" }} onSelect={mockOnSelect} />);
 
     // Clear initial fetch call
     mockFetchGraph.mockClear();
@@ -209,16 +190,10 @@ describe("App", () => {
       document.dispatchEvent(
         new CustomEvent("job-detail:view-in-graph", {
           detail: { nodeId: "job123" },
-        }),
+        })
       );
     });
-    expect(mockFetchGraph).toHaveBeenCalledWith(
-      "job",
-      "job123",
-      false,
-      "both",
-      true,
-    );
+    expect(mockFetchGraph).toHaveBeenCalledWith("job", "job123", false, "both", true);
 
     mockFetchGraph.mockClear();
     // Test table-detail:view-in-graph event (nodeId with :)
@@ -226,16 +201,10 @@ describe("App", () => {
       document.dispatchEvent(
         new CustomEvent("table-detail:view-in-graph", {
           detail: { nodeId: "table:my_table" },
-        }),
+        })
       );
     });
-    expect(mockFetchGraph).toHaveBeenCalledWith(
-      "table",
-      "my_table",
-      false,
-      "both",
-      true,
-    );
+    expect(mockFetchGraph).toHaveBeenCalledWith("table", "my_table", false, "both", true);
 
     // Switch to list view to see reload/export buttons
     const listBtn = screen.getByTitle("List View");
@@ -251,13 +220,11 @@ describe("App", () => {
     // Test selection in ListView mock
     fireEvent.click(screen.getByText("Select Table"));
     expect(mockOnSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "table", tableName: "db.schema.T1" }),
+      expect.objectContaining({ type: "table", tableName: "db.schema.T1" })
     );
 
     fireEvent.click(screen.getByText("Select Job"));
-    expect(mockOnSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "job", id: "j1" }),
-    );
+    expect(mockOnSelect).toHaveBeenCalledWith(expect.objectContaining({ type: "job", id: "j1" }));
   });
 
   it("should handle context menu actions with selected node", () => {

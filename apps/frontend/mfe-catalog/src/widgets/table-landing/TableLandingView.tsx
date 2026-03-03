@@ -18,9 +18,7 @@ export function TableLandingView({ metrics, onRefresh }: TableLandingViewProps) 
       {/* Page Header */}
       <div className="flex items-center justify-between animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Tables & Datasets
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">Tables & Datasets</h1>
           <p className="text-muted-foreground mt-1">
             Monitor dataset health, capacity, and compliance status
           </p>
@@ -35,10 +33,7 @@ export function TableLandingView({ metrics, onRefresh }: TableLandingViewProps) 
 
       {/* KPI Cards */}
       <div className="animate-fade-in-up delay-100">
-        <SummaryGrid 
-          cols={5}
-          metrics={metrics}
-        />
+        <SummaryGrid cols={5} metrics={metrics} />
       </div>
 
       {/* Trends Section */}

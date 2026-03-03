@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  ExpandUpIcon,
-  ExpandDownIcon,
-  SmartExpandIcon,
-} from "../../assets/icons";
+import { ExpandUpIcon, ExpandDownIcon, SmartExpandIcon } from "../../assets/icons";
 
 interface ExpandControlsProps {
   onExpandUpstream: () => void;

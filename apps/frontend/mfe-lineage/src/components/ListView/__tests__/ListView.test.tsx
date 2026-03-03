@@ -26,7 +26,7 @@ describe("ListView", () => {
         selectedNode={null}
         defaultRootNode={{ type: "table", id: "t1" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Root: table:t1")).toBeInTheDocument();
   });
@@ -42,7 +42,7 @@ describe("ListView", () => {
           tableName: "Missing Table",
         }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Root: missing")).toBeInTheDocument();
   });
@@ -54,7 +54,7 @@ describe("ListView", () => {
         selectedNode={null}
         defaultRootNode={{ type: "job", id: "j1" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     // job:j1 writes to table:t1
     expect(screen.getByText("Root: table:t1")).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("ListView", () => {
         selectedNode={null}
         defaultRootNode={{ type: "job", id: "j2" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Root: table:t2")).toBeInTheDocument();
   });
@@ -88,7 +88,7 @@ describe("ListView", () => {
         selectedNode={{ id: "table:selected", type: "table", name: "Selected" }}
         defaultRootNode={{ type: "table", id: "t1" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Root: table:selected")).toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe("ListView", () => {
         selectedNode={{ id: "job:j1", type: "job", name: "J1" }}
         defaultRootNode={{ type: "table", id: "t1" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Root: table:t1")).toBeInTheDocument();
   });

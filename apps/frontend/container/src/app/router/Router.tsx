@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Routes, Route, useParams } from "react-router-dom";
 import { RemoteMount } from "../../features/mfe-loader/RemoteMount";
-import { config } from '../../shared/api/config';
+import { config } from "../../shared/api/config";
 import "../../styles/app/Router.css";
 
 const LineageRouteWrapper: React.FC<{
@@ -30,11 +30,23 @@ const LineageRouteWrapper: React.FC<{
   useEffect(() => {
     console.log("[Shell:LineageWrapper] rest param changed:", rest);
     if (requestedNode) {
-      console.log("[Shell:LineageWrapper] Parsed entity from URL:", requestedNode, "Current active:", activeGraphNode);
+      console.log(
+        "[Shell:LineageWrapper] Parsed entity from URL:",
+        requestedNode,
+        "Current active:",
+        activeGraphNode
+      );
 
       // Sync activeGraphNode state if it doesn't match the URL (but don't wait for it for render)
-      if (!activeGraphNode || activeGraphNode.id !== requestedNode.id || activeGraphNode.type !== requestedNode.type) {
-        console.log("[Shell:LineageWrapper] Syncing Shell activeGraphNode state to match URL:", requestedNode.id);
+      if (
+        !activeGraphNode ||
+        activeGraphNode.id !== requestedNode.id ||
+        activeGraphNode.type !== requestedNode.type
+      ) {
+        console.log(
+          "[Shell:LineageWrapper] Syncing Shell activeGraphNode state to match URL:",
+          requestedNode.id
+        );
         onSetRootNode(requestedNode);
       }
     }
@@ -54,7 +66,7 @@ const LineageRouteWrapper: React.FC<{
         onSelect: onSelectNode,
         rootNode: effectiveRootNode,
         initialSelection: selection,
-        path: rest
+        path: rest,
       }}
       visible={true}
     />
@@ -68,15 +80,15 @@ const CatalogRouteWrapper: React.FC<{ domain: string }> = ({ domain }) => {
 
   return (
     <RemoteMount
-      key={`catalog-${domain}-${rest?.split('/')[0] || 'landing'}`}
+      key={`catalog-${domain}-${rest?.split("/")[0] || "landing"}`}
       scope="tableDetailViewer"
       module="./views"
       url={config.CATALOG_MFE_URL}
-      mountProps={{ 
+      mountProps={{
         mode: "STANDALONE",
         domain,
-        id: rest?.split('/')[0],
-        path: location.pathname
+        id: rest?.split("/")[0],
+        path: location.pathname,
       }}
       visible={true}
     />
@@ -121,7 +133,7 @@ export const AppRouter: React.FC<{
         <Route
           path="/lineage/*"
           element={
-            <LineageRouteWrapper 
+            <LineageRouteWrapper
               onSelectNode={onSelectNode}
               activeGraphNode={activeGraphNode}
               onSetRootNode={onSetRootNode}

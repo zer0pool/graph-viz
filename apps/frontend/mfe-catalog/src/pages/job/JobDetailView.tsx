@@ -11,9 +11,12 @@ export const JobDetailView: React.FC<{
   const navigate = useMfeNavigate();
   const logic = useJobDetailView(jobId);
 
-  const handleNavigateToJob = useCallback((id: string) => {
-    navigate(`/jobs/${id}`);
-  }, [navigate]);
+  const handleNavigateToJob = useCallback(
+    (id: string) => {
+      navigate(`/jobs/${id}`);
+    },
+    [navigate]
+  );
 
   return (
     <JobDetailViewPresenter

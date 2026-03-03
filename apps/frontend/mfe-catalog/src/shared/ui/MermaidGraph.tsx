@@ -19,11 +19,7 @@ mermaid.initialize({
   },
 });
 
-export const MermaidGraph: React.FC<MermaidGraphProps> = ({
-  chart,
-  onNodeClick,
-  loading,
-}) => {
+export const MermaidGraph: React.FC<MermaidGraphProps> = ({ chart, onNodeClick, loading }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>("");
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -88,16 +84,9 @@ export const MermaidGraph: React.FC<MermaidGraphProps> = ({
     return () => container.removeEventListener("click", handleClick);
   }, [svg, onNodeClick]);
 
-  if (loading)
-    return (
-      <div className="p-10 text-center text-gray-400">Rendering Graph...</div>
-    );
+  if (loading) return <div className="p-10 text-center text-gray-400">Rendering Graph...</div>;
   if (renderError)
-    return (
-      <div className="p-4 text-red-500 border border-red-200 rounded">
-        {renderError}
-      </div>
-    );
+    return <div className="p-4 text-red-500 border border-red-200 rounded">{renderError}</div>;
 
   return (
     <div

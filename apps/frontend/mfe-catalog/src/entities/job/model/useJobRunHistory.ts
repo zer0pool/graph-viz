@@ -4,7 +4,7 @@ import { useApiClient } from "../../../shared/api/ApiContext";
 
 export function useJobRunHistory(jobId: string) {
   const [runs, setRuns] = useState<JobRun[]>([]);
-  const [summary, setSummary] = useState<JobRunHistoryResponse['summary'] | null>(null);
+  const [summary, setSummary] = useState<JobRunHistoryResponse["summary"] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const api = useApiClient();

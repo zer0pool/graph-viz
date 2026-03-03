@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { MetricData } from '../../ui/SummaryGrid';
-import { analyticsApi } from '../../api/analyticsApi';
+import { MetricData } from "../../ui/SummaryGrid";
+import { analyticsApi } from "../../api/analyticsApi";
 
 export const useUsersMetrics = () => {
   const [metrics, setMetrics] = useState<MetricData[]>([

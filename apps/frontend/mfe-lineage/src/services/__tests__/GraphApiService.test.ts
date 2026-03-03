@@ -18,7 +18,7 @@ describe("GraphApiService", () => {
       const result = await GraphApiService.fetchExpand("table", "my_id");
       expect(result).toEqual(mockResult);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("node_id=table%3Amy_id&depth=1"),
+        expect.stringContaining("node_id=table%3Amy_id&depth=1")
       );
     });
 
@@ -30,7 +30,7 @@ describe("GraphApiService", () => {
 
       await GraphApiService.fetchExpand("table", "my:urn", "upstream", 3);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("node_id=my%3Aurn&depth=3&direction=upstream"),
+        expect.stringContaining("node_id=my%3Aurn&depth=3&direction=upstream")
       );
     });
 
@@ -42,7 +42,7 @@ describe("GraphApiService", () => {
       });
 
       await expect(GraphApiService.fetchExpand("table", "id")).rejects.toThrow(
-        "Graph API error (500): Internal Server Error",
+        "Graph API error (500): Internal Server Error"
       );
     });
   });
@@ -57,9 +57,7 @@ describe("GraphApiService", () => {
 
       const result = await GraphApiService.fetchTableHierarchy("my_table");
       expect(result).toEqual(mockResult);
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/my_table/hierarchy"),
-      );
+      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/my_table/hierarchy"));
     });
 
     it("should throw error on non-ok response", async () => {
@@ -70,7 +68,7 @@ describe("GraphApiService", () => {
       });
 
       await expect(GraphApiService.fetchTableHierarchy("tab")).rejects.toThrow(
-        "Hierarchy API error (404): Not Found",
+        "Hierarchy API error (404): Not Found"
       );
     });
   });
@@ -90,7 +88,7 @@ describe("GraphApiService", () => {
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ node_ids: ["n1", "n2"] }),
-        }),
+        })
       );
     });
 
@@ -108,7 +106,7 @@ describe("GraphApiService", () => {
       });
 
       await expect(GraphApiService.fetchBatchDetails(["n1"])).rejects.toThrow(
-        "Batch Details API error (400): Bad Request",
+        "Batch Details API error (400): Bad Request"
       );
     });
   });

@@ -1,24 +1,30 @@
 import { useState, useEffect, useCallback } from "react";
 import { useApiClient } from "../api/ApiContext";
-import { LandingPageResponse, MetricGroup, JobNode, TableNode, Connection } from "../types/analytics";
+import {
+  LandingPageResponse,
+  MetricGroup,
+  JobNode,
+  TableNode,
+  Connection,
+} from "../types/analytics";
 
-const PAGE_METRIC_MAPPING: Record<string, { top: string[], analytics: string[] }> = {
+const PAGE_METRIC_MAPPING: Record<string, { top: string[]; analytics: string[] }> = {
   OVERVIEW: {
     top: ["total_jobs", "active_users", "total_tables", "system_health", "failed_24h"],
-    analytics: ["top_visited_pages"]
+    analytics: ["top_visited_pages"],
   },
   JOBS: {
     top: ["total_jobs", "running_now", "failed_24h", "avg_duration", "queued_jobs"],
-    analytics: ["job_type_breakdown"]
+    analytics: ["job_type_breakdown"],
   },
   TABLES: {
     top: ["total_tables", "total_size", "expiring_soon", "lineage_coverage", "metadata_health"],
-    analytics: []
+    analytics: [],
   },
   USERS: {
     top: ["total_users", "active_users", "admin_users", "api_keys"],
-    analytics: ["active_users_yoy_comparison"]
-  }
+    analytics: ["active_users_yoy_comparison"],
+  },
 };
 
 const LANDING_PAGE_QUERY = `
@@ -68,7 +74,10 @@ const LANDING_PAGE_QUERY = `
   }
 `;
 
-export const useLandingPageData = (context: string, options: { first?: number; after?: string } = {}) => {
+export const useLandingPageData = (
+  context: string,
+  options: { first?: number; after?: string } = {}
+) => {
   const api = useApiClient();
   const [data, setData] = useState<LandingPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +87,7 @@ export const useLandingPageData = (context: string, options: { first?: number; a
     setLoading(true);
     const ctx = context.toUpperCase();
     const mapping = PAGE_METRIC_MAPPING[ctx] || { top: [], analytics: [] };
-    
+
     // Conditionals for entities
     const includeJobs = ctx === "JOBS";
     const includeTables = ctx === "TABLES";
@@ -87,7 +96,7 @@ export const useLandingPageData = (context: string, options: { first?: number; a
     try {
       const variables: Record<string, any> = {
         metricIds: mapping.top,
-        analyticIds: mapping.analytics
+        analyticIds: mapping.analytics,
       };
 
       if (includeJobs) variables.includeJobs = true;
@@ -98,17 +107,17 @@ export const useLandingPageData = (context: string, options: { first?: number; a
         variables.after = options.after;
       }
 
-      const result = await api.graphqlRequest<{ 
-        topMetrics: MetricGroup[], 
-        analytics: MetricGroup[], 
-        jobs?: Connection<JobNode>,
-        tables?: Connection<TableNode>
+      const result = await api.graphqlRequest<{
+        topMetrics: MetricGroup[];
+        analytics: MetricGroup[];
+        jobs?: Connection<JobNode>;
+        tables?: Connection<TableNode>;
       }>(LANDING_PAGE_QUERY, variables);
 
       setData({
         topMetrics: result.topMetrics,
         analytics: result.analytics,
-        entities: result.jobs || result.tables || null
+        entities: result.jobs || result.tables || null,
       });
       setError(null);
     } catch (err) {
@@ -125,17 +134,17 @@ export const useLandingPageData = (context: string, options: { first?: number; a
 
   return {
     // Map MetricGroup to MetricData format
-    metrics: (data?.topMetrics || []).map(m => ({
+    metrics: (data?.topMetrics || []).map((m) => ({
       type: m.id,
       value: m.count ?? 0,
       label: m.label,
       status: m.status,
-      breakdown: m.breakdown
+      breakdown: m.breakdown,
     })),
     plots: data?.analytics || [],
     entities: data?.entities || null,
     loading,
     error,
-    refresh: fetchData
+    refresh: fetchData,
   };
 };

@@ -1,6 +1,7 @@
 """
 HTTP Client for calling lineage-manager-v2 internal APIs.
 """
+
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +21,7 @@ class LineageClient:
 
     async def get_jobs_batch(self, job_ids: List[str]) -> Dict[str, Any]:
         """
-        Calls POST /lineage-manager/api/v1/jobs/batch on lineage-manager-v2 
+        Calls POST /lineage-manager/api/v1/jobs/batch on lineage-manager-v2
         to fetch metadata for multiple jobs.
         """
         if not job_ids:

@@ -1,10 +1,12 @@
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from dependency_injector.wiring import inject, Provide
+
+from app.api.v1.schemas.analytics import DashboardMetricsResponse
 from app.core.container import Container
 from app.services.analytics_service import AnalyticsService
-from app.api.v1.schemas.analytics import DashboardMetricsResponse
 
 router = APIRouter()
+
 
 @router.get("/dashboard-metrics", response_model=DashboardMetricsResponse)
 @inject

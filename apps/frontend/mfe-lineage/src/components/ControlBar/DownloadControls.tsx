@@ -15,10 +15,7 @@ export const DownloadControls: React.FC<DownloadControlsProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -75,9 +72,7 @@ export const DownloadControls: React.FC<DownloadControlsProps> = ({
               <div className="layout-item-content">
                 <div className="layout-item-left">
                   <div className="menu-icon-wrapper">
-                    <span style={{ fontSize: "11px", fontWeight: "bold" }}>
-                      M
-                    </span>
+                    <span style={{ fontSize: "11px", fontWeight: "bold" }}>M</span>
                   </div>
                   <span>Copy Mermaid</span>
                 </div>

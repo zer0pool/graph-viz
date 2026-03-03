@@ -1,7 +1,16 @@
 import React from "react";
-import { 
-  ArrowRight, LucideIcon, Briefcase, Table2, Users, Building, 
-  FileText, Shield, Settings, LayoutDashboard, GitBranch 
+import {
+  ArrowRight,
+  LucideIcon,
+  Briefcase,
+  Table2,
+  Users,
+  Building,
+  FileText,
+  Shield,
+  Settings,
+  LayoutDashboard,
+  GitBranch,
 } from "lucide-react";
 import { config } from "../api/config";
 
@@ -45,10 +54,12 @@ export function VisitHistoryCard({
   }, [loading, items.length]);
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col transition-all duration-300 ${isExpanded ? "h-full" : "h-auto"}`}>
+    <div
+      className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col transition-all duration-300 ${isExpanded ? "h-full" : "h-auto"}`}
+    >
       {/* Header */}
-      <div 
-        className={`p-4 flex items-center justify-between cursor-pointer ${isExpanded ? "border-b border-gray-100" : ""}`} 
+      <div
+        className={`p-4 flex items-center justify-between cursor-pointer ${isExpanded ? "border-b border-gray-100" : ""}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <h2 className="font-semibold flex items-center gap-2 text-gray-900">
@@ -56,8 +67,10 @@ export function VisitHistoryCard({
           {title}
         </h2>
         <div className="flex items-center gap-3">
-            {subtitle && <span className="text-xs text-gray-400 font-normal">{subtitle}</span>}
-            <ArrowRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : "rotate-0"}`} />
+          {subtitle && <span className="text-xs text-gray-400 font-normal">{subtitle}</span>}
+          <ArrowRight
+            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+          />
         </div>
       </div>
 
@@ -75,18 +88,27 @@ export function VisitHistoryCard({
                   const getPageIcon = (type?: string) => {
                     switch (type) {
                       case "job":
-                      case "jobs_landing": return <Briefcase className="h-3.5 w-3.5 text-indigo-500" />;
-                      case "table": 
-                      case "tables_landing": return <Table2 className="h-3.5 w-3.5 text-emerald-500" />;
+                      case "jobs_landing":
+                        return <Briefcase className="h-3.5 w-3.5 text-indigo-500" />;
+                      case "table":
+                      case "tables_landing":
+                        return <Table2 className="h-3.5 w-3.5 text-emerald-500" />;
                       case "user":
-                      case "users_landing": return <Users className="h-3.5 w-3.5 text-orange-500" />;
+                      case "users_landing":
+                        return <Users className="h-3.5 w-3.5 text-orange-500" />;
                       case "project":
-                      case "projects_landing": return <Building className="h-3.5 w-3.5 text-blue-500" />;
-                      case "lineage": return <GitBranch className="h-3.5 w-3.5 text-fuchsia-500" />;
-                      case "audit": return <Shield className="h-3.5 w-3.5 text-purple-500" />;
-                      case "settings": return <Settings className="h-3.5 w-3.5 text-slate-500" />;
-                      case "dashboard": return <LayoutDashboard className="h-3.5 w-3.5 text-blue-600" />;
-                      default: return <FileText className="h-3.5 w-3.5 text-slate-400" />;
+                      case "projects_landing":
+                        return <Building className="h-3.5 w-3.5 text-blue-500" />;
+                      case "lineage":
+                        return <GitBranch className="h-3.5 w-3.5 text-fuchsia-500" />;
+                      case "audit":
+                        return <Shield className="h-3.5 w-3.5 text-purple-500" />;
+                      case "settings":
+                        return <Settings className="h-3.5 w-3.5 text-slate-500" />;
+                      case "dashboard":
+                        return <LayoutDashboard className="h-3.5 w-3.5 text-blue-600" />;
+                      default:
+                        return <FileText className="h-3.5 w-3.5 text-slate-400" />;
                     }
                   };
 
@@ -120,8 +142,11 @@ export function VisitHistoryCard({
 
           {/* Footer */}
           <div className="p-3 border-t border-gray-50 bg-gray-50/50">
-            <button 
-              onClick={(e) => { e.stopPropagation(); onViewMore?.(); }}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewMore?.();
+              }}
               className="text-xs font-medium text-gray-500 hover:text-gray-900 flex items-center gap-1 ml-auto"
             >
               VIEW MORE <ArrowRight className="h-3 w-3" />

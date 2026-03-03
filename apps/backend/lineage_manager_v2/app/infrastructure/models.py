@@ -1,18 +1,19 @@
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
+    DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
     Text,
-    DateTime,
-    JSON,
-    Boolean,
-    ForeignKey,
     UniqueConstraint,
-    Index,
     func,
     text,
 )
 from sqlalchemy.orm import relationship
+
 from app.infrastructure.base import Base
 
 

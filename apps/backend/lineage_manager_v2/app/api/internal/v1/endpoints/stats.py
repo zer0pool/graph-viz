@@ -1,10 +1,13 @@
+from typing import Any, Dict
+
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from typing import Dict, Any
-from dependency_injector.wiring import inject, Provide
+
 from app.core.container import Container
 from app.services.analytics_service import AnalyticsService
 
 router = APIRouter()
+
 
 @router.get("/stats")
 @inject

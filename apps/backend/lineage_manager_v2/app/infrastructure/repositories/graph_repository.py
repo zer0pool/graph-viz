@@ -1,8 +1,10 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import and_, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, text
+
 from app.domain.graph.entities.edge import Edge as EdgeEntity
-from app.infrastructure.models import GraphNode, GraphEdge, GraphClosure
+from app.infrastructure.models import GraphClosure, GraphEdge, GraphNode
 
 
 class GraphRepository:
@@ -187,6 +189,7 @@ class GraphRepository:
     async def count_nodes_by_type(self, node_type: str) -> int:
         """Count nodes of a specific type in the GraphNode table."""
         from sqlalchemy import func
+
         result = await self.db.execute(
             select(func.count(GraphNode.id)).where(GraphNode.node_type == node_type)
         )

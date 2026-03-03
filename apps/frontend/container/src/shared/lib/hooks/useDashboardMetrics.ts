@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { MetricData } from '../../ui/SummaryGrid';
-import { analyticsApi } from '../../api/analyticsApi';
+import { MetricData } from "../../ui/SummaryGrid";
+import { analyticsApi } from "../../api/analyticsApi";
 
 const JOB_TYPE_COLORS: Record<string, string> = {
   "Self-Type": "bg-blue-600",
@@ -21,20 +21,20 @@ export const useDashboardMetrics = () => {
     setLoading(true);
     try {
       const data = await analyticsApi.getOverviewSummary();
-      
-      const enrichedMetrics = data.metrics.map(m => {
+
+      const enrichedMetrics = data.metrics.map((m) => {
         if (m.type === "total_jobs" && m.breakdown) {
           return {
             ...m,
-            breakdown: m.breakdown.map(item => ({
+            breakdown: m.breakdown.map((item) => ({
               ...item,
-              color: JOB_TYPE_COLORS[item.label] || "bg-gray-400"
-            }))
+              color: JOB_TYPE_COLORS[item.label] || "bg-gray-400",
+            })),
           };
         }
         return m;
       });
-      
+
       setMetrics(enrichedMetrics);
     } catch (e) {
       console.error("[Dashboard] Error fetching metrics:", e);

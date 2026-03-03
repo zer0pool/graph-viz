@@ -11,17 +11,10 @@ interface UseD3ZoomOptions {
  * Hook to manage D3 Zoom behavior for the Mermaid SVG.
  * Extracted from useMermaidRenderer to isolate D3-specific logic.
  */
-export function useD3Zoom({
-  mermaidRef,
-  onInteractionStart,
-  onInteractionEnd,
-}: UseD3ZoomOptions) {
+export function useD3Zoom({ mermaidRef, onInteractionStart, onInteractionEnd }: UseD3ZoomOptions) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<
-    HTMLDivElement,
-    unknown
-  > | null>(null);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLDivElement, unknown> | null>(null);
 
   useEffect(() => {
     if (!mermaidRef.current) return;
@@ -40,10 +33,7 @@ export function useD3Zoom({
         const svg = mermaidRef.current?.querySelector("svg");
         const innerG = svg?.querySelector("g");
         if (innerG) {
-          d3.select(innerG).attr(
-            "transform",
-            (event.transform as any).toString(),
-          );
+          d3.select(innerG).attr("transform", (event.transform as any).toString());
           setZoomLevel(event.transform.k);
           setPan({ x: event.transform.x, y: event.transform.y });
         }
@@ -84,10 +74,7 @@ export function useD3Zoom({
     const y = cy - finalScale * (graphBBox.y + graphBBox.height / 2);
 
     const transform = d3.zoomIdentity.translate(x, y).scale(finalScale);
-    d3.select(mermaidRef.current as any).call(
-      zoomBehaviorRef.current.transform as any,
-      transform,
-    );
+    d3.select(mermaidRef.current as any).call(zoomBehaviorRef.current.transform as any, transform);
   }, [mermaidRef]);
 
   const resetView = useCallback(() => {

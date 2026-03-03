@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  act,
-  waitFor,
-  fireEvent,
-} from "@testing-library/react";
+import { render, screen, act, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FullLineageTree } from "../FullLineageTree";
 import { GraphApiService } from "../../../services/GraphApiService";
@@ -42,9 +36,7 @@ describe("FullLineageTree", () => {
 
   it("should show empty message when no root node is provided", () => {
     render(<FullLineageTree rootNode={null} onSelectNode={vi.fn()} />);
-    expect(
-      screen.getByText(/Select a table to view full lineage/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Select a table to view full lineage/)).toBeInTheDocument();
   });
 
   it("should show error when root node is not a table", () => {
@@ -52,11 +44,9 @@ describe("FullLineageTree", () => {
       <FullLineageTree
         rootNode={{ id: "job1", type: "job", name: "Job 1" }}
         onSelectNode={vi.fn()}
-      />,
+      />
     );
-    expect(
-      screen.getByText(/Full lineage is only available for tables/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Full lineage is only available for tables/)).toBeInTheDocument();
   });
 
   it("should fetch and display hierarchy data", async () => {
@@ -72,9 +62,7 @@ describe("FullLineageTree", () => {
       },
     });
 
-    render(
-      <FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />,
-    );
+    render(<FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />);
 
     expect(screen.getByText(/Loading hierarchy.../)).toBeInTheDocument();
 
@@ -88,13 +76,9 @@ describe("FullLineageTree", () => {
   });
 
   it("should handle fetch error", async () => {
-    (GraphApiService.fetchTableHierarchy as any).mockRejectedValue(
-      new Error("Fetch Failed"),
-    );
+    (GraphApiService.fetchTableHierarchy as any).mockRejectedValue(new Error("Fetch Failed"));
 
-    render(
-      <FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />,
-    );
+    render(<FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Error: Fetch Failed/)).toBeInTheDocument();
@@ -115,7 +99,7 @@ describe("FullLineageTree", () => {
         rootNode={mockRootNode as any}
         onSelectNode={vi.fn()}
         actionRef={actionRef}
-      />,
+      />
     );
 
     await waitFor(() => {
@@ -157,7 +141,7 @@ describe("FullLineageTree", () => {
         rootNode={mockRootNode as any}
         onSelectNode={onSelectNode}
         actionRef={actionRef}
-      />,
+      />
     );
 
     await waitFor(() => {
@@ -170,9 +154,7 @@ describe("FullLineageTree", () => {
       fireEvent.click(row);
     });
 
-    expect(onSelectNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "up1" }),
-    );
+    expect(onSelectNode).toHaveBeenCalledWith(expect.objectContaining({ id: "up1" }));
     expect(actionRef.current.isLocalSelected).toBe(true);
 
     // Test reload with new effective root
@@ -186,9 +168,8 @@ describe("FullLineageTree", () => {
           .getAllByText("up1")
           .some(
             (el) =>
-              el.classList.contains("root-node-name") ||
-              el.classList.contains("root-table-badge"),
-          ),
+              el.classList.contains("root-node-name") || el.classList.contains("root-table-badge")
+          )
       ).toBe(true);
     });
   });
@@ -212,9 +193,7 @@ describe("FullLineageTree", () => {
       results: {},
     });
 
-    render(
-      <FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />,
-    );
+    render(<FullLineageTree rootNode={mockRootNode as any} onSelectNode={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("up1")).toBeInTheDocument();

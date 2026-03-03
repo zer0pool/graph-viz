@@ -38,13 +38,13 @@ describe("useDatasetsTable", () => {
     // Test searching
     const { result: searchResult } = renderHook(() => useDatasetsTable());
     await waitFor(() => expect(searchResult.current.loading).toBe(false));
-    
+
     // Set search
     const { act } = await import("@testing-library/react");
     act(() => {
       searchResult.current.setSearch("table_a");
     });
-    
+
     await waitFor(() => {
       expect(searchResult.current.filteredDatasets).toHaveLength(1);
     });

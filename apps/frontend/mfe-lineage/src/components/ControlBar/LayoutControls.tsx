@@ -8,19 +8,13 @@ interface LayoutControlsProps {
   onChange: (layout: LayoutType) => void;
 }
 
-export const LayoutControls: React.FC<LayoutControlsProps> = ({
-  layout,
-  onChange,
-}) => {
+export const LayoutControls: React.FC<LayoutControlsProps> = ({ layout, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };

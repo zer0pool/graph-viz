@@ -1,136 +1,140 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OPS Console – API Hub</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
-  <style>
-    /* ── Basic Reset ── */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fafafa; }
-
-    /* ── Swagger-style Topbar ── */
-    .topbar {
-      display: flex;
-      align-items: center;
-      padding: 10px 20px;
-      background-color: #1b1b1b;
-      border-bottom: 3px solid #89bf04;
-      font-family: sans-serif;
-    }
-
-    .topbar-logo {
-      font-weight: bold;
-      color: #fff;
-      font-size: 20px;
-      margin-right: 20px;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-    }
-
-    .topbar-logo span { color: #89bf04; margin-left: 2px; }
-
-    .service-selector-container {
-      display: flex;
-      align-items: center;
-      margin-left: auto;
-    }
-
-    .topbar-label {
-      color: #fff;
-      font-size: 13px;
-      font-weight: bold;
-      margin-right: 10px;
-    }
-
-    .service-select {
-      background: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 5px 10px;
-      font-size: 14px;
-      color: #3b4151;
-      outline: none;
-      min-width: 250px;
-    }
-
-    /* ── Swagger UI Customization ── */
-    #swagger-ui {
-      padding: 20px 0;
-    }
-
-    /* Loading state */
-    #loading {
-      text-align: center;
-      padding: 50px;
-      font-family: sans-serif;
-      color: #3b4151;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="topbar">
-    <a href="#" class="topbar-logo">OPS<span>Console</span></a>
-    <div class="service-selector-container">
-      <span class="topbar-label">Select Service API:</span>
-      <select class="service-select" id="serviceSelect" onchange="loadSpec(this.value)">
-        <option value="/admin-console/lineage-manager/api/v1/openapi.json">
-          Lineage Manager V2
-        </option>
-        <option value="/admin-console/analytics-manager/api/v1/openapi.json">
-          Analytics Manager
-        </option>
-      </select>
-    </div>
-  </div>
-
-  <div id="swagger-ui">
-    <div id="loading">Loading API specification...</div>
-  </div>
-
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
-  <script>
-    let ui;
-
-    const COMMON_CONFIG = {
-      dom_id: '#swagger-ui',
-      presets: [
-        SwaggerUIBundle.presets.apis,
-        SwaggerUIStandalonePreset
-      ],
-      layout: "BaseLayout",
-      deepLinking: true,
-      displayRequestDuration: true,
-      filter: true,
-    };
-
-    function loadSpec(url) {
-      if (ui) {
-        // Swap spec for existing UI
-        ui.specActions.updateUrl(url);
-        ui.specActions.download(url);
-      } else {
-        // Initial load
-        ui = SwaggerUIBundle({
-          ...COMMON_CONFIG,
-          url,
-          onComplete: () => {
-            const loading = document.getElementById('loading');
-            if (loading) loading.style.display = 'none';
-          }
-        });
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPS Console – API Hub</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <style>
+      /* ── Basic Reset ── */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }
+      body {
+        background: #fafafa;
+      }
 
-    window.onload = () => {
-      const select = document.getElementById('serviceSelect');
-      loadSpec(select.value);
-    };
-  </script>
+      /* ── Swagger-style Topbar ── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #1b1b1b;
+        border-bottom: 3px solid #89bf04;
+        font-family: sans-serif;
+      }
 
-</body>
+      .topbar-logo {
+        font-weight: bold;
+        color: #fff;
+        font-size: 20px;
+        margin-right: 20px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+      }
+
+      .topbar-logo span {
+        color: #89bf04;
+        margin-left: 2px;
+      }
+
+      .service-selector-container {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+      }
+
+      .topbar-label {
+        color: #fff;
+        font-size: 13px;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+
+      .service-select {
+        background: #fff;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 14px;
+        color: #3b4151;
+        outline: none;
+        min-width: 250px;
+      }
+
+      /* ── Swagger UI Customization ── */
+      #swagger-ui {
+        padding: 20px 0;
+      }
+
+      /* Loading state */
+      #loading {
+        text-align: center;
+        padding: 50px;
+        font-family: sans-serif;
+        color: #3b4151;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <a href="#" class="topbar-logo">OPS<span>Console</span></a>
+      <div class="service-selector-container">
+        <span class="topbar-label">Select Service API:</span>
+        <select class="service-select" id="serviceSelect" onchange="loadSpec(this.value)">
+          <option value="/admin-console/lineage-manager/api/v1/openapi.json">
+            Lineage Manager V2
+          </option>
+          <option value="/admin-console/analytics-manager/api/v1/openapi.json">
+            Analytics Manager
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div id="swagger-ui">
+      <div id="loading">Loading API specification...</div>
+    </div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+    <script>
+      let ui;
+
+      const COMMON_CONFIG = {
+        dom_id: "#swagger-ui",
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        layout: "BaseLayout",
+        deepLinking: true,
+        displayRequestDuration: true,
+        filter: true,
+      };
+
+      function loadSpec(url) {
+        if (ui) {
+          // Swap spec for existing UI
+          ui.specActions.updateUrl(url);
+          ui.specActions.download(url);
+        } else {
+          // Initial load
+          ui = SwaggerUIBundle({
+            ...COMMON_CONFIG,
+            url,
+            onComplete: () => {
+              const loading = document.getElementById("loading");
+              if (loading) loading.style.display = "none";
+            },
+          });
+        }
+      }
+
+      window.onload = () => {
+        const select = document.getElementById("serviceSelect");
+        loadSpec(select.value);
+      };
+    </script>
+  </body>
 </html>

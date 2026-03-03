@@ -12,16 +12,8 @@ type Props = {
   visible: boolean;
 };
 
-export const RemoteMount: React.FC<Props> = ({
-  scope,
-  module,
-  url,
-  mountProps,
-  visible,
-}) => {
-  console.log(
-    `[Shell:RemoteMount] Rendering component for scope: ${scope}, visible: ${visible}`,
-  );
+export const RemoteMount: React.FC<Props> = ({ scope, module, url, mountProps, visible }) => {
+  console.log(`[Shell:RemoteMount] Rendering component for scope: ${scope}, visible: ${visible}`);
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<null | (() => void)>(null);
   const mountedRef = useRef(false);
@@ -48,38 +40,32 @@ export const RemoteMount: React.FC<Props> = ({
 
     (async () => {
       try {
-        console.log(
-          `[Shell:RemoteMount] Starting load for scope: ${scope}, url: ${url}`,
-        );
+        console.log(`[Shell:RemoteMount] Starting load for scope: ${scope}, url: ${url}`);
         const container = await loadRemote(scope, url);
         if (cancelled) return;
 
-        console.log(
-          `[Shell:RemoteMount] Container loaded for ${scope}. Getting module: ${module}`,
-        );
+        console.log(`[Shell:RemoteMount] Container loaded for ${scope}. Getting module: ${module}`);
         const factory = await container.get(module);
         const moduleExports = factory();
 
         console.log(
           `[Shell:RemoteMount] Module exports for ${module}:`,
-          Object.keys(moduleExports),
+          Object.keys(moduleExports)
         );
 
         // Support named 'mount', default 'mount', or default export as function
-        const mount =
-          moduleExports.mount ||
-          moduleExports.default?.mount ||
-          moduleExports.default;
+        const mount = moduleExports.mount || moduleExports.default?.mount || moduleExports.default;
 
         if (typeof mount !== "function") {
-          throw new Error(
-            `Module ${module} does not export a 'mount' function.`,
-          );
+          throw new Error(`Module ${module} does not export a 'mount' function.`);
         }
 
         // Use the LATEST props available at mount time
         const latestProps = propsRef.current;
-        console.log(`[Shell:RemoteMount] Calling mount() for ${scope} with latestProps:`, latestProps);
+        console.log(
+          `[Shell:RemoteMount] Calling mount() for ${scope} with latestProps:`,
+          latestProps
+        );
 
         cleanupRef.current = mount(containerRef.current!, {
           ...(latestProps ?? {}),
@@ -87,21 +73,18 @@ export const RemoteMount: React.FC<Props> = ({
           eventTarget: containerRef.current,
           auth: authRef.current, // Inject Auth Client
         });
-        
+
         mountedRef.current = true;
         setIsMounted(true);
         console.log(`[Shell:RemoteMount] Mount successful for ${scope}`);
       } catch (err) {
-        console.error(
-          `[Shell:RemoteMount] Error loading/mounting ${scope}:`,
-          err,
-        );
+        console.error(`[Shell:RemoteMount] Error loading/mounting ${scope}:`, err);
         console.error(
           `[Shell:RemoteMount] Stack trace:`,
-          err instanceof Error ? err.stack : "No stack trace",
+          err instanceof Error ? err.stack : "No stack trace"
         );
         setError(
-          `Failed to load module: ${scope}. Details: ${err instanceof Error ? err.message : String(err)}`,
+          `Failed to load module: ${scope}. Details: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     })();
@@ -117,10 +100,7 @@ export const RemoteMount: React.FC<Props> = ({
           cleanupRef.current();
         }
       } catch (e) {
-        console.warn(
-          `[Shell:RemoteMount] Error during cleanup for ${scope}:`,
-          e,
-        );
+        console.warn(`[Shell:RemoteMount] Error during cleanup for ${scope}:`, e);
       } finally {
         cleanupRef.current = null;
         mountedRef.current = false;

@@ -1,11 +1,12 @@
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, status
-from dependency_injector.wiring import inject, Provide
-from app.core.container import Container
+
 from app.api.v1.schemas.graph import (
     GraphInitResponse,
-    TaskStatusResponse,
     GraphStatsResponse,
+    TaskStatusResponse,
 )
+from app.core.container import Container
 from app.services.graph_service import GraphService
 from app.tasks.graph_tasks import initialize_graph_task
 
@@ -32,6 +33,7 @@ async def get_task_status(task_id: str):
     Check the status of a background task.
     """
     from celery.result import AsyncResult
+
     from app.core.celery_app import celery_app
 
     res = AsyncResult(task_id, app=celery_app)

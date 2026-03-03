@@ -18,10 +18,7 @@ export const formatBytes = (value: any): string => {
   if (Number.isNaN(num) || num <= 0) return "-";
 
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
-  const idx = Math.min(
-    units.length - 1,
-    Math.floor(Math.log(num) / Math.log(1024))
-  );
+  const idx = Math.min(units.length - 1, Math.floor(Math.log(num) / Math.log(1024)));
   const scaled = num / Math.pow(1024, idx);
 
   return `${scaled.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;

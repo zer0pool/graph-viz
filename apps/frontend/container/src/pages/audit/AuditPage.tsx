@@ -7,8 +7,8 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { config } from '../../shared/api/config';
-import { SummaryGrid, MetricData } from '../../shared/ui/SummaryGrid';
+import { config } from "../../shared/api/config";
+import { SummaryGrid, MetricData } from "../../shared/ui/SummaryGrid";
 
 // --- Types (Matched with Backend Schemas) ---
 type CommandStatus = "SUCCESS" | "PARTIAL" | "FAILED";
@@ -57,16 +57,8 @@ const Badge = ({
   return <div className={`${baseClass} ${className || ""}`}>{children}</div>;
 };
 
-const Card = ({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => (
-  <div
-    className={`rounded-xl border bg-card text-card-foreground shadow ${className || ""}`}
-  >
+const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-xl border bg-card text-card-foreground shadow ${className || ""}`}>
     {children}
   </div>
 );
@@ -119,9 +111,7 @@ const getStatusBadge = (status: CommandStatus | EventStatus) => {
 export function AuditPage() {
   const [commands, setCommands] = useState<AuditCommand[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expandedCommands, setExpandedCommands] = useState<Set<string>>(
-    new Set(),
-  );
+  const [expandedCommands, setExpandedCommands] = useState<Set<string>>(new Set());
 
   // Filters
   const [typeFilter, setTypeFilter] = useState("All");
@@ -136,9 +126,7 @@ export function AuditPage() {
       // previous implementation hit the analytics audit endpoint which was incorrect
       // we now query the lineage-manager service directly for audit records
       // example: /admin-console/lineage-manager/api/v1/audits?limit=100
-      const response = await fetch(
-        `${config.BASE_URL}/lineage-manager/api/v1/audits?limit=100`,
-      );
+      const response = await fetch(`${config.BASE_URL}/lineage-manager/api/v1/audits?limit=100`);
       if (!response.ok) throw new Error("Failed to fetch audit logs");
       const data = await response.json();
       setCommands(data);
@@ -169,10 +157,7 @@ export function AuditPage() {
     if (typeFilter !== "All" && typeFilter !== "Commands") return true; // Simplify for now
     if (statusFilter !== "All" && cmd.status !== statusFilter) return false;
     if (actorFilter !== "All" && cmd.actor !== actorFilter) return false;
-    if (
-      searchQuery &&
-      !cmd.summary.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
+    if (searchQuery && !cmd.summary.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     return true;
@@ -183,9 +168,7 @@ export function AuditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Audit / Operations
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Audit / Operations</h1>
           <p className="text-muted-foreground mt-1 text-sm text-gray-500">
             System operation commands and event history log
           </p>
@@ -201,12 +184,21 @@ export function AuditPage() {
         </div>
       </div>
 
-      <SummaryGrid 
+      <SummaryGrid
         cols={4}
         metrics={[
           { type: "total_commands", value: commands.length, subtext: "Total recorded" },
-          { type: "success_ops", value: commands.filter(c => c.status === "SUCCESS").length, subtext: "Completed successfully" },
-          { type: "failed_ops", value: commands.filter(c => c.status === "FAILED").length, subtext: "Execution errors", status: "critical" },
+          {
+            type: "success_ops",
+            value: commands.filter((c) => c.status === "SUCCESS").length,
+            subtext: "Completed successfully",
+          },
+          {
+            type: "failed_ops",
+            value: commands.filter((c) => c.status === "FAILED").length,
+            subtext: "Execution errors",
+            status: "critical",
+          },
           { type: "sla_breach", value: 2, subtext: "Delayed commands", status: "warning" },
         ]}
       />
@@ -320,10 +312,7 @@ export function AuditPage() {
             <tbody className="divide-y divide-gray-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-8 text-center text-gray-500"
-                  >
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                     No records found
                   </td>
                 </tr>
@@ -341,9 +330,7 @@ export function AuditPage() {
                           <ChevronRight className="h-4 w-4 text-gray-400" />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono text-gray-600">
-                        {command.timestamp}
-                      </td>
+                      <td className="px-4 py-3 font-mono text-gray-600">{command.timestamp}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
                           {command.type}
@@ -351,9 +338,7 @@ export function AuditPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-gray-900">
-                            {command.summary}
-                          </span>
+                          <span className="font-medium text-gray-900">{command.summary}</span>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <span>by {command.actor}</span>
                             {command.incidentId && (
@@ -393,15 +378,11 @@ export function AuditPage() {
                                   key={event.id}
                                   className="flex items-start gap-3 text-sm group"
                                 >
-                                  <div className="mt-0.5">
-                                    {getStatusIcon(event.status)}
-                                  </div>
+                                  <div className="mt-0.5">{getStatusIcon(event.status)}</div>
                                   <span className="font-mono text-xs text-gray-500 w-20 pt-0.5">
                                     {event.timestamp}
                                   </span>
-                                  <span className="text-gray-700 flex-1">
-                                    {event.description}
-                                  </span>
+                                  <span className="text-gray-700 flex-1">{event.description}</span>
                                   {event.status !== "SUCCESS" && (
                                     <span className="text-xs border px-1.5 py-0.5 rounded text-gray-500">
                                       {event.status}
@@ -423,4 +404,4 @@ export function AuditPage() {
       </Card>
     </div>
   );
-};
+}

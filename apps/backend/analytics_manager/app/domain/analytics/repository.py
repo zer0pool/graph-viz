@@ -1,15 +1,22 @@
 import logging
-from typing import List, Dict, Any
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from typing import Any, Dict, List
+
 from fastapi.concurrency import run_in_threadpool
-from app.infrastructure.gcp.bigquery import BigQueryClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from app.core.config import settings
+from app.infrastructure.gcp.bigquery import BigQueryClient
 
 logger = logging.getLogger(__name__)
 
+
 class AnalyticsRepository:
-    def __init__(self, bq_client: BigQueryClient, db_session_factory: async_sessionmaker[AsyncSession]):
+    def __init__(
+        self,
+        bq_client: BigQueryClient,
+        db_session_factory: async_sessionmaker[AsyncSession],
+    ):
         self.bq_client = bq_client
         self.db_session_factory = db_session_factory
 
@@ -18,11 +25,15 @@ class AnalyticsRepository:
         try:
             async with self.db_session_factory() as session:
                 # 1. Count Tables
-                res_tables = await session.execute(text("SELECT COUNT(*) FROM graph_node WHERE node_type = 'table'"))
+                res_tables = await session.execute(
+                    text("SELECT COUNT(*) FROM graph_node WHERE node_type = 'table'")
+                )
                 total_tables = res_tables.scalar() or 0
 
                 # 2. Count Jobs
-                res_jobs = await session.execute(text("SELECT COUNT(*) FROM graph_node WHERE node_type = 'job'"))
+                res_jobs = await session.execute(
+                    text("SELECT COUNT(*) FROM graph_node WHERE node_type = 'job'")
+                )
                 total_jobs = res_jobs.scalar() or 0
 
                 # 3. Job Distribution
@@ -46,7 +57,9 @@ class AnalyticsRepository:
                     WHERE node_type = 'job' 
                     GROUP BY status
                 """))
-                job_status_counts = {row[0]: row[1] for row in res_status.all() if row[0]}
+                job_status_counts = {
+                    row[0]: row[1] for row in res_status.all() if row[0]
+                }
 
                 # 5. Storage Breakdown
                 res_storage = await session.execute(text("""
@@ -57,10 +70,14 @@ class AnalyticsRepository:
                     WHERE node_type = 'table' 
                     GROUP BY storage
                 """))
-                storage_breakdown = {row[0]: row[1] for row in res_storage.all() if row[0]}
+                storage_breakdown = {
+                    row[0]: row[1] for row in res_storage.all() if row[0]
+                }
 
                 # 6. Count Users and Active 24h
-                res_users = await session.execute(text("SELECT COUNT(*) FROM user_account"))
+                res_users = await session.execute(
+                    text("SELECT COUNT(*) FROM user_account")
+                )
                 total_users = res_users.scalar() or 0
 
                 res_active = await session.execute(text("""
@@ -77,13 +94,19 @@ class AnalyticsRepository:
                     "job_breakdown": job_breakdown,
                     "job_status_counts": job_status_counts,
                     "storage_breakdown": storage_breakdown,
-                    "role_counts": {"ADMIN": 2, "DEVELOPER": 12, "VIEWER": 45}
+                    "role_counts": {"ADMIN": 2, "DEVELOPER": 12, "VIEWER": 45},
                 }
         except Exception as e:
             logger.error(f"Error fetching DB counts: {e}", exc_info=True)
             return {
-                "total_tables": 0, "total_jobs": 0, "total_users": 0, "active_users_24h": 0,
-                "job_breakdown": {}, "job_status_counts": {}, "storage_breakdown": {}, "role_counts": {}
+                "total_tables": 0,
+                "total_jobs": 0,
+                "total_users": 0,
+                "active_users_24h": 0,
+                "job_breakdown": {},
+                "job_status_counts": {},
+                "storage_breakdown": {},
+                "role_counts": {},
             }
 
     async def get_bq_ingestion_stats(self) -> List[Dict[str, Any]]:
@@ -101,8 +124,16 @@ class AnalyticsRepository:
             if results:
                 row = results[0]
                 return [
-                    {"type": "daily_rows", "value": f"{int(row['total_rows']):,}", "subtext": "Rows (24h)"},
-                    {"type": "daily_loads", "value": row['total_loads'], "subtext": "Loads (24h)"}
+                    {
+                        "type": "daily_rows",
+                        "value": f"{int(row['total_rows']):,}",
+                        "subtext": "Rows (24h)",
+                    },
+                    {
+                        "type": "daily_loads",
+                        "value": row["total_loads"],
+                        "subtext": "Loads (24h)",
+                    },
                 ]
             return []
         except Exception as e:

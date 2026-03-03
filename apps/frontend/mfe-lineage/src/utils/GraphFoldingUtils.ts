@@ -12,7 +12,7 @@ export function createGroupNode(
   remainingNodes: GraphNode[],
   remainingEdges: GraphEdge[],
   anchorId: string,
-  direction: "upstream" | "downstream",
+  direction: "upstream" | "downstream"
 ): GraphNode {
   const count = remainingNodes.length;
   // Include direction and random to ensure uniqueness, especially when both up/down fold at once
@@ -46,7 +46,7 @@ export interface FoldingOptions {
 export function applyProgressiveLoading(
   data: GraphState,
   anchorId: string,
-  options: FoldingOptions | number,
+  options: FoldingOptions | number
 ): GraphState {
   // Normalize settings
   let upLimit: number;
@@ -62,42 +62,26 @@ export function applyProgressiveLoading(
 
   const anchorNode = data.nodes.find((n) => n.id === anchorId);
   if (!anchorNode) {
-    console.warn(
-      "[GraphFolding] Anchor node not found in data nodes. ID:",
-      anchorId,
-    );
+    console.warn("[GraphFolding] Anchor node not found in data nodes. ID:", anchorId);
   }
   const otherNodes = data.nodes.filter((n) => n.id !== anchorId);
 
   console.log("[GraphFolding] Anchor:", anchorId, "Found:", !!anchorNode);
-  console.log(
-    "[GraphFolding] Options - UpLimit:",
-    upLimit,
-    "DownLimit:",
-    downLimit,
-  );
+  console.log("[GraphFolding] Options - UpLimit:", upLimit, "DownLimit:", downLimit);
 
   // Split into upstream/downstream relative to anchor
   const upstreams = otherNodes.filter((n) =>
-    data.edges.some((e) => e.source === n.id && e.target === anchorId),
+    data.edges.some((e) => e.source === n.id && e.target === anchorId)
   );
   const downstreams = otherNodes.filter((n) =>
-    data.edges.some((e) => e.source === anchorId && e.target === n.id),
+    data.edges.some((e) => e.source === anchorId && e.target === n.id)
   );
-  const others = otherNodes.filter(
-    (n) => !upstreams.includes(n) && !downstreams.includes(n),
-  );
+  const others = otherNodes.filter((n) => !upstreams.includes(n) && !downstreams.includes(n));
 
   // Check if folding is needed
-  const needsFolding =
-    upstreams.length > upLimit || downstreams.length > downLimit;
+  const needsFolding = upstreams.length > upLimit || downstreams.length > downLimit;
 
-  console.log(
-    "[GraphFolding] Counts - Up:",
-    upstreams.length,
-    "Down:",
-    downstreams.length,
-  );
+  console.log("[GraphFolding] Counts - Up:", upstreams.length, "Down:", downstreams.length);
   console.log("[GraphFolding] Needs folding?", needsFolding);
 
   if (!needsFolding) {
@@ -117,26 +101,19 @@ export function applyProgressiveLoading(
 
     finalNodes.push(...visible);
     const hiddenEdges = data.edges.filter(
-      (e) => hiddenIds.has(e.source) || hiddenIds.has(e.target),
+      (e) => hiddenIds.has(e.source) || hiddenIds.has(e.target)
     );
-    const groupNode = createGroupNode(
-      hidden,
-      hiddenEdges,
-      anchorId,
-      "upstream",
-    );
+    const groupNode = createGroupNode(hidden, hiddenEdges, anchorId, "upstream");
     console.log(
       "[GraphFolding] Created UPSTREAM group node:",
       groupNode.id,
       "hiding:",
-      hidden.length,
+      hidden.length
     );
     finalNodes.push(groupNode);
 
     finalEdges.push(
-      ...data.edges.filter(
-        (e) => visible.some((v) => v.id === e.source) && e.target === anchorId,
-      ),
+      ...data.edges.filter((e) => visible.some((v) => v.id === e.source) && e.target === anchorId)
     );
     finalEdges.push({
       source: groupNode.id,
@@ -146,10 +123,7 @@ export function applyProgressiveLoading(
   } else {
     finalNodes.push(...upstreams);
     finalEdges.push(
-      ...data.edges.filter(
-        (e) =>
-          upstreams.some((u) => u.id === e.source) && e.target === anchorId,
-      ),
+      ...data.edges.filter((e) => upstreams.some((u) => u.id === e.source) && e.target === anchorId)
     );
   }
 
@@ -161,26 +135,19 @@ export function applyProgressiveLoading(
 
     finalNodes.push(...visible);
     const hiddenEdges = data.edges.filter(
-      (e) => hiddenIds.has(e.source) || hiddenIds.has(e.target),
+      (e) => hiddenIds.has(e.source) || hiddenIds.has(e.target)
     );
-    const groupNode = createGroupNode(
-      hidden,
-      hiddenEdges,
-      anchorId,
-      "downstream",
-    );
+    const groupNode = createGroupNode(hidden, hiddenEdges, anchorId, "downstream");
     console.log(
       "[GraphFolding] Created DOWNSTREAM group node:",
       groupNode.id,
       "hiding:",
-      hidden.length,
+      hidden.length
     );
     finalNodes.push(groupNode);
 
     finalEdges.push(
-      ...data.edges.filter(
-        (e) => e.source === anchorId && visible.some((v) => v.id === e.target),
-      ),
+      ...data.edges.filter((e) => e.source === anchorId && visible.some((v) => v.id === e.target))
     );
     finalEdges.push({
       source: anchorId,
@@ -191,9 +158,8 @@ export function applyProgressiveLoading(
     finalNodes.push(...downstreams);
     finalEdges.push(
       ...data.edges.filter(
-        (e) =>
-          e.source === anchorId && downstreams.some((d) => d.id === e.target),
-      ),
+        (e) => e.source === anchorId && downstreams.some((d) => d.id === e.target)
+      )
     );
   }
 
@@ -201,11 +167,7 @@ export function applyProgressiveLoading(
   const currentVisibleIds = new Set(finalNodes.map((n) => n.id));
   data.edges.forEach((e) => {
     if (currentVisibleIds.has(e.source) && currentVisibleIds.has(e.target)) {
-      if (
-        !finalEdges.some(
-          (fe) => fe.source === e.source && fe.target === e.target,
-        )
-      ) {
+      if (!finalEdges.some((fe) => fe.source === e.source && fe.target === e.target)) {
         finalEdges.push(e);
       }
     }

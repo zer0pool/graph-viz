@@ -23,18 +23,12 @@ export const GraphCanvas = forwardRef<HTMLDivElement, GraphCanvasProps>(
 
         {/* Overlays - Absolute Positioning */}
         {loading && (
-          <div
-            className="loading-overlay"
-            style={{ position: "absolute", inset: 0, zIndex: 10 }}
-          >
+          <div className="loading-overlay" style={{ position: "absolute", inset: 0, zIndex: 10 }}>
             <div className="loading-spinner" />
           </div>
         )}
         {error && (
-          <div
-            className="error-message"
-            style={{ position: "absolute", inset: 0, zIndex: 10 }}
-          >
+          <div className="error-message" style={{ position: "absolute", inset: 0, zIndex: 10 }}>
             <p>Error loading graph: {error}</p>
           </div>
         )}

@@ -68,18 +68,12 @@ describe("useGraphExport", () => {
     svg.appendChild(g);
 
     // Add some paths
-    const edgePath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
+    const edgePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     g.appendChild(edgePath);
 
     const nodeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
     nodeG.classList.add("node");
-    const nodePath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
+    const nodePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     nodeG.appendChild(nodePath);
     g.appendChild(nodeG);
 
@@ -101,12 +95,8 @@ describe("useGraphExport", () => {
       });
 
     // Mock document.body methods to avoid errors with mockLink
-    const appendSpy = vi
-      .spyOn(document.body, "appendChild")
-      .mockImplementation((node) => node);
-    const removeSpy = vi
-      .spyOn(document.body, "removeChild")
-      .mockImplementation((node) => node);
+    const appendSpy = vi.spyOn(document.body, "appendChild").mockImplementation((node) => node);
+    const removeSpy = vi.spyOn(document.body, "removeChild").mockImplementation((node) => node);
 
     const { result } = renderHook(() => useGraphExport(mermaidRef));
 

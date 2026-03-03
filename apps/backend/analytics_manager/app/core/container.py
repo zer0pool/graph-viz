@@ -1,17 +1,17 @@
 from dependency_injector import containers, providers
 
 from app.core.config import settings
-from app.infrastructure.gcp.client import GoogleCloudClient
-from app.infrastructure.gcp.bigquery import BigQueryClient
-from app.infrastructure.lineage_client import LineageClient
 from app.domain.analytics.repository import AnalyticsRepository
 from app.domain.analytics.service import AnalyticsService
 from app.domain.data_sync.service import DataSyncService
 from app.domain.job_explorer.repository import JobExplorerRepository
 from app.domain.job_explorer.service import JobExplorerService
 from app.infrastructure.cache.redis import get_redis_client
-
 from app.infrastructure.database import create_session_factory
+from app.infrastructure.gcp.bigquery import BigQueryClient
+from app.infrastructure.gcp.client import GoogleCloudClient
+from app.infrastructure.lineage_client import LineageClient
+
 # Analytics Manager may need its own services later
 
 
@@ -22,8 +22,12 @@ class Container(containers.DeclarativeContainer):
 
     # Infrastructure
     # Session factory for future DB use
-    session_factory = providers.Singleton(create_session_factory, db_url=settings.DATABASE_URL)
-    lineage_session_factory = providers.Singleton(create_session_factory, db_url=settings.LINEAGE_DATABASE_URL)
+    session_factory = providers.Singleton(
+        create_session_factory, db_url=settings.DATABASE_URL
+    )
+    lineage_session_factory = providers.Singleton(
+        create_session_factory, db_url=settings.LINEAGE_DATABASE_URL
+    )
 
     # Redis
     redis_pool = providers.Resource(
@@ -32,7 +36,7 @@ class Container(containers.DeclarativeContainer):
 
     # Google Cloud Client
     google_client = providers.Singleton(GoogleCloudClient)
-    
+
     # BigQuery Client
     bq_client = providers.Singleton(BigQueryClient)
 
@@ -43,27 +47,24 @@ class Container(containers.DeclarativeContainer):
     analytics_repository = providers.Factory(
         AnalyticsRepository,
         bq_client=bq_client,
-        db_session_factory=lineage_session_factory
+        db_session_factory=lineage_session_factory,
     )
 
     analytics_service = providers.Factory(
         AnalyticsService,
         repo=analytics_repository,
         lineage_client=lineage_client,
-        redis=redis_pool
+        redis=redis_pool,
     )
 
     # Data Sync Domain
     sync_service = providers.Factory(
-        DataSyncService,
-        bq_client=bq_client,
-        redis_client=redis_pool
+        DataSyncService, bq_client=bq_client, redis_client=redis_pool
     )
 
     # Job Explorer Domain
     job_explorer_repository = providers.Factory(
-        JobExplorerRepository,
-        bq_client=bq_client
+        JobExplorerRepository, bq_client=bq_client
     )
 
     job_explorer_service = providers.Factory(

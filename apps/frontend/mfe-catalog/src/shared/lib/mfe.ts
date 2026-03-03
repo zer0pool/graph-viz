@@ -30,7 +30,7 @@ export const loadRemote = (scope: string, url: string) => {
     // 2. If script exists but no global, it might be loading or failed
     if (existingScript) {
       console.warn(
-        `[MFE:loadRemote] Script for ${scope} already exists but global is missing. Waiting...`,
+        `[MFE:loadRemote] Script for ${scope} already exists but global is missing. Waiting...`
       );
       let attempts = 0;
       const interval = setInterval(() => {
@@ -39,9 +39,7 @@ export const loadRemote = (scope: string, url: string) => {
         } else if (attempts++ > 100) {
           // Max 10s wait
           clearInterval(interval);
-          reject(
-            new Error(`Timed out waiting for global '${scope}' from ${url}`),
-          );
+          reject(new Error(`Timed out waiting for global '${scope}' from ${url}`));
         }
       }, 100);
       return;
@@ -57,11 +55,7 @@ export const loadRemote = (scope: string, url: string) => {
 
     script.onload = () => {
       if (!resolveContainer()) {
-        reject(
-          new Error(
-            `Global '${scope}' not found on window after script load from ${url}`,
-          ),
-        );
+        reject(new Error(`Global '${scope}' not found on window after script load from ${url}`));
       }
     };
 

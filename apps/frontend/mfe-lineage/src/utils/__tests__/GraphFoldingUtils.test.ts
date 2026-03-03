@@ -6,14 +6,12 @@ describe("GraphFoldingUtils", () => {
   describe("createGroupNode", () => {
     it("should create a group node with correct properties", () => {
       const remainingNodes = [{ id: "node1", type: "table", name: "n1" }];
-      const remainingEdges = [
-        { source: "node1", target: "anchor-id", type: "reads" },
-      ];
+      const remainingEdges = [{ source: "node1", target: "anchor-id", type: "reads" }];
       const groupNode = createGroupNode(
         remainingNodes as any,
         remainingEdges as any,
         "anchor-id",
-        "upstream",
+        "upstream"
       );
 
       expect(groupNode.type).toBe("group");
@@ -72,10 +70,10 @@ describe("GraphFoldingUtils", () => {
       });
 
       const upGroup = result.nodes.find(
-        (n) => n.type === "group" && n.properties.direction === "upstream",
+        (n) => n.type === "group" && n.properties.direction === "upstream"
       );
       const downGroup = result.nodes.find(
-        (n) => n.type === "group" && n.properties.direction === "downstream",
+        (n) => n.type === "group" && n.properties.direction === "downstream"
       );
 
       expect(upGroup?.properties.count).toBe(3); // 5 - 2

@@ -33,13 +33,10 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
   actionRef,
 }) => {
   // Effective root node to display lineage for.
-  const [effectiveRoot, setEffectiveRoot] = useState<GraphNode | null>(
-    rootNode,
-  );
+  const [effectiveRoot, setEffectiveRoot] = useState<GraphNode | null>(rootNode);
 
   // Local selection state for "Select Row" feature
-  const [localSelectedNode, setLocalSelectedNode] =
-    useState<LineageItem | null>(null);
+  const [localSelectedNode, setLocalSelectedNode] = useState<LineageItem | null>(null);
 
   const [data, setData] = useState<{
     upstream: LineageItem[];
@@ -77,14 +74,10 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
                 ...(item.properties || {}),
                 ...(detail.table_info || {}),
                 ...(detail.job_info || {}),
-                storage:
-                  detail.table_info?.storage_type ||
-                  detail.table_info?.storage ||
-                  "-",
+                storage: detail.table_info?.storage_type || detail.table_info?.storage || "-",
                 write_mode: detail.table_info?.write_mode || "-",
                 owner: detail.job_info?.owner || "-",
-                status:
-                  detail.job_info?.status || detail.job_info?.run_status || "-",
+                status: detail.job_info?.status || detail.job_info?.run_status || "-",
                 schedule:
                   detail.job_info?.cron ||
                   detail.job_info?.schedule ||
@@ -136,8 +129,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const tableName =
-          effectiveRoot.full_name || effectiveRoot.name || effectiveRoot.id;
+        const tableName = effectiveRoot.full_name || effectiveRoot.name || effectiveRoot.id;
         const result = await GraphApiService.fetchTableHierarchy(tableName);
         const hierarchyData = result.tree || result;
 
@@ -168,7 +160,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
     // We just need to fetch their metadata if it hasn't been fetched.
     // LineageTable handles the visual expansion via local state.
     // Here we find which nodes will be revealed and fetch their details.
-    
+
     // For simplicity, we can fetch metadata for all children of parentId
     const findNode = (list: LineageItem[]): LineageItem | null => {
       for (const node of list) {
@@ -210,7 +202,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
         upstream: data.upstream,
         downstream: data.downstream,
       },
-      effectiveRoot.id,
+      effectiveRoot.id
     );
   };
 
@@ -222,20 +214,17 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
       exportCsv: handleExport,
       isLocalSelected: !!localSelectedNode,
     }),
-    [handleReload, handleExport, localSelectedNode], // Deps necessary for correct closure? Actually handleReload/Export depend on state, so yes.
+    [handleReload, handleExport, localSelectedNode] // Deps necessary for correct closure? Actually handleReload/Export depend on state, so yes.
   );
 
   if (!effectiveRoot) {
-    return (
-      <div className="list-empty">Select a table to view full lineage</div>
-    );
+    return <div className="list-empty">Select a table to view full lineage</div>;
   }
 
   if (effectiveRoot.type !== "table") {
     return (
       <div className="list-empty">
-        Full lineage is only available for tables (Selected:{" "}
-        {effectiveRoot.type})
+        Full lineage is only available for tables (Selected: {effectiveRoot.type})
       </div>
     );
   }
@@ -277,9 +266,7 @@ export const FullLineageTree: React.FC<FullLineageTreeProps> = ({
             </div>
             <div className="card-info">
               <span className="card-label">Target Table</span>
-              <span className="card-value-small">
-                {cleanId(effectiveRoot.id)}
-              </span>
+              <span className="card-value-small">{cleanId(effectiveRoot.id)}</span>
             </div>
           </div>
 

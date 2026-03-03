@@ -16,7 +16,7 @@ module.exports = {
     historyApiFallback: {
       rewrites: [
         // Serve static Swagger UI page — do NOT fall back to SPA index
-        { from: /^\/admin-console\/docs$/, to: '/admin-console/docs.html' },
+        { from: /^\/admin-console\/docs$/, to: "/admin-console/docs.html" },
       ],
       index: "/admin-console/index.html",
       disableDotRule: true, // Fix for routes with dots (e.g. emails, table names)
@@ -100,20 +100,14 @@ module.exports = {
 
   plugins: [
     new webpack.DefinePlugin({
-      "import.meta.env.NODE_ENV": JSON.stringify(
-        process.env.NODE_ENV || "development",
-      ),
+      "import.meta.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       "import.meta.env.DEV": JSON.stringify(!isProd),
-      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-        process.env.API_BASE_URL || "",
-      ),
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || ""),
       "import.meta.env.LINEAGE_MFE_URL": JSON.stringify(
-        process.env.LINEAGE_MFE_URL ||
-          "http://localhost:5101/mfe-lineage/remoteEntry.js",
+        process.env.LINEAGE_MFE_URL || "http://localhost:5101/mfe-lineage/remoteEntry.js"
       ),
       "import.meta.env.CATALOG_MFE_URL": JSON.stringify(
-        process.env.CATALOG_MFE_URL ||
-          "http://localhost:5102/mfe-catalog/remoteEntry.js",
+        process.env.CATALOG_MFE_URL || "http://localhost:5102/mfe-catalog/remoteEntry.js"
       ),
     }),
     new HtmlWebpackPlugin({
@@ -144,12 +138,10 @@ module.exports = {
       name: "shell",
       remotes: {
         lineage: `lineage@${
-          process.env.LINEAGE_MFE_URL ||
-          "http://localhost:5101/mfe-lineage/remoteEntry.js"
+          process.env.LINEAGE_MFE_URL || "http://localhost:5101/mfe-lineage/remoteEntry.js"
         }`,
         tableDetailViewer: `tableDetailViewer@${
-          process.env.CATALOG_MFE_URL ||
-          "http://localhost:5102/mfe-catalog/remoteEntry.js"
+          process.env.CATALOG_MFE_URL || "http://localhost:5102/mfe-catalog/remoteEntry.js"
         }`,
       },
       shared: {

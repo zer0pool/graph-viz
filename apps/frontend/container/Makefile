@@ -50,6 +50,9 @@ dev:
 build:
 	npm run build
 
+format:
+	npm run format
+
 # Docker
 docker-build:
 	docker build -f deploy/docker/Dockerfile -t $(IMAGE_REPO):$(IMAGE_TAG) .

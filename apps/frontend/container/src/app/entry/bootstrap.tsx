@@ -7,5 +7,5 @@ const root = createRoot(document.getElementById("root")!);
 root.render(
   <AuthProvider>
     <ShellApp />
-  </AuthProvider>,
+  </AuthProvider>
 );

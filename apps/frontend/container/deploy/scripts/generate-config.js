@@ -49,9 +49,7 @@ try {
   }
 
   fs.writeFileSync(outputPath, content);
-  console.log(
-    `[Config] Success: Created public/config.js from template (Local Dev)`,
-  );
+  console.log(`[Config] Success: Created public/config.js from template (Local Dev)`);
 } catch (err) {
   console.error(`[Config] Fatal Error: ${err.message}`);
   process.exit(1);

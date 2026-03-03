@@ -11,7 +11,7 @@ const POLL_INTERVAL_MS = 100;
 export const loadRemote = (scope: string, url: string): Promise<any> => {
   return new Promise<any>((resolve, reject) => {
     const existingScript = document.getElementById(
-      `remote-script-${scope}`,
+      `remote-script-${scope}`
     ) as InternalScriptElement;
 
     // 1. Resolve logic: Extract from window and initialize if needed

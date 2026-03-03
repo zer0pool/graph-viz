@@ -34,7 +34,16 @@ interface TableDetailViewPresenterProps {
   displayName: string;
 }
 
-import { GitBranch, Database, Folder, FileCode, Search, Server, Star, RefreshCcw } from "lucide-react";
+import {
+  GitBranch,
+  Database,
+  Folder,
+  FileCode,
+  Search,
+  Server,
+  Star,
+  RefreshCcw,
+} from "lucide-react";
 import { EntityHeader } from "../../shared/ui/EntityHeader";
 import { HeaderActionButtons } from "../../shared/ui/HeaderActionButtons";
 
@@ -61,18 +70,25 @@ export const TableDetailViewPresenter: React.FC<TableDetailViewPresenterProps> =
 
   // 1. Determine Storage Type and Icon
   const storageType = (table?.storage_info?.type || "table").toLowerCase();
-  const isCloudStorage = storageType.includes("s3") || storageType.includes("gcs") || storageType.includes("file");
-  
+  const isCloudStorage =
+    storageType.includes("s3") || storageType.includes("gcs") || storageType.includes("file");
+
   const HeaderIcon = isCloudStorage ? Folder : Database;
-  const iconBgColor = isCloudStorage ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-blue-50 text-blue-600 border-blue-100";
+  const iconBgColor = isCloudStorage
+    ? "bg-amber-50 text-amber-600 border-amber-100"
+    : "bg-blue-50 text-blue-600 border-blue-100";
 
   // 2. Permanent Header Actions
   const headerActions = (
-    <HeaderActionButtons 
+    <HeaderActionButtons
       onSync={() => console.log("Sync clicked")}
-      onLineage={() => window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-        detail: { path: `/lineage/table:${encodeURIComponent(tableName)}` } 
-      }))}
+      onLineage={() =>
+        window.dispatchEvent(
+          new CustomEvent("mfe:navigate", {
+            detail: { path: `/lineage/table:${encodeURIComponent(tableName)}` },
+          })
+        )
+      }
     />
   );
 
@@ -114,17 +130,10 @@ export const TableDetailViewPresenter: React.FC<TableDetailViewPresenterProps> =
           />
         )}
         {tab === "lineage" && (
-          <TableLineage 
-            lineage={lineage} 
-            loading={loadingLineage} 
-            tableName={tableName}
-          />
+          <TableLineage lineage={lineage} loading={loadingLineage} tableName={tableName} />
         )}
         {tab === "schema" && (
-          <TableSchema
-            columns={schema?.columns || []}
-            loading={loadingSchema}
-          />
+          <TableSchema columns={schema?.columns || []} loading={loadingSchema} />
         )}
         {tab === "timeline" && (
           <TableTimeliness

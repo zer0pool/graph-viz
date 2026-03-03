@@ -1,5 +1,7 @@
+from typing import Any, Dict, List, Optional
+
 import httpx
-from typing import List, Dict, Any, Optional
+
 from app.core.config import settings
 
 

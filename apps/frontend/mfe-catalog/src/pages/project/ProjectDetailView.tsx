@@ -10,15 +10,19 @@ export const ProjectDetailView: React.FC<{
   const logic = useProjectDetailView(projectId);
 
   const handleNavigateToJob = (id: string) => {
-    window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-      detail: { path: `/jobs/${encodeURIComponent(id)}` } 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("mfe:navigate", {
+        detail: { path: `/jobs/${encodeURIComponent(id)}` },
+      })
+    );
   };
 
   const handleNavigateToUser = (id: string) => {
-    window.dispatchEvent(new CustomEvent('mfe:navigate', { 
-      detail: { path: `/users/${encodeURIComponent(id)}` } 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("mfe:navigate", {
+        detail: { path: `/users/${encodeURIComponent(id)}` },
+      })
+    );
   };
 
   return (

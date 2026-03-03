@@ -1,13 +1,14 @@
 from dependency_injector import containers, providers
+
 from app.core.config import settings
 from app.infrastructure.database import create_session_factory
 from app.infrastructure.external.job_manager_client import JobManagerClient
 from app.infrastructure.unit_of_work import UnitOfWork
-from app.services.graph_service import GraphService
-from app.services.metadata_service import MetadataService
+from app.services.analytics_service import AnalyticsService
 from app.services.audit_service import AuditService
 from app.services.auth_service import AuthService
-from app.services.analytics_service import AnalyticsService
+from app.services.graph_service import GraphService
+from app.services.metadata_service import MetadataService
 
 
 class Container(containers.DeclarativeContainer):

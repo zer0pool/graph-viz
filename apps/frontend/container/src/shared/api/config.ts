@@ -4,40 +4,28 @@
 export const config = {
   // Fallback to localhost if window config is missing (for npm run dev)
   API_BASE_URL: (window as any).__APP_CONFIG__?.API_BASE_URL || "",
-  BASE_URL: (
-    (window as any).__APP_CONFIG__?.BASE_URL || "/admin-console"
-  ).replace(/\/$/, ""),
-  ENABLE_MFE_LINEAGE:
-    (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
-  ENABLE_MFE_CATALOG:
-    (window as any).__APP_CONFIG__?.ENABLE_CATALOG_MFE !== "false",
+  BASE_URL: ((window as any).__APP_CONFIG__?.BASE_URL || "/admin-console").replace(/\/$/, ""),
+  ENABLE_MFE_LINEAGE: (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
+  ENABLE_MFE_CATALOG: (window as any).__APP_CONFIG__?.ENABLE_CATALOG_MFE !== "false",
   LINEAGE_MFE_URL:
-    (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL ||
-    "http://localhost:5101/remoteEntry.js",
+    (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL || "http://localhost:5101/remoteEntry.js",
   CATALOG_MFE_URL:
-    (window as any).__APP_CONFIG__?.CATALOG_MFE_URL ||
-    "http://localhost:5102/remoteEntry.js",
+    (window as any).__APP_CONFIG__?.CATALOG_MFE_URL || "http://localhost:5102/remoteEntry.js",
   BACKEND_HOST: (window as any).__APP_CONFIG__?.BACKEND_HOST || "",
 
   // Standalone Auth Config
   ENABLE_AUTH: (window as any).__APP_CONFIG__?.ENABLE_AUTH !== "false", // Default true
-  OIDC_AUTHORITY:
-    (window as any).__APP_CONFIG__?.OIDC_AUTHORITY ||
-    "https://accounts.google.com",
+  OIDC_AUTHORITY: (window as any).__APP_CONFIG__?.OIDC_AUTHORITY || "https://accounts.google.com",
   OIDC_CLIENT_ID: (window as any).__APP_CONFIG__?.OIDC_CLIENT_ID || "",
   OIDC_CLIENT_SECRET: (window as any).__APP_CONFIG__?.OIDC_CLIENT_SECRET || "",
-  OIDC_RESPONSE_TYPE:
-    (window as any).__APP_CONFIG__?.OIDC_RESPONSE_TYPE || "code id_token",
+  OIDC_RESPONSE_TYPE: (window as any).__APP_CONFIG__?.OIDC_RESPONSE_TYPE || "code id_token",
   OIDC_RESPONSE_MODE: (window as any).__APP_CONFIG__?.OIDC_RESPONSE_MODE || "",
   OIDC_AUTH_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_AUTH_ENDPOINT || "",
-  OIDC_TOKEN_ENDPOINT:
-    (window as any).__APP_CONFIG__?.OIDC_TOKEN_ENDPOINT || "",
+  OIDC_TOKEN_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_TOKEN_ENDPOINT || "",
   OIDC_REDIRECT_URI: (window as any).__APP_CONFIG__?.OIDC_REDIRECT_URI || "",
-  OIDC_SCOPE:
-    (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
+  OIDC_SCOPE: (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
   OIDC_RESOURCE: (window as any).__APP_CONFIG__?.OIDC_RESOURCE || "",
-  OIDC_USERINFO_ENDPOINT:
-    (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
+  OIDC_USERINFO_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
 
   DEBUG: process.env.NODE_ENV !== "production",
 };

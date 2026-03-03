@@ -1,4 +1,5 @@
 import logging
+
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -18,7 +19,7 @@ async def sso_login(
 ):
     """
     Authenticate a user via SSO (e.g., Google OAuth2).
-    In a real implementation, 'id_token' would be verified using 
+    In a real implementation, 'id_token' would be verified using
     google-auth library.
     """
     try:
@@ -28,19 +29,19 @@ async def sso_login(
             "sub": f"sso_sub_{request.id_token[-10:]}",  # Derived from token for demo
             "email": "sso_user@example.com",
             "name": "SSO Test User",
-            "department": "Platform Team"
+            "department": "Platform Team",
         }
-        
+
         # 2. Login or Register user
         user = await auth_service.sso_login_or_register(mock_user_info)
-        
+
         # 3. Create session token (JWT)
         access_token = auth_service.create_access_token(user)
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
-            "expires_in": 3600
+            "expires_in": 3600,
         }
     except Exception as e:
         logger.error(f"SSO Login failed: {str(e)}", exc_info=True)

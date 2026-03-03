@@ -1,9 +1,12 @@
-from google.cloud import bigquery
-from app.core.config import settings
 import logging
-from typing import Any, List, Dict
+from typing import Any, Dict, List
+
+from google.cloud import bigquery
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 class BigQueryClient:
     def __init__(self):
@@ -14,7 +17,9 @@ class BigQueryClient:
         try:
             # google-cloud library automatically uses GOOGLE_APPLICATION_CREDENTIALS
             self.client = bigquery.Client(project=settings.GOOGLE_PROJECT_ID)
-            logger.info(f"Initialized BigQuery Client for project: {self.client.project}")
+            logger.info(
+                f"Initialized BigQuery Client for project: {self.client.project}"
+            )
         except Exception as e:
             logger.error(f"Failed to initialize BigQuery Client: {e}")
             self.client = None
@@ -25,11 +30,11 @@ class BigQueryClient:
         """
         if not self.client:
             raise RuntimeError("BigQuery client is not initialized")
-        
+
         try:
             query_job = self.client.query(query_string)
             rows = query_job.result()  # Waits for job to complete.
-            
+
             # Convert Row iterator to list of dicts for easier consumption
             results = [dict(row) for row in rows]
             return results
@@ -42,8 +47,8 @@ class BigQueryClient:
         Stream rows into BigQuery.
         """
         if not self.client:
-             raise RuntimeError("BigQuery client is not initialized")
-        
+            raise RuntimeError("BigQuery client is not initialized")
+
         try:
             errors = self.client.insert_rows_json(table_id, rows)
             if errors:

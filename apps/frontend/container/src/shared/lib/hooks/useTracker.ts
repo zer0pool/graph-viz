@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { config } from '../../api/config';
+import { config } from "../../api/config";
 
 const VISITOR_ID_KEY = "frontend_visitor_id";
 const RECENT_VISITED_KEY = "frontend_recent_visited";
@@ -38,7 +38,7 @@ export const useTracker = () => {
       // Detect Page Type
       let type = "other";
       const normalizedPath = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-      
+
       if (normalizedPath === "/jobs") type = "jobs_landing";
       else if (normalizedPath.startsWith("/jobs/")) type = "job";
       else if (normalizedPath === "/tables") type = "tables_landing";
@@ -83,16 +83,13 @@ export const useTracker = () => {
           title: pathname.split("/").pop() || "home",
           timestamp: new Date().toISOString(),
         };
-        await fetch(
-          `${config.BASE_URL}/analytics-manager/api/v1/analytics/track`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          }
-        );
+        await fetch(`${config.BASE_URL}/analytics-manager/api/v1/analytics/track`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
       } catch (e) {
         console.warn("[Tracker] Failed to send analytics", e);
       }

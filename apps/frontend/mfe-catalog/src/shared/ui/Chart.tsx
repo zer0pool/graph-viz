@@ -11,17 +11,10 @@ interface SimpleChartProps {
   loading?: boolean;
 }
 
-export const Chart: React.FC<SimpleChartProps> = ({
-  options,
-  height = "300px",
-  loading,
-}) => {
+export const Chart: React.FC<SimpleChartProps> = ({ options, height = "300px", loading }) => {
   if (loading)
     return (
-      <div
-        style={{ height }}
-        className="flex items-center justify-center text-gray-400"
-      >
+      <div style={{ height }} className="flex items-center justify-center text-gray-400">
         Loading Chart...
       </div>
     );

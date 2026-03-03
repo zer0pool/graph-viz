@@ -14,7 +14,7 @@ class AuthService:
 
     async def sso_login_or_register(self, user_info: dict) -> User:
         """
-        Handles the SSO login flow. 
+        Handles the SSO login flow.
         If user doesn't exist by 'sub', create them.
         Update last_login_at.
         """
@@ -32,7 +32,7 @@ class AuthService:
                 # Create a new user entity
                 # Extract user_id from email prefix if possible
                 user_id = email.split("@")[0] if "@" in email else sub[:10]
-                
+
                 user = User(
                     user_id=user_id,
                     sub=sub,
@@ -41,7 +41,7 @@ class AuthService:
                     department=department,
                     roles=["VIEWER"],  # Default role for new SSO users
                     status="ACTIVE",
-                    last_login_at=datetime.utcnow()
+                    last_login_at=datetime.utcnow(),
                 )
             else:
                 logger.debug(f"Existing user logging in: {email}")
@@ -55,13 +55,13 @@ class AuthService:
             # 2. Save/Update user
             saved_user = await self.uow.users.save(user)
             await self.uow.commit()
-            
+
             return saved_user
 
     def create_access_token(self, user: User) -> str:
         """
-        Generate a JWT for the user. 
-        In a real scenario, this would use a library like python-jose 
+        Generate a JWT for the user.
+        In a real scenario, this would use a library like python-jose
         and settings.SECRET_KEY.
         """
         # Mocking JWT generation for now

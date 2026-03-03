@@ -28,13 +28,13 @@ export function useTableDetailView(tableName: string) {
 
   // Lineage is needed for metrics in Overview and for the Lineage tab itself
   const { lineage, loading: loadingLineage } = useTableLineage(
-    (loadedTabs.has("lineage") || tab === "info") ? tableName : ""
+    loadedTabs.has("lineage") || tab === "info" ? tableName : ""
   );
 
   // FQN Parsing for Header
-  const parts = tableName.split('.');
+  const parts = tableName.split(".");
   const projectName = parts[0] || "N/A";
-  const datasetName = parts.slice(1, -1).join('.') || (parts.length > 1 ? parts[0] : "N/A");
+  const datasetName = parts.slice(1, -1).join(".") || (parts.length > 1 ? parts[0] : "N/A");
   const displayName = table?.name || parts[parts.length - 1] || tableName;
 
   return {

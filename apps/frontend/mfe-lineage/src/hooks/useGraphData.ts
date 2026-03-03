@@ -3,10 +3,7 @@ import { GraphState, GraphNode, GraphEdge } from "../types/graph";
 import { GraphApiService } from "../services/GraphApiService";
 import { useGraphHistory } from "./useGraphHistory";
 import { config } from "../config";
-import {
-  createGroupNode,
-  applyProgressiveLoading,
-} from "../utils/GraphFoldingUtils";
+import { createGroupNode, applyProgressiveLoading } from "../utils/GraphFoldingUtils";
 
 export function useGraphData() {
   const [graphData, setGraphData] = useState<GraphState | null>(null);
@@ -38,7 +35,7 @@ export function useGraphData() {
       isExpansion = false,
       direction: "upstream" | "downstream" | "both" | undefined = "both",
       rememberAsInitial = false,
-      signal?: AbortSignal,
+      signal?: AbortSignal
     ) => {
       if (rememberAsInitial) {
         setInitialNode({ type, id });
@@ -51,13 +48,7 @@ export function useGraphData() {
       setError(null);
 
       try {
-        const data = await GraphApiService.fetchExpand(
-          type,
-          id,
-          direction || "both",
-          1,
-          signal,
-        );
+        const data = await GraphApiService.fetchExpand(type, id, direction || "both", 1, signal);
 
         if (isExpansion) {
           setGraphData((prev: GraphState | null) => {
@@ -74,7 +65,7 @@ export function useGraphData() {
               (n) =>
                 n.type === "group" &&
                 n.properties?.anchorId === fullId &&
-                (direction === "both" || n.properties?.direction === direction),
+                (direction === "both" || n.properties?.direction === direction)
             );
 
             groupNodes.forEach((gn) => {
@@ -84,21 +75,15 @@ export function useGraphData() {
               }
               // Remove the group node itself from the base set
               baseNodes = baseNodes.filter((n) => n.id !== gn.id);
-              baseEdges = baseEdges.filter(
-                (e) => e.source !== gn.id && e.target !== gn.id,
-              );
+              baseEdges = baseEdges.filter((e) => e.source !== gn.id && e.target !== gn.id);
             });
 
             // 2. Merge new API data
             const existingNodeIds = new Set(baseNodes.map((n) => n.id));
-            const uniqueNewNodes = data.nodes.filter(
-              (n: any) => !existingNodeIds.has(n.id),
-            );
-            const existingEdgeKeys = new Set(
-              baseEdges.map((e) => `${e.source}->${e.target}`),
-            );
+            const uniqueNewNodes = data.nodes.filter((n: any) => !existingNodeIds.has(n.id));
+            const existingEdgeKeys = new Set(baseEdges.map((e) => `${e.source}->${e.target}`));
             const uniqueNewEdges = data.edges.filter(
-              (e: any) => !existingEdgeKeys.has(`${e.source}->${e.target}`),
+              (e: any) => !existingEdgeKeys.has(`${e.source}->${e.target}`)
             );
 
             const combinedNodes = [...baseNodes, ...uniqueNewNodes];
@@ -107,16 +92,12 @@ export function useGraphData() {
             // 3. Determine current visible counts to calculate new limit
             const upCount = prev.nodes.filter((n: any) => {
               if (n.type === "group" || n.id === fullId) return false;
-              return prev.edges.some(
-                (e: any) => e.source === n.id && e.target === fullId,
-              );
+              return prev.edges.some((e: any) => e.source === n.id && e.target === fullId);
             }).length;
 
             const downCount = prev.nodes.filter((n: any) => {
               if (n.type === "group" || n.id === fullId) return false;
-              return prev.edges.some(
-                (e: any) => e.source === fullId && e.target === n.id,
-              );
+              return prev.edges.some((e: any) => e.source === fullId && e.target === n.id);
             }).length;
 
             const limit = config.PROGRESSIVE_LOADING_LIMIT;
@@ -124,20 +105,16 @@ export function useGraphData() {
             // 4. Re-apply folding with increased limit for this expansion
             const options = {
               upstreamLimit:
-                direction === "upstream" || direction === "both"
-                  ? upCount + limit
-                  : upCount,
+                direction === "upstream" || direction === "both" ? upCount + limit : upCount,
               downstreamLimit:
-                direction === "downstream" || direction === "both"
-                  ? downCount + limit
-                  : downCount,
+                direction === "downstream" || direction === "both" ? downCount + limit : downCount,
               globalLimit: limit,
             };
 
             const newState = applyProgressiveLoading(
               { nodes: combinedNodes, edges: combinedEdges },
               fullId,
-              options,
+              options
             );
 
             setTimeout(() => pushToHistory(newState), 0);
@@ -147,12 +124,7 @@ export function useGraphData() {
           // INITIAL LOAD
           const limit = config.PROGRESSIVE_LOADING_LIMIT;
           const fullNodeId = id.includes(":") ? id : `${type}:${id}`;
-          console.log(
-            "[useGraphData] Initial load for:",
-            fullNodeId,
-            "Limit:",
-            limit,
-          );
+          console.log("[useGraphData] Initial load for:", fullNodeId, "Limit:", limit);
           const foldedData = applyProgressiveLoading(data, fullNodeId, limit);
           setGraphData(foldedData);
           resetHistory(foldedData);
@@ -170,7 +142,7 @@ export function useGraphData() {
         }
       }
     },
-    [pushToHistory, resetHistory],
+    [pushToHistory, resetHistory]
   );
 
   const expandGroup = useCallback(
@@ -188,15 +160,15 @@ export function useGraphData() {
         // 1. Remove the current group node and its edges
         const filteredNodes = prev.nodes.filter((n) => n.id !== groupNode.id);
         const filteredEdges = prev.edges.filter(
-          (e) => e.source !== groupNode.id && e.target !== groupNode.id,
+          (e) => e.source !== groupNode.id && e.target !== groupNode.id
         );
 
         // 2. Calculate current visible counts in expansion direction
         const currentUpstreams = filteredNodes.filter((n) =>
-          filteredEdges.some((e) => e.source === n.id && e.target === anchorId),
+          filteredEdges.some((e) => e.source === n.id && e.target === anchorId)
         ).length;
         const currentDownstreams = filteredNodes.filter((n) =>
-          filteredEdges.some((e) => e.source === anchorId && e.target === n.id),
+          filteredEdges.some((e) => e.source === anchorId && e.target === n.id)
         ).length;
 
         // 3. Combine existing nodes with hidden items from group
@@ -205,14 +177,9 @@ export function useGraphData() {
 
         // 4. Set new increased limits for the expansion direction
         const options = {
-          upstreamLimit:
-            direction === "upstream"
-              ? currentUpstreams + limit
-              : currentUpstreams,
+          upstreamLimit: direction === "upstream" ? currentUpstreams + limit : currentUpstreams,
           downstreamLimit:
-            direction === "downstream"
-              ? currentDownstreams + limit
-              : currentDownstreams,
+            direction === "downstream" ? currentDownstreams + limit : currentDownstreams,
           globalLimit: limit,
         };
 
@@ -221,14 +188,14 @@ export function useGraphData() {
         const newState = applyProgressiveLoading(tempState, anchorId, options);
         console.log(
           "[useGraphData] Expanded group node. New visible count:",
-          newState.nodes.length,
+          newState.nodes.length
         );
 
         setTimeout(() => pushToHistory(newState), 0);
         return newState;
       });
     },
-    [pushToHistory],
+    [pushToHistory]
   );
 
   const removeNode = useCallback(
@@ -237,15 +204,13 @@ export function useGraphData() {
         if (!prev) return null;
         const newState = {
           nodes: prev.nodes.filter((n) => n.id !== nodeId),
-          edges: prev.edges.filter(
-            (e) => e.source !== nodeId && e.target !== nodeId,
-          ),
+          edges: prev.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
         };
         setTimeout(() => pushToHistory(newState), 0);
         return newState;
       });
     },
-    [pushToHistory],
+    [pushToHistory]
   );
 
   const restoreFromHistory = useCallback((state: GraphState | null) => {

@@ -1,6 +1,7 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
 import logging
+from typing import Any, Dict, List
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.graph.service import GraphService
 from app.domain.ingestion.client import JobManagerClient

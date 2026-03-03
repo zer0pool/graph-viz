@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from dependency_injector.wiring import inject, Provide
-from app.core.container import Container
+
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.api.v1.schemas import resources as schemas
-from app.services.metadata_service import MetadataService
+from app.core.container import Container
 from app.domain.project.entities import Project as ProjectEntity
+from app.services.metadata_service import MetadataService
 
 router = APIRouter()
 

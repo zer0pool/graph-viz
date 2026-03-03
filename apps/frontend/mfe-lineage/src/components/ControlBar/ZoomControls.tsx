@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  ZoomInIcon,
-  ZoomOutIcon,
-  ResetIcon,
-  MaximizeIcon,
-} from "../../assets/icons";
+import { ZoomInIcon, ZoomOutIcon, ResetIcon, MaximizeIcon } from "../../assets/icons";
 
 interface ZoomControlsProps {
   onZoomIn: () => void;
@@ -31,20 +26,10 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
       >
         <MaximizeIcon />
       </button>
-      <button
-        className="control-btn"
-        onClick={onZoomIn}
-        data-tooltip="Zoom In"
-        title="Zoom In"
-      >
+      <button className="control-btn" onClick={onZoomIn} data-tooltip="Zoom In" title="Zoom In">
         <ZoomInIcon />
       </button>
-      <button
-        className="control-btn"
-        onClick={onZoomOut}
-        data-tooltip="Zoom Out"
-        title="Zoom Out"
-      >
+      <button className="control-btn" onClick={onZoomOut} data-tooltip="Zoom Out" title="Zoom Out">
         <ZoomOutIcon />
       </button>
       <span className="zoom-display">{Math.round(zoomLevel * 100)}%</span>

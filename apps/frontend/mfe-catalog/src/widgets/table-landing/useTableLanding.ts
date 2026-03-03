@@ -11,22 +11,18 @@ const DEFAULT_TABLE_METRICS: TableMetric[] = [
   { type: "total_datasets", value: 8, subtext: "6 schemas" },
   { type: "total_size", value: "148.0 TB", subtext: "+2.1 TB/day" },
   { type: "expiring_soon", value: 23, subtext: "< 7 days left" },
-  { type: "lineage_coverage", value: "80.7%", subtext: "1124 / 1392" }
+  { type: "lineage_coverage", value: "80.7%", subtext: "1124 / 1392" },
 ];
 
 import { useLandingPageData } from "../../shared/hooks/useLandingPageData";
 
 export function useTableLanding() {
-  const { 
-    metrics, 
-    entities, 
-    loading, 
-    error, 
-    refresh 
-  } = useLandingPageData("tables", { first: 20 });
+  const { metrics, entities, loading, error, refresh } = useLandingPageData("tables", {
+    first: 20,
+  });
 
   const datasets = useMemo(() => {
-    return (entities?.edges || []).map(edge => edge.node);
+    return (entities?.edges || []).map((edge) => edge.node);
   }, [entities]);
 
   return {

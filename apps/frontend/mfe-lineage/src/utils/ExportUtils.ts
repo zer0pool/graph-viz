@@ -58,8 +58,7 @@ export const ExportUtils = {
         if (logicalDepth > 0) indent += "└ ";
 
         const displayName = item.id;
-        const rowStyle =
-          item.depth === 0 ? 'style="background-color:#f8fafc;"' : "";
+        const rowStyle = item.depth === 0 ? 'style="background-color:#f8fafc;"' : "";
 
         const props = item.properties || {};
         const job = item.viaJob;
@@ -86,16 +85,10 @@ export const ExportUtils = {
 
     let bodyContent = "<table>";
     // Section 1: Upstream
-    bodyContent += buildTableHtml(
-      `Table 1. Upstream Lineage for ${rootName}`,
-      upstream
-    );
+    bodyContent += buildTableHtml(`Table 1. Upstream Lineage for ${rootName}`, upstream);
 
     // Section 2: Downstream
-    bodyContent += buildTableHtml(
-      `Table 2. Downstream Lineage for ${rootName}`,
-      downstream
-    );
+    bodyContent += buildTableHtml(`Table 2. Downstream Lineage for ${rootName}`, downstream);
 
     bodyContent += `
             <tr>

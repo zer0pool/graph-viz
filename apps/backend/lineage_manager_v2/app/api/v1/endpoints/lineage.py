@@ -1,8 +1,10 @@
+from typing import Any, Dict, List, Optional
+
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Dict, Any, Optional
-from dependency_injector.wiring import inject, Provide
+
+from app.api.v1.schemas.lineage import GraphResponse, LineageRegistration
 from app.core.container import Container
-from app.api.v1.schemas.lineage import LineageRegistration, GraphResponse
 from app.services.graph_service import GraphService
 
 router = APIRouter()

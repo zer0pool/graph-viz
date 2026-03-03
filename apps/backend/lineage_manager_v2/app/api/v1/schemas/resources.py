@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ProjectBase(BaseModel):
@@ -66,7 +67,6 @@ class ResourceBase(BaseModel):
 
 class ResourceCreate(ResourceBase):
     pass
-
 
 
 class Resource(ResourceBase):

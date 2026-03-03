@@ -12,7 +12,7 @@ export const JobRunDrawer: React.FC<JobRunDrawerProps> = ({ run, onClose }) => {
   if (!run) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] flex justify-end overflow-hidden bg-gray-900 bg-opacity-50 transition-opacity"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -34,16 +34,10 @@ export const JobRunDrawer: React.FC<JobRunDrawerProps> = ({ run, onClose }) => {
 
         <div className="flex-1 overflow-y-auto p-6 pt-0 divide-y divide-[#f3f4f6]">
           <PropertyRow label="Status" value={run.status || "Unknown"} isStatus />
-          <PropertyRow
-            label="Triggered By"
-            value={run.triggered_by || "Schedule"}
-          />
+          <PropertyRow label="Triggered By" value={run.triggered_by || "Schedule"} />
           <PropertyRow label="Start Time" value={run.start_time} />
           <PropertyRow label="End Time" value={run.end_time || "-"} />
-          <PropertyRow
-            label="Duration"
-            value={formatDuration(run.duration)}
-          />
+          <PropertyRow label="Duration" value={formatDuration(run.duration)} />
         </div>
       </div>
     </div>
@@ -60,13 +54,21 @@ const PropertyRow: React.FC<{
     {isStatus ? (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-sm transition-all ${
-          String(value || "").toLowerCase().includes("success") ||
-          String(value || "").toLowerCase().includes("completed")
+          String(value || "")
+            .toLowerCase()
+            .includes("success") ||
+          String(value || "")
+            .toLowerCase()
+            .includes("completed")
             ? "bg-green-100 text-green-800"
-            : String(value || "").toLowerCase().includes("fail") ||
-              String(value || "").toLowerCase().includes("error")
-            ? "bg-red-100 text-red-800"
-            : "bg-blue-100 text-blue-800"
+            : String(value || "")
+                  .toLowerCase()
+                  .includes("fail") ||
+                String(value || "")
+                  .toLowerCase()
+                  .includes("error")
+              ? "bg-red-100 text-red-800"
+              : "bg-blue-100 text-blue-800"
         }`}
       >
         {value || "-"}

@@ -9,7 +9,7 @@ export class GraphApiService {
     id: string,
     direction: "upstream" | "downstream" | "both" = "both",
     depth = 1,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<GraphState> {
     const params = new URLSearchParams({
       node_id: id.includes(":") ? id : `${type}:${id}`,
@@ -20,10 +20,9 @@ export class GraphApiService {
       params.append("direction", direction);
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/lineage/graph?${params.toString()}`,
-      { signal },
-    );
+    const response = await fetch(`${API_BASE_URL}/api/v1/lineage/graph?${params.toString()}`, {
+      signal,
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -34,14 +33,10 @@ export class GraphApiService {
   }
 
   static async fetchTableHierarchy(tableName: string): Promise<any> {
-    const cleanTableName = tableName.startsWith("table:")
-      ? tableName.substring(6)
-      : tableName;
+    const cleanTableName = tableName.startsWith("table:") ? tableName.substring(6) : tableName;
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/tables/${encodeURIComponent(
-        cleanTableName,
-      )}/hierarchy`,
+      `${API_BASE_URL}/api/v1/tables/${encodeURIComponent(cleanTableName)}/hierarchy`
     );
 
     if (!response.ok) {
@@ -53,25 +48,19 @@ export class GraphApiService {
   }
 
   static async fetchBatchDetails(nodeIds: string[]): Promise<any> {
-    if (!nodeIds || nodeIds.length === 0)
-      return { status: "success", results: {} };
+    if (!nodeIds || nodeIds.length === 0) return { status: "success", results: {} };
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/lineage/batch-details`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ node_ids: nodeIds }),
+    const response = await fetch(`${API_BASE_URL}/api/v1/lineage/batch-details`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({ node_ids: nodeIds }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Batch Details API error (${response.status}): ${errorText}`,
-      );
+      throw new Error(`Batch Details API error (${response.status}): ${errorText}`);
     }
 
     return response.json();
