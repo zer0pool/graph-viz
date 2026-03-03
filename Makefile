@@ -81,53 +81,65 @@ clean-all:
 
 # Docker Compose commands
 up:
-	docker compose -f apps/backend/docker-compose.yml up -d
-	docker compose -f apps/frontend/docker-compose.yml up -d
+	docker compose up -d
+	$(MAKE) .db-init
 
 down:
-	docker compose -f apps/frontend/docker-compose.yml down
-	docker compose -f apps/backend/docker-compose.yml down
+	docker compose down
 
 backend-up:
-	docker compose -f apps/backend/docker-compose.yml up -d
+	docker compose up -d lineage-api lineage-worker analytics-api job-dummy
+	$(MAKE) .db-init
 
 backend-down:
-	docker compose -f apps/backend/docker-compose.yml down
+	docker compose stop lineage-api lineage-worker analytics-api job-dummy
 
 backend-rebuild:
-	docker compose -f apps/backend/docker-compose.yml up -d --build lineage-manager app-job-dummy
+	docker compose up -d --build lineage-api lineage-worker analytics-api job-dummy
+	$(MAKE) .db-init
 
 infra-up:
-	docker compose -f apps/backend/docker-compose.yml up -d redis-cache mysql-db
+	docker compose up -d redis-cache mysql-db
+	$(MAKE) .db-init
+
+infra-rebuild:
+	docker compose up -d --build --force-recreate redis-cache mysql-db
+	$(MAKE) .db-init
+
+# Internal helper to ensure DB exists (idempotent)
+.db-init:
+	@echo "Checking database status..."
+	@sleep 3
+	@docker exec mysql-db mysql -uroot -proot123 -e "CREATE DATABASE IF NOT EXISTS lineage_manager_v2;" || echo "Waiting for MySQL to be ready..."
 
 backend-logs:
-	docker compose -f apps/backend/docker-compose.yml logs -f
+	docker compose logs -f lineage-api lineage-worker analytics-api job-dummy
 
 frontend-up:
-	docker compose -f apps/frontend/docker-compose.yml up -d
+	docker compose up -d shell ui-lineage ui-catalog
 
 frontend-down:
-	docker compose -f apps/frontend/docker-compose.yml down
+	docker compose stop shell ui-lineage ui-catalog
 
 frontend-rebuild:
-	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-console-app frontend-mfe-lineage frontend-mfe-catalog
+	docker compose up -d --build shell ui-lineage ui-catalog
 	docker system prune -f
 
-# (Internal/Secondary) Rebuild individual MFEs if needed
-frontend-lineage-rebuild:
-	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-mfe-lineage
+# (Internal/Secondary) Rebuild individual services
+lineage-rebuild:
+	docker compose up -d --build lineage-api lineage-worker
 
-frontend-catalog-rebuild:
-	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-mfe-catalog
+analytics-rebuild:
+	docker compose up -d --build analytics-api
 
-frontend-container-rebuild:
-	docker compose -f apps/frontend/docker-compose.yml up -d --build frontend-console-app
+frontend-shell-rebuild:
+	docker compose up -d --build shell
 
 frontend-logs:
-	docker compose -f apps/frontend/docker-compose.yml logs -f
+	docker compose logs -f shell ui-lineage ui-catalog
 
 logs:
-	docker compose -f apps/backend/docker-compose.yml -f apps/frontend/docker-compose.yml logs -f
+	docker compose logs -f
 
 docker-rmi:
 	@echo "⚠️  [WARNING] Deleting ALL docker images..."

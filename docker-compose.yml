@@ -1,69 +1,19 @@
-version: "3.8"
+name: admin-console
 
 services:
-  # --- Frontend Shell MFE ---
-  shell:
-    build:
-      context: ./apps/frontend/container
-      dockerfile: deploy/docker/Dockerfile
-    ports:
-      - "${SHELL_PORT:-3000}:80"
-    environment:
-      - API_BASE_URL=http://lineage-manager:5003
-      - BASE_URL=${BASE_URL:-/}
-      - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
-      - ENABLE_TABLE_DETAIL_MFE=${ENABLE_TABLE_DETAIL_MFE:-true}
-      - NODE_ENV=production
-      # --- Standalone Auth Config (Uncomment to enable) ---
-      # - ENABLE_AUTH=false  # Set to false to disable login
-      # - OIDC_AUTHORITY=https://accounts.google.com
-      # - OIDC_CLIENT_ID=my-client-id
-      # - OIDC_REDIRECT_URI=http://localhost:3000/authorized
-      # - OIDC_SCOPE=openid profile email
-    depends_on:
-      - lineage-manager
-    container_name: admin-console-shell
-    networks:
-      - lineage-network
-
-  # --- Lineage Manager Backend ---
-  lineage-manager:
-    build:
-      context: ./apps/backend/lineage_manager
-      dockerfile: deploy/docker/Dockerfile
-    ports:
-      - "${BACKEND_PORT:-5003}:5003"
-    environment:
-      - PORT=5003
-      - DB_HOST=mysql-db
-      - DB_PORT=3306
-      - DB_NAME=${DB_NAME:-lineage_manager}
-      - DB_USER=${DB_USER:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-root123}
-      - REDIS_HOST=redis-cache
-      - REDIS_PORT=6379
-      - FEATURE_REQUIRE_SIGNIN=true
-      - OIDC_REDIRECT_URI=http://localhost:3000/authorized
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5003
-    depends_on:
-      - mysql-db
-      - redis-cache
-    container_name: lineage-manager-backend
-    networks:
-      - lineage-network
-
   # --- Infrastructure ---
   mysql-db:
-    image: mysql:8.0-debian
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
-    ports:
-      - "${DB_EXTERNAL_PORT:-33306}:3306"
+    image: mysql:8.0
     container_name: mysql-db
+    environment:
+      MYSQL_DATABASE: lineage_manager_v2
+      MYSQL_ROOT_PASSWORD: root123
+    ports:
+      - "33307:3306"
+    volumes:
+      - mysql_v2_data:/var/lib/mysql
     networks:
-      - lineage-network
+      - lineage-platform-network
 
   redis-cache:
     image: redis:alpine
@@ -71,8 +21,147 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - lineage-network
+      - lineage-platform-network
+
+  # --- Lineage Backend ---
+  lineage-api:
+    build:
+      context: ./apps/backend/lineage_manager_v2
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/lineage-api
+    container_name: lineage-api
+    ports:
+      - "5003:5003"
+    env_file:
+      - ./apps/backend/lineage_manager_v2/.env
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JOB_MANAGER_URL=http://job-dummy:9000
+    depends_on:
+      - mysql-db
+      - redis-cache
+      - job-dummy
+    networks:
+      - lineage-platform-network
+
+  lineage-worker:
+    build:
+      context: ./apps/backend/lineage_manager_v2
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/lineage-worker
+    container_name: lineage-worker
+    command: celery
+    env_file:
+      - ./apps/backend/lineage_manager_v2/.env
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JOB_MANAGER_URL=http://job-dummy:9000
+    depends_on:
+      - mysql-db
+      - redis-cache
+      - job-dummy
+    networks:
+      - lineage-platform-network
+
+  # --- Analytics Backend ---
+  analytics-api:
+    build:
+      context: ./apps/backend/analytics_manager
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/analytics-api
+    container_name: analytics-api
+    ports:
+      - "5002:5002"
+    env_file:
+      - ./apps/backend/analytics_manager/.env
+    environment:
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+    depends_on:
+      - redis-cache
+    networks:
+      - lineage-platform-network
+
+  # --- Dummy Services ---
+  job-dummy:
+    build:
+      context: ./apps/backend/dummy-job-manager
+      dockerfile: Dockerfile
+    image: admin-console/job-dummy
+    container_name: job-dummy
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./apps/backend/dummy-job-manager:/app/data:ro
+    networks:
+      - lineage-platform-network
+
+  # --- Frontend Services ---
+  shell:
+    build:
+      context: ./apps/frontend/container
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        - LINEAGE_MFE_URL=/admin-console/mfe-lineage/remoteEntry.js
+        - CATALOG_MFE_URL=/admin-console/mfe-catalog/remoteEntry.js
+    image: admin-console/shell
+    container_name: shell
+    ports:
+      - "5100:80"
+    environment:
+      - API_BASE_URL=/admin-console
+      - BASE_URL=/admin-console
+      - BACKEND_HOST=http://lineage-api:5003
+      - ANALYTICS_MANAGER_UPSTREAM=http://analytics-api:5002
+      - MFE_LINEAGE_UPSTREAM=http://ui-lineage:80
+      - MFE_CATALOG_UPSTREAM=http://ui-catalog:80
+      - NODE_ENV=production
+    depends_on:
+      - ui-lineage
+      - ui-catalog
+      - lineage-api
+    networks:
+      - lineage-platform-network
+
+  ui-lineage:
+    build:
+      context: ./apps/frontend/mfe-lineage
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/ui-lineage
+    container_name: ui-lineage
+    ports:
+      - "5101:80"
+    environment:
+      - API_BASE_URL=/admin-console
+      - BASE_URL=/admin-console/mfe-lineage
+      - BACKEND_HOST=http://lineage-api:5003
+    networks:
+      - lineage-platform-network
+
+  ui-catalog:
+    build:
+      context: ./apps/frontend/mfe-catalog
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/ui-catalog
+    container_name: ui-catalog
+    ports:
+      - "5102:80"
+    environment:
+      - API_BASE_URL=/admin-console
+      - BASE_URL=/admin-console/mfe-catalog
+      - BACKEND_HOST=http://lineage-api:5003
+    networks:
+      - lineage-platform-network
 
 networks:
-  lineage-network:
+  lineage-platform-network:
     driver: bridge
+
+volumes:
+  mysql_v2_data:
