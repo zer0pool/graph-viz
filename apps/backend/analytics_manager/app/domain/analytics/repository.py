@@ -1,5 +1,6 @@
 import logging
 from typing import List, Dict, Any
+from starlette.concurrency import run_in_threadpool
 from app.infrastructure.gcp.bigquery import BigQueryClient
 from app.core.config import settings
 

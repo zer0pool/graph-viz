@@ -1,5 +1,3 @@
-import importlib.util
-from functools import cached_property
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,21 +29,6 @@ class Settings(BaseSettings):
     # Cache
     ANALYTICS_CACHE_TTL_SEC: int = 3600
 
-    @cached_property
-    def DATABASE_URL(self) -> str:
-        """Async MySQL URL with SQLite fallback for local testing"""
-        if not importlib.util.find_spec("aiomysql"):
-            return "sqlite+aiosqlite:///./analytics_manager.db"
-
-        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
-
-    @cached_property
-    def LINEAGE_DATABASE_URL(self) -> str:
-        """Lineage DB connection URL"""
-        if not importlib.util.find_spec("aiomysql"):
-            return "sqlite+aiosqlite:///./lineage_manager.db"
-
-        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.LINEAGE_DB_NAME}?charset=utf8mb4"
 
     @property
     def REDIS_URL(self) -> str:
