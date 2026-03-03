@@ -47,3 +47,6 @@ async def get_top_visited(
     Currently returns mock data until visit tracking is implemented.
     """
     return await service.get_top_visited()
+
+
+

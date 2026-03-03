@@ -7,7 +7,7 @@ export interface GraphQLResponse<T> {
 
 export const graphqlClient = {
   async fetch<T>(query: string, variables: Record<string, any> = {}): Promise<T> {
-    const endpoint = `${config.API_BASE_URL}/analytics-manager/graphql`;
+    const endpoint = `${config.BASE_URL}/analytics-manager/graphql`;
     
     const response = await fetch(endpoint, {
       method: "POST",

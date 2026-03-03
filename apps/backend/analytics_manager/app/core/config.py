@@ -27,14 +27,17 @@ class Settings(BaseSettings):
 
     # Google Cloud
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
-    GOOGLE_PROJECT_ID: Optional[str] = "your-gcp-project-id"
+    GOOGLE_PROJECT_ID: Optional[str] = None
 
     # Internal Services
     LINEAGE_MANAGER_V2_URL: str = "http://localhost:8001"
 
     # BigQuery
-    FEATURE_HISTORY_TABLE: str = "gizmopool.test_data.table_load_history"
-    BIGQUERY_VISIT_LOG_TABLE: str = "gizmopool.test_data.visit_logs"
+    FEATURE_HISTORY_TABLE: str = "test_data.admin_job_run_history"
+    BIGQUERY_VISIT_LOG_TABLE: str = "test_data.visit_logs"
+
+    # Cache
+    ANALYTICS_CACHE_TTL_SEC: int = 3600
 
     @cached_property
     def DATABASE_URL(self) -> str:

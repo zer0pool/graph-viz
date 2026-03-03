@@ -102,3 +102,31 @@ class MetadataService:
                 if p:
                     projects.append(p)
             return projects
+    # --- Search ---
+    async def search_suggestions(self, q: str, limit: int = 10) -> dict:
+        async with self.uow:
+            jobs = await self.uow.jobs.search_by_prefix(q, limit)
+            tables = await self.uow.data_nodes.search_by_prefix(q, limit)
+            owners = await self.uow.users.search_by_name_prefix(q, limit)
+
+            return {
+                "query": q,
+                "jobs": [
+                    {
+                        "job_id": j.job_id,
+                        "name": j.name,
+                        "owners": j.owners,
+                    }
+                    for j in jobs
+                ],
+                "tables": [
+                    {
+                        "full_name": t.fqn,
+                        "table_name": t.fqn.split(".")[-1],
+                        "project": t.project_id,
+                        "dataset": "unknown", # V2 doesn't always have dataset easily extracted
+                    }
+                    for t in tables
+                ],
+                "owners": owners,
+            }

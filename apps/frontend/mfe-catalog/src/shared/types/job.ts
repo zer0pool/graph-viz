@@ -7,6 +7,20 @@ export interface Job {
   project_id?: string;
   enabled?: boolean;
   updated_at?: string | null;
+  duration?: number;        // seconds running
+  progress?: number;        // 0-1 fraction
+  
+  // Job Run fields
+  dag_id?: string;
+  type?: string;
+  destination?: string;
+  issuer?: string;
+  start_time?: string;
+  next_start_time?: string;
+  period?: string;
+  date?: string;
+  hour?: string;
+  publish_time?: string;
 }
 
 export interface JobNodeRelation {

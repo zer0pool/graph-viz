@@ -15,7 +15,7 @@ class AnalyticsService:
             total_tables = await self.uow.graph.count_nodes_by_type("table")
             total_jobs = await self.uow.graph.count_nodes_by_type("job")
             total_users = await self.uow.users.count()
-            job_dist = await self.uow.jobs.count_distribution()
+            job_dist = await self.uow.jobs.count_by_type()
 
             # 2. Build final metrics list
             metrics = [
@@ -72,16 +72,13 @@ class AnalyticsService:
             total_projects = await self.uow.projects.count()
             total_data_assets = await self.uow.data_nodes.count()
             total_audits = await self.uow.audits.count()
-            job_dist = await self.uow.jobs.count_distribution()
-
             return {
                 "jobs": {
                     "total": total_jobs,
-                    "type_counts": {
-                        "SELF-TYPE": job_dist.get("SELF-TYPE", 0),
-                        "REQUEST-TYPE": job_dist.get("REQUEST-TYPE", 0),
-                        "OTHER": max(0, total_jobs - (job_dist.get("SELF-TYPE", 0) + job_dist.get("REQUEST-TYPE", 0)))
-                    }
+                    "type_counts": await self.uow.jobs.count_by_type(),
+                    "department_counts": await self.uow.jobs.count_by_department(),
+                    "owner_counts": await self.uow.jobs.count_by_owner(),
+                    "monthly_counts": await self.uow.jobs.count_by_created_month()
                 },
                 "tables": {
                     "total": total_tables

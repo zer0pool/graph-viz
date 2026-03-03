@@ -93,7 +93,7 @@ query GetLandingPage($context: LandingPageContext!, $filter: MetricFilter) {
 }
 ```
 
-## 3. Metric Registry Registry Mapping (Analytics Manager)
+## 3. Metric Registry Mapping (Analytics Manager)
 
 | Metric ID | Layer | Cloudflare-style Resolution |
 | :--- | :--- | :--- |

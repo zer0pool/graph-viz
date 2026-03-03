@@ -39,7 +39,7 @@ export const config = {
   OIDC_USERINFO_ENDPOINT:
     (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
 
-  DEBUG: (import.meta as any).env.DEV === true,
+  DEBUG: process.env.NODE_ENV !== "production",
 };
 
 // Log configuration for debugging

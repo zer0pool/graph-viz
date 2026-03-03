@@ -64,10 +64,18 @@ class BigQueryClient:
         query = f"""
             SELECT
                 job_id,
-                start_date AS execution_time,
-                dag_run_id
+                dag_id,
+                destination,
+                issuer,
+                cron_schedule,
+                period,
+                date,
+                hour,
+                start_time AS execution_time,
+                next_start_time,
+                publish_time
             FROM `{table}`
-            ORDER BY start_date DESC
+            ORDER BY start_time DESC
             LIMIT {limit}
         """
         logger.info(f"Fetching recent job runs from BigQuery table: {table}")

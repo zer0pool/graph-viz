@@ -21,6 +21,16 @@ class DataNodeRepository:
             return None
         return self._to_entity(model, model.data_info.get("project", "unknown"))
 
+    async def search_by_prefix(self, prefix: str, limit: int = 10) -> List[ResourceMetadata]:
+        query = (
+            select(DataNode)
+            .where(DataNode.data_id.ilike(f"%{prefix}%"))
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        models = result.scalars().all()
+        return [self._to_entity(m, m.data_info.get("project", "unknown")) for m in models]
+
     async def save(self, entity: ResourceMetadata) -> ResourceMetadata:
         # 1. Ensure GraphNode exists
         # Use data_type.lower() as the node_type (e.g. 'table', 'storage')

@@ -83,7 +83,7 @@ export interface LandingPageData {
 const PAGE_METRIC_MAPPING: Record<string, { top: string[], analytics: string[] }> = {
   OVERVIEW: {
     top: ["total_jobs", "active_users", "total_tables", "system_health", "failed_24h"],
-    analytics: ["top_visited_pages"]
+    analytics: []
   },
   JOBS: {
     top: ["total_jobs", "running_now", "failed_24h", "avg_duration", "queued_jobs"],

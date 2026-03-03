@@ -164,12 +164,12 @@ function MetricCard({ data }: { data: MetricData | any }) {
     <Card className={`group relative overflow-hidden border-slate-200/60 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 bg-gradient-to-br ${getGradient(data.type)}`}>
       <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center justify-between">
-          <CardDescription className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-500/80">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-500/80">
             <div className={`p-1.5 rounded-lg bg-white border border-slate-100 shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3`}>
               <Icon className={`h-3.5 w-3.5 ${config.color}`} />
             </div>
             {data.label || config.label}
-          </CardDescription>
+          </div>
           
           {data.breakdown && (
             <MetricPie data={data.breakdown} />
