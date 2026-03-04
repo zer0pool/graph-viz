@@ -75,4 +75,5 @@ docker exec analytics-api ls /root/.config/gcloud/application_default_credential
   ```bash
   docker compose up -d --force-recreate shell lineage-api analytics-api
   ```
+
 - **Check for port conflicts**: Ensure ports 5100, 5004, and 5003 are not being used by other processes on the host.

@@ -20,7 +20,7 @@ dev:
 # Run the app in production mode
 run:
 	$(MAKE) kill
-	PYTHONPATH=.. $(VENV)/bin/python -m uvicorn lineage_manager.main:app --reload --host 0.0.0.0 --port $(PORT)
+	PYTHONPATH=. $(VENV)/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port $(PORT)
 
 kill:
 	@echo "Killing process on port $(PORT)..."
