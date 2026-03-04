@@ -25,7 +25,7 @@ docker exec shell env | grep _UPSTREAM
 docker exec shell env | grep BACKEND_HOST
 ```
 - `BACKEND_HOST` should be `http://lineage-api:5003`
-- `ANALYTICS_MANAGER_UPSTREAM` should be `http://analytics-api:5002`
+- `ANALYTICS_MANAGER_UPSTREAM` should be `http://analytics-api:5004`
 
 ### Nginx Resolver
 If Nginx cannot resolve the service names (e.g., `lineage-api`), it will return a 502.
