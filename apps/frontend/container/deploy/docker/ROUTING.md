@@ -30,7 +30,7 @@ Nginx Processing:
 - `/lineage-manager/api/v1/projects` - Project management
 - `/lineage-manager/api/v1/lineage/*` - Lineage queries
 
-### 2. Analytics Manager Backend (Port 5002)
+### 2. Analytics Manager Backend (Port 5004)
 
 **Pattern:** `/analytics-manager/*`
 
@@ -43,7 +43,7 @@ http://localhost:5100/admin-console/analytics-manager/api/v1/analytics/top-visit
 Nginx Processing:
 1. Matches: ^(/admin-console)?/analytics-manager/
 2. Rewrites: /admin-console/analytics-manager/api/v1/analytics/top-visited → /analytics-manager/api/v1/analytics/top-visited
-3. Proxies to: http://localhost:5002/analytics-manager/api/v1/analytics/top-visited
+3. Proxies to: http://localhost:5004/analytics-manager/api/v1/analytics/top-visited
 ```
 
 **Endpoints:**
@@ -94,7 +94,7 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
 | ----------------- | ---- | -------------------- |
 | Frontend (Nginx)  | 5100 | `/admin-console`     |
 | Lineage Manager   | 5003 | `/lineage-manager`   |
-| Analytics Manager | 5002 | `/analytics-manager` |
+| Analytics Manager | 5004 | `/analytics-manager` |
 
 ## Request Flow Example
 
@@ -126,7 +126,7 @@ http://localhost:5003/{service-name}/api/v1/{resource}  (Direct to backend)
    - Strips: /admin-console
    - Keeps: /analytics-manager/api/v1/analytics/top-visited
 
-3. Backend (Port 5002)
+3. Backend (Port 5004)
    - Receives: /analytics-manager/api/v1/analytics/top-visited
    - FastAPI routes with prefix: /analytics-manager/api/v1
    - Handles: /analytics/top-visited endpoint
@@ -163,7 +163,7 @@ curl http://localhost:5100/admin-console/analytics-manager/api/v1/health
 
 # Direct backend access (bypass nginx)
 curl http://localhost:5003/lineage-manager/api/v1/health
-curl http://localhost:5002/analytics-manager/api/v1/health
+curl http://localhost:5004/analytics-manager/api/v1/health
 ```
 
 ## Configuration Files

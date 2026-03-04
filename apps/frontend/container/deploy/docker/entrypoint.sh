@@ -42,7 +42,7 @@ fi
 # Set specific service upstreams (Defaults to Host-Development friendly host.docker.internal)
 # This allows using 'make dev' on host while frontend is in docker.
 export LINEAGE_MANAGER_UPSTREAM="${LINEAGE_MANAGER_UPSTREAM:-$BACKEND_HOST}"
-export ANALYTICS_MANAGER_UPSTREAM="${ANALYTICS_MANAGER_UPSTREAM:-http://analytics-manager-api:5002}"
+export ANALYTICS_MANAGER_UPSTREAM="${ANALYTICS_MANAGER_UPSTREAM:-http://analytics-manager-api:5004}"
 
 echo "[Shell] Config Summary:"
 echo " - BASE_URL: ${BASE_URL}"

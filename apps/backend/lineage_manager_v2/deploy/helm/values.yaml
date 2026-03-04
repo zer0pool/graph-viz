@@ -70,7 +70,7 @@ env:
   # App Settings
   ENV_STATE: "dev"
   LOG_LEVEL: "INFO"  
-  ANALYTICS_HOST: "http://analytics-manager:5002"
+  ANALYTICS_HOST: "http://analytics-manager:5004"
 
   # Redis Settings
   REDIS_ENABLED: "true"

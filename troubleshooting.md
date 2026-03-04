@@ -25,7 +25,7 @@ docker exec shell env | grep _UPSTREAM
 docker exec shell env | grep BACKEND_HOST
 ```
 - `BACKEND_HOST` should be `http://lineage-api:5003`
-- `ANALYTICS_MANAGER_UPSTREAM` should be `http://analytics-api:5002`
+- `ANALYTICS_MANAGER_UPSTREAM` should be `http://analytics-api:5004`
 
 ### Nginx Resolver
 If Nginx cannot resolve the service names (e.g., `lineage-api`), it will return a 502.
@@ -75,4 +75,4 @@ docker exec analytics-api ls /root/.config/gcloud/application_default_credential
   ```bash
   docker compose up -d --force-recreate shell lineage-api analytics-api
   ```
-- **Check for port conflicts**: Ensure ports 5100, 5002, and 5003 are not being used by other processes on the host.
+- **Check for port conflicts**: Ensure ports 5100, 5004, and 5003 are not being used by other processes on the host.

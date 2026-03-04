@@ -33,7 +33,7 @@ COPY . .
 
 # Environment variables
 ENV PYTHONPATH=/app
-ENV PORT=5002
+ENV PORT=5004
 
 # Entrypoint
 COPY deploy/docker/entrypoint.sh /entrypoint.sh
