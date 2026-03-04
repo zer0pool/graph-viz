@@ -41,7 +41,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ onSelectSuggestion, onSear
 
     try {
       const response = await fetch(
-        `${config.API_BASE_URL}/api/v1/search?q=${encodeURIComponent(query)}`
+        `${config.API_BASE_URL}/lineage-manager/api/v1/search?q=${encodeURIComponent(query)}`
       );
 
       if (!response.ok) {

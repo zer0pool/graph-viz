@@ -50,7 +50,7 @@ export class ApiClient {
   // --- Job Endpoints ---
 
   async fetchJobDetail(jobId: string): Promise<JobDetail> {
-    return this.request<JobDetail>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
+    return this.request<JobDetail>(`/lineage-manager/api/v1/jobs/${encodeURIComponent(jobId)}`);
   }
 
   async fetchJobs(limit: number = 20, offset: number = 0): Promise<PaginatedResponse<Job>> {
@@ -58,22 +58,22 @@ export class ApiClient {
       limit: String(limit),
       offset: String(offset),
     });
-    return this.request<PaginatedResponse<Job>>(`/api/v1/jobs?${params.toString()}`);
+    return this.request<PaginatedResponse<Job>>(`/lineage-manager/api/v1/jobs?${params.toString()}`);
   }
 
   async fetchJobRunHistory(jobId: string): Promise<JobRunHistoryResponse> {
     return this.request<JobRunHistoryResponse>(
-      `/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`
+      `/lineage-manager/api/v1/jobs/${encodeURIComponent(jobId)}/run-history`
     );
   }
 
   async fetchJobHealth(jobId: string): Promise<JobHealthResponse> {
-    return this.request<JobHealthResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}/health`);
+    return this.request<JobHealthResponse>(`/lineage-manager/api/v1/jobs/${encodeURIComponent(jobId)}/health`);
   }
 
   async fetchJobLineageHybrid(jobId: string): Promise<JobLineageHybridResponse> {
     return this.request<JobLineageHybridResponse>(
-      `/api/v1/jobs/${encodeURIComponent(jobId)}/lineage`
+      `/lineage-manager/api/v1/jobs/${encodeURIComponent(jobId)}/lineage`
     );
   }
 
@@ -87,22 +87,22 @@ export class ApiClient {
       offset: String(offset),
     });
     return this.request<PaginatedResponse<Job>>(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/jobs?${params.toString()}`
+      `/lineage-manager/api/v1/projects/${encodeURIComponent(projectId)}/jobs?${params.toString()}`
     );
   }
 
   async fetchProjectDetail(projectId: string): Promise<any> {
-    return this.request<any>(`/api/v1/projects/${encodeURIComponent(projectId)}`);
+    return this.request<any>(`/lineage-manager/api/v1/projects/${encodeURIComponent(projectId)}`);
   }
 
   async fetchProjectUsers(projectId: string): Promise<any> {
-    return this.request<any>(`/api/v1/projects/${encodeURIComponent(projectId)}/users`);
+    return this.request<any>(`/lineage-manager/api/v1/projects/${encodeURIComponent(projectId)}/users`);
   }
 
   // --- Table Endpoints ---
 
   async fetchTableDetail(tableName: string): Promise<TableDetail> {
-    const raw = await this.request<any>(`/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
+    const raw = await this.request<any>(`/lineage-manager/api/v1/tables/${encodeURIComponent(tableName)}/detail`);
 
     // Map Backend Response to Frontend Interface
     return {
@@ -127,14 +127,14 @@ export class ApiClient {
 
   async fetchTableSchema(tableName: string): Promise<TableSchemaResponse> {
     return this.request<TableSchemaResponse>(
-      `/api/v1/tables/${encodeURIComponent(tableName)}/schema`
+      `/lineage-manager/api/v1/tables/${encodeURIComponent(tableName)}/schema`
     );
   }
 
   async fetchTableTimeliness(tableName: string, days: number = 7): Promise<any> {
     const params = new URLSearchParams({ days: String(days) });
     return this.request<any>(
-      `/api/v1/tables/${encodeURIComponent(tableName)}/timelines?${params.toString()}`
+      `/lineage-manager/api/v1/tables/${encodeURIComponent(tableName)}/timelines?${params.toString()}`
     );
   }
 
@@ -147,7 +147,7 @@ export class ApiClient {
     if (options.maxLeaves) params.set("max_leaves", String(options.maxLeaves));
 
     const queryString = params.toString();
-    const url = `/api/v1/tables/${encodeURIComponent(
+    const url = `/lineage-manager/api/v1/tables/${encodeURIComponent(
       tableName
     )}/lineage-summary${queryString ? `?${queryString}` : ""}`;
     return this.request(url);
@@ -159,7 +159,7 @@ export class ApiClient {
       offset: String(offset),
     });
     // Returning any here because table response structure is more complex currently
-    return this.request<any>(`/api/v1/tables?${params.toString()}`);
+    return this.request<any>(`/lineage-manager/api/v1/tables?${params.toString()}`);
   }
 
   async fetchOverviewSummary(): Promise<SummaryMetricsResponse> {

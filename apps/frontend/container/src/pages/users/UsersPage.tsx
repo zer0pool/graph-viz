@@ -98,7 +98,7 @@ export function UsersPage() {
 
       const offset = (page - 1) * pageSize;
       const qParam = query ? `&q=${encodeURIComponent(query)}` : "";
-      const url = `${config.API_BASE_URL}/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
+      const url = `${config.API_BASE_URL}/lineage-manager/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
 
       const response = await fetch(url, {
         signal: controller.signal,

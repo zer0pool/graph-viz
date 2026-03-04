@@ -36,7 +36,7 @@ class Query:
     @strawberry.field(description="Retrieve a list of metrics by their IDs.")
     async def metrics(self, info: Info, ids: List[str]) -> List[MetricGroups]:
         container = _get_container(info)
-        analytics_service: AnalyticsService = container.analytics_service()
+        analytics_service: AnalyticsService = await container.analytics_service()
         return await analytics_service.get_metrics_by_ids(ids)
 
     # -------------------------------------------------------------------------
@@ -52,7 +52,7 @@ class Query:
         filter: Optional[JobFilter] = None,
     ) -> JobConnection:
         container = _get_container(info)
-        job_service: JobExplorerService = container.job_explorer_service()
+        job_service: JobExplorerService = await container.job_explorer_service()
         job_runs = await job_service.get_recent_job_runs()
 
         if filter:
@@ -133,7 +133,7 @@ class Query:
         filter: Optional[JobRunFilter] = None,
     ) -> RecentJobRunsResponse:
         container = _get_container(info)
-        job_service: JobExplorerService = container.job_explorer_service()
+        job_service: JobExplorerService = await container.job_explorer_service()
 
         # Fetch full (up to 100) list for facet calculation
         all_runs = await job_service.get_recent_job_runs(limit=100, refresh=refresh)
@@ -288,7 +288,7 @@ class Query:
     )
     async def job_stats(self, info: Info) -> JobAggregation:
         container = _get_container(info)
-        analytics_service: AnalyticsService = container.analytics_service()
+        analytics_service: AnalyticsService = await container.analytics_service()
         return await analytics_service.get_job_aggregation_stats()
 
 

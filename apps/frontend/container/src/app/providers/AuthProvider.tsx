@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const meUrl = `${config.API_BASE_URL}/api/v1/auth/me`;
+      const meUrl = `${config.API_BASE_URL}/lineage-manager/api/v1/auth/me`;
       console.debug("[Auth] Fetching session status from:", meUrl);
 
       try {
@@ -55,13 +55,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(async () => {
     console.info("[Auth] Redirecting to BFF Login Flow...");
-    window.location.href = `${config.API_BASE_URL}/api/v1/auth/login`;
+    window.location.href = `${config.API_BASE_URL}/lineage-manager/api/v1/auth/login`;
   }, []);
 
   const logout = useCallback(async () => {
     console.info("[Auth] Logging out (BFF)...");
     try {
-      await fetch(`${config.API_BASE_URL}/api/v1/auth/logout`, { method: "POST" });
+      await fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/auth/logout`, { method: "POST" });
     } catch (e) {
       console.error("[Auth] Logout cleanup failed", e);
     } finally {
