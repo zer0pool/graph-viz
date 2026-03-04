@@ -54,7 +54,7 @@ POST   /lineage-manager/api/v1/projects/
 POST   /lineage-manager/api/v1/resources/
 ```
 
-### **Analytics Manager (Port 5002)**
+### **Analytics Manager (Port 5004)**
 
 Currently: **NOT IMPLEMENTED** (no backend service exists yet)
 
@@ -122,7 +122,7 @@ Currently: **NOT IMPLEMENTED** (no backend service exists yet)
 
 ## 🎯 Service Responsibility Assignment
 
-### **Analytics Manager** (Port 5002) - **RECOMMENDED**
+### **Analytics Manager** (Port 5004) - **RECOMMENDED**
 
 Both missing APIs should be implemented in a **new Analytics Manager service**:
 
@@ -150,7 +150,7 @@ Both missing APIs should be implemented in a **new Analytics Manager service**:
 #### **Endpoints to Implement:**
 
 ```
-Analytics Manager (Port 5002):
+Analytics Manager (Port 5004):
 ├── GET  /analytics-manager/api/v1/health
 ├── GET  /analytics-manager/api/v1/analytics/dashboard-metrics
 ├── GET  /analytics-manager/api/v1/analytics/top-visited
@@ -255,12 +255,12 @@ LIMIT 5;
    cd apps/backend
    cp -r lineage_manager_v2 metrics_manager
    cd metrics_manager
-   # Update port to 5002
+   # Update port to 5004
    # Update service name in config
    ```
 
 2. **Update Configuration**
-   - Port: 5002
+   - Port: 5004
    - API Prefix: `/analytics-manager/api/v1`
    - Database: Share with lineage_manager or use separate analytics DB
 
@@ -304,7 +304,7 @@ LIMIT 5;
    ```
 
 2. **Test with Webpack Proxy**
-   - Already configured to route `/analytics-manager` to port 5002
+   - Already configured to route `/analytics-manager` to port 5004
 
 ### **Phase 3: Add Visit Tracking**
 
@@ -341,7 +341,7 @@ LIMIT 5;
 
 ## 🎯 Final Recommendation
 
-**Create a dedicated Analytics Manager service (Port 5002)** for the following reasons:
+**Create a dedicated Analytics Manager service (Port 5004)** for the following reasons:
 
 1. ✅ Clean separation of concerns
 2. ✅ Independent scalability
@@ -351,5 +351,5 @@ LIMIT 5;
 
 This approach aligns with your existing architecture where you have:
 - **Lineage Manager** (5003): Core data catalog and lineage
-- **Analytics Manager** (5002): Analytics and usage tracking
+- **Analytics Manager** (5004): Analytics and usage tracking
 - **Frontend** (5100): User interface orchestration
