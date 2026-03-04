@@ -8,6 +8,26 @@ from app.core.config import settings
 from app.core.container import Container
 
 
+class DynamicRootPathMiddleware:
+    """
+    Middleware that dynamically sets the ASGI 'root_path' based on the 
+    'X-Forwarded-Prefix' header provided by a reverse proxy (like Nginx).
+    
+    This allows the application to serve Swagger UI and correct OpenAPI URLs
+    both when accessed directly (e.g., localhost:5004/docs) and when accessed 
+    through a proxy with a subpath (e.g., /admin-console/analytics-manager/docs).
+    """
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            if b"x-forwarded-prefix" in headers:
+                scope["root_path"] = headers[b"x-forwarded-prefix"].decode()
+        return await self.app(scope, receive, send)
+
+
 def create_app() -> FastAPI:
     container = Container()
 
@@ -25,6 +45,8 @@ def create_app() -> FastAPI:
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         lifespan=lifespan,
     )
+
+    app.add_middleware(DynamicRootPathMiddleware)
 
     # Wire container (DI)
     container.wire(modules=[health, analytics, metrics])

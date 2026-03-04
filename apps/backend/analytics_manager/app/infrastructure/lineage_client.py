@@ -27,7 +27,7 @@ class LineageClient:
         if not job_ids:
             return {}
 
-        url = f"{self.base_url}/lineage-manager/api/v1/jobs/batch"
+        url = f"{self.base_url}/api/v1/jobs/batch"
         payload = {"job_ids": job_ids}
 
         try:
@@ -49,7 +49,7 @@ class LineageClient:
         """
         Calls GET /lineage-manager/api/v1/internal/stats on lineage-manager-v2.
         """
-        url = f"{self.base_url}/lineage-manager/api/v1/internal/stats"
+        url = f"{self.base_url}/api/v1/internal/stats"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url)

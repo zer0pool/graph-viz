@@ -7,6 +7,26 @@ from app.core.config import settings
 from app.core.container import Container
 
 
+class DynamicRootPathMiddleware:
+    """
+    Middleware that dynamically sets the ASGI 'root_path' based on the 
+    'X-Forwarded-Prefix' header provided by a reverse proxy (like Nginx).
+    
+    This allows the application to serve Swagger UI and correct OpenAPI URLs
+    both when accessed directly (e.g., localhost:5003/docs) and when accessed 
+    through a proxy with a subpath (e.g., /admin-console/lineage-manager/docs).
+    """
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            if b"x-forwarded-prefix" in headers:
+                scope["root_path"] = headers[b"x-forwarded-prefix"].decode()
+        return await self.app(scope, receive, send)
+
+
 def create_app() -> FastAPI:
     container = Container()
     api_prefix = settings.API_V1_STR
@@ -18,6 +38,8 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         openapi_url=f"{api_prefix}/openapi.json",
     )
+
+    app.add_middleware(DynamicRootPathMiddleware)
 
     # Middleware
     if settings.BACKEND_CORS_ORIGINS:
