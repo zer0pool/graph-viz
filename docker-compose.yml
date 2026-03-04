@@ -83,6 +83,7 @@ services:
     environment:
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
+      - ROOT_PATH=/admin-console/analytics-manager
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
     volumes:
       - ~/.config/gcloud:/root/.config/gcloud:ro

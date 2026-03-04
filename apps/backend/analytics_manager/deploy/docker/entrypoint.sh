@@ -45,7 +45,7 @@ case "$CMD" in
     backend)
         echo "Starting Analytics Manager..."
         wait_for_lineage
-        exec uvicorn app.main:app --host 0.0.0.0 --port 5004 --workers 1
+        exec uvicorn app.main:app --host 0.0.0.0 --port 5004 --workers 1 --root-path "${ROOT_PATH:-}"
         ;;
     *)
         echo >&2 "Error: Invalid command '$CMD'"

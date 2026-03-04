@@ -23,8 +23,6 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        root_path="/admin-console/analytics-manager",
-        servers=[{"url": "/admin-console/analytics-manager", "description": "Proxy Server"}],
         lifespan=lifespan,
     )
 
