@@ -166,7 +166,7 @@ server {
         error_log /var/log/nginx/oidc_error.log;
 
         # Proxy to backend /api/v1/auth/authorized
-        proxy_pass $BACKEND_HOST/api/v1/auth/authorized;
+        proxy_pass $BACKEND_HOST/lineage-manager/api/v1/auth/authorized;
         
         # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
         # This ensures backend redirects use the correct external domain

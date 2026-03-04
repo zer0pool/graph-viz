@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gizmopool",
+  "private_key_id": "f247069063e043ab72517b01b2231ece071906d1",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDBO7/5INa0LVRI\n1ZkFwJe0yhW/yC/f3rxxm5O8F18iw7jQctVbo0ag4iZ2AjC/5dy2N6Hb+WzMkhDa\nCPinOJjTU9fNWOBuV3f4J9KuYabHbkc7Kxy/OMOzQwW81rze9FV94bbRrBFPLqls\n4ZfCA2GJi/dlKZG9nDw/NX6hAszizdIn0qiJ3KlzojqTfI37eAP9LuW3/8NHM0PD\n9RNzdfLaZ+Y4nfvLp3gXWqBxmtz6eSfn7n1KltgzJcN3HI5zDmBBoRDJcM4+mhnb\nrcGqAFD261FwZAH647vQ48mlmETRdbiZPY3Vtyui82CRgIh9aoYfSJukmczz6XlD\nK9a01XFZAgMBAAECggEACXu9llQToXRbj3cHK2p6L43e7yJ7ogKwECnM4HVrrny5\nTmaiXLzYx6bNsSs2mgZllH5Kt+1n9urAv7iivm83ReDWpZ3z5sptaX0H2JXTjfRW\nM9vP7X0TUrIKfyvxSUZnxzWrh6MIlvCg8UZpkKSilfHr9neprsrzBH2jPTLyW/uc\n3Lzh9Fu0dN8tyK0UVLCwJYLQtBfiJ02FN+/ddESmdnBcMWvgxKKfYcmFcyLYMCJG\nL/OW9J20yuCrqcr2Kh6fkpvRgbqLM9EAtq4tWxsaug6jPaD45Avi06R28vOd6caX\nS5eb9mh1zwM8Nwfb7Q7/RdCLBq1v1KWvTxhtfSAjQQKBgQDf4phN5Sjp0p4gorSh\neCBAo8GQg2byHnl9NWxX140CIiquFAMxs94iUypGodkVZf5xfoc9WiZ3Sod/4PwF\nt40Rx7a6wMQV+tSx0mVLuGbzfvTPEXIL4YkYP3HCoE9xYDESEFmHGKDhHt5yU7Gk\nEp0DRkcX+uUZU4uetqkmdZ1JQQKBgQDc85OAo8EVyrtSQQVy0HJet+WPeX9WcTDi\naFzdtDKBYd2EuoMJK0kR67bfnUB5sLfGPh9lF7cN4HkNGSL+s8gWxdDRQnHtGHdf\nkKETCYehFvNAiVTLREhAz6x2Cgt7DahVsZmc2+peVjFtNd9zc6xshuaa0Rjl9k48\ntESjpazKGQKBgQCh2PxDa4NdLV4Ut6qfA+lE8VzP7L4yD+fBpSoygme0gCCcgWkh\nuCbAZ6CrOPtm5bnAMDjyGEawfBdiUbG/LEb18ItfjFT0ksTJ3BBQYflC06eEPddV\nUXC7L7o8eYmUq3Yt2dXuvNYoiBlFSs2jj7UkFdz1L/IIkgXf8apsXCAdQQKBgQC6\n4U4GBPtAOku744D/Pm0tze7dLk9UxsIpDUpWvp3lLuhU5ggEzlasUKlJc1DgXGbj\nxxF4yNksZIseV/9wXJFFKaVYCRIhDouRCdwjJPFRf/7YvA87KZLPNpfQ8ugI+WFC\nsceSk7MkfVSq4WEQ3mqdFHChy296uZws3fAcVfnSqQKBgQDSW2VpPkiQgMxo2HEm\noeF5ja7g40oJndBCZJAuwQ2Nj2mMHDoN0YPvNja4eX1hCCFNrIFzcDAmVM6O9tXw\n70NB/ahxIyBabnrEIKdeejiaFbzW7xBKbX3JTwCS9Dwj1JMWLXnF5Tfn99B1Iw5E\nAIPYvzEe/4sUw8HN7K9/beNYfw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "lineage-manager@gizmopool.iam.gserviceaccount.com",
+  "client_id": "117096744289461951970",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lineage-manager%40gizmopool.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

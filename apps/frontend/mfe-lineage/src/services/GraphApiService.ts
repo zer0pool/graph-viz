@@ -20,7 +20,7 @@ export class GraphApiService {
       params.append("direction", direction);
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/lineage/graph?${params.toString()}`, {
+    const response = await fetch(`${API_BASE_URL}/lineage-manager/api/v1/lineage/graph?${params.toString()}`, {
       signal,
     });
 
@@ -36,7 +36,7 @@ export class GraphApiService {
     const cleanTableName = tableName.startsWith("table:") ? tableName.substring(6) : tableName;
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/tables/${encodeURIComponent(cleanTableName)}/hierarchy`
+      `${API_BASE_URL}/lineage-manager/api/v1/tables/${encodeURIComponent(cleanTableName)}/hierarchy`
     );
 
     if (!response.ok) {
@@ -50,7 +50,7 @@ export class GraphApiService {
   static async fetchBatchDetails(nodeIds: string[]): Promise<any> {
     if (!nodeIds || nodeIds.length === 0) return { status: "success", results: {} };
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/lineage/batch-details`, {
+    const response = await fetch(`${API_BASE_URL}/lineage-manager/api/v1/lineage/batch-details`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

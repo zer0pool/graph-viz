@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 
@@ -10,6 +11,12 @@ from app.core.container import Container
 def create_app() -> FastAPI:
     container = Container()
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        await container.init_resources()
+        yield
+        await container.shutdown_resources()
+
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="1.0.0",
@@ -18,6 +25,7 @@ def create_app() -> FastAPI:
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         root_path="/admin-console",
         servers=[{"url": "/admin-console", "description": "Proxy Server"}],
+        lifespan=lifespan,
     )
 
     # Wire container (DI)
