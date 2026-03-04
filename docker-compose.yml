@@ -84,6 +84,7 @@ services:
     environment:
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
+      - LINEAGE_MANAGER_V2_URL=http://lineage-api:5003
       - ROOT_PATH=/admin-console/analytics-manager
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
     volumes:
