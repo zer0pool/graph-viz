@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Lineage Manager V2"
-    API_V1_STR: str = "/lineage-manager/api/v1"
+    API_V1_STR: str = "/api/v1"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     @property
     def REDIS_URL(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    # OIDC Authentication
+    OIDC_ISSUER_URL: str = "https://accounts.google.com"
+    OIDC_CLIENT_ID: str = ""
+    OIDC_CLIENT_SECRET: str = ""
+    OIDC_REDIRECT_URI: str = "http://localhost:5003/api/v1/auth/authorized"
+    OIDC_AUDIENCE: Optional[str] = None
+    OIDC_JWKS_CACHE_SECONDS: int = 3600
+    OIDC_SCOPES: List[str] = ["openid", "email", "profile"]
 
     # Application Settings
     LOG_LEVEL: str = "INFO"

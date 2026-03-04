@@ -34,3 +34,30 @@ class EdgeSchema(BaseModel):
 class GraphResponse(BaseModel):
     nodes: List[NodeSchema]
     edges: List[EdgeSchema]
+
+
+class MermaidNode(BaseModel):
+    id: str
+    type: str
+    label: str
+    properties: Dict[str, Any] = {}
+
+
+class MermaidEdge(BaseModel):
+    id: int
+    source: str
+    target: str
+    type: str
+    properties: Dict[str, Any] = {}
+
+
+class MermaidMetadata(BaseModel):
+    total_nodes: int
+    depth: int
+    truncated: bool
+
+
+class MermaidGraphResponse(BaseModel):
+    nodes: List[MermaidNode]
+    edges: List[MermaidEdge]
+    metadata: MermaidMetadata
