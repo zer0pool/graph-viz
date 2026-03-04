@@ -40,6 +40,7 @@ services:
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
       - JOB_MANAGER_URL=http://job-dummy:9000
+      - ROOT_PATH=/admin-console/lineage-manager
     depends_on:
       - mysql-db
       - redis-cache
