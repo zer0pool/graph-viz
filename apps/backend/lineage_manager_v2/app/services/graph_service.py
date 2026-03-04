@@ -1,6 +1,5 @@
 from collections import deque
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from sqlalchemy import select
 
@@ -10,6 +9,7 @@ from app.domain.metadata.entities.resource import ResourceMetadata
 from app.domain.project.entities import Project
 from app.domain.user.entities import User
 from app.infrastructure.external.job_manager_client import JobManagerClient
+from app.infrastructure.models import GraphEdge, GraphNode
 from app.infrastructure.unit_of_work import UnitOfWork
 
 
@@ -247,7 +247,7 @@ class GraphService:
             if not center_id:
                 return {"status": "error", "message": f"Table {table_name} not found"}
 
-            # Standard BFS for hierarchy
+            # BFS traversal for upstream and downstream hierarchy
             upstream = await self._bfs_hierarchy(center_id, table_name, "upstream", max_depth)
             downstream = await self._bfs_hierarchy(center_id, table_name, "downstream", max_depth)
 
@@ -263,59 +263,58 @@ class GraphService:
                 "status": "success",
                 "upstream": [center_node] + upstream,
                 "downstream": [center_node] + downstream,
-                "root_nodes": [n["id"] for n in upstream if n["depth"] == max_depth] or [], # Simplified
-                "leaf_nodes": [n["id"] for n in downstream if n["depth"] == max_depth] or []
+                "root_nodes": [n["id"] for n in upstream if n["depth"] == max_depth],
+                "leaf_nodes": [n["id"] for n in downstream if n["depth"] == max_depth],
             }
 
-    async def _bfs_hierarchy(self, start_id: int, start_name: str, direction: str, max_depth: int) -> List[Dict]:
-        items = []
+    async def _bfs_hierarchy(
+        self, start_id: int, start_name: str, direction: str, max_depth: int
+    ) -> List[Dict]:
+        """
+        BFS over graph edges to build the lineage hierarchy for the List View.
+        Uses the already-open UoW graph repository — must be called inside an
+        `async with self.uow` block.
+        """
+        items: List[Dict] = []
         visited = {start_id}
         queue = deque([(start_id, start_name, 0, None)])
+
+        edge_table = GraphEdge
+        node_table = GraphNode
 
         while queue:
             curr_id, curr_name, depth, parent_name = queue.popleft()
             if depth >= max_depth:
                 continue
 
-            # Fetch neighbors via repository
-            # Since V2 repos don't have direct neighbors BFS, we use edges
-            async with self.uow:
-                # This is a bit inefficient, but works for hierarchy
-                if direction == "upstream":
-                    # Find ancestors
-                    query = select(self.uow.graph.db.base.metadata.tables["graph_edge"]).where(
-                        self.uow.graph.db.base.metadata.tables["graph_edge"].c.target_node_id == curr_id
-                    )
-                else:
-                    # Find descendants
-                    query = select(self.uow.graph.db.base.metadata.tables["graph_edge"]).where(
-                        self.uow.graph.db.base.metadata.tables["graph_edge"].c.source_node_id == curr_id
-                    )
-                
-                res = await self.uow.graph.db.execute(query)
-                edges = res.fetchall()
+            if direction == "upstream":
+                where = edge_table.target_node_id == curr_id
+            else:
+                where = edge_table.source_node_id == curr_id
 
-                for edge in edges:
-                    neighbor_id = edge.source_node_id if direction == "upstream" else edge.target_node_id
-                    if neighbor_id not in visited:
-                        visited.add(neighbor_id)
-                        # Fetch neighbor details
-                        n_res = await self.uow.graph.db.execute(
-                            select(self.uow.graph.db.base.metadata.tables["graph_node"]).where(
-                                self.uow.graph.db.base.metadata.tables["graph_node"].c.id == neighbor_id
-                            )
-                        )
-                        neighbor = n_res.fetchone()
-                        if neighbor:
-                            name = neighbor.name
-                            items.append({
-                                "id": name,
-                                "name": name.split(".")[-1] if "." in name else name,
-                                "type": neighbor.node_type,
-                                "depth": depth + 1,
-                                "parent": curr_name
-                            })
-                            queue.append((neighbor_id, name, depth + 1, curr_name))
+            res = await self.uow.graph.db.execute(select(edge_table).where(where))
+            for edge in res.scalars().all():
+                neighbor_id = (
+                    edge.source_node_id if direction == "upstream" else edge.target_node_id
+                )
+                if neighbor_id in visited:
+                    continue
+                visited.add(neighbor_id)
+
+                n_res = await self.uow.graph.db.execute(
+                    select(node_table).where(node_table.id == neighbor_id)
+                )
+                neighbor = n_res.scalar_one_or_none()
+                if neighbor:
+                    name = neighbor.name
+                    items.append({
+                        "id": name,
+                        "name": name.split(".")[-1] if "." in name else name,
+                        "type": neighbor.node_type,
+                        "depth": depth + 1,
+                        "parent": curr_name,
+                    })
+                    queue.append((neighbor_id, name, depth + 1, curr_name))
         return items
 
     async def get_nodes_batch_details(self, node_ids: List[str]) -> Dict[str, Any]:
