@@ -17,10 +17,10 @@ proxy: [
     target: "http://localhost:5003",
     pathRewrite: { "^/admin-console": "" },
   },
-  // Analytics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5004)
   {
     context: ["/admin-console/analytics-manager"],
-    target: "http://localhost:5002",
+    target: "http://localhost:5004",
     pathRewrite: { "^/admin-console": "" },
   },
   // Legacy API fallback
@@ -44,10 +44,10 @@ proxy: [
     context: ["/lineage-manager"],
     target: "http://127.0.0.1:5003",
   },
-  // Analytics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5004)
   {
     context: ["/analytics-manager"],
-    target: "http://127.0.0.1:5002",
+    target: "http://127.0.0.1:5004",
   },
   // Legacy API fallback
   {
@@ -70,10 +70,10 @@ proxy: [
     target: "http://127.0.0.1:5003",
     pathRewrite: { "^/admin-console": "" },
   },
-  // Analytics Manager Backend (Port 5002)
+  // Analytics Manager Backend (Port 5004)
   {
     context: ["/admin-console/analytics-manager", "/analytics-manager"],
-    target: "http://127.0.0.1:5002",
+    target: "http://127.0.0.1:5004",
     pathRewrite: { "^/admin-console": "" },
   },
   // Legacy API fallback

@@ -24,7 +24,7 @@ spec:
           args: ["backend"]
           ports:
             - name: http
-              containerPort: 5002
+              containerPort: 5004
               protocol: TCP
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}

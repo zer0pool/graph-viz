@@ -37,7 +37,7 @@ module.exports = {
         secure: false,
         logLevel: "debug",
       },
-      // Analytics Manager Backend (Port 5002)
+      // Analytics Manager Backend (Port 5004)
       {
         context: ["/admin-console/analytics-manager", "/analytics-manager"],
         target: "http://host.docker.internal:5004",

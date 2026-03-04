@@ -14,13 +14,13 @@ namespace: "self-scheduling-dev1"
 
 service:
   type: NodePort
-  port: 5002
-  targetPort: 5002
+  port: 5004
+  targetPort: 5004
 
 livenessProbe:
   httpGet:
     path: /analytics-manager/api/v1/health
-    port: 5002
+    port: 5004
   initialDelaySeconds: 30
   periodSeconds: 10
   failureThreshold: 10
@@ -30,7 +30,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /analytics-manager/api/v1/health
-    port: 5002
+    port: 5004
   initialDelaySeconds: 30
   periodSeconds: 10
   failureThreshold: 10
