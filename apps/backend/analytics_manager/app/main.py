@@ -20,11 +20,11 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="1.0.0",
-        docs_url="/analytics-manager/docs",
-        redoc_url="/analytics-manager/redoc",
+        docs_url="/docs",
+        redoc_url="/redoc",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        root_path="/admin-console",
-        servers=[{"url": "/admin-console", "description": "Proxy Server"}],
+        root_path="/admin-console/analytics-manager",
+        servers=[{"url": "/admin-console/analytics-manager", "description": "Proxy Server"}],
         lifespan=lifespan,
     )
 
@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
 
     graphql_router = GraphQLRouter(schema, graphql_ide="apollo-sandbox", context_getter=get_context)  # type: ignore
     app.include_router(
-        graphql_router, prefix="/analytics-manager/graphql", tags=["GraphQL"]
+        graphql_router, prefix="/graphql", tags=["GraphQL"]
     )
 
     @app.get("/")

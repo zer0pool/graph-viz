@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
 from app.core.container import Container
@@ -16,8 +17,8 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{api_prefix}/openapi.json",
-        root_path="/admin-console",
-        servers=[{"url": "/admin-console", "description": "Proxy Server"}],
+        root_path="/admin-console/lineage-manager",
+        servers=[{"url": "/admin-console/lineage-manager", "description": "Proxy Server"}],
     )
 
     # Middleware
@@ -29,6 +30,13 @@ def create_app() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    # Session Middleware for OIDC
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.SECRET_KEY,
+        session_cookie="lineage_manager_session",
+    )
 
     # Include V1 Routers
     from app.api.internal.v1.endpoints import stats as internal_stats

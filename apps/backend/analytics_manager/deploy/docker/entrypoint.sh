@@ -11,7 +11,7 @@ set -o pipefail
 
 # Lineage Manager V2 상태 확인
 lineage_ready() {
-    local lineage_url="http://lineage-api:5003/lineage-manager/api/v1/health"
+    local lineage_url="http://lineage-api:5003/api/v1/health"
     echo "Checking Lineage Manager V2 health at $lineage_url..."
     
     # curl로 응답 확인 (HTTP 200만 성공으로 간주)

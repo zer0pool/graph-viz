@@ -70,12 +70,8 @@ server {
         access_log /var/log/nginx/lineage_manager_access.log;
         error_log /var/log/nginx/lineage_manager_error.log;
 
-        # Strip the admin-console prefix but keep /lineage-manager/api/v1/...
-        rewrite ^$BASE_URL_PREFIX(/lineage-manager/.*)$ $1 break;
-
-        # Log after rewrite
-        rewrite_log on;        
-
+        # Strip the entire prefix: /admin-console/lineage-manager/api/v1/... -> /api/v1/...
+        rewrite ^.*/lineage-manager/(.*)$ /$1 break;
         proxy_pass $LINEAGE_MANAGER_UPSTREAM;
 
         # Forward headers
@@ -91,12 +87,8 @@ server {
         access_log /var/log/nginx/analytics_manager_access.log;
         error_log /var/log/nginx/analytics_manager_error.log;
 
-        # Strip the admin-console prefix but keep /analytics-manager/api/v1/...
-        rewrite ^$BASE_URL_PREFIX(/analytics-manager/.*)$ $1 break;
-
-        # Log after rewrite
-        rewrite_log on;        
-
+        # Strip the entire prefix: /admin-console/analytics-manager/api/v1/... -> /api/v1/...
+        rewrite ^.*/analytics-manager/(.*)$ /$1 break;
         proxy_pass $ANALYTICS_MANAGER_UPSTREAM;
 
         # Forward headers
@@ -166,7 +158,8 @@ server {
         error_log /var/log/nginx/oidc_error.log;
 
         # Proxy to backend /api/v1/auth/authorized
-        proxy_pass $BACKEND_HOST/lineage-manager/api/v1/auth/authorized;
+        rewrite ^.*$ /api/v1/auth/authorized break;
+        proxy_pass $BACKEND_HOST;
         
         # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
         # This ensures backend redirects use the correct external domain
