@@ -92,7 +92,7 @@ case "$CMD" in
             alembic upgrade head
         fi
         # In V2, the app is in 'app' folder and PYTHONPATH should include root
-        exec uvicorn app.main:app --host 0.0.0.0 --port 5003 --workers 1 --log-level warning
+        exec uvicorn app.main:app --host 0.0.0.0 --port 5003 --workers 1 --log-level info
         ;;
     celery)
         echo "Starting Celery Worker for V2..."

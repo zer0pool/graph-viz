@@ -20,7 +20,7 @@ ENV DEPLOY=true
 RUN npm run build
 
 # Stage 2: Serve
-FROM nginx:alpine
+FROM nginx:stable-alpine-slim
 
 RUN apk add --no-cache bash
 

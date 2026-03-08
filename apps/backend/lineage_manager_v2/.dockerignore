@@ -1,0 +1,14 @@
+.venv
+.pytest_cache
+.mypy_cache
+__pycache__
+tests/
+alembic/versions/*.pyc
+docs/
+*.log
+*.pyc
+*.pyo
+.env
+.env.example
+.git
+.gitignore
