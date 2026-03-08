@@ -1,9 +1,7 @@
 from fastapi import APIRouter, status
 from app.api.v1.schemas.health import GoogleCloudStatus, HealthResponse
 
-
 router = APIRouter()
-
 
 @router.get("/health", status_code=status.HTTP_200_OK, response_model=HealthResponse)
 async def health():

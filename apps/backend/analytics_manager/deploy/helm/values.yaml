@@ -19,7 +19,7 @@ service:
 
 livenessProbe:
   httpGet:
-    path: /api/v1/health
+    path: /analytics-manager/api/v1/health
     port: 5004
   initialDelaySeconds: 30
   periodSeconds: 30
@@ -29,7 +29,7 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /api/v1/health
+    path: /analytics-manager/api/v1/health
     port: 5004
   initialDelaySeconds: 30
   periodSeconds: 30

@@ -3,9 +3,8 @@ APP_NAME=Analytics-Manager
 PORT=5004
 
 VENV=.venv
-.PHONY: run dev worker test lint format db-revision db-upgrade
-
-
+.PHONY: venv run dev worker test lint format db-revision db-upgrade
+.PHONY: docker-build docker-push helm-install helm-upgrade helm-template helm-uninstall confirm deploy kill
 # Environment Configuration (Default: dev)
 # Usage: make <target> ENV=prd
 ENV ?= dev
