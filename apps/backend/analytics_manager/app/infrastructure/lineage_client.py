@@ -16,7 +16,7 @@ class LineageClient:
     """Async HTTP client for lineage-manager-v2."""
 
     def __init__(self):
-        self.base_url = settings.LINEAGE_MANAGER_V2_URL
+        self.base_url = settings.LINEAGE_MANAGER_URL
         self.timeout = 10.0
 
     async def get_jobs_batch(self, job_ids: List[str]) -> Dict[str, Any]:

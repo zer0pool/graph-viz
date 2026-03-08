@@ -19,7 +19,7 @@ service:
 
 livenessProbe:
   httpGet:
-    path: /analytics-manager/api/v1/health
+    path: /api/v1/health
     port: 5004
   initialDelaySeconds: 30
   periodSeconds: 30
@@ -29,7 +29,7 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /analytics-manager/api/v1/health
+    path: /api/v1/health
     port: 5004
   initialDelaySeconds: 30
   periodSeconds: 30
@@ -50,7 +50,7 @@ env:
   # App Settings
   ENV_STATE: "dev"
   LOG_LEVEL: "INFO"  
-  LINEAGE_MANAGER_V2_URL: "http://lineage-manager:5003"
+  LINEAGE_MANAGER_URL: "http://lineage-manager:5003"
 
   # Redis Settings
   REDIS_HOST: "redis-cache"

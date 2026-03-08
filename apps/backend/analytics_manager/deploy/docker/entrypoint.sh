@@ -9,10 +9,10 @@ set -o pipefail
 
 # --- Helper Functions ---
 
-# Lineage Manager V2 상태 확인
+# Lineage Manager 상태 확인
 lineage_ready() {
-    local lineage_url="http://lineage-api:5003/api/v1/health"
-    echo "Checking Lineage Manager V2 health at $lineage_url..."
+    local lineage_url="${LINEAGE_MANAGER_URL:-http://lineage-manager:5003}/api/v1/health"
+    echo "Checking Lineage Manager health at $lineage_url..."
     
     # curl로 응답 확인 (HTTP 200만 성공으로 간주)
     if curl -s -f "$lineage_url" > /dev/null; then
@@ -22,20 +22,20 @@ lineage_ready() {
     fi
 }
 
-# Lineage Manager V2 대기
+# Lineage Manager 대기
 wait_for_lineage() {
     local wait_attempts=0
     local max_wait_attempts=60
     until lineage_ready; do
         wait_attempts=$((wait_attempts + 1))
         if [ "$wait_attempts" -ge "$max_wait_attempts" ]; then
-            echo >&2 "Error: Lineage Manager V2 did not become healthy after $max_wait_attempts seconds."
+            echo >&2 "Error: Lineage Manager did not become healthy after $max_wait_attempts seconds."
             exit 1
         fi
-        echo >&2 "Waiting for Lineage Manager V2... (Attempt: $wait_attempts/$max_wait_attempts)"
+        echo >&2 "Waiting for Lineage Manager... (Attempt: $wait_attempts/$max_wait_attempts)"
         sleep 5
     done
-    echo "Lineage Manager V2 is healthy."
+    echo "Lineage Manager is healthy."
 }
 
 # --- Main Execution Logic ---
