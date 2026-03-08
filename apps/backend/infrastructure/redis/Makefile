@@ -8,7 +8,7 @@ else
   NAMESPACE := self-scheduling
 endif
 
-CHART_NAME := redis
+CHART_NAME := redis-cache
 CHART_PATH := ./deploy/helm
 
 # Detect if make is running with --dry-run or -n

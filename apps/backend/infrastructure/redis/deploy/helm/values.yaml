@@ -1,5 +1,6 @@
 # Redis Cache Configuration
 replicaCount: 1
+fullnameOverride: "redis-cache"
 
 image:
   repository: redis
