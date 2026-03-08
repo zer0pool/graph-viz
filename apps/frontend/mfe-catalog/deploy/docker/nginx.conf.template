@@ -27,7 +27,7 @@ server {
     error_log /dev/stderr warn;
 
     # Support for Iframe embedding (for Shell usage)
-    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000;" always;
+    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:5100 http://localhost:5000 http://*;" always;
 
     # 2.1 Disable caching for Module Federation configs
     location ~* (remoteEntry\.js|config\.js)$ {

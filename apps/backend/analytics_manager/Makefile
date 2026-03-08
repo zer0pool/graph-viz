@@ -57,7 +57,7 @@ venv:
 	rm -rf $(VENV)
 	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
 	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/python -m pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+	$(VENV)/bin/python -m pip install -r requirements-dev.txt || { echo "Failed to install requirements"; exit 1; }
 
 # Run the app in development mode
 dev:

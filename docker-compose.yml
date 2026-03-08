@@ -41,6 +41,7 @@ services:
       - REDIS_PORT=6379
       - JOB_MANAGER_URL=http://job-dummy:9000
       - ROOT_PATH=/admin-console/lineage-manager
+      - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
     depends_on:
       - mysql-db
       - redis-cache
@@ -86,6 +87,7 @@ services:
       - REDIS_PORT=6379
       - LINEAGE_MANAGER_V2_URL=http://lineage-api:5003
       - ROOT_PATH=/admin-console/analytics-manager
+      - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
     volumes:
       - ~/.config/gcloud:/root/.config/gcloud:ro
@@ -124,6 +126,7 @@ services:
       - API_BASE_URL=/admin-console
       - BASE_URL=/admin-console
       - BACKEND_HOST=http://lineage-api:5003
+      - LINEAGE_MANAGER_UPSTREAM=http://lineage-api:5003
       - ANALYTICS_MANAGER_UPSTREAM=http://analytics-api:5004
       - MFE_LINEAGE_UPSTREAM=http://ui-lineage:80
       - MFE_CATALOG_UPSTREAM=http://ui-catalog:80

@@ -21,7 +21,7 @@ RUN npm run build
 RUN ls -la dist/  # Verify build output
 
 # Stage 2: Serve
-FROM nginx:alpine
+FROM nginx:stable-alpine-slim
 
 RUN apk add --no-cache bash
 

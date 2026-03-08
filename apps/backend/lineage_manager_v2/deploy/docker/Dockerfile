@@ -24,11 +24,13 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder and install
 COPY --from=builder /app/wheels /wheels
-RUN pip install --no-index --find-links=/wheels /wheels/*
+RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* && \
+    rm -rf /wheels
 
 # Copy app code
 COPY . .

@@ -22,10 +22,10 @@ RUN npm run build
 RUN ls -la dist/  # Verify build output
 
 # --- Stage 2: Production ---
-# Use alpine for the smallest possible footprint
-FROM nginx:alpine
+# Use slim alpine for the smallest possible footprint
+FROM nginx:stable-alpine-slim
 
-# Install envsubst or other tools if needed
+# Install bash (required by our entrypoint)
 RUN apk add --no-cache bash
 
 WORKDIR /usr/share/nginx/html

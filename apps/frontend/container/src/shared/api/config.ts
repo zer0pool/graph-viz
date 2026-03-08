@@ -8,9 +8,9 @@ export const config = {
   ENABLE_MFE_LINEAGE: (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
   ENABLE_MFE_CATALOG: (window as any).__APP_CONFIG__?.ENABLE_CATALOG_MFE !== "false",
   LINEAGE_MFE_URL:
-    (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL || "http://localhost:5101/remoteEntry.js",
+    (window as any).__APP_CONFIG__?.LINEAGE_MFE_URL || "/admin-console/mfe-lineage/remoteEntry.js",
   CATALOG_MFE_URL:
-    (window as any).__APP_CONFIG__?.CATALOG_MFE_URL || "http://localhost:5102/remoteEntry.js",
+    (window as any).__APP_CONFIG__?.CATALOG_MFE_URL || "/admin-console/mfe-catalog/remoteEntry.js",
   BACKEND_HOST: (window as any).__APP_CONFIG__?.BACKEND_HOST || "",
 
   // Standalone Auth Config

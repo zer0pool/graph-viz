@@ -54,7 +54,7 @@ venv:
 	rm -rf $(VENV)
 	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
 	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/python -m pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+	$(VENV)/bin/python -m pip install -r requirements-dev.txt || { echo "Failed to install requirements"; exit 1; }
 
 # Run the app in development mode
 dev:
@@ -77,7 +77,7 @@ worker:
 
 # Run tests
 test:
-	PYTHONPATH=. pytest tests
+	PYTHONPATH=. $(VENV)/bin/pytest tests
 
 # Create a new migration revision (auto-generated)
 db-revision:
@@ -89,11 +89,11 @@ db-upgrade:
 
 # Lint and format code
 format:
-	black app tests
-	isort app tests
+	$(VENV)/bin/black app tests
+	$(VENV)/bin/isort app tests
 
 lint:
-	mypy app
+	$(VENV)/bin/mypy app
 
 # Docker
 docker-build:
