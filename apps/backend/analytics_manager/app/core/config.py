@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # BigQuery
     FEATURE_HISTORY_TABLE: str = "test_data.admin_job_run_history"
     BIGQUERY_VISIT_LOG_TABLE: str = "test_data.visit_logs"
+    JOB_RUN_HISTORY_TABLE: str = "test_project_name.tmp_sss_993.admin_finish_history"
 
     # Cache
     ANALYTICS_CACHE_TTL_SEC: int = 3600

@@ -1,0 +1,28 @@
+# Redis Cache Configuration
+replicaCount: 1
+
+image:
+  repository: redis
+  pullPolicy: IfNotPresent
+  tag: "7.0-alpine"
+
+# Redis service configuration
+service:
+  name: redis
+  port: 6379
+  targetPort: 6379
+  type: ClusterIP
+  annotations: {}
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# Persistence configuration
+persistence:
+  enabled: false
+  claimName: redis-data

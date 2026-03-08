@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changethis"
 
     # External APIs
-    JOB_MANAGER_URL: str = "http://localhost:9000"
+    JOB_MANAGER_URL: str = "http://self-scheduling-backend:5001"
 
     model_config = SettingsConfigDict(
         env_file=".env",

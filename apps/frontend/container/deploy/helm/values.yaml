@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-console-app
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-console-app
   pullPolicy: Always
   tag: "latest"
 
@@ -9,7 +9,7 @@ serviceAccount:
   create: false
   name: "self-scheduling"
 
-namespace: "self-scheduling-dev1"
+namespace: "self-scheduling"
 
 service:
   type: NodePort
@@ -50,17 +50,19 @@ env:
   ENABLE_AUTH: "true"
   ENABLE_LINEAGE_MFE: "true"
   ENABLE_CATALOG_MFE: "true"
-  LINEAGE_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-lineage/remoteEntry.js"
-  CATALOG_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-catalog/remoteEntry.js"
-  MFE_LINEAGE_UPSTREAM: "http://admin-mfe-lineage.self-scheduling-dev1.svc.cluster.local:5101"
-  MFE_CATALOG_UPSTREAM: "http://admin-mfe-catalog.self-scheduling-dev1.svc.cluster.local:5102"
+  LINEAGE_MFE_URL: "https://self-scheduling.di.atlas.samsung.com/admin-console/mfe-lineage/remoteEntry.js"
+  CATALOG_MFE_URL: "https://self-scheduling.di.atlas.samsung.com/admin-console/mfe-catalog/remoteEntry.js"
+  MFE_LINEAGE_UPSTREAM: "http://admin-mfe-lineage.self-scheduling.svc.cluster.local:5101"
+  MFE_CATALOG_UPSTREAM: "http://admin-mfe-catalog.self-scheduling.svc.cluster.local:5102"
   API_LOCATION_REGEX: "^(/admin-console)?/api"
+  LINEAGE_MANAGER_UPSTREAM: "http://lineage-manager.self-scheduling.svc.cluster.local:5003"
+  ANALYTICS_MANAGER_UPSTREAM: "http://analytics-manager.self-scheduling.svc.cluster.local:5004"
 
   # OIDC Configuration (Override via --set or separate values file)
   OIDC_AUTHORITY: "https://sts.secsso.net/adfs"
   OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"
   OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
-  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/authorized"
+  OIDC_REDIRECT_URI: "https://self-scheduling.di.atlas.samsung.com/admin-console/authorized"
   OIDC_SCOPE: "openid profile email"
   OIDC_RESPONSE_TYPE: "id_token"
   OIDC_RESPONSE_MODE: "fragment"

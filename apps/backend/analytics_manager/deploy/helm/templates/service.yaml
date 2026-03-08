@@ -4,6 +4,8 @@ metadata:
   name: {{ include "analytics-manager.fullname" . }}
   labels:
     {{- include "analytics-manager.labels" . | nindent 4 }}
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   type: {{ .Values.service.type }}
   ports:

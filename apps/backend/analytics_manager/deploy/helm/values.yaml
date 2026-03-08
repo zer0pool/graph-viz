@@ -1,8 +1,8 @@
-replicaCount: 2
+replicaCount: 1
 fullnameOverride: "analytics-manager"
 
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/analytics-manager
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/analytics-manager
   pullPolicy: Always
   tag: "latest"
 
@@ -10,7 +10,7 @@ serviceAccount:
   create: false
   name: "self-scheduling"
 
-namespace: "self-scheduling-dev1"
+namespace: "self-scheduling"
 
 service:
   type: NodePort
@@ -19,23 +19,23 @@ service:
 
 livenessProbe:
   httpGet:
-    path: /analytics-manager/api/v1/health
+    path: /api/v1/health
     port: 5004
   initialDelaySeconds: 30
-  periodSeconds: 10
+  periodSeconds: 30
   failureThreshold: 10
   successThreshold: 1
-  timeoutSeconds: 30
+  timeoutSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /analytics-manager/api/v1/health
+    path: /api/v1/health
     port: 5004
   initialDelaySeconds: 30
-  periodSeconds: 10
+  periodSeconds: 30
   failureThreshold: 10
   successThreshold: 1
-  timeoutSeconds: 30
+  timeoutSeconds: 10
 
 resources:
   api:
@@ -50,10 +50,10 @@ env:
   # App Settings
   ENV_STATE: "dev"
   LOG_LEVEL: "INFO"  
-  LINEAGE_MANAGER_V2_URL: "http://lineage-manager-v2:5003"
+  LINEAGE_MANAGER_V2_URL: "http://lineage-manager:5003"
 
   # Redis Settings
-  REDIS_HOST: "redis"
+  REDIS_HOST: "redis-cache"
   REDIS_PORT: "6379"
   REDIS_DB: "2"
 

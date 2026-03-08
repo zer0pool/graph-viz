@@ -11,8 +11,8 @@ ifeq ($(ENV),prd)
   IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-mfe-lineage
 else
   # Default development environment
-  NAMESPACE := self-scheduling-dev1
-  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-mfe-lineage
+  NAMESPACE := self-scheduling
+  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-mfe-lineage
 endif
 
 CHART_NAME := admin-mfe-lineage

@@ -1,8 +1,8 @@
-replicaCount: 2
-fullnameOverride: "lineage-manager-v2"
+replicaCount: 1
+fullnameOverride: "lineage-manager"
 
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/lineage-manager-v2
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/lineage-manager
   pullPolicy: Always
   tag: "latest"
 
@@ -10,7 +10,7 @@ serviceAccount:
   create: false
   name: "self-scheduling"
 
-namespace: "self-scheduling-dev1"
+namespace: "self-scheduling"
 
 service:
   type: NodePort
@@ -19,23 +19,23 @@ service:
 
 livenessProbe:
   httpGet:
-    path: /lineage-manager/api/v1/health
+    path: /api/v1/health
     port: 5003
   initialDelaySeconds: 30
-  periodSeconds: 10
+  periodSeconds: 30
   failureThreshold: 10
   successThreshold: 1
-  timeoutSeconds: 30
+  timeoutSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /lineage-manager/api/v1/health
+    path: /api/v1/health
     port: 5003
   initialDelaySeconds: 30
-  periodSeconds: 10
+  periodSeconds: 30
   failureThreshold: 10
   successThreshold: 1
-  timeoutSeconds: 30
+  timeoutSeconds: 10
 
 resources:
   api:
@@ -74,7 +74,7 @@ env:
 
   # Redis Settings
   REDIS_ENABLED: "true"
-  REDIS_HOST: "redis"
+  REDIS_HOST: "redis-cache"
   REDIS_PORT: "6379"
 
   # GCP Settings
@@ -93,5 +93,7 @@ env:
   OIDC_ISSUER_URL: "https://sts.secsso.net/adfs"
   OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"  
   OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
-  OIDC_REDIRECT_URI: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/authorized"
+  OIDC_REDIRECT_URI: "https://elf-scheduling.di.atlas.samsung.com/admin-console/authorized"
   OIDC_SCOPES: '["openid", "profile", "email"]'
+
+  APP_JOB_MANAGER_URL: "http://self-scheduling-backend:5001"

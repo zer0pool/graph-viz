@@ -63,9 +63,9 @@ class BigQueryClient:
     def get_recent_job_runs(self, limit: int = 100) -> List[Dict[str, Any]]:
         """
         Queries the job execution history table and returns the most recent runs.
-        Sorted by start_date DESC. Table configured via FEATURE_HISTORY_TABLE.
+        Sorted by start_date DESC. Table configured via JOB_RUN_HISTORY_TABLE.
         """
-        table = settings.FEATURE_HISTORY_TABLE
+        table = settings.JOB_RUN_HISTORY_TABLE
         query = f"""
             SELECT
                 job_id,

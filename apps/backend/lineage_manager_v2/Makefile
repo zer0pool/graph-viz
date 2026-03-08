@@ -50,3 +50,23 @@ format:
 
 lint:
 	mypy app
+
+# Docker
+docker-build:
+	docker build -f deploy/docker/Dockerfile -t $(IMAGE_REPO):$(IMAGE_TAG) .
+
+docker-push: confirm
+	docker push $(IMAGE_REPO):$(IMAGE_TAG)
+	
+# Helm
+helm-install: confirm
+	helm install $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE)
+
+helm-upgrade: confirm
+	$(EXEC_ALWAYS)helm upgrade --install $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE) $(HELM_DRY_RUN_FLAGS)
+
+helm-template:
+	helm template $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE)
+
+helm-uninstall: confirm
+	helm uninstall $(CHART_NAME) --namespace $(NAMESPACE)
