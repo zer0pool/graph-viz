@@ -22,8 +22,16 @@ class DynamicRootPathMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
             headers = dict(scope.get("headers", []))
+            
+            # 1. Handle X-Forwarded-Prefix from proxies (e.g. Nginx)
             if b"x-forwarded-prefix" in headers:
                 scope["root_path"] = headers[b"x-forwarded-prefix"].decode()
+            
+            # 2. Handle direct prefixed requests (e.g. GKE health checks / Cloud Load Balancer)
+            elif scope["path"].startswith("/lineage-manager"):
+                scope["path"] = scope["path"][len("/lineage-manager"):]
+                scope["root_path"] = "/lineage-manager"
+                
         return await self.app(scope, receive, send)
 
 

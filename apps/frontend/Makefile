@@ -4,7 +4,7 @@ APPS := container mfe-lineage mfe-catalog
 ENV ?= dev
 
 # Define Image Repos (These defaults match the individual Makefiles/Values)
-REPO_PREFIX_DEV := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1
+REPO_PREFIX_DEV := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling
 REPO_PREFIX_PRD := asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd
 
 ifeq ($(ENV),prd)

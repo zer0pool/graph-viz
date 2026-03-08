@@ -2,7 +2,7 @@ replicaCount: 1
 fullnameOverride: "admin-mfe-lineage"
 
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-mfe-lineage
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-mfe-lineage
   pullPolicy: Always
   tag: "latest"
 
@@ -10,7 +10,7 @@ serviceAccount:
   create: false
   name: "self-scheduling"
 
-namespace: "self-scheduling-dev1"
+namespace: "self-scheduling"
 
 service:
   type: NodePort

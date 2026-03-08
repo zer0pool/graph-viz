@@ -4,6 +4,9 @@ import httpx
 
 from app.core.config import settings
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class JobManagerClient:
     def __init__(self, base_url: str | None = None):
@@ -24,10 +27,17 @@ class JobManagerClient:
                     )
                     response.raise_for_status()
                     data = response.json()
-                    if data.get("status") == "success":
-                        all_items.extend(data.get("result", []))
+
+                    # Handle both response formats
+                    result_items = data.get("result", [])
+                    if isinstance(result_items, list):
+                        all_items.extend(result_items)
+                        logger.info(f"Added {len(result_items)} jobs from {s_type}")
+                    else:
+                        logger.warning(f"Unexpected response format for {s_type}: {result_items}")
+
                 except Exception as e:
-                    print(f"Error fetching {s_type} lineage: {e}")
+                    logger.error(f"Error fetching {s_type} lineage: {e}")
 
         return all_items
 

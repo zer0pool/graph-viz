@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "lineage-manager-v2.fullname" . }}
+  name: {{ include "lineage-manager.fullname" . }}
   labels:
-    {{- include "lineage-manager-v2.labels" . | nindent 4 }}
+    {{- include "lineage-manager.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "lineage-manager-v2.selectorLabels" . | nindent 6 }}
+      {{- include "lineage-manager.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "lineage-manager-v2.selectorLabels" . | nindent 8 }}
+        {{- include "lineage-manager.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:

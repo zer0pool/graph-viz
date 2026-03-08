@@ -12,6 +12,9 @@ from app.infrastructure.external.job_manager_client import JobManagerClient
 from app.infrastructure.models import GraphEdge, GraphNode
 from app.infrastructure.unit_of_work import UnitOfWork
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GraphService:
     def __init__(self, uow: UnitOfWork, job_manager_client: JobManagerClient):
@@ -50,6 +53,9 @@ class GraphService:
 
             # 1. Discovery from external source
             external_jobs = await self.job_manager_client.fetch_scheduling_lineage()
+            
+            logger.info(f"Fetched {len(external_jobs)} jobs from external source")
+            
             stats = {"jobs": 0, "edges": 0, "projects": set()}
 
             for item in external_jobs:

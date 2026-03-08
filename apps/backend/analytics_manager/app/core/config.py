@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Analytics Manager"
-    API_V1_STR: str = "/analytics-manager/api/v1"
+    API_V1_STR: str = "/api/v1"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
@@ -20,11 +20,12 @@ class Settings(BaseSettings):
     GOOGLE_PROJECT_ID: Optional[str] = None
 
     # Internal Services
-    LINEAGE_MANAGER_V2_URL: str = "http://localhost:8001"
+    LINEAGE_MANAGER_URL: str = "http://localhost:8001"
 
     # BigQuery
     FEATURE_HISTORY_TABLE: str = "test_data.admin_job_run_history"
     BIGQUERY_VISIT_LOG_TABLE: str = "test_data.visit_logs"
+    JOB_RUN_HISTORY_TABLE: str = "test_project_name.tmp_sss_993.admin_finish_history"
 
     # Cache
     ANALYTICS_CACHE_TTL_SEC: int = 3600
