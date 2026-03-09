@@ -5,11 +5,13 @@ from app.domain.metadata.entities.resource import ResourceMetadata as Resource
 from app.domain.project.entities import Project
 from app.domain.user.entities import User
 from app.infrastructure.unit_of_work import UnitOfWork
+from app.services.audit_service import AuditService
 
 
 class MetadataService:
-    def __init__(self, uow: UnitOfWork):
+    def __init__(self, uow: UnitOfWork, audit_service: AuditService = None):
         self.uow = uow
+        self.audit_service = audit_service
 
     # --- Projects ---
     async def create_project(self, project: Project) -> Project:
@@ -89,6 +91,32 @@ class MetadataService:
                 "user": user,
                 "summary": {"owned_jobs": len(jobs), "project_count": len(project_ids)},
             }
+
+    async def update_user_roles(
+        self, user_id: str, roles: List[str], performed_by: str = "SYSTEM"
+    ) -> User:
+        """Update roles for a specific user."""
+        async with self.uow:
+            user = await self.uow.users.get_by_user_id(user_id)
+            if not user:
+                raise ValueError(f"User {user_id} not found")
+
+            old_roles = user.roles or []
+            user.roles = roles
+            saved_user = await self.uow.users.save(user)
+            await self.uow.commit()
+
+            # Log audit
+            if self.audit_service:
+                await self.audit_service.log_command(
+                    command_type="UPDATE_USER_ROLES",
+                    target_id=user_id,
+                    performed_by=performed_by,
+                    status="SUCCESS",
+                    payload={"old_roles": old_roles, "new_roles": roles},
+                )
+
+            return saved_user
 
     async def list_user_projects(self, user_id: str) -> List[Project]:
         async with self.uow:

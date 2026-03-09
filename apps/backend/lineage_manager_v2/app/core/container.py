@@ -51,9 +51,11 @@ class Container(containers.DeclarativeContainer):
         GraphService, uow=uow, job_manager_client=job_manager_client
     )
 
-    metadata_service = providers.Factory(MetadataService, uow=uow)
-
     audit_service = providers.Factory(AuditService, uow=uow)
+
+    metadata_service = providers.Factory(
+        MetadataService, uow=uow, audit_service=audit_service
+    )
 
     auth_service = providers.Factory(
         AuthService,

@@ -26,6 +26,8 @@ export const config = {
   OIDC_RESOURCE: (window as any).__APP_CONFIG__?.OIDC_RESOURCE || "",
   OIDC_USERINFO_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
   REQUIRE_SIGNIN: (window as any).__APP_CONFIG__?.REQUIRE_SIGNIN === "true",
+  REST_API_DOCS_URL: (window as any).__APP_CONFIG__?.REST_API_DOCS_URL || "http://localhost:5100/admin-console/docs",
+  GRAPHQL_API_DOCS_URL: (window as any).__APP_CONFIG__?.GRAPHQL_API_DOCS_URL || "http://localhost:5100/admin-console/analytics-manager/graphql",
 
   DEBUG: process.env.NODE_ENV !== "production",
 };
