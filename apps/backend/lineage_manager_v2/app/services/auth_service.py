@@ -29,8 +29,7 @@ class AuthService:
         """Return minimal configuration for OIDC login."""
         try:
             config = self.oidc_client.auth_config()
-            # Placeholder for require_signin if we want to expose it
-            config["require_signin"] = True
+            config["require_signin"] = settings.feature_flags.require_signin
             return config
         except AuthenticationError as exc:
             logger.error("Failed to load auth config: %s", exc)
@@ -91,7 +90,9 @@ class AuthService:
             else:
                 # This is an authorization code
                 logger.debug("[Auth] Detected authorization code")
-                token_response = self.oidc_client.exchange_code(token, code_verifier=None)
+                token_response = self.oidc_client.exchange_code(
+                    token, code_verifier=None
+                )
                 id_token = token_response.get("id_token")
                 claims = self.oidc_client.verify_id_token(id_token)
 

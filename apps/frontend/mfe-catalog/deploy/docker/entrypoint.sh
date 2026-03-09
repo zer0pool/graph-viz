@@ -39,7 +39,7 @@ echo " - BACKEND_HOST: ${BACKEND_HOST}"
 
 # 2. Environment Variable Injection
 echo "[MFE] Injecting runtime configuration..."
-export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $NAMESERVER $BACKEND_HOST $LINEAGE_MFE_URL'
+export ALL_VARS='$BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $NAMESERVER $BACKEND_HOST $LINEAGE_MFE_URL'
 
 # Inject into config.js
 envsubst "$ALL_VARS" < /usr/share/nginx/html/config.template.js > /usr/share/nginx/html/config.js

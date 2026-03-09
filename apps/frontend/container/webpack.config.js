@@ -102,7 +102,7 @@ module.exports = {
     new webpack.DefinePlugin({
       "import.meta.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       "import.meta.env.DEV": JSON.stringify(!isProd),
-      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || ""),
+      "import.meta.env.BASE_URL": JSON.stringify(process.env.BASE_URL || "/admin-console"),
       "import.meta.env.LINEAGE_MFE_URL": JSON.stringify(
         process.env.LINEAGE_MFE_URL || "http://localhost:5101/mfe-lineage/remoteEntry.js"
       ),
@@ -128,8 +128,18 @@ module.exports = {
         { from: "public/config.template.js", to: "config.template.js" },
         { from: "public/config.js", to: "config.js", noErrorOnMissing: true },
         {
-          from: "public/admin-console/docs.html",
-          to: "admin-console/docs.html",
+          from: "public/admin-console",
+          to: "admin-console",
+          noErrorOnMissing: true,
+        },
+        {
+          from: "public/admin-console/logo.png",
+          to: "logo-swagger.png", // Use a unique name to avoid conflicts
+          noErrorOnMissing: true,
+        },
+        {
+          from: "public/admin-console/swagger-favicon.png",
+          to: "swagger-favicon.png",
           noErrorOnMissing: true,
         },
       ],

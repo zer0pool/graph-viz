@@ -1,7 +1,7 @@
 import { GraphState } from "../types/graph";
 import { config } from "../config";
 
-const API_BASE_URL = config.API_BASE_URL;
+const API_BASE_URL = config.BASE_URL;
 
 export class GraphApiService {
   static async fetchExpand(

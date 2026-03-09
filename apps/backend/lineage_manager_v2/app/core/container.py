@@ -37,13 +37,13 @@ class Container(containers.DeclarativeContainer):
 
     oidc_client = providers.Singleton(
         OIDCProviderClient,
-        issuer=settings.OIDC_ISSUER_URL,
-        client_id=settings.OIDC_CLIENT_ID,
-        client_secret=settings.OIDC_CLIENT_SECRET,
-        redirect_uri=settings.OIDC_REDIRECT_URI,
-        audience=settings.OIDC_AUDIENCE,
-        scopes=settings.OIDC_SCOPES,
-        cache_seconds=settings.OIDC_JWKS_CACHE_SECONDS,
+        issuer=settings.oidc.issuer_url,
+        client_id=settings.oidc.client_id,
+        client_secret=settings.oidc.client_secret,
+        redirect_uri=settings.oidc.redirect_uri,
+        audience=settings.oidc.audience,
+        scopes=settings.oidc.scopes,
+        cache_seconds=settings.oidc.jwks_cache_seconds,
     )
 
     # Services

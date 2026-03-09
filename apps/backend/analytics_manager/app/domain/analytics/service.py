@@ -17,6 +17,25 @@ logger = logging.getLogger(__name__)
 
 
 class AnalyticsService:
+    # Mapping for better labels and colors
+    COLOR_MAP = {
+        "SELF-TYPE": "bg-blue-600",
+        "REQUEST-TYPE": "bg-amber-500",
+        "OTHER": "bg-gray-400",
+    }
+
+    # Mapping for display titles
+    TITLE_MAP = {
+        "/": "dashboard",
+        "/projects": "projects",
+        "/users": "users",
+        "/jobs": "jobs",
+        "/tables": "tables",
+        "/lineage": "lineage",
+        "/audit": "audit",
+        "/settings": "settings",
+    }
+
     def __init__(
         self, repo: AnalyticsRepository, lineage_client: LineageClient, redis: Redis
     ):
@@ -83,13 +102,6 @@ class AnalyticsService:
         type_counts = job_stats.get("type_counts", {})
         breakdown = []
 
-        # Mapping for better labels and colors
-        color_map = {
-            "SELF-TYPE": "bg-blue-600",
-            "REQUEST-TYPE": "bg-amber-500",
-            "OTHER": "bg-gray-400",
-        }
-
         for jtype, cnt in type_counts.items():
             label = (
                 "Self"
@@ -104,7 +116,7 @@ class AnalyticsService:
                 MetricBreakdown(
                     label=label,
                     value=float(cnt),
-                    color=color_map.get(jtype, "bg-gray-400"),
+                    color=self.COLOR_MAP.get(jtype, "bg-gray-400"),
                 )
             )
 
@@ -413,23 +425,11 @@ class AnalyticsService:
         visit_key = "analytics:path_visits"
         top_paths = await self.redis.zrevrange(visit_key, 0, 4, withscores=True)
 
-        # Mapping for display titles
-        title_map = {
-            "/": "dashboard",
-            "/projects": "projects",
-            "/users": "users",
-            "/jobs": "jobs",
-            "/tables": "tables",
-            "/lineage": "lineage",
-            "/audit": "audit",
-            "/settings": "settings",
-        }
-
         items = []
         for path_bytes, score in top_paths:
             path = path_bytes.decode() if isinstance(path_bytes, bytes) else path_bytes
             # Use title from map or derive from path
-            title = title_map.get(path)
+            title = self.TITLE_MAP.get(path)
             if not title:
                 # Fallback: /jobs/foo -> jobs
                 title = path.strip("/").split("/")[0] or "dashboard"

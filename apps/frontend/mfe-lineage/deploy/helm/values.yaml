@@ -45,5 +45,4 @@ resources:
 env:
   NODE_ENV: "production"
   BASE_URL: "/admin-console/mfe-lineage"
-  API_BASE_URL: "/admin-console"
   CATALOG_MFE_URL: "https://dev1-self-scheduling.di.atlas.samsung.com/admin-console/mfe-catalog/remoteEntry.js"

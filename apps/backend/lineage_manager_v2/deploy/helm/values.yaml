@@ -93,7 +93,7 @@ env:
   OIDC_ISSUER_URL: "https://sts.secsso.net/adfs"
   OIDC_CLIENT_ID: "b28275ba-2f7d-4313-9803-e9ead6489726"  
   OIDC_CLIENT_SECRET: "5MqWt1KcELrtzJom"
-  OIDC_REDIRECT_URI: "https://elf-scheduling.di.atlas.samsung.com/admin-console/authorized"
+  OIDC_REDIRECT_URI: "https://self-scheduling.di.atlas.samsung.com/admin-console/authorized"
   OIDC_SCOPES: '["openid", "profile", "email"]'
 
   APP_JOB_MANAGER_URL: "http://self-scheduling-backend:5001"

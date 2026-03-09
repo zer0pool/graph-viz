@@ -12,8 +12,7 @@ interface ApiProviderProps {
 }
 
 export const ApiProvider: React.FC<ApiProviderProps> = ({ auth, children }) => {
-  // Memoize API client based on auth and API_BASE_URL
-  const apiClient = React.useMemo(() => new ApiClient(auth, config.API_BASE_URL), [auth]);
+  const apiClient = React.useMemo(() => new ApiClient(auth, config.BASE_URL), [auth]);
 
   return <ApiContext.Provider value={apiClient}>{children}</ApiContext.Provider>;
 };

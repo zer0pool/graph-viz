@@ -8,7 +8,6 @@ const runtimeConfig = (window as any).__APP_CONFIG__ || {};
 
 export const config = {
   // Use runtime config if available, fallback to build-time env
-  API_BASE_URL: runtimeConfig.API_BASE_URL || (import.meta as any).env.VITE_API_BASE_URL || "",
   BASE_URL: runtimeConfig.BASE_URL || "/admin-console",
   CATALOG_MFE_URL: runtimeConfig.CATALOG_MFE_URL || "/admin-console/mfe-catalog/remoteEntry.js",
   DEBUG: isDev,

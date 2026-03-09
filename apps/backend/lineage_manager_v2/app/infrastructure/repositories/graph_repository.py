@@ -1,3 +1,4 @@
+from collections import deque
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, or_, select, text
@@ -209,3 +210,61 @@ class GraphRepository:
             "edges": edge_count or 0,
             "closures": closure_count or 0,
         }
+
+    async def get_producing_job_id(self, table_node_id: int) -> Optional[int]:
+        """Find the ID of the job node that produces this table."""
+        query = select(GraphEdge.source_node_id).where(
+            GraphEdge.target_node_id == table_node_id, GraphEdge.edge_type == "produces"
+        )
+        result = await self.db.execute(query)
+        return result.scalar()
+
+    async def get_table_hierarchy_bfs(
+        self, start_id: int, start_name: str, direction: str, max_depth: int
+    ) -> List[Dict]:
+        """
+        BFS over graph edges to build the lineage hierarchy.
+        Moved from GraphService for better SoC.
+        """
+        items: List[Dict] = []
+        visited = {start_id}
+        queue = deque([(start_id, start_name, 0, None)])
+
+        while queue:
+            curr_id, curr_name, depth, parent_name = queue.popleft()
+            if depth >= max_depth:
+                continue
+
+            if direction == "upstream":
+                where = GraphEdge.target_node_id == curr_id
+            else:
+                where = GraphEdge.source_node_id == curr_id
+
+            res = await self.db.execute(select(GraphEdge).where(where))
+            for edge in res.scalars().all():
+                neighbor_id = (
+                    edge.source_node_id
+                    if direction == "upstream"
+                    else edge.target_node_id
+                )
+                if neighbor_id in visited:
+                    continue
+                visited.add(neighbor_id)
+
+                n_res = await self.db.execute(
+                    select(GraphNode).where(GraphNode.id == neighbor_id)
+                )
+                neighbor = n_res.scalar_one_or_none()
+                if neighbor:
+                    name = neighbor.name
+                    items.append(
+                        {
+                            "id": name,
+                            "name": name.split(".")[-1] if "." in name else name,
+                            "type": neighbor.node_type,
+                            "depth": depth + 1,
+                            "parent": curr_name,
+                        }
+                    )
+                    queue.append((neighbor_id, name, depth + 1, curr_name))
+        return items

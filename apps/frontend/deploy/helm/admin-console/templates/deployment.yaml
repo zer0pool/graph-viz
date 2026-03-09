@@ -29,8 +29,6 @@ spec:
           containerPort: 80
           protocol: TCP
         env:
-        - name: API_BASE_URL
-          value: "/admin-console"
         - name: BACKEND_HOST
           value: {{ $.Values.backend.url | quote }}
         - name: BASE_URL
@@ -44,6 +42,8 @@ spec:
           value: "true"
         - name: ENABLE_CATALOG_MFE
           value: "true"
+        - name: REQUIRE_SIGNIN
+          value: {{ $config.requireSignin | default false | quote }}
         {{- end }}
         - name: NODE_ENV
           value: "production"

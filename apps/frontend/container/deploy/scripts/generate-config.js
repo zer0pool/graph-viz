@@ -9,7 +9,6 @@ const outputPath = path.resolve(__dirname, "../../public/config.js");
  * These match the overrides previously in webpack.config.js.
  */
 const defaults = {
-  API_BASE_URL: "/admin-console",
   BASE_URL: "/admin-console",
   ENABLE_LINEAGE_MFE: "true",
   ENABLE_CATALOG_MFE: "true",

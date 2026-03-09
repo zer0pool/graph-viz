@@ -1,44 +1,72 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import httpx
 
 from app.core.config import settings
 
-import logging
-
 logger = logging.getLogger(__name__)
+
 
 class JobManagerClient:
     def __init__(self, base_url: str | None = None):
         self.base_url = base_url or settings.JOB_MANAGER_URL
 
-    async def fetch_scheduling_lineage(self) -> List[Dict[str, Any]]:
+    async def fetch_scheduling_lineage(
+        self, batch_size: int = 1000
+    ) -> List[Dict[str, Any]]:
         """
-        Fetches all jobs and their lineage from the dummy job manager.
+        Fetches all jobs and their lineage from the job manager with pagination.
         """
-        # We'll fetch both SELF-TYPE and REQUEST-TYPE for a full initialization
         all_items = []
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             for s_type in ["SELF-TYPE", "REQUEST-TYPE"]:
-                try:
-                    response = await client.get(
-                        f"{self.base_url}/api/v1/jobs/scheduling-lineage/",
-                        params={"scheduling_type": s_type, "limit": 1000},
-                    )
-                    response.raise_for_status()
-                    data = response.json()
+                offset = 0
+                while True:
+                    try:
+                        logger.info(
+                            f"Fetching {s_type} lineage (offset={offset}, limit={batch_size})"
+                        )
+                        response = await client.get(
+                            f"{self.base_url}/api/v1/jobs/scheduling-lineage/",
+                            params={
+                                "scheduling_type": s_type,
+                                "limit": batch_size,
+                                "offset": offset,
+                            },
+                        )
+                        response.raise_for_status()
+                        data = response.json()
 
-                    # Handle both response formats
-                    result_items = data.get("result", [])
-                    if isinstance(result_items, list):
+                        # Handle response format
+                        result_items = data.get("result", [])
+                        if not isinstance(result_items, list):
+                            logger.warning(
+                                f"Unexpected response format for {s_type}: {result_items}"
+                            )
+                            break
+
                         all_items.extend(result_items)
-                        logger.info(f"Added {len(result_items)} jobs from {s_type}")
-                    else:
-                        logger.warning(f"Unexpected response format for {s_type}: {result_items}")
 
-                except Exception as e:
-                    logger.error(f"Error fetching {s_type} lineage: {e}")
+                        # Check pagination
+                        pagination = data.get("pagination", {})
+                        next_offset = pagination.get("next_offset")
 
+                        if not next_offset or next_offset <= offset:
+                            logger.info(
+                                f"Finished fetching {s_type} lineage. Total: {len(result_items)} in this pass."
+                            )
+                            break
+
+                        offset = next_offset
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error fetching {s_type} lineage at offset {offset}: {e}"
+                        )
+                        break
+
+        logger.info(f"Total jobs fetched from Job Manager: {len(all_items)}")
         return all_items
 
     async def pause_job(self, job_id: str) -> bool:

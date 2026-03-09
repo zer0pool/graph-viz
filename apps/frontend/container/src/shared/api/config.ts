@@ -3,7 +3,6 @@
 
 export const config = {
   // Fallback to localhost if window config is missing (for npm run dev)
-  API_BASE_URL: (window as any).__APP_CONFIG__?.API_BASE_URL || "",
   BASE_URL: ((window as any).__APP_CONFIG__?.BASE_URL || "/admin-console").replace(/\/$/, ""),
   ENABLE_MFE_LINEAGE: (window as any).__APP_CONFIG__?.ENABLE_LINEAGE_MFE !== "false",
   ENABLE_MFE_CATALOG: (window as any).__APP_CONFIG__?.ENABLE_CATALOG_MFE !== "false",
@@ -26,6 +25,7 @@ export const config = {
   OIDC_SCOPE: (window as any).__APP_CONFIG__?.OIDC_SCOPE || "openid profile email",
   OIDC_RESOURCE: (window as any).__APP_CONFIG__?.OIDC_RESOURCE || "",
   OIDC_USERINFO_ENDPOINT: (window as any).__APP_CONFIG__?.OIDC_USERINFO_ENDPOINT || "",
+  REQUIRE_SIGNIN: (window as any).__APP_CONFIG__?.REQUIRE_SIGNIN === "true",
 
   DEBUG: process.env.NODE_ENV !== "production",
 };
