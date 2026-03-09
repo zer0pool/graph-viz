@@ -139,9 +139,15 @@ export function UserDetailPage() {
     try {
       const decodedUserId = decodeURIComponent(userId || "");
       const [userRes, projectsRes, jobsRes] = await Promise.all([
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}`),
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/projects`),
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}`
+        ),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/projects`
+        ),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`
+        ),
       ]);
 
       if (!userRes.ok) throw new Error("Failed to fetch user details");
