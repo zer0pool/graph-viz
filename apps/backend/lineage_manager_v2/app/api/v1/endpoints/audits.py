@@ -11,19 +11,26 @@ from app.services.audit_service import AuditService
 router = APIRouter()
 
 
-class AuditLog(BaseModel):
-    id: int
-    command_type: str
-    target_id: Optional[str]
-    performed_by: str
+class AuditEvent(BaseModel):
+    id: str
+    description: str
     status: str
-    visited_at: datetime
-
-    class Config:
-        from_attributes = True
+    timestamp: str
 
 
-@router.get("/", response_model=List[AuditLog])
+class AuditCommand(BaseModel):
+    id: str
+    timestamp: str
+    type: str
+    summary: str
+    actor: str
+    status: str
+    incidentId: Optional[str] = None
+    relatedInfo: Optional[str] = None
+    events: List[AuditEvent] = []
+
+
+@router.get("", response_model=List[AuditCommand])
 @inject
 async def list_audits(
     limit: int = 100, service: AuditService = Depends(Provide[Container.audit_service])

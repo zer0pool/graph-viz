@@ -12,6 +12,7 @@ app:
   image: admin-console-app
   port: 5100
   basePath: /admin-console
+  requireSignin: true
   resources:
     limits:
       cpu: 1000m

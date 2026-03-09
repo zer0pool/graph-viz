@@ -11,6 +11,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { config } from "../../shared/api/config";
 import { SummaryGrid } from "../../shared/ui/SummaryGrid";
+import { Badge } from "../../shared/ui/Badge";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
 
 // --- Types ---
@@ -23,26 +24,10 @@ interface User {
   roles?: Role[]; // May be missing from catalog list
   department: string;
   status: string;
+  updated_at?: string;
 }
 
 // --- UI Helpers ---
-const Badge = ({
-  children,
-  variant,
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "secondary" | "destructive" | "outline" | "success";
-}) => {
-  let baseClass =
-    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors";
-  if (variant === "secondary") baseClass += " border-transparent bg-blue-100 text-blue-800";
-  else if (variant === "destructive") baseClass += " border-transparent bg-red-100 text-red-800";
-  else if (variant === "outline") baseClass += " border-gray-200 text-gray-700";
-  else if (variant === "success") baseClass += " border-transparent bg-green-100 text-green-800";
-  else baseClass += " border-transparent bg-gray-100 text-gray-800";
-
-  return <div className={baseClass}>{children}</div>;
-};
 
 const getRoleBadgeVariant = (role: Role) => {
   switch (role) {
@@ -98,7 +83,7 @@ export function UsersPage() {
 
       const offset = (page - 1) * pageSize;
       const qParam = query ? `&q=${encodeURIComponent(query)}` : "";
-      const url = `${config.API_BASE_URL}/lineage-manager/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
+      const url = `${config.BASE_URL}/lineage-manager/api/v1/users/?limit=${pageSize}&offset=${offset}${qParam}`;
 
       const response = await fetch(url, {
         signal: controller.signal,
@@ -154,8 +139,27 @@ export function UsersPage() {
     );
   };
 
-  const handleSaveRoles = () => {
-    if (editingUser) {
+  const handleSaveRoles = async () => {
+    if (!editingUser) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(editingUser.user_id)}/roles`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ roles: selectedRoles }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update roles");
+      }
+
+      // Update local state upon success
       setUsers((prev) =>
         prev.map((u) =>
           u.user_id === editingUser.user_id ? { ...u, roles: [...selectedRoles] } : u
@@ -163,6 +167,14 @@ export function UsersPage() {
       );
       setEditingUser(null);
       setSelectedRoles([]);
+
+      // Optionally refresh summary metrics if role counts are displayed
+      refreshSummary();
+    } catch (err: any) {
+      console.error("Error saving roles:", err);
+      alert(err.message || "Failed to save roles");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,16 +248,17 @@ export function UsersPage() {
             <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
               <tr>
                 <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Email</th>
+                <th className="px-6 py-4">Roles</th>
                 <th className="px-6 py-4">Department</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 font-normal text-gray-400">Last Updated</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center">
+                  <td colSpan={6} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
                       <span className="text-gray-500 font-medium">Loading users...</span>
@@ -254,7 +267,7 @@ export function UsersPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-red-500 bg-red-50/50">
+                  <td colSpan={6} className="px-6 py-20 text-center text-red-500 bg-red-50/50">
                     <div className="flex flex-col items-center gap-2">
                       <X className="h-8 w-8" />
                       <span className="font-medium">{error}</span>
@@ -269,7 +282,7 @@ export function UsersPage() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-20 text-center text-gray-400">
                     No users matching your search
                   </td>
                 </tr>
@@ -292,7 +305,19 @@ export function UsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {user.roles && user.roles.length > 0 ? (
+                          user.roles.map((role) => (
+                            <Badge key={role} variant="secondary" className="text-[10px] px-2 py-0">
+                              {role}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-300 italic text-xs">No roles</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <Badge variant="outline">{user.department || "N/A"}</Badge>
                     </td>
@@ -300,6 +325,9 @@ export function UsersPage() {
                       <Badge variant={user.status === "ACTIVE" ? "success" : "default"}>
                         {user.status}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-gray-400">
+                      {user.updated_at ? new Date(user.updated_at).toLocaleString() : "Never"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

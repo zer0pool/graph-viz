@@ -4,9 +4,8 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
-from app.core.auth import AuthenticationError
-
 from app.api.v1.schemas import auth as auth_schemas
+from app.core.auth import AuthenticationError
 from app.core.container import Container
 from app.services.auth_service import AuthService
 
@@ -61,7 +60,9 @@ async def authorized(
 
         await auth_service.handle_callback(request, id_token, state)
         # Redirect back to frontend using 303 See Other to convert POST to GET
-        return RedirectResponse(url="/admin-console/", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(
+            url="/admin-console/", status_code=status.HTTP_303_SEE_OTHER
+        )
     except (ValueError, AuthenticationError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -85,7 +86,9 @@ async def exchange(
             )
 
         await auth_service.handle_callback(request, code, state)
-        return RedirectResponse(url="/admin-console/", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(
+            url="/admin-console/", status_code=status.HTTP_303_SEE_OTHER
+        )
     except (ValueError, AuthenticationError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 

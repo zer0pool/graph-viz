@@ -1,47 +1,19 @@
-services:
-  lineage-manager:
-    build:
-      context: ./lineage_manager_v2
-      dockerfile: deploy/docker/Dockerfile
-    container_name: lineage-manager
-    ports:
-      - "${BACKEND_PORT:-5003}:5003"
-    env_file:
-      - ./lineage_manager_v2/.env
-    environment:
-      - PORT=5003
-      - DB_HOST=mysql-db
-      - DB_PORT=3306
-      - REDIS_HOST=redis-cache
-      - REDIS_PORT=6379
-      - APP_JOB_MANAGER_URL=http://app-job-dummy:9000
-      - FEATURE_REQUIRE_SIGNIN=false
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
-      - GOOGLE_CLOUD_PROJECT=gizmopool
-    volumes:
-      - ./lineage_manager_v2:/app:ro
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
-    depends_on:
-      - mysql-db
-      - redis-cache
-    networks:
-      - backend-network
+name: admin-console-backend
 
+services:
+  # --- Infrastructure ---
   mysql-db:
-    image: mysql:8.0-debian
+    image: mysql:8.0
     container_name: mysql-db
-    command: --default-authentication-plugin=mysql_native_password
-    env_file:
-      - ./lineage_manager_v2/.env
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-lineage_manager}
-      MYSQL_USER: ${DB_USER:-ss_admin}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-admin_password}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+      MYSQL_DATABASE: lineage_manager_v2
+      MYSQL_ROOT_PASSWORD: root123
     ports:
-      - "${DB_EXTERNAL_PORT:-33306}:3306"
+      - "33307:3306"
+    volumes:
+      - mysql_v2_data:/var/lib/mysql
     networks:
-      - backend-network
+      - admin-console-network
 
   redis-cache:
     image: redis:alpine
@@ -49,21 +21,92 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - backend-network
+      - admin-console-network
 
-  app-job-dummy:
+  # --- Lineage Backend ---
+  lineage-api:
+    build:
+      context: ./lineage_manager_v2
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/lineage-api
+    container_name: lineage-api
+    ports:
+      - "5003:5003"
+    env_file:
+      - ./lineage_manager_v2/.env
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JOB_MANAGER_URL=http://job-dummy:9000
+      - ROOT_PATH=/admin-console/lineage-manager
+      - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
+    depends_on:
+      - mysql-db
+      - redis-cache
+      - job-dummy
+    networks:
+      - admin-console-network
+
+  lineage-worker:
+    build:
+      context: ./lineage_manager_v2
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/lineage-worker
+    container_name: lineage-worker
+    command: celery
+    env_file:
+      - ./lineage_manager_v2/.env
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JOB_MANAGER_URL=http://job-dummy:9000
+    depends_on:
+      - mysql-db
+      - redis-cache
+      - job-dummy
+    networks:
+      - admin-console-network
+
+  # --- Analytics Backend ---
+  analytics-api:
+    build:
+      context: ./analytics_manager
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/analytics-api
+    container_name: analytics-api
+    ports:
+      - "5004:5004"
+    env_file:
+      - ./analytics_manager/.env
+    environment:
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - LINEAGE_MANAGER_V2_URL=http://lineage-api:5003
+      - ROOT_PATH=/admin-console/analytics-manager
+      - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    depends_on:
+      - redis-cache
+    networks:
+      - admin-console-network
+
+  # --- Dummy Services ---
+  job-dummy:
     build:
       context: ./dummy-job-manager
       dockerfile: Dockerfile
-    container_name: app-job-dummy
+    image: admin-console/job-dummy
+    container_name: job-dummy
     ports:
       - "9000:9000"
     volumes:
       - ./dummy-job-manager:/app/data:ro
     networks:
-      - backend-network
+      - admin-console-network
 
-networks:
-  backend-network:
-    name: lineage-platform-network
-    driver: bridge

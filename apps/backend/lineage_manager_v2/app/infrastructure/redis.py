@@ -8,10 +8,10 @@ logger = logging.getLogger("lineage_manager.redis")
 
 # Initialize Redis Client
 print(
-    f"[REDIS] Connecting to {settings.REDIS_HOST}:{settings.REDIS_PORT} (URL: {settings.REDIS_URL})"
+    f"[REDIS] Connecting to {settings.redis.host}:{settings.redis.port} (URL: {settings.REDIS_URL})"
 )
 logger.info(
-    f"Connecting to Redis at: {settings.REDIS_HOST}:{settings.REDIS_PORT} (DB={settings.REDIS_DB})"
+    f"Connecting to Redis at: {settings.redis.host}:{settings.redis.port} (DB={settings.redis.db})"
 )
 
 redis_client = redis.from_url(

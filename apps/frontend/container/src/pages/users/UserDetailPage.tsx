@@ -13,81 +13,10 @@ import {
 } from "lucide-react";
 import { config } from "../../shared/api/config";
 
-// --- Local UI Components (Matched with Project Style) ---
-
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div
-    className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`}
-  >
-    {children}
-  </div>
-);
-
-const CardHeader = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`px-6 py-5 border-b border-gray-100 ${className}`}>{children}</div>;
-
-const CardTitle = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <h3 className={`text-base font-semibold text-gray-900 ${className}`}>{children}</h3>;
-
-const CardDescription = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <p className={`text-xs text-gray-500 mt-1 ${className}`}>{children}</p>;
-
-const CardContent = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-6 ${className}`}>{children}</div>;
-
-const Badge = ({
-  children,
-  variant = "default",
-  className = "",
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
-  className?: string;
-}) => {
-  const variants = {
-    default: "bg-gray-100 text-gray-800 border-transparent",
-    secondary: "bg-blue-100 text-blue-800 border-transparent",
-    destructive: "bg-red-100 text-red-800 border-transparent",
-    outline: "border-gray-200 text-gray-700",
-    success: "bg-green-100 text-green-800 border-transparent",
-    warning: "bg-amber-100 text-amber-800 border-transparent",
-  };
-  return (
-    <div
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${variants[variant]} ${className}`}
-    >
-      {children}
-    </div>
-  );
-};
-
-const Separator = () => <div className="h-px bg-gray-100 w-full my-4" />;
-
-const Avatar = ({ initials }: { initials: string }) => (
-  <div className="h-20 w-20 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-inner">
-    {initials}
-  </div>
-);
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../shared/ui/Card";
+import { Badge } from "../../shared/ui/Badge";
+import { Avatar } from "../../shared/ui/Avatar";
+import { Separator } from "../../shared/ui/Separator";
 
 // --- Types ---
 
@@ -132,6 +61,9 @@ export function UserDetailPage() {
   const [jobs, setJobs] = useState<JobData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditingRoles, setIsEditingRoles] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [savingRoles, setSavingRoles] = useState(false);
 
   const fetchUserDetail = async () => {
     setLoading(true);
@@ -139,9 +71,15 @@ export function UserDetailPage() {
     try {
       const decodedUserId = decodeURIComponent(userId || "");
       const [userRes, projectsRes, jobsRes] = await Promise.all([
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}`),
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/projects`),
-        fetch(`${config.API_BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}`
+        ),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/projects`
+        ),
+        fetch(
+          `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/jobs`
+        ),
       ]);
 
       if (!userRes.ok) throw new Error("Failed to fetch user details");
@@ -172,6 +110,57 @@ export function UserDetailPage() {
       setError(err.message || "Failed to load user details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditRoles = () => {
+    setSelectedRoles(user?.roles || []);
+    setIsEditingRoles(true);
+  };
+
+  const handleToggleRole = (role: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
+  const handleSaveRoles = async () => {
+    if (!userId) return;
+
+    setSavingRoles(true);
+    try {
+      const decodedUserId = decodeURIComponent(userId);
+      const response = await fetch(
+        `${config.BASE_URL}/lineage-manager/api/v1/users/${encodeURIComponent(decodedUserId)}/roles`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ roles: selectedRoles }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update roles");
+      }
+
+      // Update local state
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              user: { ...prev.user, roles: selectedRoles },
+            }
+          : null
+      );
+
+      setIsEditingRoles(false);
+    } catch (err: any) {
+      console.error("Error saving roles:", err);
+      alert(err.message || "Failed to save roles");
+    } finally {
+      setSavingRoles(false);
     }
   };
 
@@ -280,22 +269,30 @@ export function UserDetailPage() {
                   </label>
                   <p className="text-sm text-gray-900">{user.department || "N/A"}</p>
                 </div>
-                <div className="space-y-1.5">
+                <div className="flex items-center gap-2 mb-1.5">
                   <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-gray-400" />
                     Access Roles
                   </label>
-                  <div className="flex flex-wrap gap-1">
-                    {user.roles?.map((role) => (
+                  <button
+                    onClick={handleEditRoles}
+                    className="text-[10px] text-blue-600 hover:underline font-medium"
+                  >
+                    (Edit)
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {user.roles && user.roles.length > 0 ? (
+                    user.roles.map((role) => (
                       <Badge key={role} variant="secondary" className="text-[9px] px-2">
                         {role}
                       </Badge>
-                    )) || (
-                      <Badge variant="outline" className="text-[9px] px-2">
-                        Viewer
-                      </Badge>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] px-2">
+                      Viewer
+                    </Badge>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
@@ -452,6 +449,80 @@ export function UserDetailPage() {
           50% { opacity: .4; }
         }
       `}</style>
+
+      {/* Edit Roles Modal */}
+      {isEditingRoles && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Edit Access Roles</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Modify permissions for <strong>{user.name}</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => setIsEditingRoles(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <RefreshCw className="h-5 w-5" />{" "}
+                {/* Using RefreshCw as a placeholder for close if X not imported, but wait... X is not imported but lucide-react has it */}
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {["PM", "OPERATOR", "DEVELOPER", "VIEWER"].map((role) => (
+                <div
+                  key={role}
+                  className="flex items-center space-x-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => handleToggleRole(role)}
+                >
+                  <div
+                    className={`w-5 h-5 rounded border ${selectedRoles.includes(role) ? "bg-blue-600 border-blue-600 flex items-center justify-center" : "border-gray-300"}`}
+                  >
+                    {selectedRoles.includes(role) && (
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          role === "PM"
+                            ? "secondary"
+                            : role === "OPERATOR"
+                              ? "default"
+                              : role === "DEVELOPER"
+                                ? "destructive"
+                                : "outline"
+                        }
+                      >
+                        {role}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditingRoles(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveRoles}
+                disabled={savingRoles}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 shadow-md disabled:opacity-50"
+              >
+                {savingRoles ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

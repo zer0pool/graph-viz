@@ -170,8 +170,10 @@ server {
         error_log /var/log/nginx/oidc_error.log;
 
         # Proxy to backend /api/v1/auth/authorized
+        resolver $NAMESERVER valid=30s ipv6=off;
+        set $backend_host_upstream $BACKEND_HOST;
         rewrite ^.*$ /api/v1/auth/authorized break;
-        proxy_pass $BACKEND_HOST;
+        proxy_pass $backend_host_upstream;
         
         # Forward the original Host (e.g., self-scheduling.com) not the K8S service name
         # This ensures backend redirects use the correct external domain

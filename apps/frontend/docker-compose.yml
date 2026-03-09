@@ -1,71 +1,61 @@
+name: admin-console-frontend
+
 services:
-  frontend-console-app:
+  shell:
     build:
       context: ./container
       dockerfile: deploy/docker/Dockerfile
       args:
-        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
-        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: frontend-console-app
+        - LINEAGE_MFE_URL=/admin-console/mfe-lineage/remoteEntry.js
+        - CATALOG_MFE_URL=/admin-console/mfe-catalog/remoteEntry.js
+    image: admin-console/shell
+    container_name: shell
     ports:
-      - "${SHELL_PORT:-5100}:80"
+      - "5100:80"
     environment:
-      - API_BASE_URL=/admin-console
-      - BASE_URL=${BASE_URL:-/admin-console}
-      - BACKEND_HOST=http://lineage-manager:5003
-      - LINEAGE_MFE_URL=/admin-console/mfe-lineage/remoteEntry.js
-      - CATALOG_MFE_URL=/admin-console/mfe-catalog/remoteEntry.js
-      - ENABLE_LINEAGE_MFE=${ENABLE_LINEAGE_MFE:-true}
-      - ENABLE_CATALOG_MFE=${ENABLE_CATALOG_MFE:-true}
+      - BASE_URL=/admin-console
+      - BACKEND_HOST=http://lineage-api:5003
+      - LINEAGE_MANAGER_UPSTREAM=http://lineage-api:5003
+      - ANALYTICS_MANAGER_UPSTREAM=http://analytics-api:5004
+      - MFE_LINEAGE_UPSTREAM=http://ui-lineage:80
+      - MFE_CATALOG_UPSTREAM=http://ui-catalog:80
+      - NAMESERVER=127.0.0.11
       - NODE_ENV=production
+      - REQUIRE_SIGNIN=true
+      - REST_API_DOCS_URL=http://localhost:5100/admin-console/docs
+      - GRAPHQL_API_DOCS_URL=http://localhost:5100/admin-console/analytics-manager/graphql
     depends_on:
-      - frontend-mfe-lineage
-      - frontend-mfe-catalog
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ui-lineage
+      - ui-catalog
+      - lineage-api
     networks:
-      - frontend-network
-      - backend-network
+      - admin-console-network
 
-  frontend-mfe-lineage:
+  ui-lineage:
     build:
       context: ./mfe-lineage
       dockerfile: deploy/docker/Dockerfile
-      args:
-        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
-        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: frontend-mfe-lineage
+    image: admin-console/ui-lineage
+    container_name: ui-lineage
     ports:
-      - "${LINEAGE_PORT:-5101}:80"
+      - "5101:80"
     environment:
-      - API_BASE_URL=/admin-console
-      - BASE_URL=${LINEAGE_BASE_URL:-/mfe-lineage}
-      - BACKEND_HOST=http://lineage-manager:5003
+      - BASE_URL=/admin-console/mfe-lineage
+      - BACKEND_HOST=http://lineage-api:5003
     networks:
-      - frontend-network
-      - backend-network
+      - admin-console-network
 
-  frontend-mfe-catalog:
+  ui-catalog:
     build:
       context: ./mfe-catalog
       dockerfile: deploy/docker/Dockerfile
-      args:
-        - LINEAGE_MFE_URL=http://localhost:5101/mfe-lineage/remoteEntry.js
-        - CATALOG_MFE_URL=http://localhost:5102/mfe-catalog/remoteEntry.js
-    container_name: frontend-mfe-catalog
+    image: admin-console/ui-catalog
+    container_name: ui-catalog
     ports:
-      - "${TABLE_DETAIL_PORT:-5102}:80"
+      - "5102:80"
     environment:
-      - API_BASE_URL=/admin-console
-      - BASE_URL=${CATALOG_BASE_URL:-/mfe-catalog}
-      - BACKEND_HOST=http://lineage-manager:5003
+      - BASE_URL=/admin-console/mfe-catalog
+      - BACKEND_HOST=http://lineage-api:5003
     networks:
-      - frontend-network
-      - backend-network
+      - admin-console-network
 
-networks:
-  frontend-network:
-    driver: bridge
-  backend-network:
-    name: lineage-platform-network
-    driver: bridge

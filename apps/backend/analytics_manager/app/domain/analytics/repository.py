@@ -1,8 +1,10 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from starlette.concurrency import run_in_threadpool
-from app.infrastructure.gcp.bigquery import BigQueryClient
+
 from app.core.config import settings
+from app.infrastructure.gcp.bigquery import BigQueryClient
 
 logger = logging.getLogger(__name__)
 

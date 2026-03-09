@@ -109,6 +109,7 @@ import { AuditPage } from "../../pages/audit/AuditPage";
 import { UsersPage } from "../../pages/users/UsersPage";
 import { UserDetailPage } from "../../pages/users/UserDetailPage";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage";
+import { ApiDocsPage } from "../../pages/api-docs/ApiDocsPage";
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-8 text-center">
@@ -162,6 +163,7 @@ export const AppRouter: React.FC<{
       <Route path="/users" element={<UsersPage />} />
       <Route path="/users/:userId" element={<UserDetailPage />} />
       <Route path="/audit" element={<AuditPage />} />
+      <Route path="/api-docs" element={<ApiDocsPage />} />
       <Route path="/settings" element={<Placeholder title="Settings" />} />
     </Routes>
   );

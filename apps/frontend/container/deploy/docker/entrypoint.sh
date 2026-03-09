@@ -39,8 +39,7 @@ else
     export MFE_CATALOG_UPSTREAM="${MFE_CATALOG_UPSTREAM:-http://frontend-mfe-catalog:80}"
 fi
 
-# Set specific service upstreams (Defaults to Host-Development friendly host.docker.internal)
-# This allows using 'make dev' on host while frontend is in docker.
+# Set specific service upstreams
 export LINEAGE_MANAGER_UPSTREAM="${LINEAGE_MANAGER_UPSTREAM:-$BACKEND_HOST}"
 export ANALYTICS_MANAGER_UPSTREAM="${ANALYTICS_MANAGER_UPSTREAM:-http://analytics-manager:5004}"
 
@@ -63,7 +62,7 @@ if [ -f /vars.sh ]; then
     . /vars.sh
 else
     # Fallback if file missing (local testing outside docker)
-    export ALL_VARS='$API_BASE_URL $BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $ENABLE_LINEAGE_MFE $ENABLE_CATALOG_MFE $LINEAGE_MFE_URL $CATALOG_MFE_URL $NAMESERVER $BACKEND_HOST'
+    export ALL_VARS='$BASE_URL $BASE_URL_PREFIX $REDIRECT_COMMAND $API_LOCATION_REGEX $SUBPATH_REDIRECT_BLOCK $ENABLE_LINEAGE_MFE $ENABLE_CATALOG_MFE $LINEAGE_MFE_URL $CATALOG_MFE_URL $NAMESERVER $BACKEND_HOST'
 fi
 
 # Inject into config.js

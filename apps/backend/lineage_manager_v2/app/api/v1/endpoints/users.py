@@ -2,10 +2,11 @@ import logging
 from typing import List
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.v1.schemas import resources as schemas
 from app.core.container import Container
+from app.services.auth_service import AuthService
 from app.services.metadata_service import MetadataService
 
 logger = logging.getLogger(__name__)
@@ -99,4 +100,35 @@ async def list_user_projects(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user projects",
+        )
+
+
+@router.patch("/{user_id}/roles", response_model=schemas.User)
+@inject
+async def update_user_roles(
+    user_id: str,
+    role_update: schemas.UserRoleUpdate,
+    request: Request,
+    auth_service: AuthService = Depends(Provide[Container.auth_service]),
+    service: MetadataService = Depends(Provide[Container.metadata_service]),
+):
+    """Update roles for a user."""
+    ctx_user = auth_service.get_current_user(request)
+    if not ctx_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
+
+    try:
+        performed_by = ctx_user.get("email") or ctx_user.get("sub") or "UNKNOWN"
+        user = await service.update_user_roles(
+            user_id=user_id, roles=role_update.roles, performed_by=performed_by
+        )
+        return user
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to update user roles: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

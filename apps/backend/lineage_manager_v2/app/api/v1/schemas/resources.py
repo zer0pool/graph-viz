@@ -76,6 +76,10 @@ class Resource(ResourceBase):
         from_attributes = True
 
 
+class UserRoleUpdate(BaseModel):
+    roles: List[str]
+
+
 class UserBase(BaseModel):
     user_id: str
     sub: str
