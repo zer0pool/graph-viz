@@ -2,7 +2,6 @@ import logging
 
 from google.auth import default
 from google.auth.transport.requests import Request
-from google.oauth2 import service_account
 
 from app.core.config import settings
 

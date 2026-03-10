@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     GOOGLE_PROJECT_ID_RAW: Optional[str] = None  # Renamed to avoid property collision
 
     BIGQUERY_HISTORY_TABLE: str = "test_data.admin_job_run_history"
-    BIGQUERY_VISIT_LOG_TABLE: str = "test_data.visit_logs"
+    BIGQUERY_VISIT_LOG_TABLE_RAW: str = "test_data.visit_logs"
     BIGQUERY_JOB_RUN_HISTORY_TABLE: str = (
         "test_project_name.tmp_sss_993.admin_finish_history"
     )
@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     def bigquery(self) -> BigQuerySettings:
         return BigQuerySettings(
             history_table=self.BIGQUERY_HISTORY_TABLE,
-            visit_log_table=self.BIGQUERY_VISIT_LOG_TABLE,
+            visit_log_table=self.BIGQUERY_VISIT_LOG_TABLE_RAW,
             job_run_history_table=self.BIGQUERY_JOB_RUN_HISTORY_TABLE,
         )
 

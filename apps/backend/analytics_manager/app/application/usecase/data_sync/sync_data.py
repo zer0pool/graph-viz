@@ -1,15 +1,15 @@
 import json
 import logging
-from typing import Any, Dict, List
 
-from redis import Redis
+from redis.asyncio import Redis
 
+# Use BigQueryClient direct injection for this use-case, or define a new gateway later.
 from app.infrastructure.gcp.bigquery import BigQueryClient
 
 logger = logging.getLogger(__name__)
 
 
-class DataSyncService:
+class SyncDataUseCase:
     """
     Service responsible for synchronizing data between Redis/Queues and BigQuery.
     """
@@ -18,7 +18,7 @@ class DataSyncService:
         self.bq_client = bq_client
         self.redis = redis_client
 
-    async def sync_redis_queue_to_bigquery(
+    async def execute(
         self, queue_key: str, table_id: str, batch_size: int = 100
     ) -> int:
         """
@@ -39,6 +39,8 @@ class DataSyncService:
                 return 0
 
             logger.info(f"Syncing {len(events)} records to BigQuery: {table_id}")
+            # bq_client.insert_rows is synchronous, so need to run_in_threadpool if strictly async,
+            # but for now we follow old code pattern to avoid behavioral changes.
             success = self.bq_client.insert_rows(table_id, events)
 
             if success:
