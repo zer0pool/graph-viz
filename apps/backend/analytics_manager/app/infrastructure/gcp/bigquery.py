@@ -60,7 +60,7 @@ class BigQueryClient:
             logger.error(f"BigQuery Insert Failed: {e}")
             return False
 
-    def get_recent_job_runs(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_recent_job_runs(self, days: int = 30) -> List[Dict[str, Any]]:
         """
         Queries the job execution history table and returns the most recent runs.
         Sorted by start_date DESC. Table configured via JOB_RUN_HISTORY_TABLE.
@@ -80,8 +80,8 @@ class BigQueryClient:
                 next_start_time,
                 publish_time
             FROM `{table}`
+            WHERE start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
             ORDER BY start_time DESC
-            LIMIT {limit}
         """
         logger.info(f"Fetching recent job runs from BigQuery table: {table}")
         return self.query(query)

@@ -4,17 +4,17 @@ from typing import Any, Dict, List
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
+from app.domain.repository.analytics_repository import AnalyticsRepository
 from app.infrastructure.gcp.bigquery import BigQueryClient
 
 logger = logging.getLogger(__name__)
 
 
-class AnalyticsRepository:
+class BigQueryAnalyticsRepository(AnalyticsRepository):
     def __init__(self, bq_client: BigQueryClient):
         self.bq_client = bq_client
 
     async def get_bq_ingestion_stats(self) -> List[Dict[str, Any]]:
-        """Fetch ingestion stats from BigQuery"""
         table_name = settings.FEATURE_HISTORY_TABLE
         try:
             query = f"""

@@ -6,7 +6,7 @@ def test_config_nested_loading_analytics():
     # Set environment variables to test nested loading
     os.environ["REDIS_DB"] = "5"
     os.environ["GOOGLE_PROJECT_ID_RAW"] = "test-project"
-    os.environ["BIGQUERY_VISIT_LOG_TABLE"] = "custom.table"
+    os.environ["BIGQUERY_VISIT_LOG_TABLE_RAW"] = "custom.table"
     
     # Reload settings
     from app.core import config
