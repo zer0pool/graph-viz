@@ -1,3 +1,4 @@
+import time
 from typing import List, Optional
 
 from app.domain.graph.entities.job_node import JobNode as Job
@@ -9,7 +10,7 @@ from app.services.audit_service import AuditService
 
 
 class MetadataService:
-    def __init__(self, uow: UnitOfWork, audit_service: AuditService = None):
+    def __init__(self, uow: UnitOfWork, audit_service: Optional[AuditService] = None):
         self.uow = uow
         self.audit_service = audit_service
 
@@ -96,27 +97,35 @@ class MetadataService:
         self, user_id: str, roles: List[str], performed_by: str = "SYSTEM"
     ) -> User:
         """Update roles for a specific user."""
+        start_time = time.time()
         async with self.uow:
             user = await self.uow.users.get_by_user_id(user_id)
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
+            # 1. Get existing roles (for diff in audit)
             old_roles = user.roles or []
+            
+            # 2. Update roles
             user.roles = roles
-            saved_user = await self.uow.users.save(user)
+            await self.uow.users.save(user)
             await self.uow.commit()
-
-            # Log audit
+            
+            # 3. Audit
+            duration = time.time() - start_time
+            summary = f"Updated roles for user '{user_id}': {old_roles} -> {roles}"
             if self.audit_service:
-                await self.audit_service.log_command(
+                self.audit_service.log_command(
                     command_type="UPDATE_USER_ROLES",
                     target_id=user_id,
                     performed_by=performed_by,
                     status="SUCCESS",
                     payload={"old_roles": old_roles, "new_roles": roles},
+                    target_type="USER",
+                    duration=duration
                 )
 
-            return saved_user
+            return user
 
     async def list_user_projects(self, user_id: str) -> List[Project]:
         async with self.uow:

@@ -1,4 +1,3 @@
-name: admin-console-backend
 
 services:
   # --- Infrastructure ---
@@ -55,7 +54,7 @@ services:
       dockerfile: deploy/docker/Dockerfile
     image: admin-console/lineage-worker
     container_name: lineage-worker
-    command: celery
+    command: celery -Q lineage_v2
     env_file:
       - ./lineage_manager_v2/.env
     environment:

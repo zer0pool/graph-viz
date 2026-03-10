@@ -28,6 +28,7 @@ interface AuditCommand {
   summary: string;
   actor: string;
   status: CommandStatus;
+  duration?: number;
   incidentId?: string;
   relatedInfo?: string;
   events: AuditEvent[];
@@ -306,13 +307,14 @@ export function AuditPage() {
                 <th className="px-4 py-3 w-40">Time</th>
                 <th className="px-4 py-3 w-28">Type</th>
                 <th className="px-4 py-3">Summary</th>
+                <th className="px-4 py-3 w-24 text-right">Duration</th>
                 <th className="px-4 py-3 w-32">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No records found
                   </td>
                 </tr>
@@ -356,6 +358,11 @@ export function AuditPage() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-right font-mono text-gray-600">
+                        {command.duration !== undefined && command.duration !== null
+                          ? `${command.duration.toFixed(1)}s`
+                          : "-"}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(command.status)}
@@ -367,7 +374,7 @@ export function AuditPage() {
                     {/* Expanded Details */}
                     {expandedCommands.has(command.id) && (
                       <tr className="bg-gray-50/50">
-                        <td colSpan={5} className="px-4 py-0">
+                        <td colSpan={6} className="px-4 py-0">
                           <div className="pl-12 pr-4 py-4 space-y-3 border-l-2 border-blue-100 ml-6 my-2">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                               Event Log

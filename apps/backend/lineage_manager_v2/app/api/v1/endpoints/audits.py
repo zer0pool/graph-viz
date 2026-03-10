@@ -25,6 +25,7 @@ class AuditCommand(BaseModel):
     summary: str
     actor: str
     status: str
+    duration: Optional[float] = None
     incidentId: Optional[str] = None
     relatedInfo: Optional[str] = None
     events: List[AuditEvent] = []
