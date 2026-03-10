@@ -10,6 +10,7 @@ import {
   Settings,
   FileText,
   ExternalLink,
+  Folder,
 } from "lucide-react";
 import { cn } from "../../shared/lib/utils";
 
@@ -24,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     { label: "Dashboard", path: "/", icon: LayoutDashboard },
     { label: "Jobs", path: "/jobs", icon: Briefcase },
     { label: "Tables", path: "/tables", icon: Table2 },
+    { label: "Projects", path: "/projects", icon: Folder },
     // { label: "Data Lineage", path: "/lineage", icon: GitBranch },
     { label: "Users", path: "/users", icon: Users },
     { label: "Audit/Events", path: "/audit", icon: Shield },

@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.base import Base
+from app.domain.audit.models import AuditLog
 
 
 class GraphNode(Base):
@@ -164,14 +165,4 @@ class UserAccount(Base):
     )
 
 
-class AuditLog(Base):
-    __tablename__ = "audit_log"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    command_type = Column(String(100), nullable=False, index=True)
-    target_id = Column(String(255), index=True)
-    payload = Column(Text, nullable=True)
-    performed_by = Column(String(100), nullable=False, index=True)
-    status = Column(String(50), nullable=False)
-    error_message = Column(Text, nullable=True)
-    visited_at = Column(DateTime, server_default=func.now(), nullable=False)

@@ -81,6 +81,7 @@ wait_for_mysql() {
 
 # --- Main Execution Logic ---
 CMD="${1:-backend}"
+shift || true
 
 case "$CMD" in
     backend)
@@ -92,12 +93,12 @@ case "$CMD" in
             alembic upgrade head
         fi
         # In V2, the app is in 'app' folder and PYTHONPATH should include root
-        exec uvicorn app.main:app --host 0.0.0.0 --port 5003 --workers 1 --log-level info
+        exec uvicorn app.main:app --host 0.0.0.0 --port 5003 --workers 1 --log-level info "$@"
         ;;
     celery)
         echo "Starting Celery Worker for V2..."
         wait_for_mysql
-        exec celery -A app.core.celery_app worker --loglevel=info --pool=solo
+        exec celery -A app.core.celery_app worker --loglevel=info "$@"
         ;;
     *)
         echo >&2 "Error: Invalid command '$CMD'"

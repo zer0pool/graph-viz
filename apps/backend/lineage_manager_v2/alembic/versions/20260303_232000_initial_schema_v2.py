@@ -1,8 +1,8 @@
-"""initial_schema_v2
+"""initial_schema_v2_consolidated
 
 Revision ID: 0001
 Revises: 
-Create Date: 2026-03-03 23:20:00.000000
+Create Date: 2026-03-11 00:30:00.000000
 
 """
 from typing import Sequence, Union
@@ -134,18 +134,24 @@ def upgrade() -> None:
     op.create_table(
         "audit_log",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("command_type", sa.String(length=100), nullable=False),
+        sa.Column("parent_id", sa.Integer(), nullable=True),
+        sa.Column("user_email", sa.String(length=255), nullable=False),
+        sa.Column("action", sa.String(length=50), nullable=False),
+        sa.Column("target_type", sa.String(length=50), nullable=False),
         sa.Column("target_id", sa.String(length=255), nullable=True),
-        sa.Column("payload", sa.Text(), nullable=True),
-        sa.Column("performed_by", sa.String(length=100), nullable=False),
-        sa.Column("status", sa.String(length=50), nullable=False),
+        sa.Column("task_name", sa.String(length=100), nullable=True),
+        sa.Column("payload", sa.JSON(), nullable=True),
+        sa.Column("status", sa.String(length=20), nullable=True, server_default="SUCCESS"),
         sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("visited_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
+        sa.Column("total_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("success_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("fail_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_audit_log_command_type"), "audit_log", ["command_type"], unique=False)
-    op.create_index(op.f("ix_audit_log_performed_by"), "audit_log", ["performed_by"], unique=False)
-    op.create_index(op.f("ix_audit_log_target_id"), "audit_log", ["target_id"], unique=False)
+    op.create_index(op.f("ix_audit_log_parent_id"), "audit_log", ["parent_id"], unique=False)
+    op.create_index(op.f("ix_audit_log_user_email"), "audit_log", ["user_email"], unique=False)
+    op.create_index(op.f("ix_audit_log_timestamp"), "audit_log", ["timestamp"], unique=False)
 
     # 9. Create views
     op.execute("""

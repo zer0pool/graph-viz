@@ -1,6 +1,6 @@
 import logging
 from collections import deque
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 
@@ -40,8 +40,13 @@ class GraphService:
         return f"Registered {len(data.edges)} edges and synced closure table"
 
     async def initialize_graph(
-        self, drop_existing: bool = False, batch_size: int = 100
-    ) -> str:
+        self, 
+        drop_existing: bool = False, 
+        batch_size: int = 100,
+        audit_service: Optional[Any] = None,
+        audit_parent_id: Optional[int] = None,
+        user_email: str = "system"
+    ) -> Dict[str, Any]:
         """
         Automated Discovery & Initialization:
         1. Fetch all jobs from external Job Manager
@@ -55,11 +60,25 @@ class GraphService:
                 await self.uow.commit()
 
         # 1. Discovery from external source
+        import time
+        start_time = time.time()
+        
+        # Audit: Start Detail
+        if audit_service and audit_parent_id:
+            await audit_service.bulk_create_details(
+                parent_id=audit_parent_id,
+                action_type="GRAPH_INIT_EVENT",
+                user_email=user_email,
+                targets=["Graph Initialization Start"],
+                target_type="SYSTEM",
+                status="SUCCESS"
+            )
+
         external_jobs = await self.job_manager_client.fetch_scheduling_lineage()
         total_jobs = len(external_jobs)
         logger.info(f"Fetched {total_jobs} jobs from external source")
 
-        overall_stats = {"jobs": 0, "edges": 0, "projects": set()}
+        overall_stats: Dict[str, Any] = {"jobs": 0, "edges": 0, "projects": set(), "failed": 0}
 
         # 2. Process in batches
         for i in range(0, total_jobs, batch_size):
@@ -69,91 +88,112 @@ class GraphService:
             async with self.uow:
                 for item in batch:
                     job_id = item.get("job_id")
-                    metadata = item.get("metadata", {})
-                    job_meta = metadata.get("job_meta", {})
-                    project_id = (
-                        metadata.get("project_name")
-                        or metadata.get("project")
-                        or "unknown"
-                    )
+                    
+                    try:
+                        metadata = item.get("metadata", {})
+                        job_meta = metadata.get("job_meta", {})
+                        project_id = (
+                            metadata.get("project_name")
+                            or metadata.get("project")
+                            or "unknown"
+                        )
 
-                    # 2.1 Ensure Project
-                    if project_id not in overall_stats["projects"]:
-                        p_entity = Project(
+                        # 2.1 Ensure Project
+                        if project_id not in overall_stats["projects"]:
+                            p_entity = Project(
+                                project_id=project_id,
+                                display_name=project_id.replace("-", " ").title(),
+                            )
+                            await self.uow.projects.save(p_entity)
+                            overall_stats["projects"].add(project_id)
+
+                        # 2.2 Save Job Metadata
+                        job_entity = Job(
+                            job_id=job_id,
                             project_id=project_id,
-                            display_name=project_id.replace("-", " ").title(),
+                            name=metadata.get("name", str(job_id).split(".")[-1]),
+                            owners=metadata.get("owner", []),
+                            properties=job_meta,
                         )
-                        await self.uow.projects.save(p_entity)
-                        overall_stats["projects"].add(project_id)
+                        await self.uow.jobs.save(job_entity)
+                        overall_stats["jobs"] += 1
 
-                    # 2.2 Save Job Metadata
-                    job_entity = Job(
-                        job_id=job_id,
-                        project_id=project_id,
-                        name=metadata.get("name", job_id.split(".")[-1]),
-                        owners=metadata.get("owner", []),
-                        properties=job_meta,
-                    )
-                    await self.uow.jobs.save(job_entity)
-                    overall_stats["jobs"] += 1
+                        # 2.3 Register Lineage Nodes & Edges
+                        job_node_id = await self.uow.graph.ensure_node("job", job_id)
 
-                    # 2.3 Register Lineage Nodes & Edges
-                    job_node_id = await self.uow.graph.ensure_node("job", job_id)
+                        # Upstreams
+                        for up in item.get("upstreams", []):
+                            u_type = up.get("type", "table")
+                            u_name = up.get("name")
+                            if u_type in ("table", "storage"):
+                                t_entity = ResourceMetadata(
+                                    id=0,
+                                    project_id=project_id,
+                                    fqn=u_name,
+                                    data_type=u_type.upper(),
+                                )
+                                saved_table = await self.uow.data_nodes.save(t_entity)
+                                u_node_id = saved_table.id
+                            else:
+                                u_node_id = await self.uow.graph.ensure_node(u_type, u_name)
 
-                    # Upstreams
-                    for up in item.get("upstreams", []):
-                        u_type = up.get("type", "table")
-                        u_name = up.get("name")
-                        if u_type in ("table", "storage"):
-                            t_entity = ResourceMetadata(
-                                id=0,
-                                project_id=project_id,
-                                fqn=u_name,
-                                data_type=u_type.upper(),
+                            await self.uow.graph.add_edge(
+                                u_node_id,
+                                job_node_id,
+                                "consumes",
+                                {"trigger": up.get("trigger", False)},
                             )
-                            saved_table = await self.uow.data_nodes.save(t_entity)
-                            u_node_id = saved_table.id
-                        else:
-                            u_node_id = await self.uow.graph.ensure_node(u_type, u_name)
+                            overall_stats["edges"] += 1
 
-                        await self.uow.graph.add_edge(
-                            u_node_id,
-                            job_node_id,
-                            "consumes",
-                            {"trigger": up.get("trigger", False)},
-                        )
-                        overall_stats["edges"] += 1
+                        # Downstreams
+                        for down in item.get("downstreams", []):
+                            d_type = down.get("type", "table")
+                            d_name = down.get("name")
+                            if d_type in ("table", "storage"):
+                                t_entity = ResourceMetadata(
+                                    id=0,
+                                    project_id=project_id,
+                                    fqn=d_name,
+                                    data_type=d_type.upper(),
+                                )
+                                saved_table = await self.uow.data_nodes.save(t_entity)
+                                d_node_id = saved_table.id
+                            else:
+                                d_node_id = await self.uow.graph.ensure_node(d_type, d_name)
 
-                    # Downstreams
-                    for down in item.get("downstreams", []):
-                        d_type = down.get("type", "table")
-                        d_name = down.get("name")
-                        if d_type in ("table", "storage"):
-                            t_entity = ResourceMetadata(
-                                id=0,
-                                project_id=project_id,
-                                fqn=d_name,
-                                data_type=d_type.upper(),
+                            await self.uow.graph.add_edge(
+                                job_node_id,
+                                d_node_id,
+                                "produces",
+                                {"write_mode": down.get("write_mode")},
                             )
-                            saved_table = await self.uow.data_nodes.save(t_entity)
-                            d_node_id = saved_table.id
-                        else:
-                            d_node_id = await self.uow.graph.ensure_node(d_type, d_name)
+                            overall_stats["edges"] += 1
 
-                        await self.uow.graph.add_edge(
-                            job_node_id,
-                            d_node_id,
-                            "produces",
-                            {"write_mode": down.get("write_mode")},
-                        )
-                        overall_stats["edges"] += 1
+                    except Exception as e:
+                        logger.error(f"Failed to process job {job_id}: {e}")
+                        overall_stats["failed"] += 1
 
                 # 3. Finalize Batch
                 await self.uow.graph.sync_closure_table()
                 await self.uow.commit()
                 logger.debug(f"Batch {i // batch_size + 1} committed")
 
-        return f"Discovery complete: {overall_stats['jobs']} jobs, {overall_stats['edges']} edges, {len(overall_stats['projects'])} projects created/updated"
+        # Audit: End Detail
+        total_duration = time.time() - start_time
+        if audit_service and audit_parent_id:
+            await audit_service.bulk_create_details(
+                parent_id=audit_parent_id,
+                action_type="GRAPH_INIT_EVENT",
+                user_email=user_email,
+                targets=["Graph Initialization Complete"],
+                target_type="SYSTEM",
+                status="SUCCESS"
+            )
+
+        projects_set = overall_stats.get("projects", set())
+        if isinstance(projects_set, set):
+            overall_stats["projects"] = list(projects_set)
+        return {"status": "success", "stats": overall_stats, "duration": total_duration}
 
     async def get_table_lineage(
         self, fqn: str, depth: int, direction: str
@@ -295,13 +335,13 @@ class GraphService:
 
                 node_id = await self.uow.graph.get_node_id(ntype, nname)
 
-                table_info = {
+                table_info: Dict[str, Any] = {
                     "id": lid,
                     "type": ntype,
                     "write_mode": "-",
                     "storage_type": "-",
                 }
-                job_info = {
+                job_info: Dict[str, Any] = {
                     "job_id": "-",
                     "owners": [],
                     "status": "not_found",

@@ -6,7 +6,7 @@ celery_app = Celery(
     "lineage_worker",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.graph_tasks"],
+    include=["app.tasks.graph_tasks", "app.tasks.audit_tasks"],
 )
 
 celery_app.conf.update(
@@ -17,4 +17,5 @@ celery_app.conf.update(
     enable_utc=True,
     task_track_started=True,
     task_time_limit=3600,  # 1 hour
+    task_default_queue="lineage_v2",
 )

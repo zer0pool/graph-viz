@@ -1,5 +1,5 @@
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.v1.schemas.graph import (
     GraphInitResponse,
@@ -7,6 +7,7 @@ from app.api.v1.schemas.graph import (
     TaskStatusResponse,
 )
 from app.core.container import Container
+from app.services.auth_service import AuthService
 from app.services.graph_service import GraphService
 from app.tasks.graph_tasks import initialize_graph_task
 
@@ -14,12 +15,22 @@ router = APIRouter()
 
 
 @router.post("/init", response_model=GraphInitResponse)
-async def initialize_graph(drop_existing: bool = False):
+@inject
+async def initialize_graph(
+    request: Request,
+    drop_existing: bool = False,
+    auth_service: AuthService = Depends(Provide[Container.auth_service]),
+):
     """
     Triggers a background rebuild of the lineage graph.
     Returns a task_id to track progress.
     """
-    task = initialize_graph_task.delay(drop_existing)
+    user_email = "system"
+    user = auth_service.get_current_user(request)
+    if user and hasattr(user, "email"):
+        user_email = user.email
+
+    task = initialize_graph_task.delay(drop_existing, user_email)
     return GraphInitResponse(
         status="accepted",
         task_id=task.id,
