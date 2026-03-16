@@ -1,0 +1,5 @@
+image:
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/lineage-manager
+
+env:
+  ENV_STATE: "dev"

@@ -1,14 +1,17 @@
 .PHONY: dev build helm-install helm-upgrade helm-template helm-uninstall docker-build docker-push deploy confirm
 
 # Environment Configuration (Default: dev)
-# Usage: make <target> ENV=prd
-ENV ?= dev
+# Usage: make <target> ENV_NAME=prd
+ENV_NAME ?= dev
 
 # Namespace and Image Repo mapping
-ifeq ($(ENV),prd)
+ifeq ($(ENV_NAME),prd)
   NAMESPACE := self-scheduling-prd
   # Note: Adjust image repo for production if it's different
   IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-mfe-catalog
+else ifeq ($(ENV_NAME),dev-1)
+  NAMESPACE := self-scheduling-dev-1
+  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev-1/self-scheduling/admin-mfe-catalog
 else
   # Default development environment
   NAMESPACE := self-scheduling
@@ -30,9 +33,9 @@ EXEC_ALWAYS := $(if $(IS_DRY_RUN),+)
 
 # Safety Confirmation for Production
 confirm:
-ifeq ($(ENV),prd)
+ifeq ($(ENV_NAME),prd)
 	@echo "⚠️  [WARNING] You are targeting the PRODUCTION environment!"
-	@echo "Environment: $(ENV)"
+	@echo "Environment: $(ENV_NAME)"
 	@echo "Namespace:   $(NAMESPACE)"
 	@echo "Image Repo:  $(IMAGE_REPO)"
 	@echo "--------------------------------------------------------"
@@ -65,10 +68,10 @@ helm-install: confirm
 	helm install $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE)
 
 helm-upgrade: confirm
-	$(EXEC_ALWAYS)helm upgrade --install $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE) $(HELM_DRY_RUN_FLAGS)
+	$(EXEC_ALWAYS)helm upgrade --install $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE) -f $(CHART_PATH)/values.yaml -f $(CHART_PATH)/values-$(ENV_NAME).yaml $(HELM_DRY_RUN_FLAGS)
 
 helm-template:
-	helm template $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE)
+	helm template $(CHART_NAME) $(CHART_PATH) --namespace $(NAMESPACE) -f $(CHART_PATH)/values.yaml -f $(CHART_PATH)/values-$(ENV_NAME).yaml
 
 helm-uninstall: confirm
 	helm uninstall $(CHART_NAME) --namespace $(NAMESPACE)
