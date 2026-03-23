@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import random
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_KEY = "job_explorer:recent_runs"
 CACHE_TTL = 600  # 10 minutes cache TTL for the 30-day dataset
+CACHE_TTL_EMPTY = 60  # Short TTL when BQ returns empty, to avoid hammering BQ
 
 
 class SearchJobsUseCase:
@@ -33,26 +35,36 @@ class SearchJobsUseCase:
         if not refresh:
             cached = await self._get_from_cache(CACHE_KEY)
             if cached is not None:
+                logger.info(f"[JobExplorer] Cache HIT — returning {len(cached)} rows")
                 return cached
+            logger.info("[JobExplorer] Cache MISS — fetching from BigQuery")
 
         try:
-            # Fetch last `days` of data (defaults to 30) instead of a hard limit
-            bq_rows = self.repo.get_recent_runs(days=days)
+            # BigQuery client is synchronous; run in a thread to avoid blocking the event loop.
+            bq_rows = await asyncio.to_thread(self.repo.get_recent_runs, days=days)
+            logger.info(f"[JobExplorer] BigQuery returned {len(bq_rows)} rows")
         except Exception as e:
-            logger.error(f"Failed to fetch recent runs from Repository: {e}")
+            logger.error(f"[JobExplorer] Failed to fetch recent runs from Repository: {e}")
             bq_rows = []
 
         if not bq_rows:
+            # Cache the empty result with a short TTL to prevent repeated BQ hits
+            ttl_empty = getattr(settings, "ANALYTICS_CACHE_TTL_EMPTY_SEC", CACHE_TTL_EMPTY)
+            await self._set_cache(CACHE_KEY, [], ttl=ttl_empty)
+            logger.warning(f"[JobExplorer] BigQuery returned 0 rows — caching empty for {ttl_empty}s")
             return []
 
         job_ids = list({row["job_id"] for row in bq_rows if row.get("job_id")})
+        logger.info(f"[JobExplorer] Fetching metadata for {len(job_ids)} jobs from lineage-manager-v2")
         metadata_map = await self.lineage.get_jobs_batch(job_ids)
+        logger.info(f"[JobExplorer] Received metadata for {len(metadata_map)} jobs")
 
         result = []
         for row in bq_rows:
-            job_id = str(row.get("job_id", ""))
+            job_id = row.get("job_id")
             if not job_id:
                 continue
+            job_id = str(job_id)
             meta = metadata_map.get(job_id, {})
 
             period_val = row.get("period")
@@ -90,9 +102,8 @@ class SearchJobsUseCase:
 
         result_dicts = [item.model_dump() for item in result]
         ttl = getattr(settings, "ANALYTICS_CACHE_TTL_SEC", CACHE_TTL)
-        await self._set_cache(
-            CACHE_KEY, result_dicts, ttl=ttl
-        )
+        await self._set_cache(CACHE_KEY, result_dicts, ttl=ttl)
+        logger.info(f"[JobExplorer] Cached {len(result_dicts)} rows with TTL={ttl}s")
         return result_dicts
 
     async def _get_from_cache(self, key: str) -> List | None:
@@ -101,11 +112,11 @@ class SearchJobsUseCase:
             if value:
                 return json.loads(value)
         except Exception as e:
-            logger.warning(f"Redis GET failed for '{key}': {e}")
+            logger.warning(f"[JobExplorer] Redis GET failed for '{key}': {e}")
         return None
 
     async def _set_cache(self, key: str, data: List, ttl: int):
         try:
             await self.redis.set(key, json.dumps(data), ex=ttl)
         except Exception as e:
-            logger.warning(f"Redis SET failed for '{key}': {e}")
+            logger.warning(f"[JobExplorer] Redis SET failed for '{key}': {e}")
