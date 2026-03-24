@@ -165,4 +165,16 @@ class UserAccount(Base):
     )
 
 
+class PageVisit(Base):
+    """Records each page view event from the frontend."""
+
+    __tablename__ = "page_visit"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    path = Column(String(500), nullable=False, index=True)
+    title = Column(String(255), nullable=True)
+    visitor_id = Column(String(255), nullable=True)
+    visited_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
+
+
 

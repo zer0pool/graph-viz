@@ -84,7 +84,7 @@ services:
     environment:
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
-      - LINEAGE_MANAGER_V2_URL=http://lineage-api:5003
+      - LINEAGE_MANAGER_URL=http://lineage-api:5003
       - ROOT_PATH=/admin-console/analytics-manager
       - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json

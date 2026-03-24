@@ -18,8 +18,8 @@ from app.infrastructure.repository.bq_job_repository import \
     BigQueryJobExplorerRepository
 
 
-def get_track_event_usecase(redis: Redis = Depends(get_redis)) -> TrackEventUseCase:
-    return TrackEventUseCase(redis=redis)
+def get_track_event_usecase() -> TrackEventUseCase:
+    return TrackEventUseCase()
 
 
 def get_metrics_usecase(
@@ -32,8 +32,10 @@ def get_metrics_usecase(
     return GetMetricsUseCase(analytics_repo=repo, lineage_gateway=gateway, redis=redis)
 
 
-def get_top_visited_usecase(redis: Redis = Depends(get_redis)) -> GetTopVisitedUseCase:
-    return GetTopVisitedUseCase(redis=redis)
+def get_top_visited_usecase(
+    lineage_client: LineageClient = Depends(get_lineage_client),
+) -> GetTopVisitedUseCase:
+    return GetTopVisitedUseCase(lineage_client=lineage_client)
 
 
 def get_search_jobs_usecase(

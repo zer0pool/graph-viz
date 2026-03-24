@@ -14,7 +14,5 @@ router = APIRouter()
 async def get_internal_stats(
     service: AnalyticsService = Depends(Provide[Container.analytics_service]),
 ) -> Dict[str, Any]:
-    """
-    Returns high-level statistics for internal consumption (e.g., Analytics Manager).
-    """
+    """Returns high-level statistics for internal consumption (e.g., Analytics Manager)."""
     return await service.get_internal_stats()

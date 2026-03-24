@@ -31,7 +31,7 @@ export function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard</h1>
           <p className="text-muted-foreground mt-1 text-sm text-gray-500">
-            Platform-wide data asset and pipeline insights
+            Data-Scheduling data asset and pipeline insights
           </p>
         </div>
         <button

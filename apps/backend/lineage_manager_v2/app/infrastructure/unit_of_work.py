@@ -7,6 +7,7 @@ from app.infrastructure.repositories.audit_repository import AuditRepository
 from app.infrastructure.repositories.data_node_repository import DataNodeRepository
 from app.infrastructure.repositories.graph_repository import GraphRepository
 from app.infrastructure.repositories.job_repository import JobRepository
+from app.infrastructure.repositories.page_visit_repository import PageVisitRepository
 from app.infrastructure.repositories.project_repository import ProjectRepository
 from app.infrastructure.repositories.user_repository import UserRepository
 
@@ -31,6 +32,7 @@ class UnitOfWork:
         self.audits = AuditRepository(self.session)
         self.data_nodes = DataNodeRepository(self.session)
         self.graph = GraphRepository(self.session)
+        self.page_visits = PageVisitRepository(self.session)
 
         return self
 

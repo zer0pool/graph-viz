@@ -74,6 +74,8 @@ class Settings(BaseSettings):
     OIDC_JWKS_CACHE_SECONDS: int = 3600
     OIDC_SCOPES: List[str] = ["openid", "email", "profile"]
 
+    FRONTEND_URL: str = "http://localhost:5100"
+
     FEATURE_REQUIRE_SIGNIN: bool = False
 
     model_config = SettingsConfigDict(

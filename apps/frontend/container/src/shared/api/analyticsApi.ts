@@ -13,7 +13,7 @@ interface TopVisitedItem {
 
 export interface TopVisitedResponse {
   items: TopVisitedItem[];
-  window_hours: number;
+  window_days: number;
 }
 
 export const analyticsApi = {
@@ -61,7 +61,7 @@ export const analyticsApi = {
 
   getTopVisited: async (): Promise<TopVisitedResponse> => {
     const response = await fetch(
-      `${config.BASE_URL}/analytics-manager/api/v1/analytics/top-visited`
+      `${config.BASE_URL}/lineage-manager/api/v1/analytics/top-visited`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch top visited");

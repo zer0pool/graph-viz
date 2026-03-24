@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from app.api.v1.schemas.analytics import (
     DashboardMetricsResponse,
@@ -70,6 +70,17 @@ class AnalyticsService:
                 ),
             ]
             return DashboardMetricsResponse(metrics=metrics)
+
+    async def track_visit(
+        self, path: str, title: Optional[str], visitor_id: Optional[str]
+    ) -> None:
+        async with self.uow:
+            await self.uow.page_visits.record(path=path, title=title, visitor_id=visitor_id)
+            await self.uow.commit()
+
+    async def get_top_visited(self, limit: int = 5, days: int = 7) -> List[dict]:
+        async with self.uow:
+            return await self.uow.page_visits.get_top_visited(limit=limit, days=days)
 
     async def get_internal_stats(self) -> Dict[str, Any]:
         """

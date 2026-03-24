@@ -1,132 +1,142 @@
-# 📚 Lineage Manager 개발 가이드
+---
+updated: 2026-03-24
+---
 
-프로젝트 문서는 아래 6개 섹션으로 구성되어 있습니다. **항상 00.guides부터 시작하세요!**
+# OPS Console — Documentation Index
 
-## 🔴 [00.guides](./00.guides/) – 개발 표준 & 협력 규칙
-**개발자가 항상 참고해야 하는 필수 문서**
-- 코드 스타일 가이드
-- AI 에이전트 협력 규칙
-- Git 워크플로우
-- 공통 작업 체크리스트
-
-👉 **새 개발자는 여기서 시작하세요!**
+프로젝트 문서의 마스터 인덱스입니다. 필요한 내용에 따라 아래 폴더를 참고하세요.
 
 ---
 
-## 🟠 [01.onboarding](./01.onboarding/) – 신규 팀원 환영
-**처음 프로젝트에 참여하는 팀원을 위한 단계별 가이드**
-- 개발 환경 설정
-- 첫 번째 기여(Pull Request) 만들기
-- 아키텍처 개요 (간단한 버전)
-- 완료 체크리스트
-
-👉 **입사 첫날에 이 폴더의 체크리스트를 따르세요!**
-
----
-
-## 🟡 [02.architecture](./02.architecture/) – 시스템 설계
-**전체 시스템 구조와 기술 결정을 깊이 있게 이해**
-- 백엔드 아키텍처 (FastAPI, DI, 서비스 분리)
-- 프론트엔드 아키텍처 (Cytoscape, 상태 관리)
-- 데이터베이스 설계 (ERD, 폐쇄 테이블)
-- **API 명세** (전체 엔드포인트 문서)
-- 설계 결정 기록 (ADR)
-
-👉 **기술 구조를 이해하려면 여기를 읽으세요!**
-
----
-
-## 🟢 [03.specs-and-reports](./03.specs-and-reports/) – 기능 명세 & 완성 보고서
-**계획→개발→검증 사이클의 핵심 문서**
-
-### 📋 **specs/** – 구현 전 작성하는 기능 명세
-- 새 기능을 개발하기 전에 설계 문서 작성
-- 파일명: `2025-01-feature-name.md`
-- 템플릿: `template.md` 참고
-
-### 📊 **reports/** – 완성 보고서 & 버그 요약
-- 기능 구현 완료 후 작성하는 결과 보고서
-- 누적 버그 수정 요약 (BUG_FIXES_SUMMARY.md)
-- 리팩토링 완료 보고서 (REFACTORING_FINAL_SUMMARY.md)
-
-👉 **새 기능을 추가할 때는 spec 먼저, 완료 후 report를 작성하세요!**
-
----
-
-## 🔵 [04.development-notes](./04.development-notes/) – 작업 노트 & 아이디어
-**진행 중인 기능별 작업 노트, 실험, 아이디어**
-- 기능별 구현 노트 및 진행사항
-- 실험 결과 및 테스트 로그
-- 해결된 문제와 교훈
-- 향후 개선 아이디어
-
-👉 **진행 중인 작업을 추적하고 나중에 참고하려면 여기 기록하세요!**
-
----
-
-## 🟣 [05.playbook-and-refs](./05.playbook-and-refs/) – 운영 매뉴얼 & 참고자료
-
-### 📖 **playbooks/** – 운영 매뉴얼
-- 배포 절차 (스테이징/프로덕션)
-- 장애 대응 매뉴얼 (로깅, 롤백)
-- 데이터 마이그레이션
-- 데이터베이스 백업/복구
-- 성능 최적화 가이드
-
-### 📚 **references/** – 참고자료
-- 외부 라이브러리 공식 문서 링크
-- 용어 정의 (DAG, closure table 등)
-- 기술 조사 노트
-- 외부 논문/자료
-
-👉 **배포/장애/운영 관련 작업을 하려면 여기를 참고하세요!**
-
----
-
-## 🗂️ 폴더 구조 한눈에 보기
+## 📂 폴더 구조
 
 ```
 docs/
-├─ 00.guides/                    # ← 항상 먼저! 개발 표준
-├─ 01.onboarding/                # ← 신규 팀원 환영
-├─ 02.architecture/              # ← 시스템 구조 & API
-├─ 03.specs-and-reports/         # ← 명세 & 보고서
-│  ├─ specs/
-│  └─ reports/
-├─ 04.development-notes/         # ← 작업 노트
-├─ 05.playbook-and-refs/         # ← 운영 매뉴얼
-│  ├─ playbooks/
-│  └─ references/
-└─ assets/                        # ← 이미지, 다이어그램 등
+├── 00.guides/             모든 개발자가 반드시 따라야 할 표준 & 규칙
+├── 01.onboarding/         신규 팀원 온보딩 가이드
+├── 02.architecture/       시스템 설계 & 아키텍처 레퍼런스
+├── 03.specs-and-reports/  기능 명세(구현 전) & 완료 보고서
+├── 04.design/             현재 진행 중인 기능 설계 문서
+├── 05.work-history/       완료된 작업 노트 & 개발 로그
+│   └── archive/           초기 개발 노트 (2025-11) — 참고 전용
+└── 06.playbook-and-refs/  운영 매뉴얼 & API 설계 패턴
 ```
 
 ---
 
-## 🚀  빠른 시작
+## 🗺️ 상황별 빠른 참고
 
-**상황별 참고 문서:**
-
-| 상황 | 참고 위치 |
-|------|---------|
-| 프로젝트 처음 시작 | `01.onboarding/` → `02.architecture/` |
-| 코드 스타일 확인 | `00.guides/coding-standards.md` |
-| API 엔드포인트 확인 | `02.architecture/api-reference.md` |
-| 새 기능 추가 | `03.specs-and-reports/specs/template.md` |
-| 배포하려고 함 | `05.playbook-and-refs/playbooks/deployment.md` |
-| 장애 발생 | `05.playbook-and-refs/playbooks/incident-response.md` |
-| 기존 기능 이해 | `04.development-notes/` |
-
----
-
-## 📝 문서 작성 규칙
-
-모든 문서 작성 시 `00.guides/how-to-write-documents.md`를 참고하세요!
-
-- Markdown 포맷 준수
-- 명확한 제목과 목차
-- 코드 예제 포함
-- 최신 상태 유지
+| 상황 | 참고 문서 |
+| :--- | :--- |
+| 코딩 표준 확인 | [00.guides/](00.guides/README.md) |
+| 로컬 환경 설정 | [00.guides/environment-guide.md](00.guides/environment-guide.md) |
+| 서비스 실행 방법 | [00.guides/execution-guide.md](00.guides/execution-guide.md) |
+| Docker로 전체 실행 | [00.guides/local-docker-guide.md](00.guides/local-docker-guide.md) |
+| 배포/502 에러 해결 | [00.guides/troubleshooting.md](00.guides/troubleshooting.md) |
+| 전체 시스템 구조 이해 | [02.architecture/system-overview.md](02.architecture/system-overview.md) |
+| 진행 중인 기능 설계 | [04.design/](04.design/) |
+| 완료된 기능 히스토리 | [03.specs-and-reports/reports/](03.specs-and-reports/reports/) |
+| API 설계 패턴 | [06.playbook-and-refs/internal-api-design-patterns.md](06.playbook-and-refs/internal-api-design-patterns.md) |
+| PR 전 체크리스트 | [00.guides/submission-checklist.md](00.guides/submission-checklist.md) |
 
 ---
 
-**마지막 업데이트**: 2025년 12월 7일
+## 📁 00.guides — 개발 표준 (상시 참고)
+
+> 코드 리뷰 기준, 브랜치 전략, MFE 계약 등 팀의 공통 규칙.
+
+| 파일 | 설명 |
+| :--- | :--- |
+| [submission-checklist.md](00.guides/submission-checklist.md) | 커밋/PR 전 필수 체크리스트 |
+| [codebase-map.md](00.guides/codebase-map.md) | 서비스 & 컴포넌트 전체 맵 |
+| [admin-console-architecture.md](00.guides/admin-console-architecture.md) | 프론트엔드 FSD 아키텍처 |
+| [react-style-guide.md](00.guides/react-style-guide.md) | React/TypeScript 코딩 표준 |
+| [react-refactoring-guide.md](00.guides/react-refactoring-guide.md) | React 리팩토링 가이드 |
+| [fastapi-refactoring-guide.md](00.guides/fastapi-refactoring-guide.md) | 백엔드 DDD/Async 표준 |
+| [fastapi-ddd-template-v2.md](00.guides/fastapi-ddd-template-v2.md) | FastAPI DDD 프로젝트 템플릿 (현행) |
+| [fastapi-graphql.md](00.guides/fastapi-graphql.md) | GraphQL + FastAPI 패턴 |
+| [fastapi-di-usecase-vs-container-ko.md](00.guides/fastapi-di-usecase-vs-container-ko.md) | DI: UseCase vs Container 비교 |
+| [mfe-contract.md](00.guides/mfe-contract.md) | MFE 통신 인터페이스 계약 |
+| [mfe-integration-guide.md](00.guides/mfe-integration-guide.md) | MFE 통합 방법 |
+| [git-branching-guide.md](00.guides/git-branching-guide.md) | 브랜치 네이밍 & PR 워크플로우 |
+| [local-docker-guide.md](00.guides/local-docker-guide.md) | Docker Compose 로컬 실행 |
+| [environment-guide.md](00.guides/environment-guide.md) | 환경변수 & 설정 가이드 |
+| [execution-guide.md](00.guides/execution-guide.md) | 각 서비스 실행 방법 |
+| [testing-guide.md](00.guides/testing-guide.md) | 테스트 전략 & 실행 방법 |
+| [troubleshooting.md](00.guides/troubleshooting.md) | 배포 & 502 에러 해결 |
+| [agents.md](00.guides/agents.md) | AI 에이전트 협력 규칙 |
+| [how-to-write-documents.md](00.guides/how-to-write-documents.md) | 문서 작성 규칙 |
+
+---
+
+## 📁 01.onboarding — 신규 팀원 가이드
+
+| 파일 | 설명 |
+| :--- | :--- |
+| [environment-setup.md](01.onboarding/environment-setup.md) | 최초 개발 환경 설정 |
+| [domain-concepts.md](01.onboarding/domain-concepts.md) | 핵심 도메인 용어 설명 |
+| [service-architecture.md](01.onboarding/service-architecture.md) | 서비스 아키텍처 개요 |
+| [first-contribution.md](01.onboarding/first-contribution.md) | 첫 PR 만들기 |
+
+---
+
+## 📁 02.architecture — 시스템 아키텍처
+
+| 파일 | 설명 |
+| :--- | :--- |
+| [system-overview.md](02.architecture/system-overview.md) | 전체 시스템 개요 |
+| [design.md](02.architecture/design.md) | 아키텍처 설계 (요약) |
+| [endpoints.md](02.architecture/endpoints.md) | API 엔드포인트 맵 (요약) |
+| [improvements.md](02.architecture/improvements.md) | 개선 예정 사항 |
+| [transaction-rules.md](02.architecture/transaction-rules.md) | 서비스 레이어 트랜잭션 규칙 |
+| [backend/design.md](02.architecture/backend/design.md) | 백엔드 아키텍처 (상세) |
+| [backend/endpoints.md](02.architecture/backend/endpoints.md) | 백엔드 API 엔드포인트 (상세) |
+| [backend/improvements.md](02.architecture/backend/improvements.md) | 백엔드 개선 항목 |
+
+---
+
+## 📁 03.specs-and-reports — 명세 & 보고서
+
+### specs/ — 구현 전 기능 명세
+구현 시작 전에 작성하는 설계 문서. 파일명 형식: `YYYY-MM-DD_feature-name.md`
+
+### reports/ — 완료 보고서
+기능/리팩토링 완료 후 작성. 최근 주요 보고서:
+
+- [2026-01-31-fuzzy-search-completion.md](03.specs-and-reports/reports/2026-01-31-fuzzy-search-completion.md)
+- [2026-01-30_bff-auth-refactoring.md](03.specs-and-reports/reports/2026-01-30_bff-auth-refactoring.md)
+- [2026-01-30-dummy-job-manager-refactor-completion.md](03.specs-and-reports/reports/2026-01-30-dummy-job-manager-refactor-completion.md)
+- [2026-01-10_sso_deployment_ready.md](03.specs-and-reports/reports/2026-01-10_sso_deployment_ready.md)
+
+---
+
+## 📁 04.design — 진행 중인 설계 문서
+
+현재 개발/설계 중인 기능의 설계 문서. 완료 후 `03.specs-and-reports/reports/`로 이동.
+
+최신 문서:
+- [2026-03-09_frontend_api_analysis.md](04.design/2026-03-09_frontend_api_analysis.md)
+- [2026-03-02_run_history_design_spec.md](04.design/2026-03-02_run_history_design_spec.md)
+- [2026-03-02_job_filtering_detail_design.md](04.design/2026-03-02_job_filtering_detail_design.md)
+- [2026-03-02_job_detail_analysis.md](04.design/2026-03-02_job_detail_analysis.md)
+- [2026-03-02_Todo.md](04.design/2026-03-02_Todo.md)
+
+---
+
+## 📁 05.work-history — 완료된 작업 노트
+
+구현 중에 작성된 개발자 노트. 역사적 맥락 파악에 유용.
+
+- `archive/` — 초기 개발 단계 노트 (2025-11). 읽기 전용 참고용.
+
+---
+
+## 📁 06.playbook-and-refs — 운영 매뉴얼 & 참고자료
+
+| 파일 | 설명 |
+| :--- | :--- |
+| [internal-api-design-patterns.md](06.playbook-and-refs/internal-api-design-patterns.md) | 내부 API 설계 패턴 레퍼런스 |
+
+---
+
+_Last updated: 2026-03-24_

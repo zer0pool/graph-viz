@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { config } from "../../api/config";
+import { useAuth } from "../../../app/providers/AuthProvider";
 
-const VISITOR_ID_KEY = "frontend_visitor_id";
 const RECENT_VISITED_KEY = "frontend_recent_visited";
 
 export interface RecentVisit {
@@ -14,20 +14,12 @@ export interface RecentVisit {
 
 export const useTracker = () => {
   const { pathname } = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // 1. Get or Create Visitor ID
-    let visitorId = localStorage.getItem(VISITOR_ID_KEY);
-    if (!visitorId) {
-      if (typeof crypto !== "undefined" && crypto.randomUUID) {
-        visitorId = crypto.randomUUID();
-      } else {
-        visitorId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      }
-      localStorage.setItem(VISITOR_ID_KEY, visitorId);
-    }
+    const visitorId = user?.user_id ?? null;
 
-    // 2. Track Recently Visited (Local)
+    // 1. Track Recently Visited (Local)
     const updateRecentVisited = () => {
       const raw = localStorage.getItem(RECENT_VISITED_KEY);
       let history: RecentVisit[] = raw ? JSON.parse(raw) : [];
@@ -83,7 +75,7 @@ export const useTracker = () => {
           title: pathname.split("/").pop() || "home",
           timestamp: new Date().toISOString(),
         };
-        await fetch(`${config.BASE_URL}/analytics-manager/api/v1/analytics/track`, {
+        await fetch(`${config.BASE_URL}/lineage-manager/api/v1/analytics/track`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -98,7 +90,7 @@ export const useTracker = () => {
     if (pathname !== "/" && !pathname.includes("login")) {
       trackRemote();
     }
-  }, [pathname]);
+  }, [pathname, user]);
 };
 
 export const getRecentlyVisited = (): RecentVisit[] => {
