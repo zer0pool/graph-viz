@@ -1,16 +1,14 @@
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.application.usecase.analytics.get_metrics import GetMetricsUseCase
-from app.application.usecase.analytics.get_top_visited import \
-    GetTopVisitedUseCase
+from app.application.usecase.analytics.get_top_visited import GetTopVisitedUseCase
 from app.application.usecase.analytics.track_event import TrackEventUseCase
 from app.controller.factory.usecase import (get_metrics_usecase,
                                             get_top_visited_usecase,
                                             get_track_event_usecase)
 from app.controller.schemas.analytics import TrackEventRequest, TrackResponse
-from app.domain.entity.analytics import TrackEvent
 
 router = APIRouter()
 
@@ -22,19 +20,8 @@ async def track_event(
     req: TrackEventRequest,
     uc: TrackEventUseCase = Depends(get_track_event_usecase),
 ):
-    event = TrackEvent(
-        event_type=req.event_type,
-        visitor_id=req.visitor_id,
-        path=req.path,
-        title=req.title,
-        properties=req.properties,
-    )
-    success = await uc.execute(event)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to record event",
-        )
+    """Deprecated: frontend now calls lineage-manager directly for visit tracking."""
+    await uc.execute(None)
     return TrackResponse(status="success", message="Event tracked")
 
 

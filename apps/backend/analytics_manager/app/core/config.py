@@ -46,24 +46,20 @@ class Settings(BaseSettings):
     ANALYTICS_CACHE_TTL_SEC: int = 3600
     ANALYTICS_CACHE_TTL_EMPTY_SEC: int = 60  # Short TTL when BQ returns empty
 
-    # Flat fields for environment variable loading
-    # We name them exactly as the env vars to avoid collision with nested properties
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 2
 
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
-    GOOGLE_PROJECT_ID_RAW: Optional[str] = None  # Renamed to avoid property collision
+    GOOGLE_PROJECT_ID: Optional[str] = None
 
     BIGQUERY_HISTORY_TABLE: str = "test_data.admin_job_run_history"
-    BIGQUERY_VISIT_LOG_TABLE_RAW: str = "test_data.visit_logs"
+    BIGQUERY_VISIT_LOG_TABLE: str = "test_data.visit_logs"
     BIGQUERY_JOB_RUN_HISTORY_TABLE: str = (
         "test_project_name.tmp_sss_993.admin_finish_history"
     )
 
-    LINEAGE_MANAGER_URL_RAW: str = (
-        "http://localhost:8001"  # Renamed to avoid property collision
-    )
+    LINEAGE_MANAGER_URL: str = "http://localhost:5003"
 
     FEATURE_HISTORY_TABLE: str = "test_data.admin_job_run_history"
 
@@ -74,7 +70,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Custom environment mapping for renamed fields
     @classmethod
     def settings_customise_sources(
         cls,
@@ -97,26 +92,25 @@ class Settings(BaseSettings):
     def google(self) -> GoogleSettings:
         return GoogleSettings(
             application_credentials=self.GOOGLE_APPLICATION_CREDENTIALS,
-            project_id=self.GOOGLE_PROJECT_ID_RAW,
+            project_id=self.GOOGLE_PROJECT_ID,
         )
 
     @property
     def bigquery(self) -> BigQuerySettings:
         return BigQuerySettings(
             history_table=self.BIGQUERY_HISTORY_TABLE,
-            visit_log_table=self.BIGQUERY_VISIT_LOG_TABLE_RAW,
+            visit_log_table=self.BIGQUERY_VISIT_LOG_TABLE,
             job_run_history_table=self.BIGQUERY_JOB_RUN_HISTORY_TABLE,
         )
 
     @property
     def external(self) -> ExternalServices:
-        return ExternalServices(lineage_manager_url=self.LINEAGE_MANAGER_URL_RAW)
+        return ExternalServices(lineage_manager_url=self.LINEAGE_MANAGER_URL)
 
     @property
     def features(self) -> FeatureFlags:
         return FeatureFlags(history_table=self.FEATURE_HISTORY_TABLE)
 
-    # Compatibility Properties (Legacy accessors)
     @property
     def REDIS_URL(self) -> str:
         return self.redis.url
@@ -126,16 +120,8 @@ class Settings(BaseSettings):
         return self.redis.celery_broker_url
 
     @property
-    def GOOGLE_PROJECT_ID(self) -> Optional[str]:
-        return self.google.project_id
-
-    @property
     def JOB_RUN_HISTORY_TABLE(self) -> str:
         return self.bigquery.job_run_history_table
-
-    @property
-    def BIGQUERY_VISIT_LOG_TABLE(self) -> str:
-        return self.bigquery.visit_log_table
 
     @property
     def LINEAGE_MANAGER_URL(self) -> str:

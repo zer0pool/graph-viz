@@ -46,9 +46,7 @@ class LineageClient:
             return {}
 
     async def get_internal_stats(self) -> Dict[str, Any]:
-        """
-        Calls GET /lineage-manager/api/v1/internal/stats on lineage-manager-v2.
-        """
+        """Calls GET /api/v1/internal/stats on lineage-manager-v2."""
         url = f"{self.base_url}/api/v1/internal/stats"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -58,3 +56,30 @@ class LineageClient:
         except Exception as e:
             logger.error(f"LineageClient failed to fetch internal stats: {e}")
             return {}
+
+    async def track_visit(
+        self, path: str, title: str | None, visitor_id: str | None
+    ) -> bool:
+        """Calls POST /api/v1/internal/track on lineage-manager-v2."""
+        url = f"{self.base_url}/api/v1/internal/track"
+        payload = {"path": path, "title": title, "visitor_id": visitor_id}
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                return True
+        except Exception as e:
+            logger.error(f"LineageClient failed to track visit: {e}")
+            return False
+
+    async def get_top_visited(self, limit: int = 5, days: int = 7) -> Dict[str, Any]:
+        """Calls GET /api/v1/internal/top-visited on lineage-manager-v2."""
+        url = f"{self.base_url}/api/v1/internal/top-visited"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params={"limit": limit, "days": days})
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            logger.error(f"LineageClient failed to fetch top-visited: {e}")
+            return {"items": [], "window_days": days}

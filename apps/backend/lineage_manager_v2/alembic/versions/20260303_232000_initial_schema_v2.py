@@ -124,7 +124,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("sub", name="uq_user_sub"),
-        sa.UniqueConstraint("user_id", name="uq_user_user_id"),
     )
     op.create_index(op.f("ix_user_account_email"), "user_account", ["email"], unique=False)
     op.create_index(op.f("ix_user_account_login_id"), "user_account", ["login_id"], unique=True)
@@ -141,11 +140,12 @@ def upgrade() -> None:
         sa.Column("target_id", sa.String(length=255), nullable=True),
         sa.Column("task_name", sa.String(length=100), nullable=True),
         sa.Column("payload", sa.JSON(), nullable=True),
-        sa.Column("status", sa.String(length=20), nullable=True, server_default="SUCCESS"),
+        sa.Column("status", sa.String(length=20), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("total_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
-        sa.Column("success_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
-        sa.Column("fail_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("total_count", sa.Integer(), nullable=False),
+        sa.Column("success_count", sa.Integer(), nullable=False),
+        sa.Column("fail_count", sa.Integer(), nullable=False),
+        sa.Column("duration", sa.Float(), nullable=True),
         sa.Column("timestamp", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -153,7 +153,20 @@ def upgrade() -> None:
     op.create_index(op.f("ix_audit_log_user_email"), "audit_log", ["user_email"], unique=False)
     op.create_index(op.f("ix_audit_log_timestamp"), "audit_log", ["timestamp"], unique=False)
 
-    # 9. Create views
+    # 9. page_visit
+    op.create_table(
+        "page_visit",
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("path", sa.String(length=500), nullable=False),
+        sa.Column("title", sa.String(length=255), nullable=True),
+        sa.Column("visitor_id", sa.String(length=255), nullable=True),
+        sa.Column("visited_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_page_visit_path"), "page_visit", ["path"], unique=False)
+    op.create_index(op.f("ix_page_visit_visited_at"), "page_visit", ["visited_at"], unique=False)
+
+    # 10. Create views
     op.execute("""
         CREATE VIEW v_table_node AS
         SELECT 
@@ -184,6 +197,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP VIEW IF EXISTS v_storage_node")
     op.execute("DROP VIEW IF EXISTS v_table_node")
+    op.drop_table("page_visit")
     op.drop_table("audit_log")
     op.drop_table("user_account")
     op.drop_table("project")

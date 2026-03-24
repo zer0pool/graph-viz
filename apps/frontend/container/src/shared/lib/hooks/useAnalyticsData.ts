@@ -36,7 +36,7 @@ export const useAnalyticsData = () => {
     setLoadingTop(true);
     try {
       const data = await analyticsApi.getTopVisited();
-      setWindowHours(data.window_hours);
+      setWindowHours((data.window_days ?? 7) * 24);
 
       const mappedData: VisitHistoryItem[] = (data.items || []).map((item) => {
         // Infer type for remote data since backend doesn't provide it yet
