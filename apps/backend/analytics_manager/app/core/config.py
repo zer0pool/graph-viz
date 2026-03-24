@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     ANALYTICS_CACHE_TTL_SEC: int = 3600
+    ANALYTICS_CACHE_TTL_EMPTY_SEC: int = 60  # Short TTL when BQ returns empty
 
     # Flat fields for environment variable loading
     # We name them exactly as the env vars to avoid collision with nested properties
