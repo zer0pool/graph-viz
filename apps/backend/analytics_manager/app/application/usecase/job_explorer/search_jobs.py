@@ -61,9 +61,10 @@ class SearchJobsUseCase:
 
         result = []
         for row in bq_rows:
-            job_id = str(row.get("job_id", ""))
+            job_id = row.get("job_id")
             if not job_id:
                 continue
+            job_id = str(job_id)
             meta = metadata_map.get(job_id, {})
 
             period_val = row.get("period")
