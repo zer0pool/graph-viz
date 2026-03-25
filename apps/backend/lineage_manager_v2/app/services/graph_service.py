@@ -108,17 +108,32 @@ class GraphService:
                             overall_stats["projects"].add(project_id)
 
                         # 2.2 Save Job Metadata
+                        owner_ids = metadata.get("owner", [])
                         job_entity = Job(
                             job_id=job_id,
                             project_id=project_id,
                             name=metadata.get("name", str(job_id).split(".")[-1]),
-                            owners=metadata.get("owner", []),
+                            owners=owner_ids,
                             properties=job_meta,
                         )
                         await self.uow.jobs.save(job_entity)
                         overall_stats["jobs"] += 1
 
-                        # 2.3 Register Lineage Nodes & Edges
+                        # 2.3 Upsert job owners into user_account
+                        for owner_id in owner_ids:
+                            existing = await self.uow.users.get_by_user_id(owner_id)
+                            if not existing:
+                                owner_entity = User(
+                                    user_id=owner_id,
+                                    sub=owner_id,
+                                    login_id=owner_id,
+                                    name=owner_id,
+                                    roles=["VIEWER"],
+                                    status="ACTIVE",
+                                )
+                                await self.uow.users.save(owner_entity)
+
+                        # 2.4 Register Lineage Nodes & Edges
                         job_node_id = await self.uow.graph.ensure_node("job", job_id)
 
                         # Upstreams
