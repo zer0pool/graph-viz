@@ -34,6 +34,12 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
 
   const properties = job.properties || {};
   const status = job.status || properties.status || "UNKNOWN";
+  const resolvedOwners =
+    properties.owners && properties.owners.length > 0
+      ? properties.owners
+      : job.owners && job.owners.length > 0
+        ? job.owners
+        : null;
 
   const getStatusVariant = (s: string) => {
     const statusVal = s.toUpperCase();
@@ -43,18 +49,18 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/30 p-6 space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="flex flex-col h-full space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left Column: Job Profile & Schedule */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* 4.2 Job Profile */}
           <Card className="border-slate-200/60 shadow-sm bg-white">
             <CardContent className="p-0">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                 <Info className="w-4 h-4 text-blue-500" />
                 <h3 className="font-semibold text-slate-800">Job Profile</h3>
               </div>
-              <div className="p-5 space-y-2">
+              <div className="p-4 space-y-2">
                 <PropertyRow label="Job ID" value={job.job_id || job.id} />
                 <PropertyRow label="Project" value={properties.project || job.project_id} />
                 <PropertyRow label="Type" value={job.type || properties.type} />
@@ -62,9 +68,9 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                 <PropertyRow
                   label="Owners"
                   value={
-                    properties.owners && properties.owners.length > 0 ? (
+                    resolvedOwners ? (
                       <div className="flex flex-wrap gap-1">
-                        {properties.owners.map((ownerId: string, idx: number) => (
+                        {resolvedOwners.map((ownerId: string, idx: number) => (
                           <React.Fragment key={ownerId}>
                             <button
                               onClick={() =>
@@ -78,7 +84,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
                             >
                               {ownerId}
                             </button>
-                            {idx < properties.owners.length - 1 && (
+                            {idx < resolvedOwners.length - 1 && (
                               <span className="text-slate-400">, </span>
                             )}
                           </React.Fragment>
@@ -109,11 +115,11 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
           {/* 4.4 Schedule Summary */}
           <Card className="border-slate-200/60 shadow-sm bg-white">
             <CardContent className="p-0">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-orange-500" />
                 <h3 className="font-semibold text-slate-800">Schedule</h3>
               </div>
-              <div className="p-5 space-y-2">
+              <div className="p-4 space-y-2">
                 <PropertyRow
                   label="Interval"
                   value={properties.schedule?.interval || job.schedule}
@@ -126,15 +132,15 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
         </div>
 
         {/* Right Column: Execution Status & Metadata */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* 4.3 Execution Status */}
           <Card className="border-slate-200/60 shadow-sm bg-white">
             <CardContent className="p-0">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-500" />
                 <h3 className="font-semibold text-slate-800">Execution Status</h3>
               </div>
-              <div className="p-5 space-y-2">
+              <div className="p-4 space-y-2">
                 <PropertyRow
                   label="Status"
                   value={
@@ -163,7 +169,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
           <Card className="border-slate-200/60 shadow-sm bg-white overflow-hidden">
             <button
               onClick={() => setIsMetadataExpanded(!isMetadataExpanded)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-transparent focus:outline-none"
+              className="w-full px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-transparent focus:outline-none"
             >
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-slate-400" />
@@ -176,7 +182,7 @@ export const JobOverview: React.FC<JobOverviewProps> = ({ job, loading }) => {
               )}
             </button>
             {isMetadataExpanded && (
-              <CardContent className="p-6 space-y-4 animate-in slide-in-from-top-1 duration-200">
+              <CardContent className="p-4 space-y-2 animate-in slide-in-from-top-1 duration-200">
                 <PropertyRow label="Created" value={properties.created_datetime} />
                 <PropertyRow
                   label="Updated"

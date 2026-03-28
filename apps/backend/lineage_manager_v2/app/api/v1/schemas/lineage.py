@@ -36,6 +36,57 @@ class GraphResponse(BaseModel):
     edges: List[EdgeSchema]
 
 
+class InputTableInfo(BaseModel):
+    id: str
+    name: str
+    storage_type: Optional[str] = None
+    read_mode: Optional[str] = None
+    freshness: Optional[str] = None
+    quality_status: Optional[str] = None
+    row_count: Optional[int] = None
+    owner: Optional[str] = None
+    criticality: Optional[str] = None
+
+
+class OutputTableInfo(BaseModel):
+    id: str
+    name: str
+    storage_type: Optional[str] = None
+    write_mode: Optional[str] = None
+    recent_volume: Optional[int] = None
+    consumer_count: int = 0
+    sla_status: Optional[str] = None
+
+
+class LineageNode(BaseModel):
+    id: str
+    type: str
+    name: str
+    job_id: Optional[str] = None
+    full_name: Optional[str] = None
+    owners: List[str] = []
+    status: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+class LineageGraphEdge(BaseModel):
+    source: str
+    target: str
+    io: Optional[str] = None
+
+
+class LineageGraphData(BaseModel):
+    nodes: List[LineageNode]
+    edges: List[LineageGraphEdge]
+
+
+class JobLineageHybridResponse(BaseModel):
+    job_id: str
+    inputs: List[InputTableInfo]
+    outputs: List[OutputTableInfo]
+    graph: LineageGraphData
+
+
 class MermaidNode(BaseModel):
     id: str
     type: str

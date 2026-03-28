@@ -9,6 +9,8 @@ import React, {
 import { config } from "../../shared/api/config";
 import { AuthClient, UserProfile } from "../../entities/user/types";
 
+const EDIT_ALLOWED_ROLES = ["PM", "OPERATOR", "DEVELOPER"];
+
 const AuthContext = createContext<AuthClient | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -112,4 +114,11 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) throw new Error("useAuth must be used within AuthProvider");
   return context;
+};
+
+export const useCanEdit = () => {
+  const { user } = useAuth();
+  if (!config.ENABLE_AUTH) return true;
+  const roles: string[] = user?.roles ?? [];
+  return roles.some((r) => EDIT_ALLOWED_ROLES.includes(r));
 };

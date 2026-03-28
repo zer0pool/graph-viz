@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useCanEdit } from "../../app/providers/AuthProvider";
 import {
   Mail,
   Building2,
@@ -56,6 +57,7 @@ interface UserData {
 export function UserDetailPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const canEdit = useCanEdit();
   const [data, setData] = useState<UserData | null>(null);
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [jobs, setJobs] = useState<JobData[]>([]);
@@ -275,8 +277,14 @@ export function UserDetailPage() {
                     Access Roles
                   </label>
                   <button
-                    onClick={handleEditRoles}
-                    className="text-[10px] text-blue-600 hover:underline font-medium"
+                    onClick={canEdit ? handleEditRoles : undefined}
+                    disabled={!canEdit}
+                    title={!canEdit ? "You don't have permission to edit roles (PM, Operator, or Developer required)" : undefined}
+                    className={`text-[10px] font-medium transition-colors ${
+                      canEdit
+                        ? "text-blue-600 hover:underline cursor-pointer"
+                        : "text-gray-300 cursor-not-allowed"
+                    }`}
                   >
                     (Edit)
                   </button>

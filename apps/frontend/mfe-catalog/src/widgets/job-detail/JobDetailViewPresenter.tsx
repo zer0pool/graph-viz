@@ -81,6 +81,12 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
 
   const properties = job?.properties || {};
   const status = job?.status || properties.status || "UNKNOWN";
+  const resolvedOwners =
+    properties.owners && properties.owners.length > 0
+      ? properties.owners
+      : job?.owners && job.owners.length > 0
+        ? job.owners
+        : null;
 
   const getStatusVariant = (s: string) => {
     const statusVal = s.toUpperCase();
@@ -112,14 +118,14 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
             window.dispatchEvent(
               new CustomEvent("mfe:navigate", {
                 detail: {
-                  path: `/projects/${encodeURIComponent(properties.project || job?.project_id || "N/A")}`,
+                  path: `/projects/${encodeURIComponent(job?.project_id || "N/A")}`,
                 },
               })
             )
           }
           className="hover:text-blue-600 transition-colors text-left"
         >
-          {properties.project || job?.project_name || properties.project_name || "N/A"}
+          {job?.project_id || "N/A"}
         </button>
       ),
     },
@@ -128,10 +134,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
       label: (
         <button
           onClick={() => {
-            const ownerId =
-              properties.owners && properties.owners.length > 0
-                ? properties.owners[0]
-                : properties.owner || job?.owner;
+            const ownerId = resolvedOwners ? resolvedOwners[0] : properties.owner || job?.owner;
             if (ownerId) {
               window.dispatchEvent(
                 new CustomEvent("mfe:navigate", {
@@ -142,12 +145,8 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
           }}
           className="hover:text-amber-600 transition-colors text-left"
         >
-          {properties.owners && properties.owners.length > 0
-            ? properties.owners[0]
-            : properties.owner || job?.owner || "N/A"}
-          {properties.owners && properties.owners.length > 1
-            ? ` +${properties.owners.length - 1}`
-            : ""}
+          {resolvedOwners ? resolvedOwners[0] : properties.owner || job?.owner || "N/A"}
+          {resolvedOwners && resolvedOwners.length > 1 ? ` +${resolvedOwners.length - 1}` : ""}
         </button>
       ),
     },
@@ -178,7 +177,7 @@ export const JobDetailViewPresenter: React.FC<JobDetailViewPresenterProps> = ({
         actions={headerActions}
         headerContent={jobHeaderSummary}
       >
-        <div className="px-6 pb-6 pt-2">
+        <div className="pb-6 pt-2">
           {tab === "info" && (
             <div className="space-y-6 animate-fade-in">
               <JobOverview
