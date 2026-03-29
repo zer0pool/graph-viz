@@ -1,15 +1,18 @@
 # Design: GraphQL Job Explorer (Analytics Manager)
 
-Date: 2026-02-23  
-Status: Draft  
+Date: 2026-02-23
+Updated: 2026-03-29
+Status: Implemented
 Feature: Job Fleet Explorer / Analytics Hub
 
 ## 1. Background
-To support a high-performance "Job Explorer" UI similar to GCP with dynamic filtering and field selection, we are moving the "read-only/explorer" responsibility to `analytics-manager`. This service act as a BFF (Backend for Frontend) that aggregates data from core services and historical logs.
+To support a high-performance "Job Explorer" UI similar to GCP with dynamic filtering and field selection, we moved the "read-only/explorer" responsibility to `analytics-manager`. This service acts as a BFF (Backend for Frontend) that aggregates execution data from BigQuery and job metadata from `lineage-manager-v2` via internal API calls.
 
 ## 2. Technical Architecture
 
 ### 2.1 Service Responsibility & Data Flow
+
+**Key principle:** `analytics-manager` never reads the MySQL database directly. All job metadata is obtained by calling the `lineage-manager-v2` Batch API.
 
 ```mermaid
 graph TD
@@ -17,13 +20,16 @@ graph TD
         UI[Job Explorer UI]
     end
 
-    subgraph "Analytics Manager (Analytics / GraphQL)"
+    subgraph "Analytics Manager (GraphQL / port 5004)"
         GQL[GraphQL Resolver]
-        Cache[(Redis Cache)]
+        UC[SearchJobsUseCase]
+        Cache[(Redis Cache\njob_explorer:recent_runs\nTTL: 600s)]
+        GW[HttpLineageGateway]
+        LC[LineageClient]
     end
 
-    subgraph "Lineage Manager V2 (Core)"
-        LMB[Batch API]
+    subgraph "Lineage Manager V2 (port 5003)"
+        LMB[POST /api/v1/jobs/batch]
         DB[(MySQL Metadata)]
     end
 
@@ -31,36 +37,39 @@ graph TD
         BQ[(BigQuery Job Runs)]
     end
 
-    UI -- "GraphQL (List/Recent)" --> GQL
-    GQL -- "1. Get/Set Execution Data" --> Cache
-    GQL -- "2. SQL Query" --> BQ
-    GQL -- "3. POST /api/v1/jobs/batch" --> LMB
+    UI -- "GraphQL" --> GQL
+    GQL --> UC
+    UC -- "1. Check cache" --> Cache
+    UC -- "2. Query runs (async thread)" --> BQ
+    UC -- "3. Enrich metadata" --> GW
+    GW --> LC
+    LC -- "POST /api/v1/jobs/batch" --> LMB
     LMB -- "SELECT" --> DB
 ```
 
 ### 2.2 Lineage Manager V2: Batch Metadata API Spec
 
-To support data federation in an MSA environment, LM-V2 exposes a dedicated bulk lookup endpoint.
+`lineage-manager-v2` exposes a dedicated bulk lookup endpoint for MSA data federation.
 
 - **Endpoint**: `POST /api/v1/jobs/batch`
 - **Request Body**:
     ```json
     {
-      "job_ids": ["project_a-job_1", "project_b-job_2"]
+      "job_ids": ["project_a.job_1", "project_b.job_2"]
     }
     ```
 - **Response Body**:
     ```json
     {
       "results": {
-        "project_a-job_1": {
+        "project_a.job_1": {
           "id": 101,
-          "job_id": "project_a-job_1",
+          "job_id": "project_a.job_1",
           "project_id": "project_a",
           "name": "job_1",
           "owners": ["user_1"],
           "properties": {
-            "type": "SELF-TYPE",        # Valid: SELF-TYPE, REQUEST-TYPE
+            "type": "SELF-TYPE",
             "status": "active",
             "logic_type": "sql",
             "labels": { "env": "prod", "team": "analytics" }
@@ -73,167 +82,281 @@ To support data federation in an MSA environment, LM-V2 exposes a dedicated bulk
 
 ### 2.3 Analytics Manager: GraphQL Specification
 
-The GraphQL layer in Analytics Manager provides a unified interface for the frontend Explorer.
+#### GraphQL Types (Implemented)
 
-#### GraphQL Types
 ```graphql
-"""
-Core Metadata for a Job, provided by Lineage Manager
-"""
-type JobMetadata {
-  id: ID!
+"""Core execution record from BigQuery + enriched metadata from Lineage Manager."""
+type JobRun {
   jobId: String!
-  projectId: String!
-  name: String!
-  type: String
-  status: String
-  owners: [String!]
-  createdAt: DateTime!
-}
-
-"""
-Combined record of a Job Execution (BQ) joined with its Metadata (LM)
-"""
-type JobRunRecord {
-  jobId: String!
-  executionTime: DateTime!
-  dagRunId: String!
-  metadata: JobMetadata
-}
-
-input JobFilterInput {
+  dagId: String!
   projectId: String
-  status: String
-  type: String
-  owner: String
-  searchTerm: String
+  type: String               # SELF-TYPE | REQUEST-TYPE
+  destination: String
+  owners: [String!]!
+  issuer: String             # e.g. "Self Scheduling", "Data Scheduling"
+  startTime: String!
+  nextStartTime: String
+  period: String
+  date: String
+  hour: String
+  publishTime: String
+}
+
+"""Paginated response with facets and sort state."""
+type RecentJobRunsResponse {
+  items: [JobRun!]!
+  totalCount: Int!
+  facets: JobRunFilterFacets
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+"""Unique values for all filter dimensions (computed from full unfiltered dataset)."""
+type JobRunFilterFacets {
+  owners: [String!]!
+  projects: [String!]!
+  types: [String!]!
+  issuers: [String!]!
+  statuses: [String!]!
+}
+
+enum SortOrder { ASC DESC }
+
+input JobRunFilter {
+  jobId: String
+  dagId: String
+  types: [String!]
+  destination: String
+  owners: [String!]
+  issuers: [String!]
+  period: String
+  projects: [String!]
+  statuses: [String!]
+  startedAtSince: String     # ISO datetime
+  startedAtUntil: String
+}
+
+"""Aggregated job statistics across multiple dimensions."""
+type JobAggregation {
+  total: Int!
+  byDepartment: [DepartmentCount!]!
+  byType: [TypeCount!]!
+  byOwner: [OwnerCount!]!
+  byCreatedMonth: [MonthCount!]!
 }
 ```
 
-#### Queries
+#### Queries (Implemented)
+
 ```graphql
 type Query {
   """
-  Fetches the latest job execution records from BigQuery + LM Metadata
+  Paginated recent job runs with filtering, sorting, and facets.
+  Facets are computed from the full unfiltered dataset before applying filters.
   """
-  recentJobRuns(limit: Int = 20): [JobRunRecord!]!
+  recentJobRuns(
+    offset: Int = 0
+    limit: Int = 10
+    refresh: Boolean = false
+    sortBy: ID
+    sortOrder: SortOrder = DESC
+    filter: JobRunFilter
+  ): RecentJobRunsResponse!
 
   """
-  Explores all known jobs with advanced filtering
+  Search jobs via connection-style pagination.
   """
   jobs(
-    filter: JobFilterInput
-    limit: Int = 10
-    offset: Int = 0
-  ): [JobMetadata!]!
+    first: Int = 20
+    after: String
+    filter: JobFilter
+  ): JobConnection!
+
+  """
+  Consolidated job statistics (by department, type, owner, month).
+  """
+  jobStats: JobAggregation!
 }
 ```
 
-### 2.4 Implementation Detail
-The `analytics-manager` will execute asynchronous SQLAlchemy queries against the `lineage_manager` DB. 
-- **Dynamic Field Selection**: GraphQL naturally handles this. If a user asks for only `job_id`, only that is returned.
-- **JSON Filtering**: Use MySQL's `JSON_EXTRACT` for filtering `status` and `type` stored in the `properties` column.
+**Note:** `tables`, `user`, `users`, `project`, `projects` queries exist in the schema but are currently **stubs returning mock data**.
 
-### 2.5 Recently Running Jobs Logic
-The "Recently Running Jobs" view requires data from multiple sources:
+### 2.4 Implementation: SearchJobsUseCase
 
-1.  **Execution Data (BigQuery)**: Fetch the **100 most recent records** from the history table.
-    - Configuration: Loaded from `.env` via `FEATURE_HISTORY_TABLE` (e.g., `gizmopool.test_data.table_load_history`).
-    - Query Logic: `SELECT job_id, start_date as execution_time, dag_run_id FROM {table} ORDER BY start_date DESC LIMIT 100`
-2.  **Metadata (Internal API)**: Using the `job_id` list from BQ (formatted as `{project_id}-{job_id}`), fetch additional details via `lineage-manager-v2` Batch API.
-    - Fields: `project_id`, `name`, `status`, `type`, `owners`, `created_at`
-3.  **Caching (Redis)**: Since BigQuery queries are expensive and slow, the list of recent execution data will be cached in Redis with a **5-minute TTL**.
+The core use case (`app/application/usecase/job_explorer/search_jobs.py`) executes the following pipeline:
 
-### 2.6 Configuration Management
-- Standard `FEATURE_` prefix used for feature-specific settings.
-- `.env` file used for local development and Docker deployment.
-- Helm charts used for production environment variables.
+```
+1. Check Redis cache (key: "job_explorer:recent_runs")
+   └─ HIT  → return cached list immediately
+   └─ MISS → continue
+
+2. Query BigQuery (via JobExplorerRepository.get_recent_runs)
+   - Run in asyncio.to_thread() to avoid blocking event loop
+   - Fetches runs from last N days (default: 30)
+   - Returns: job_id, dag_id, execution_time, next_start_time, publish_time,
+              destination, issuer, period, date, hour, duration, progress
+
+3. If BigQuery returns 0 rows:
+   - Cache empty result with CACHE_TTL_EMPTY = 60s
+   - Return []
+
+4. Extract unique job_ids → call HttpLineageGateway.get_jobs_batch(job_ids)
+   - Gateway delegates to LineageClient → POST /api/v1/jobs/batch
+   - Returns metadata map: { job_id → { name, project_id, owners, properties } }
+
+5. Merge: for each BQ row, join metadata by job_id
+   - issuer auto-assigned if missing:
+       REQUEST-TYPE → "Data Scheduling"
+       SELF-TYPE    → "Self Scheduling"
+       other        → "System"
+
+6. Cache merged result with CACHE_TTL = 600s (10 minutes)
+7. Return list of JobRunContext dicts
+```
+
+**Cache TTL constants:**
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `CACHE_TTL` | 600s (10 min) | Normal TTL for populated result |
+| `CACHE_TTL_EMPTY` | 60s (1 min) | Short TTL when BQ returns 0 rows |
+
+Both constants can be overridden via `settings.ANALYTICS_CACHE_TTL_SEC` and `settings.ANALYTICS_CACHE_TTL_EMPTY_SEC`.
+
+### 2.5 Implementation: GraphQL Resolver (`recent_job_runs`)
+
+```
+1. Call SearchJobsUseCase.execute(days=30, refresh=refresh)
+   → returns full run list (all runs in cache period)
+
+2. calculate_facets_from_runs(all_runs)
+   → compute distinct owners, projects, types, issuers, statuses
+   → IMPORTANT: computed BEFORE applying filters so UI always shows all available options
+
+3. apply_job_run_filters(all_runs, ...filter fields...)
+   → field-by-field filtering (job_id: substring, types/owners/projects/statuses/issuers: exact list match)
+   → date range: started_at_since / started_at_until filtered on publish_time
+
+4. sort_job_runs(filtered, sort_by, descending)
+   → sort_by maps frontend column IDs via _SORT_FIELD_MAP:
+     "job" → "job_id", "dag" → "dag_id", "project" → "project_id",
+     "start_time" → "execution_time", "next_start" → "next_start_time"
+
+5. Paginate: filtered[offset : offset + limit]
+
+6. Return RecentJobRunsResponse(items, total_count, facets, sort_by, sort_order)
+```
+
+### 2.6 Infrastructure: HttpLineageGateway → LineageClient
+
+```
+analytics-manager
+  └── GraphQL Resolver
+        └── SearchJobsUseCase
+              └── HttpLineageGateway      (implements domain LineageGateway interface)
+                    └── LineageClient     (HTTP client)
+                          └── POST /api/v1/jobs/batch  →  lineage-manager-v2
+```
+
+`HttpLineageGateway` is a thin adapter that bridges the domain `LineageGateway` interface to the infrastructure `LineageClient`. This keeps domain logic free of HTTP concerns.
+
+### 2.7 Configuration Management
+
+- Standard `ANALYTICS_` prefix for service-specific settings.
+- `.env` / `settings` for local and Docker deployment.
+- Helm charts for production.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ANALYTICS_CACHE_TTL_SEC` | 600 | Redis TTL for full result set |
+| `ANALYTICS_CACHE_TTL_EMPTY_SEC` | 60 | Redis TTL when BQ returns no data |
+| `FEATURE_HISTORY_TABLE` | — | BigQuery table path for job run history |
+
+---
+
+## 3. Data Flow: Request to Response
 
 ```mermaid
 sequenceDiagram
     participant UI as Frontend UI
     participant GQL as GraphQL Resolver
+    participant UC as SearchJobsUseCase
     participant Cache as Redis
     participant BQ as BigQuery
-    participant DB as Lineage DB
+    participant GW as HttpLineageGateway
+    participant LM as lineage-manager-v2
 
-    UI->>GQL: Query recentJobs
-    GQL->>Cache: Get cached execution data
-    alt Cache Miss
-        GQL->>BQ: Fetch latest runs (job_id, time, dag_id)
-        BQ-->>GQL: Execution data
-        GQL->>Cache: Set cache (5m TTL)
-    else Cache Hit
-        Cache-->>GQL: Cached execution data
+    UI->>GQL: recentJobRuns(offset, limit, filter, sortBy)
+    GQL->>UC: execute(days=30, refresh=false)
+
+    UC->>Cache: GET job_explorer:recent_runs
+    alt Cache HIT
+        Cache-->>UC: JSON list (all runs)
+    else Cache MISS
+        UC->>BQ: get_recent_runs(days=30) [in thread]
+        BQ-->>UC: BQ rows
+        UC->>GW: get_jobs_batch(job_ids)
+        GW->>LM: POST /api/v1/jobs/batch
+        LM-->>GW: metadata map
+        GW-->>UC: metadata map
+        UC->>Cache: SET job_explorer:recent_runs (TTL 600s)
     end
-    GQL->>DB: Batch Fetch Metadata by job_ids
-    DB-->>GQL: Job Metadata
-    GQL-->>UI: Joined Response
+
+    UC-->>GQL: all_runs list
+
+    GQL->>GQL: calculate_facets_from_runs(all_runs)
+    GQL->>GQL: apply_job_run_filters(all_runs, filter)
+    GQL->>GQL: sort_job_runs(filtered, sort_by)
+    GQL->>GQL: paginate(offset, limit)
+
+    GQL-->>UI: RecentJobRunsResponse { items, totalCount, facets }
 ```
 
-## 3. Frontend UI Design & Interaction
+---
 
-### 3.1 Layout Architecture
-The Job Explorer is divided into three main zones:
-1.  **Toolbar (Top)**: Global Search, Quick Filters (Project, Status), and Data Refresh.
-2.  **Explorer Grid (Center)**: Dynamic table with sortable columns.
-3.  **Config Panel (Right/Popover)**: Column Selection (Show/Hide fields like `owners`, `logic_type`).
+## 4. Frontend Integration
 
-#### UI Layout Mockup
+### 4.1 GraphQL Hook (`useJobLanding.ts`)
+
+The frontend uses a custom hook in `mfe-catalog/src/widgets/job-landing/useJobLanding.ts` that calls the `recentJobRuns` query. The hook maps between camelCase (GraphQL) and snake_case (internal data model) where needed.
+
+### 4.2 UI Layout
+
 ```text
 +-----------------------------------------------------------------------+
-| Search [________________]  [Project v] [Status v] [Columns v] [Reload]|
+| Search [________________]  [Project v] [Type v] [Issuer v] [Reload]  |
 +-----------------------------------------------------------------------+
-| Name             | Job ID         | Status   | Type        | Last Run |
-|------------------|----------------|----------|-------------|----------|
-| Request-Filter-1 | api-gateway-...| DEPLOYED | REQUEST-TYPE| 2m ago   |
-| Self-Stats-Core  | analytics-p... | RUNNING  | SELF-TYPE   | 15m ago  |
-| ...              | ...            | ...      | ...         | ...      |
+| Job ID           | Project        | Type         | Issuer   | Start   |
+|------------------|----------------|--------------|----------|---------|
+| payment-gw-...   | payment-gateway| REQUEST-TYPE | Data...  | 2m ago  |
+| analytics-core   | analytics-prod | SELF-TYPE    | Self...  | 15m ago |
 +-----------------------------------------------------------------------+
-|                                  Pagination: < 1 2 3 > (100 total)    |
+|                              Pagination: < 1 2 3 > (N total)         |
 +-----------------------------------------------------------------------+
 ```
 
-### 3.2 User Interaction Scenarios
+### 4.3 Filter Behavior
 
-| User Action | Frontend Logic (GraphQL) | Backend/Data Result |
-| :--- | :--- | :--- |
-| **Search "api"** | Query `jobs(filter: {searchTerm: "api"})` | Filters by `job_id` or `name` containing "api" |
-| **Select "SELF-TYPE"** | Query `jobs(filter: {type: "SELF-TYPE"})` | Filters JSON `properties.type` |
-| **Hide "Owners" Col** | UI state update (Don't request `owners`) | GraphQL prevents over-fetching of `owners` field |
-| **Refresh Recent** | Query `recentJobRuns` (refetch) | BQ/Cache update; grid shows latest executions |
+| User Action | Query Parameter | Backend Logic |
+|:---|:---|:---|
+| Search "api" | `filter: { jobId: "api" }` | Substring match on `job_id` |
+| Select type "SELF-TYPE" | `filter: { types: ["SELF-TYPE"] }` | Exact list match on `type` |
+| Select project | `filter: { projects: ["proj-a"] }` | Exact list match on `project_id` |
+| Date range filter | `filter: { startedAtSince, startedAtUntil }` | Filter on `publish_time` |
+| Click column header | `sortBy: "start_time", sortOrder: DESC` | Mapped via `_SORT_FIELD_MAP` |
 
-### 3.3 State & Interaction Flow
-```mermaid
-sequenceDiagram
-    participant User
-    participant Grid as Explorer Grid
-    participant Store as State Store (Zustand/Redux)
-    participant GQL as Analytics Manager (GraphQL)
+---
 
-    User->>Grid: Clicks "Column Selection"
-    Grid->>Store: Update 'VisibleColumns' state
-    User->>Grid: Clicks Filter "Status: RUNNING"
-    Grid->>Store: Update 'FilterCriteria'
-    Store->>GQL: Refetch jobs(filter: {status: "RUNNING"}, fields: [...])
-    GQL-->>Grid: Render updated list
-```
+## 5. Implementation Status
 
-## 4. Implementation Plan
-
-### Phase 1: Lineage Manager V2 (Batch API)
-- Implement `POST /api/v1/jobs/batch`.
-- Normalize `job_id` separator in repository logic.
-
-### Phase 2: Analytics Manager (Core Infrastructure)
-- Set up `strawberry-graphql` and Redis client.
-- Implement BigQuery fetcher with caching logic.
-- Implement Internal API client for LM-V2 communication.
-
-### Phase 3: GraphQL Layer
-- Define Schema (Types, Inputs, Queries).
-- Implement Dynamic Search and Filtering resolvers.
-
-### Phase 4: Frontend Development
-- Create `JobExplorer` view with dynamic grid.
-- Implement GraphQL client integration and state management.
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `POST /api/v1/jobs/batch` (lineage-manager-v2) | Implemented | Used by analytics-manager |
+| `SearchJobsUseCase` | Implemented | BigQuery + LineageGateway + Redis cache |
+| `HttpLineageGateway` → `LineageClient` | Implemented | HTTP adapter over domain interface |
+| `recent_job_runs` resolver | Implemented | Pagination, filter, sort, facets |
+| `jobs` resolver (connection-style) | Implemented | Basic filter via `apply_job_run_filters` |
+| `job_stats` resolver | Implemented | Delegates to `MetricsUseCase.get_job_aggregation_stats()` |
+| `tables` resolver | **Stub** | Returns mock data |
+| `user` / `users` / `project` / `projects` | **Stub** | Returns mock data |
+| Frontend `useJobLanding.ts` | Implemented | GraphQL integration hook |

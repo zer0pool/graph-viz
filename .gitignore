@@ -69,6 +69,7 @@ Thumbs.db
 *.swp
 *.bak
 *~
+.claude/
 
 # --- Database ---
 *.sqlite3
