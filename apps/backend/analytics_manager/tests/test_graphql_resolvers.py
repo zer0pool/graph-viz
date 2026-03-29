@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock
 
+from app.api.graphql.request_cache import RequestCache
 from app.api.graphql.resolvers import Query
 from app.api.graphql.schema import JobFilter, JobRunFilter, SortOrder
 
@@ -56,7 +57,10 @@ class DummyJobsUseCase:
 
 class DummyInfo:
     def __init__(self, uc=None):
-        self.context = {"jobs_uc": uc or DummyJobsUseCase()}
+        self.context = {
+            "jobs_uc": uc or DummyJobsUseCase(),
+            "cache": RequestCache(),
+        }
 
 
 # ===========================================================================

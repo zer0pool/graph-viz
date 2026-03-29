@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useApiClient } from "../../shared/api/ApiContext";
 import { MetricData } from "../../shared/ui/SummaryGrid";
 
@@ -55,6 +55,42 @@ export interface Job {
   job_name?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Query definitions — kept separate so each can be sent in parallel
+// ---------------------------------------------------------------------------
+
+const JOBS_QUERY = `
+  query GetJobsData($offset: Int, $limit: Int, $refresh: Boolean, $sortBy: ID, $sortOrder: SortOrder, $filter: JobRunFilter) {
+    topMetrics: metrics(ids: ["total_jobs", "running_now", "failed_24h", "avg_duration", "queued_jobs"]) {
+      id label count sum avg status
+      breakdown { label value color }
+    }
+    recentJobRuns(offset: $offset, limit: $limit, refresh: $refresh, sortBy: $sortBy, sortOrder: $sortOrder, filter: $filter) {
+      items {
+        jobId dagId projectId type destination owners issuer
+        startTime nextStartTime period date hour publishTime
+      }
+      totalCount
+      facets { owners projects types issuers statuses }
+    }
+  }
+`;
+
+const RANKING_QUERY = `
+  query GetRankingData {
+    jobSlotRanking(limit: 30) {
+      jobId type valueYesterday value7dAvg changePct history7d
+    }
+    jobDurationRanking(limit: 30) {
+      jobId type valueYesterday value7dAvg changePct history7d
+    }
+  }
+`;
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
 export function useJobLanding() {
   const api = useApiClient();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -85,66 +121,24 @@ export function useJobLanding() {
         sortOrder = "DESC",
         filter = null,
       } = options;
+
       setLoading(true);
       try {
-        const query = `
-        query GetJobLandingData($offset: Int, $limit: Int, $refresh: Boolean, $sortBy: ID, $sortOrder: SortOrder, $filter: JobRunFilter) {
-          topMetrics: metrics(ids: ["total_jobs", "running_now", "failed_24h", "avg_duration", "queued_jobs"]) {
-            id label count sum avg status
-            breakdown { label value color }
-          }
-          recentJobRuns(offset: $offset, limit: $limit, refresh: $refresh, sortBy: $sortBy, sortOrder: $sortOrder, filter: $filter) {
-            items {
-              jobId
-              dagId
-              projectId
-              type
-              destination
-              owners
-              issuer
-              startTime
-              nextStartTime
-              period
-              date
-              hour
-              publishTime
-            }
-            totalCount
-            facets {
-              owners
-              projects
-              types
-              issuers
-              statuses
-            }
-          }
-          jobSlotRanking(limit: 30) {
-            jobId
-            type
-            valueYesterday
-            value7dAvg
-            changePct
-            history7d
-          }
-          jobDurationRanking(limit: 30) {
-            jobId
-            type
-            valueYesterday
-            value7dAvg
-            changePct
-            history7d
-          }
-        }
-      `;
-        const result = await api.graphqlRequest<{
-          topMetrics: any[];
-          recentJobRuns: { items: any[]; totalCount: number; facets: JobRunFilterFacets };
-          jobSlotRanking: JobRankingItem[];
-          jobDurationRanking: JobRankingItem[];
-        }>(query, { offset, limit, refresh, sortBy, sortOrder, filter });
+        // Fire both queries in parallel — ranking is independent of jobs/metrics
+        const [jobsResult, rankingResult] = await Promise.all([
+          api.graphqlRequest<{
+            topMetrics: any[];
+            recentJobRuns: { items: any[]; totalCount: number; facets: JobRunFilterFacets };
+          }>(JOBS_QUERY, { offset, limit, refresh, sortBy, sortOrder, filter }),
+
+          api.graphqlRequest<{
+            jobSlotRanking: JobRankingItem[];
+            jobDurationRanking: JobRankingItem[];
+          }>(RANKING_QUERY, {}),
+        ]);
 
         setMetrics(
-          result.topMetrics.map((m) => ({
+          jobsResult.topMetrics.map((m) => ({
             type: m.id,
             value: m.count ?? 0,
             label: m.label,
@@ -153,12 +147,10 @@ export function useJobLanding() {
           }))
         );
 
-        setFacets(result.recentJobRuns.facets);
-        setSlotRanking(result.jobSlotRanking ?? []);
-        setDurationRanking(result.jobDurationRanking ?? []);
-        setTotalCount(result.recentJobRuns.totalCount);
+        setFacets(jobsResult.recentJobRuns.facets);
+        setTotalCount(jobsResult.recentJobRuns.totalCount);
         setJobs(
-          result.recentJobRuns.items.map((r) => ({
+          jobsResult.recentJobRuns.items.map((r) => ({
             job_id: r.jobId,
             dag_id: r.dagId,
             project_id: r.projectId,
@@ -177,6 +169,10 @@ export function useJobLanding() {
             job_name: r.jobId.split(".").pop() || r.jobId,
           }))
         );
+
+        setSlotRanking(rankingResult.jobSlotRanking ?? []);
+        setDurationRanking(rankingResult.jobDurationRanking ?? []);
+
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch data");
@@ -186,10 +182,6 @@ export function useJobLanding() {
     },
     [api]
   );
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const getStatusColor = (status: string) => {
     const s = status?.toUpperCase() || "";

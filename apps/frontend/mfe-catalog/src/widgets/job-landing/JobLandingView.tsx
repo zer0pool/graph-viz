@@ -180,7 +180,10 @@ export function JobLandingView({
         {/* Table Header / Toolbar */}
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h3 className="font-semibold text-slate-700">
-            Recently Finished Jobs (Total: {totalCount})
+            Recently Finished Jobs{" "}
+            <span className="text-slate-400 font-normal text-xs">
+              ({totalCount.toLocaleString()} in last {timeRange})
+            </span>
           </h3>
 
           <div className="flex items-center gap-3">
