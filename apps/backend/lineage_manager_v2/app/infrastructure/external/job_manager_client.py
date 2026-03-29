@@ -78,7 +78,9 @@ class JobManagerClient:
                 data = response.json()
                 return data if isinstance(data, list) else []
             except Exception as e:
-                logger.error(f"[JobManagerClient] Error fetching run history for {job_id}: {e}")
+                logger.error(
+                    f"[JobManagerClient] Error fetching run history for {job_id}: {e}"
+                )
                 return []
 
     async def pause_job(self, job_id: str) -> bool:

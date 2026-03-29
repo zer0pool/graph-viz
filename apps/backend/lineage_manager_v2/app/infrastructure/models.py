@@ -14,8 +14,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.infrastructure.base import Base
 from app.domain.audit.models import AuditLog
+from app.infrastructure.base import Base
 
 
 class GraphNode(Base):
@@ -175,6 +175,3 @@ class PageVisit(Base):
     title = Column(String(255), nullable=True)
     visitor_id = Column(String(255), nullable=True)
     visited_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
-
-
-

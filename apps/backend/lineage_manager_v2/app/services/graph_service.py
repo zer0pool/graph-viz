@@ -40,12 +40,12 @@ class GraphService:
         return f"Registered {len(data.edges)} edges and synced closure table"
 
     async def initialize_graph(
-        self, 
-        drop_existing: bool = False, 
+        self,
+        drop_existing: bool = False,
         batch_size: int = 100,
         audit_service: Optional[Any] = None,
         audit_parent_id: Optional[int] = None,
-        user_email: str = "system"
+        user_email: str = "system",
     ) -> Dict[str, Any]:
         """
         Automated Discovery & Initialization:
@@ -61,8 +61,9 @@ class GraphService:
 
         # 1. Discovery from external source
         import time
+
         start_time = time.time()
-        
+
         # Audit: Start Detail
         if audit_service and audit_parent_id:
             await audit_service.bulk_create_details(
@@ -71,14 +72,19 @@ class GraphService:
                 user_email=user_email,
                 targets=["Graph Initialization Start"],
                 target_type="SYSTEM",
-                status="SUCCESS"
+                status="SUCCESS",
             )
 
         external_jobs = await self.job_manager_client.fetch_scheduling_lineage()
         total_jobs = len(external_jobs)
         logger.info(f"Fetched {total_jobs} jobs from external source")
 
-        overall_stats: Dict[str, Any] = {"jobs": 0, "edges": 0, "projects": set(), "failed": 0}
+        overall_stats: Dict[str, Any] = {
+            "jobs": 0,
+            "edges": 0,
+            "projects": set(),
+            "failed": 0,
+        }
 
         # 2. Process in batches
         for i in range(0, total_jobs, batch_size):
@@ -88,7 +94,7 @@ class GraphService:
             async with self.uow:
                 for item in batch:
                     job_id = item.get("job_id")
-                    
+
                     try:
                         metadata = item.get("metadata", {})
                         job_meta = metadata.get("job_meta", {})
@@ -150,7 +156,9 @@ class GraphService:
                                 saved_table = await self.uow.data_nodes.save(t_entity)
                                 u_node_id = saved_table.id
                             else:
-                                u_node_id = await self.uow.graph.ensure_node(u_type, u_name)
+                                u_node_id = await self.uow.graph.ensure_node(
+                                    u_type, u_name
+                                )
 
                             await self.uow.graph.add_edge(
                                 u_node_id,
@@ -174,7 +182,9 @@ class GraphService:
                                 saved_table = await self.uow.data_nodes.save(t_entity)
                                 d_node_id = saved_table.id
                             else:
-                                d_node_id = await self.uow.graph.ensure_node(d_type, d_name)
+                                d_node_id = await self.uow.graph.ensure_node(
+                                    d_type, d_name
+                                )
 
                             await self.uow.graph.add_edge(
                                 job_node_id,
@@ -202,7 +212,7 @@ class GraphService:
                 user_email=user_email,
                 targets=["Graph Initialization Complete"],
                 target_type="SYSTEM",
-                status="SUCCESS"
+                status="SUCCESS",
             )
 
         projects_set = overall_stats.get("projects", set())
@@ -266,21 +276,25 @@ class GraphService:
 
             if edge["type"] == "consumes" and tgt and tgt["id"] == node_id and src:
                 props = edge.get("properties") or {}
-                inputs.append({
-                    "id": str_id_map[src["id"]],
-                    "name": src["name"],
-                    "storage_type": src.get("properties", {}).get("data_type"),
-                    "read_mode": "TRIGGER" if props.get("trigger") else "READ",
-                })
+                inputs.append(
+                    {
+                        "id": str_id_map[src["id"]],
+                        "name": src["name"],
+                        "storage_type": src.get("properties", {}).get("data_type"),
+                        "read_mode": "TRIGGER" if props.get("trigger") else "READ",
+                    }
+                )
             elif edge["type"] == "produces" and src and src["id"] == node_id and tgt:
                 props = tgt.get("properties") or {}
-                outputs.append({
-                    "id": str_id_map[tgt["id"]],
-                    "name": tgt["name"],
-                    "storage_type": props.get("data_type"),
-                    "write_mode": props.get("write_mode", "WRITE"),
-                    "consumer_count": 0,
-                })
+                outputs.append(
+                    {
+                        "id": str_id_map[tgt["id"]],
+                        "name": tgt["name"],
+                        "storage_type": props.get("data_type"),
+                        "write_mode": props.get("write_mode", "WRITE"),
+                        "consumer_count": 0,
+                    }
+                )
 
         formatted_nodes = [
             {
@@ -419,7 +433,12 @@ class GraphService:
         """
         raw_runs = await self.job_manager_client.get_job_run_history(job_id)
 
-        status_map = {"running": "running", "success": "success", "failed": "failed", "queued": "queued"}
+        status_map = {
+            "running": "running",
+            "success": "success",
+            "failed": "failed",
+            "queued": "queued",
+        }
 
         timeline = []
         for item in raw_runs:
@@ -432,6 +451,7 @@ class GraphService:
             if start_str and end_str:
                 try:
                     from datetime import datetime
+
                     start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
                     end = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
                     duration_sec = int((end - start).total_seconds())
@@ -439,18 +459,22 @@ class GraphService:
                     pass
 
             triggered_by = (
-                dag_run_id.split("__", 1)[0] if dag_run_id and "__" in dag_run_id else None
+                dag_run_id.split("__", 1)[0]
+                if dag_run_id and "__" in dag_run_id
+                else None
             )
 
-            timeline.append({
-                "run_id": dag_run_id,
-                "job_id": job_id,
-                "status": status_map.get(state, state or "unknown"),
-                "start_time": start_str,
-                "end_time": end_str,
-                "duration_sec": duration_sec,
-                "triggered_by": triggered_by,
-            })
+            timeline.append(
+                {
+                    "run_id": dag_run_id,
+                    "job_id": job_id,
+                    "status": status_map.get(state, state or "unknown"),
+                    "start_time": start_str,
+                    "end_time": end_str,
+                    "duration_sec": duration_sec,
+                    "triggered_by": triggered_by,
+                }
+            )
 
         summary = {
             "total": len(timeline),

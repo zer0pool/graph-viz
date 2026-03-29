@@ -105,12 +105,12 @@ class MetadataService:
 
             # 1. Get existing roles (for diff in audit)
             old_roles = user.roles or []
-            
+
             # 2. Update roles
             user.roles = roles
             await self.uow.users.save(user)
             await self.uow.commit()
-            
+
             # 3. Audit
             duration = time.time() - start_time
             summary = f"Updated roles for user '{user_id}': {old_roles} -> {roles}"
@@ -122,7 +122,7 @@ class MetadataService:
                     status="SUCCESS",
                     payload={"old_roles": old_roles, "new_roles": roles},
                     target_type="USER",
-                    duration=duration
+                    duration=duration,
                 )
 
             return user

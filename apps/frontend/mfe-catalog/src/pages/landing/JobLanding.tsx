@@ -5,8 +5,10 @@ import { JobLandingView } from "../../widgets/job-landing/JobLandingView";
 
 export const JobLanding: React.FC = () => {
   const navigate = useMfeNavigate();
-  const { jobs, metrics, facets, loading, error, totalCount, fetchData, refresh, getStatusColor } =
-    useJobLanding();
+  const {
+    jobs, metrics, facets, slotRanking, durationRanking,
+    loading, error, totalCount, fetchData, refresh, getStatusColor,
+  } = useJobLanding();
 
   const handleNavigateToJob = useCallback(
     (jobId: string) => {
@@ -20,6 +22,8 @@ export const JobLanding: React.FC = () => {
       jobs={jobs}
       metrics={metrics}
       facets={facets}
+      slotRanking={slotRanking}
+      durationRanking={durationRanking}
       loading={loading}
       error={error}
       totalCount={totalCount}

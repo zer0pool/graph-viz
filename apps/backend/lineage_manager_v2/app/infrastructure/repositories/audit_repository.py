@@ -17,19 +17,25 @@ class AuditRepository:
             action=entity.action if entity.action != "UNKNOWN" else entity.command_type,
             target_id=entity.target_id,
             payload=entity.payload,
-            user_email=entity.user_email if entity.user_email != "system" else entity.performed_by,
+            user_email=(
+                entity.user_email
+                if entity.user_email != "system"
+                else entity.performed_by
+            ),
             target_type=entity.target_type,
             status=entity.status,
             error_message=entity.error_message,
             total_count=entity.total_count,
             success_count=entity.success_count,
-            fail_count=entity.fail_count
+            fail_count=entity.fail_count,
         )
         self.db.add(model)
         await self.db.flush()
         await self.db.refresh(model)
         entity.id = int(model.id) if model.id is not None else None
-        entity.timestamp = model.timestamp if model.timestamp is not None else datetime.now()
+        entity.timestamp = (
+            model.timestamp if model.timestamp is not None else datetime.now()
+        )
         return entity
 
     async def create(
@@ -40,7 +46,7 @@ class AuditRepository:
         status: str,
         payload: Optional[dict] = None,
         error_message: Optional[str] = None,
-        target_type: str = "SYSTEM"
+        target_type: str = "SYSTEM",
     ) -> AuditLogModel:
         model = AuditLogModel(
             action=command_type,
@@ -52,7 +58,7 @@ class AuditRepository:
             error_message=error_message,
             total_count=0,
             success_count=0,
-            fail_count=0
+            fail_count=0,
         )
         self.db.add(model)
         await self.db.flush()
@@ -100,7 +106,7 @@ class AuditRepository:
         payload: Optional[dict] = None,
         status: str = "PENDING",
         target_id: Optional[str] = None,
-        duration: Optional[float] = None
+        duration: Optional[float] = None,
     ) -> AuditLogModel:
         model = AuditLogModel(
             parent_id=None,
@@ -113,7 +119,7 @@ class AuditRepository:
             total_count=total_count,
             success_count=total_count if status == "SUCCESS" else 0,
             fail_count=0,
-            duration=duration
+            duration=duration,
         )
         self.db.add(model)
         await self.db.flush()
@@ -142,7 +148,7 @@ class AuditRepository:
                 error_message=message,
                 total_count=0,
                 success_count=0,
-                fail_count=0
+                fail_count=0,
             )
             for target in targets
         ]
@@ -158,17 +164,21 @@ class AuditRepository:
         message: Optional[str] = None,
     ) -> bool:
         from datetime import datetime
-        
+
         result = await self.db.execute(
             select(AuditLogModel).filter_by(parent_id=parent_id, target_id=target_id)
         )
         model = result.scalar_one_or_none()
-        
+
         if model:
             # Status Transition Guard: Don't overwrite final states with intermediate ones
-            if model.status in ("SUCCESS", "FAIL") and status in ("PROCESSING", "INITIATED", "PENDING"):
+            if model.status in ("SUCCESS", "FAIL") and status in (
+                "PROCESSING",
+                "INITIATED",
+                "PENDING",
+            ):
                 return True
-                
+
             model.status = status
             if message:
                 model.error_message = message
@@ -188,15 +198,18 @@ class AuditRepository:
         duration: Optional[float] = None,
     ) -> bool:
         from datetime import datetime
-        
+
         result = await self.db.execute(
             select(AuditLogModel).filter_by(id=audit_id, parent_id=None)
         )
         model = result.scalar_one_or_none()
-        
+
         if model:
             # Status Transition Guard
-            if model.status in ("SUCCESS", "FAIL") and status in ("PROCESSING", "PENDING"):
+            if model.status in ("SUCCESS", "FAIL") and status in (
+                "PROCESSING",
+                "PENDING",
+            ):
                 return True
 
             model.status = status
@@ -224,14 +237,18 @@ class AuditRepository:
             task_name=str(model.task_name) if model.task_name is not None else None,
             parent_id=int(model.parent_id) if model.parent_id is not None else None,
             total_count=int(model.total_count) if model.total_count is not None else 0,
-            success_count=int(model.success_count) if model.success_count is not None else 0,
+            success_count=(
+                int(model.success_count) if model.success_count is not None else 0
+            ),
             fail_count=int(model.fail_count) if model.fail_count is not None else 0,
             payload=model.payload,  # JSON stays as dict/list
             status=str(model.status),
-            error_message=str(model.error_message) if model.error_message is not None else None,
+            error_message=(
+                str(model.error_message) if model.error_message is not None else None
+            ),
             timestamp=model.timestamp,
             duration=float(model.duration) if model.duration is not None else None,
             # Backward compatibility temporary defaults
             command_type=str(model.action),
-            performed_by=str(model.user_email)
+            performed_by=str(model.user_email),
         )

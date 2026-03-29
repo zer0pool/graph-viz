@@ -15,14 +15,14 @@ class AuditService:
         async with self.uow:
             # We fetch top-level audits (Master records)
             masters = await self.uow.audits.list_recent_masters(limit=limit)
-            
+
             result = []
             for master in masters:
                 # Fetch details for each master
                 details = await self.uow.audits.list_details_by_master(master.id)
                 formatted = self._format_audit_log(master, details)
                 result.append(formatted)
-                
+
             return result
 
     def _format_audit_log(self, log: Any, details: Optional[List[Any]] = None):
@@ -54,16 +54,22 @@ class AuditService:
         if details:
             for d in details:
                 # Use task_name if available, fallback to target_id or description
-                desc = d.error_message if d.error_message else f"{d.action} on {d.target_id}"
+                desc = (
+                    d.error_message
+                    if d.error_message
+                    else f"{d.action} on {d.target_id}"
+                )
                 if d.action == "GRAPH_INIT_JOB":
                     desc = f"Processed job: {d.target_id}"
-                
-                events.append({
-                    "id": str(d.id),
-                    "description": desc,
-                    "status": d.status,
-                    "timestamp": d.timestamp.isoformat() + "Z",
-                })
+
+                events.append(
+                    {
+                        "id": str(d.id),
+                        "description": desc,
+                        "status": d.status,
+                        "timestamp": d.timestamp.isoformat() + "Z",
+                    }
+                )
         elif log.action == "UPDATE_USER_ROLES":
             # Backward compatibility or fallback for simple records without details
             events.append(
@@ -87,8 +93,8 @@ class AuditService:
             "stats": {
                 "total": log.total_count,
                 "success": log.success_count,
-                "fail": log.fail_count
-            }
+                "fail": log.fail_count,
+            },
         }
 
     def log_command(
@@ -114,7 +120,7 @@ class AuditService:
             status=status,
             payload=payload,
             total_count=0,
-            duration=duration
+            duration=duration,
         )
 
     async def create_master(
@@ -126,7 +132,7 @@ class AuditService:
         payload: Optional[dict] = None,
         status: str = "PENDING",
         target_id: Optional[str] = None,
-        duration: Optional[float] = None
+        duration: Optional[float] = None,
     ) -> int:
         async with self.uow:
             model = await self.uow.audits.create_master(
@@ -137,7 +143,7 @@ class AuditService:
                 payload=payload,
                 status=status,
                 target_id=target_id,
-                duration=duration
+                duration=duration,
             )
             await self.uow.commit()
             return model.id
@@ -160,7 +166,7 @@ class AuditService:
                 user_email=user_email,
                 targets=targets,
                 status=status,
-                message=message
+                message=message,
             )
             await self.uow.commit()
             return count
@@ -177,6 +183,7 @@ class AuditService:
         duration: Optional[float] = None,
     ):
         from app.core.celery_app import celery_app
+
         celery_app.send_task(
             "app.tasks.audit_tasks.process_audit",
             kwargs={
@@ -189,7 +196,7 @@ class AuditService:
                 "payload": payload,
                 "status": status,
                 "duration": duration,
-            }
+            },
         )
 
     def dispatch_bulk_create_details(
@@ -203,6 +210,7 @@ class AuditService:
         message: Optional[str] = None,
     ):
         from app.core.celery_app import celery_app
+
         try:
             logger.info(f"Dispatching BULK_CREATE_DETAILS for {len(targets)} targets")
             task = celery_app.send_task(
@@ -216,9 +224,11 @@ class AuditService:
                     "target_type": target_type,
                     "status": status,
                     "message": message,
-                }
+                },
             )
-            logger.info(f"Successfully dispatched BULK_CREATE_DETAILS (Task ID: {task.id})")
+            logger.info(
+                f"Successfully dispatched BULK_CREATE_DETAILS (Task ID: {task.id})"
+            )
         except Exception as e:
             logger.error(f"Failed to dispatch BULK_CREATE_DETAILS: {e}")
 
@@ -232,6 +242,7 @@ class AuditService:
         duration: Optional[float] = None,
     ):
         from app.core.celery_app import celery_app
+
         try:
             logger.info(f"Dispatching UPDATE_MASTER for audit_id {audit_id}")
             task = celery_app.send_task(
@@ -244,7 +255,7 @@ class AuditService:
                     "success_count": success_count,
                     "fail_count": fail_count,
                     "duration": duration,
-                }
+                },
             )
             logger.info(f"Successfully dispatched UPDATE_MASTER (Task ID: {task.id})")
         except Exception as e:

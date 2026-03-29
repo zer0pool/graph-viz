@@ -9,12 +9,13 @@ import strawberry
 from strawberry.types import Info
 
 from app.api.graphql.schema import (Job, JobAggregation, JobConfig,
-                                    JobConnection, JobEdge, JobFilter, JobRun,
-                                    JobRunFilter, JobRunFilterFacets, JobStats,
-                                    MetricGroups, PageInfo, Project,
-                                    RecentJobRunsResponse, SortOrder, Table,
-                                    TableConfig, TableConnection, TableEdge,
-                                    TableFilter, TableStats, User)
+                                    JobConnection, JobEdge, JobFilter,
+                                    JobRankingItem, JobRun, JobRunFilter,
+                                    JobRunFilterFacets, JobStats, MetricGroups,
+                                    PageInfo, Project, RecentJobRunsResponse,
+                                    SortOrder, Table, TableConfig,
+                                    TableConnection, TableEdge, TableFilter,
+                                    TableStats, User)
 from app.domain.job_explorer.job_run_helpers import (
     apply_job_run_filters, calculate_facets_from_runs, sort_job_runs)
 
@@ -276,6 +277,30 @@ class Query:
     async def job_stats(self, info: Info) -> JobAggregation:
         metrics_uc = info.context["metrics_uc"]
         return await metrics_uc.get_job_aggregation_stats()
+
+    # -------------------------------------------------------------------------
+    # Job Rankings (Slot Usage & Duration)
+    # -------------------------------------------------------------------------
+
+    @strawberry.field(
+        description="Top N jobs ranked by 7-day average BigQuery slot usage."
+    )
+    async def job_slot_ranking(
+        self, info: Info, limit: int = 10
+    ) -> List[JobRankingItem]:
+        ranking_uc = info.context["ranking_uc"]
+        rows = await ranking_uc.get_slot_ranking(limit)
+        return [JobRankingItem(**r) for r in rows]
+
+    @strawberry.field(
+        description="Top N jobs ranked by 7-day average execution duration (seconds)."
+    )
+    async def job_duration_ranking(
+        self, info: Info, limit: int = 10
+    ) -> List[JobRankingItem]:
+        ranking_uc = info.context["ranking_uc"]
+        rows = await ranking_uc.get_duration_ranking(limit)
+        return [JobRankingItem(**r) for r in rows]
 
 
 schema = strawberry.Schema(query=Query)

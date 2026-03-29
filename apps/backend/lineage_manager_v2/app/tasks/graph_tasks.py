@@ -9,7 +9,9 @@ from app.services.graph_service import GraphService
 
 
 @celery_app.task(name="app.tasks.graph_tasks.initialize_graph_task", bind=True)
-def initialize_graph_task(self, drop_existing: bool = False, user_email: str = "system"):
+def initialize_graph_task(
+    self, drop_existing: bool = False, user_email: str = "system"
+):
     """
     Celery task to run graph initialization/discovery.
     """
@@ -18,25 +20,25 @@ def initialize_graph_task(self, drop_existing: bool = False, user_email: str = "
         container = Container()
         graph_service = container.graph_service()
         audit_service = container.audit_service()
-        
+
         # Create Master Audit Record synchronously so we have the ID to pass to details
         master_id = await audit_service.create_master(
             action_type="GRAPH_INIT",
             target_type="SYSTEM",
             user_email=user_email,
             total_count=0,  # Will update later with stats
-            payload={"drop_existing": drop_existing}
+            payload={"drop_existing": drop_existing},
         )
-            
+
         try:
             # Pass audit context to the service
             result = await graph_service.initialize_graph(
                 drop_existing=drop_existing,
                 audit_service=audit_service,
                 audit_parent_id=master_id,
-                user_email=user_email
+                user_email=user_email,
             )
-            
+
             # Update Master on success
             if master_id:
                 stats = result.get("stats", {})
@@ -47,18 +49,16 @@ def initialize_graph_task(self, drop_existing: bool = False, user_email: str = "
                     total_count=total_jobs,
                     success_count=stats.get("jobs", 0),
                     fail_count=stats.get("failed", 0),
-                    duration=result.get("duration")
+                    duration=result.get("duration"),
                 )
-                
+
             return {"status": "success", "result": result}
         except Exception as e:
             traceback.print_exc()
             # Update Master on failure
             if master_id:
                 await audit_service.update_master(
-                    audit_id=master_id,
-                    status="FAIL",
-                    fail_count=1
+                    audit_id=master_id, status="FAIL", fail_count=1
                 )
             raise e
 
@@ -76,6 +76,7 @@ def pause_job_task(self, job_id: str, user_id: str):
         graph_service = container.graph_service()
         audit_service = container.audit_service()
         import time
+
         start_time = time.time()
         success = await graph_service.job_manager_client.pause_job(job_id)
         duration = time.time() - start_time
@@ -87,7 +88,7 @@ def pause_job_task(self, job_id: str, user_id: str):
             status=status,
             target_type="JOB",
             total_count=0,
-            duration=duration
+            duration=duration,
         )
         return {"status": status, "job_id": job_id}
 
@@ -104,6 +105,7 @@ def resume_job_task(self, job_id: str, user_id: str):
         graph_service = container.graph_service()
         audit_service = container.audit_service()
         import time
+
         start_time = time.time()
         success = await graph_service.job_manager_client.resume_job(job_id)
         duration = time.time() - start_time
@@ -115,7 +117,7 @@ def resume_job_task(self, job_id: str, user_id: str):
             status=status,
             target_type="JOB",
             total_count=0,
-            duration=duration
+            duration=duration,
         )
         return {"status": status, "job_id": job_id}
 

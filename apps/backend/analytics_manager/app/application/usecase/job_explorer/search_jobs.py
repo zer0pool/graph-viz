@@ -44,18 +44,26 @@ class SearchJobsUseCase:
             bq_rows = await asyncio.to_thread(self.repo.get_recent_runs, days=days)
             logger.info(f"[JobExplorer] BigQuery returned {len(bq_rows)} rows")
         except Exception as e:
-            logger.error(f"[JobExplorer] Failed to fetch recent runs from Repository: {e}")
+            logger.error(
+                f"[JobExplorer] Failed to fetch recent runs from Repository: {e}"
+            )
             bq_rows = []
 
         if not bq_rows:
             # Cache the empty result with a short TTL to prevent repeated BQ hits
-            ttl_empty = getattr(settings, "ANALYTICS_CACHE_TTL_EMPTY_SEC", CACHE_TTL_EMPTY)
+            ttl_empty = getattr(
+                settings, "ANALYTICS_CACHE_TTL_EMPTY_SEC", CACHE_TTL_EMPTY
+            )
             await self._set_cache(CACHE_KEY, [], ttl=ttl_empty)
-            logger.warning(f"[JobExplorer] BigQuery returned 0 rows — caching empty for {ttl_empty}s")
+            logger.warning(
+                f"[JobExplorer] BigQuery returned 0 rows — caching empty for {ttl_empty}s"
+            )
             return []
 
         job_ids = list({row["job_id"] for row in bq_rows if row.get("job_id")})
-        logger.info(f"[JobExplorer] Fetching metadata for {len(job_ids)} jobs from lineage-manager-v2")
+        logger.info(
+            f"[JobExplorer] Fetching metadata for {len(job_ids)} jobs from lineage-manager-v2"
+        )
         metadata_map = await self.lineage.get_jobs_batch(job_ids)
         logger.info(f"[JobExplorer] Received metadata for {len(metadata_map)} jobs")
 

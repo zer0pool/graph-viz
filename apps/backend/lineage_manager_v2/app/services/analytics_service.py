@@ -75,7 +75,9 @@ class AnalyticsService:
         self, path: str, title: Optional[str], visitor_id: Optional[str]
     ) -> None:
         async with self.uow:
-            await self.uow.page_visits.record(path=path, title=title, visitor_id=visitor_id)
+            await self.uow.page_visits.record(
+                path=path, title=title, visitor_id=visitor_id
+            )
             await self.uow.commit()
 
     async def get_top_visited(self, limit: int = 5, days: int = 7) -> List[dict]:

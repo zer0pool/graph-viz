@@ -26,6 +26,15 @@ export interface JobRunFilterFacets {
   statuses: string[];
 }
 
+export interface JobRankingItem {
+  jobId: string;
+  type: string;
+  valueYesterday: number;
+  value7dAvg: number;
+  changePct: number;
+  history7d: number[];
+}
+
 export interface Job {
   job_id: string;
   dag_id: string;
@@ -51,6 +60,8 @@ export function useJobLanding() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [metrics, setMetrics] = useState<JobMetric[]>([]);
   const [facets, setFacets] = useState<JobRunFilterFacets | null>(null);
+  const [slotRanking, setSlotRanking] = useState<JobRankingItem[]>([]);
+  const [durationRanking, setDurationRanking] = useState<JobRankingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -107,11 +118,29 @@ export function useJobLanding() {
               statuses
             }
           }
+          jobSlotRanking(limit: 30) {
+            jobId
+            type
+            valueYesterday
+            value7dAvg
+            changePct
+            history7d
+          }
+          jobDurationRanking(limit: 30) {
+            jobId
+            type
+            valueYesterday
+            value7dAvg
+            changePct
+            history7d
+          }
         }
       `;
         const result = await api.graphqlRequest<{
           topMetrics: any[];
           recentJobRuns: { items: any[]; totalCount: number; facets: JobRunFilterFacets };
+          jobSlotRanking: JobRankingItem[];
+          jobDurationRanking: JobRankingItem[];
         }>(query, { offset, limit, refresh, sortBy, sortOrder, filter });
 
         setMetrics(
@@ -125,6 +154,8 @@ export function useJobLanding() {
         );
 
         setFacets(result.recentJobRuns.facets);
+        setSlotRanking(result.jobSlotRanking ?? []);
+        setDurationRanking(result.jobDurationRanking ?? []);
         setTotalCount(result.recentJobRuns.totalCount);
         setJobs(
           result.recentJobRuns.items.map((r) => ({
@@ -172,6 +203,8 @@ export function useJobLanding() {
     jobs,
     metrics,
     facets,
+    slotRanking,
+    durationRanking,
     loading,
     error,
     totalCount,
