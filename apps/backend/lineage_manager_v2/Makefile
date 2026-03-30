@@ -1,9 +1,8 @@
-PY=python3.12
 APP_NAME=Lineage-Manager-v2
 PORT=5003
 
 VENV=.venv
-.PHONY: run dev worker test lint format db-revision db-upgrade
+.PHONY: venv sync run dev worker test lint format db-revision db-upgrade
 
 # Environment Configuration (Default: dev)
 # Usage: make <target> ENV_NAME=prd
@@ -35,7 +34,6 @@ HELM_DRY_RUN_FLAGS := $(if $(IS_DRY_RUN),--dry-run=client --debug)
 # Prefix commands with + to force execution during make --dry-run
 EXEC_ALWAYS := $(if $(IS_DRY_RUN),+)
 
-.PHONY: venv run dev worker test lint format db-revision db-upgrade
 .PHONY: docker-build docker-push helm-install helm-upgrade helm-template helm-uninstall confirm deploy
 
 # Safety Confirmation for Production
@@ -53,11 +51,14 @@ endif
 # All-in-one: Build, Push, and Deploy
 deploy: confirm docker-build docker-push helm-upgrade
 
+# Create venv and install all dependencies (including dev extras)
 venv:
-	rm -rf $(VENV)
-	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
-	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/python -m pip install -r requirements-dev.txt || { echo "Failed to install requirements"; exit 1; }
+	uv venv $(VENV)
+	uv sync --extra dev
+
+# Sync dependencies without recreating the venv (faster)
+sync:
+	uv sync --extra dev
 
 # Run the app in development mode
 dev:
@@ -90,12 +91,14 @@ db-revision:
 db-upgrade:
 	alembic upgrade head
 
-# Lint and format code
+# Format code (ruff replaces black + isort)
 format:
-	$(VENV)/bin/black app tests
-	$(VENV)/bin/isort app tests
+	$(VENV)/bin/ruff format app tests
+	$(VENV)/bin/ruff check --select I --fix app tests
 
+# Lint code
 lint:
+	$(VENV)/bin/ruff check app tests
 	$(VENV)/bin/mypy app
 
 # Docker
