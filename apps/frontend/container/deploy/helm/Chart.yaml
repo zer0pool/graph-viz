@@ -1,5 +1,5 @@
 apiVersion: v2
-name: admin-console-app
+name: admin-shell
 description: A Helm chart for the Admin Console Shell MFE
 type: application
 version: 0.1.0

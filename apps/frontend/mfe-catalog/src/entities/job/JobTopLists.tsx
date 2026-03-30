@@ -2,53 +2,20 @@ import { useState } from "react";
 import { TrendingUp, TrendingDown, Minus, Clock, Cpu } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../shared/ui/card";
 import { cn } from "../../shared/lib/utils";
-import { JobRankingItem } from "../../widgets/job-landing/useJobLanding";
+import { JobRankingItem } from "./job";
 
-// ---------------------------------------------------------------------------
-// Mock data (fallback when no real data is available after load)
-// ---------------------------------------------------------------------------
 
-function makeMockHistory(base: number): number[] {
-  return Array.from({ length: 7 }, (_, i) => {
-    const seed = (base * (i + 1)) % 31;
-    return Math.round(base * (1 + (seed - 15) / 100));
-  });
-}
-
-const MOCK_SLOT_RANKING: JobRankingItem[] = [
-  { jobId: "ml-platform.SELF-TYPE_L2_JOB_003",       type: "SELF-TYPE",    valueYesterday: 720000, value7dAvg: 695000, changePct: 3.6,  history7d: makeMockHistory(695000) },
-  { jobId: "fraud-detection.SELF-TYPE_L2_JOB_007",   type: "SELF-TYPE",    valueYesterday: 610000, value7dAvg: 630000, changePct: -3.2, history7d: makeMockHistory(630000) },
-  { jobId: "payment-gateway.REQUEST-TYPE_L1_JOB_003",type: "REQUEST-TYPE", valueYesterday: 540000, value7dAvg: 520000, changePct: 3.8,  history7d: makeMockHistory(520000) },
-  { jobId: "realtime.REQUEST-TYPE_L1_JOB_013",       type: "REQUEST-TYPE", valueYesterday: 480000, value7dAvg: 475000, changePct: 1.1,  history7d: makeMockHistory(475000) },
-  { jobId: "supply-chain.SELF-TYPE_L2_JOB_013",      type: "SELF-TYPE",    valueYesterday: 410000, value7dAvg: 420000, changePct: -2.4, history7d: makeMockHistory(420000) },
-  { jobId: "recommendation.REQUEST-TYPE_L2_JOB_014", type: "REQUEST-TYPE", valueYesterday: 370000, value7dAvg: 355000, changePct: 4.2,  history7d: makeMockHistory(355000) },
-  { jobId: "search-indexer.REQUEST-TYPE_L1_JOB_005", type: "REQUEST-TYPE", valueYesterday: 320000, value7dAvg: 318000, changePct: 0.6,  history7d: makeMockHistory(318000) },
-  { jobId: "ecommerce.SELF-TYPE_L1_JOB_002",         type: "SELF-TYPE",    valueYesterday: 290000, value7dAvg: 295000, changePct: -1.7, history7d: makeMockHistory(295000) },
-  { jobId: "reporting.SELF-TYPE_L2_JOB_005",         type: "SELF-TYPE",    valueYesterday: 240000, value7dAvg: 238000, changePct: 0.8,  history7d: makeMockHistory(238000) },
-  { jobId: "cdn-analytics.REQUEST-TYPE_L2_JOB_007",  type: "REQUEST-TYPE", valueYesterday: 195000, value7dAvg: 200000, changePct: -2.5, history7d: makeMockHistory(200000) },
-];
-
-const MOCK_DURATION_RANKING: JobRankingItem[] = [
-  { jobId: "ml-platform.SELF-TYPE_L2_JOB_003",       type: "SELF-TYPE",    valueYesterday: 10200, value7dAvg: 9900,  changePct: 3.0,  history7d: makeMockHistory(9900)  },
-  { jobId: "supply-chain.SELF-TYPE_L2_JOB_013",      type: "SELF-TYPE",    valueYesterday: 9100,  value7dAvg: 9300,  changePct: -2.2, history7d: makeMockHistory(9300)  },
-  { jobId: "recommendation.REQUEST-TYPE_L2_JOB_014", type: "REQUEST-TYPE", valueYesterday: 8400,  value7dAvg: 8100,  changePct: 3.7,  history7d: makeMockHistory(8100)  },
-  { jobId: "fraud-detection.SELF-TYPE_L2_JOB_007",   type: "SELF-TYPE",    valueYesterday: 7600,  value7dAvg: 7800,  changePct: -2.6, history7d: makeMockHistory(7800)  },
-  { jobId: "realtime.REQUEST-TYPE_L1_JOB_013",       type: "REQUEST-TYPE", valueYesterday: 6900,  value7dAvg: 6750,  changePct: 2.2,  history7d: makeMockHistory(6750)  },
-  { jobId: "payment-gateway.REQUEST-TYPE_L1_JOB_003",type: "REQUEST-TYPE", valueYesterday: 5800,  value7dAvg: 5900,  changePct: -1.7, history7d: makeMockHistory(5900)  },
-  { jobId: "reporting.SELF-TYPE_L2_JOB_005",         type: "SELF-TYPE",    valueYesterday: 4900,  value7dAvg: 4800,  changePct: 2.1,  history7d: makeMockHistory(4800)  },
-  { jobId: "ecommerce.SELF-TYPE_L1_JOB_002",         type: "SELF-TYPE",    valueYesterday: 4200,  value7dAvg: 4250,  changePct: -1.2, history7d: makeMockHistory(4250)  },
-  { jobId: "cdn-analytics.REQUEST-TYPE_L2_JOB_007",  type: "REQUEST-TYPE", valueYesterday: 3500,  value7dAvg: 3400,  changePct: 2.9,  history7d: makeMockHistory(3400)  },
-  { jobId: "search-indexer.REQUEST-TYPE_L1_JOB_005", type: "REQUEST-TYPE", valueYesterday: 2900,  value7dAvg: 2950,  changePct: -1.7, history7d: makeMockHistory(2950)  },
-];
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function formatSlot(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}K`;
-  return String(v);
+  let val = "";
+  if (v >= 1_000_000) val = `${(v / 1_000_000).toFixed(1)}M`;
+  else if (v >= 1_000) val = `${(v / 1_000).toFixed(0)}K`;
+  else val = String(v);
+  return `${val} Slots`;
 }
 
 function formatDuration(sec: number): string {
@@ -184,16 +151,26 @@ function LimitSelector({
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-2 animate-pulse">
-      <div className="w-5 h-3 bg-slate-200 rounded flex-shrink-0" />
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+    <div className="flex items-center gap-3 animate-pulse">
+      {/* Rank */}
+      <div className="w-6 h-3 bg-slate-200 rounded flex-shrink-0" />
+      
+      {/* Job name + badge */}
+      <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
         <div className="h-3 bg-slate-200 rounded w-2/5" />
-        <div className="h-4 bg-slate-100 rounded w-14 flex-shrink-0" />
+        <div className="h-4 bg-slate-100 rounded w-12 flex-shrink-0" />
       </div>
-      <div className="w-14 h-5 bg-slate-100 rounded flex-shrink-0" />
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <div className="h-3 bg-slate-200 rounded w-10" />
-        <div className="h-3 bg-slate-200 rounded w-14" />
+
+      {/* Right columns */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Sparkline column */}
+        <div className="w-14 h-4 bg-slate-100 rounded" />
+        
+        {/* Trend column */}
+        <div className="w-16 h-4 bg-slate-50 rounded" />
+        
+        {/* Value column */}
+        <div className="w-24 h-4 bg-slate-100 rounded" />
       </div>
     </div>
   );
@@ -258,12 +235,14 @@ function RankingRow({
   sparkColor: string;
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs">
-      {/* Rank */}
-      <span className="text-slate-400 font-medium w-5 flex-shrink-0">#{index + 1}</span>
+    <div className="flex items-center gap-3 text-xs">
+      {/* Rank - fixed width */}
+      <span className="text-slate-400 font-medium w-6 flex-shrink-0 text-right">
+        #{index + 1}
+      </span>
 
       {/* Job name + project badge — fills remaining space, truncates */}
-      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
         <span className="font-semibold text-slate-700 truncate" title={item.jobId}>
           {shortJobName(item.jobId)}
         </span>
@@ -272,17 +251,22 @@ function RankingRow({
         </span>
       </div>
 
-      {/* Compact inline sparkline */}
-      <div className="w-14 h-5 flex-shrink-0">
-        <Sparkline values={item.history7d} color={sparkColor} />
-      </div>
+      {/* Right columns - grouped for consistent alignment */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Sparkline column - fixed width */}
+        <div className="w-14 h-5 flex items-center">
+          <Sparkline values={item.history7d} color={sparkColor} />
+        </div>
 
-      {/* Trend badge + value */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <TrendBadge changePct={item.changePct} />
-        <span className="font-mono font-bold text-slate-800 w-14 text-right">
+        {/* Trend column - fixed width ensures vertical alignment of % */}
+        <div className="w-16 flex justify-end">
+          <TrendBadge changePct={item.changePct} />
+        </div>
+
+        {/* Value column - fixed width and right alignment */}
+        <div className="w-24 text-right font-mono font-bold text-slate-800 whitespace-nowrap">
           {formatValue(item.valueYesterday)}
-        </span>
+        </div>
       </div>
     </div>
   );
@@ -303,8 +287,8 @@ interface JobTopListsProps {
 // ---------------------------------------------------------------------------
 
 export function JobTopLists({
-  slotRanking = MOCK_SLOT_RANKING,
-  durationRanking = MOCK_DURATION_RANKING,
+  slotRanking = [],
+  durationRanking = [],
   loading = false,
 }: Partial<JobTopListsProps> = {}) {
   const [limit, setLimit] = useState<number>(5);

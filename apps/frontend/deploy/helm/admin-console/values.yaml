@@ -8,8 +8,8 @@ image:
 
 # App (Shell) configuration
 app:
-  name: admin-console-app
-  image: admin-console-app
+  name: admin-shell
+  image: admin-shell
   port: 5100
   basePath: /admin-console
   requireSignin: true
@@ -65,7 +65,7 @@ ingress:
       paths:
         - path: /admin-console
           pathType: Prefix
-          service: admin-console-app
+          service: admin-shell
         - path: /mfe-lineage
           pathType: Prefix
           service: admin-mfe-lineage

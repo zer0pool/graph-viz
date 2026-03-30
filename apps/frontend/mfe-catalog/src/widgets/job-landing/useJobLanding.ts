@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useApiClient } from "../../shared/api/ApiContext";
 import { MetricData } from "../../shared/ui/SummaryGrid";
+import { JobRankingItem, JobListItem } from "../../entities/job/job";
 
 export type JobMetric = MetricData;
 
@@ -24,35 +25,6 @@ export interface JobRunFilterFacets {
   types: string[];
   issuers: string[];
   statuses: string[];
-}
-
-export interface JobRankingItem {
-  jobId: string;
-  type: string;
-  valueYesterday: number;
-  value7dAvg: number;
-  changePct: number;
-  history7d: number[];
-}
-
-export interface Job {
-  job_id: string;
-  dag_id: string;
-  project_id?: string;
-  type: string;
-  destination: string;
-  owners: string[];
-  issuer: string;
-  start_time: string;
-  next_start_time: string;
-  period: string;
-  date: string;
-  hour: string;
-  publish_time: string;
-  status?: string;
-  duration?: number;
-  progress?: number;
-  job_name?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,7 +65,7 @@ const RANKING_QUERY = `
 
 export function useJobLanding() {
   const api = useApiClient();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [metrics, setMetrics] = useState<JobMetric[]>([]);
   const [facets, setFacets] = useState<JobRunFilterFacets | null>(null);
   const [slotRanking, setSlotRanking] = useState<JobRankingItem[]>([]);

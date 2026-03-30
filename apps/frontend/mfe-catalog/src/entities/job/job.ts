@@ -59,3 +59,32 @@ export interface JobRunHistoryResponse {
   page: number;
   page_size: number;
 }
+
+export interface JobRankingItem {
+  jobId: string;
+  type: string;
+  valueYesterday: number;
+  value7dAvg: number;
+  changePct: number;
+  history7d: number[];
+}
+
+export interface JobListItem {
+  job_id: string;
+  dag_id: string;
+  project_id?: string;
+  type: string;
+  destination: string;
+  owners: string[];
+  issuer: string;
+  start_time: string;
+  next_start_time: string;
+  period: string;
+  date: string;
+  hour: string;
+  publish_time: string;
+  status?: string;
+  duration?: number;
+  progress?: number;
+  job_name?: string;
+}
