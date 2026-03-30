@@ -1,9 +1,8 @@
-PY=python3.12
 APP_NAME=Analytics-Manager
 PORT=5004
 
 VENV=.venv
-.PHONY: venv run dev worker test lint format db-revision db-upgrade
+.PHONY: venv sync run dev worker test lint format db-revision db-upgrade
 .PHONY: docker-build docker-push helm-install helm-upgrade helm-template helm-uninstall confirm deploy kill
 # Environment Configuration (Default: dev)
 # Usage: make <target> ENV_NAME=prd
@@ -56,11 +55,14 @@ deploy: confirm docker-build docker-push helm-upgrade
 
 
 
+# Create venv and install all dependencies (including dev extras)
 venv:
-	rm -rf $(VENV)
-	$(PY) -m venv $(VENV) || { echo "Failed to create venv"; exit 1; }
-	$(VENV)/bin/python -m pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-	$(VENV)/bin/python -m pip install -r requirements-dev.txt || { echo "Failed to install requirements"; exit 1; }
+	uv venv $(VENV)
+	uv sync --extra dev
+
+# Sync dependencies without recreating the venv (faster)
+sync:
+	uv sync --extra dev
 
 # Run the app in development mode
 dev:
@@ -85,21 +87,23 @@ worker:
 test:
 	PYTHONPATH=. $(VENV)/bin/pytest tests
 
+# Create a new migration revision (not configured yet)
+db-revision:
 	@echo "Alembic is not configured for Analytics Manager yet."
-	# alembic revision --autogenerate -m "$(msg)"
 
-# Upgrade database to head
+# Upgrade database to head (not configured yet)
 db-upgrade:
 	@echo "Alembic is not configured for Analytics Manager yet."
-	# alembic upgrade head
 
-# Lint and format code
+# Format code (ruff replaces black + isort)
 format:
-	PYTHONPATH=. $(VENV)/bin/black app
-	PYTHONPATH=. $(VENV)/bin/isort app
+	$(VENV)/bin/ruff format app
+	$(VENV)/bin/ruff check --select I --fix app
 
+# Lint code
 lint:
-	PYTHONPATH=. $(VENV)/bin/mypy app
+	$(VENV)/bin/ruff check app
+	$(VENV)/bin/mypy app
 
 # Docker
 docker-build:
