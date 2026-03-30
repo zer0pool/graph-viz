@@ -61,7 +61,8 @@ async def authorized(
 
         await auth_service.handle_callback(request, id_token, state)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/admin-console/", status_code=status.HTTP_303_SEE_OTHER
+            url=f"{settings.FRONTEND_URL}/admin-console/",
+            status_code=status.HTTP_303_SEE_OTHER,
         )
     except (ValueError, AuthenticationError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -87,7 +88,8 @@ async def exchange(
 
         await auth_service.handle_callback(request, code, state)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/admin-console/", status_code=status.HTTP_303_SEE_OTHER
+            url=f"{settings.FRONTEND_URL}/admin-console/",
+            status_code=status.HTTP_303_SEE_OTHER,
         )
     except (ValueError, AuthenticationError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))

@@ -1,4 +1,14 @@
-from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.base import Base
@@ -18,7 +28,9 @@ class AuditLog(Base):
     # What did they do?
     action = Column(String(50), nullable=False)  # PAUSE_JOB, RESUME_JOB
     target_type = Column(String(50), nullable=False)  # JOB, SYSTEM
-    target_id = Column(String(255), nullable=True)  # job_id or string identifier (nullable for Master)
+    target_id = Column(
+        String(255), nullable=True
+    )  # job_id or string identifier (nullable for Master)
     task_name = Column(String(100), nullable=True)  # Human-readable target name
 
     # Details

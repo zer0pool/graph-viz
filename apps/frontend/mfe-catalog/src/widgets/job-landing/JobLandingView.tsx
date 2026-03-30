@@ -13,13 +13,15 @@ import {
 } from "lucide-react";
 import { JobSummary } from "../../entities/job/JobSummary";
 import { JobTopLists } from "../../entities/job/JobTopLists";
-import { Job, JobMetric, JobRunFilterFacets } from "./useJobLanding";
+import { Job, JobMetric, JobRankingItem, JobRunFilterFacets } from "./useJobLanding";
 import { useJobLandingState } from "./useJobLandingState";
 
 interface JobLandingViewProps {
   jobs: Job[];
   metrics: JobMetric[];
   facets: JobRunFilterFacets | null;
+  slotRanking?: JobRankingItem[];
+  durationRanking?: JobRankingItem[];
   loading: boolean;
   error: string | null;
   totalCount: number;
@@ -76,6 +78,8 @@ export function JobLandingView({
   jobs,
   metrics,
   facets,
+  slotRanking = [],
+  durationRanking = [],
   loading,
   error,
   totalCount,
@@ -169,14 +173,17 @@ export function JobLandingView({
       </div>
 
       <div className="animate-fade-in-up delay-200">
-        <JobTopLists />
+        <JobTopLists slotRanking={slotRanking} durationRanking={durationRanking} loading={loading} />
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-8 animate-fade-in-up delay-300">
         {/* Table Header / Toolbar */}
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h3 className="font-semibold text-slate-700">
-            Recently Finished Jobs (Total: {totalCount})
+            Recently Finished Jobs{" "}
+            <span className="text-slate-400 font-normal text-xs">
+              ({totalCount.toLocaleString()} in last {timeRange})
+            </span>
           </h3>
 
           <div className="flex items-center gap-3">

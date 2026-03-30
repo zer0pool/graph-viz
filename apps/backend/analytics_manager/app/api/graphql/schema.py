@@ -225,6 +225,18 @@ class Table:
 
 
 @strawberry.type
+class JobRankingItem:
+    """Per-job ranking entry: yesterday value, 7-day average, trend, and daily history."""
+
+    job_id: str
+    type: str
+    value_yesterday: float  # raw value (slots or seconds)
+    value_7d_avg: float  # 7-day average — used as ranking key
+    change_pct: float  # (yesterday - avg) / avg * 100
+    history_7d: List[float]  # 7 daily values, oldest → newest (for Sparkline)
+
+
+@strawberry.type
 class PageInfo:
     """Relay-style pagination info."""
 

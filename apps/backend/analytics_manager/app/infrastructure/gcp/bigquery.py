@@ -60,6 +60,103 @@ class BigQueryClient:
             logger.error(f"BigQuery Insert Failed: {e}")
             return False
 
+    def get_slot_ranking(self, limit: int = 30) -> List[Dict[str, Any]]:
+        """
+        Returns top-N jobs ranked by yesterday's slot usage (descending).
+        Each row: job_id, type, value_yesterday, value_7d_avg, change_pct, history_7d (ARRAY).
+        """
+        table = settings.BIGQUERY_SLOT_USAGE_TABLE
+        query = f"""
+            WITH
+            date_range AS (
+              SELECT
+                FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))  AS yesterday,
+                FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY))  AS since_7d
+            ),
+            yesterday AS (
+              SELECT job_id, type, slot AS slot_yesterday
+              FROM `{table}`, date_range
+              WHERE date = date_range.yesterday
+            ),
+            avg7 AS (
+              SELECT job_id,
+                ROUND(AVG(slot))                          AS slot_7d_avg,
+                ARRAY_AGG(slot ORDER BY date ASC)         AS history_7d
+              FROM `{table}`, date_range
+              WHERE date BETWEEN date_range.since_7d AND date_range.yesterday
+              GROUP BY job_id
+            )
+            SELECT
+              y.job_id,
+              y.type,
+              CAST(y.slot_yesterday AS FLOAT64)                               AS value_yesterday,
+              CAST(a.slot_7d_avg    AS FLOAT64)                               AS value_7d_avg,
+              ROUND((y.slot_yesterday - a.slot_7d_avg)
+                    / NULLIF(a.slot_7d_avg, 0) * 100, 1)                     AS change_pct,
+              a.history_7d
+            FROM yesterday y
+            JOIN avg7 a USING (job_id)
+            ORDER BY y.slot_yesterday DESC
+            LIMIT {limit}
+        """
+        logger.info(f"Fetching slot ranking from BigQuery table: {table}")
+        rows = self.query(query)
+        # Convert ARRAY<INT64> → List[float]
+        for r in rows:
+            r["history_7d"] = [float(v) for v in (r.get("history_7d") or [])]
+        return rows
+
+    def get_duration_ranking(self, limit: int = 30) -> List[Dict[str, Any]]:
+        """
+        Returns top-N jobs ranked by yesterday's execution duration (descending).
+        Each row: job_id, type, value_yesterday, value_7d_avg, change_pct, history_7d (ARRAY).
+        """
+        table = settings.BIGQUERY_RUNNING_TIME_TABLE
+        query = f"""
+            WITH
+            date_range AS (
+              SELECT
+                FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))  AS yesterday,
+                FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY))  AS since_7d
+            ),
+            daily_duration AS (
+              SELECT
+                job_id, type, date,
+                TIMESTAMP_DIFF(end_time, start_time, SECOND) AS duration_sec
+              FROM `{table}`
+            ),
+            yesterday AS (
+              SELECT job_id, type, duration_sec AS duration_yesterday
+              FROM daily_duration, date_range
+              WHERE date = date_range.yesterday
+            ),
+            avg7 AS (
+              SELECT job_id,
+                ROUND(AVG(duration_sec))                          AS duration_7d_avg,
+                ARRAY_AGG(duration_sec ORDER BY date ASC)         AS history_7d
+              FROM daily_duration, date_range
+              WHERE date BETWEEN date_range.since_7d AND date_range.yesterday
+              GROUP BY job_id
+            )
+            SELECT
+              y.job_id,
+              y.type,
+              CAST(y.duration_yesterday AS FLOAT64)                               AS value_yesterday,
+              CAST(a.duration_7d_avg    AS FLOAT64)                               AS value_7d_avg,
+              ROUND((y.duration_yesterday - a.duration_7d_avg)
+                    / NULLIF(a.duration_7d_avg, 0) * 100, 1)                     AS change_pct,
+              a.history_7d
+            FROM yesterday y
+            JOIN avg7 a USING (job_id)
+            ORDER BY y.duration_yesterday DESC
+            LIMIT {limit}
+        """
+        logger.info(f"Fetching duration ranking from BigQuery table: {table}")
+        rows = self.query(query)
+        for r in rows:
+            r["history_7d"] = [float(v) for v in (r.get("history_7d") or [])]
+        return rows
+
     def get_recent_job_runs(self, days: int = 30) -> List[Dict[str, Any]]:
         """
         Queries the job execution history table and returns the most recent runs.

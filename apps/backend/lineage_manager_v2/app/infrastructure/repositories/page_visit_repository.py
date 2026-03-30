@@ -11,7 +11,9 @@ class PageVisitRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def record(self, path: str, title: str | None, visitor_id: str | None) -> None:
+    async def record(
+        self, path: str, title: str | None, visitor_id: str | None
+    ) -> None:
         visit = PageVisit(path=path, title=title, visitor_id=visitor_id)
         self.db.add(visit)
         await self.db.flush()

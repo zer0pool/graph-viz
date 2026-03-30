@@ -6,6 +6,7 @@ from app.application.usecase.analytics.get_top_visited import \
     GetTopVisitedUseCase
 from app.application.usecase.analytics.track_event import TrackEventUseCase
 from app.application.usecase.data_sync.sync_data import SyncDataUseCase
+from app.application.usecase.job_explorer.job_ranking import JobRankingUseCase
 from app.application.usecase.job_explorer.search_jobs import SearchJobsUseCase
 from app.infrastructure.di.providers import (get_bq_client, get_lineage_client,
                                              get_redis)
@@ -46,6 +47,14 @@ def get_search_jobs_usecase(
     repo = BigQueryJobExplorerRepository(bq_client)
     gateway = HttpLineageGateway(lineage_client)
     return SearchJobsUseCase(repo=repo, lineage_gateway=gateway, redis=redis)
+
+
+def get_job_ranking_usecase(
+    bq_client: BigQueryClient = Depends(get_bq_client),
+    redis: Redis = Depends(get_redis),
+) -> JobRankingUseCase:
+    repo = BigQueryJobExplorerRepository(bq_client)
+    return JobRankingUseCase(repo=repo, redis=redis)
 
 
 def get_sync_data_usecase(
