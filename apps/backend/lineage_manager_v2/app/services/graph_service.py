@@ -234,6 +234,79 @@ class GraphService:
 
             return await self.uow.graph.get_lineage_graph(node_id, depth, direction)
 
+    async def get_job_lineage_hybrid(
+        self, job_id: str, depth: int = 1
+    ) -> Dict[str, Any]:
+        """
+        Returns lineage data in the hybrid format expected by the job detail page:
+        - inputs: upstream tables (consumes edges)
+        - outputs: downstream tables (produces edges)
+        - graph: formatted lineage graph for the lineage viewer
+        """
+        async with self.uow:
+            node_id = await self.uow.graph.get_node_id("job", job_id)
+            if not node_id:
+                return {
+                    "job_id": job_id,
+                    "inputs": [],
+                    "outputs": [],
+                    "graph": {"nodes": [], "edges": []},
+                }
+
+            graph = await self.uow.graph.get_lineage_graph(node_id, depth, "both")
+
+        id_to_node = {n["id"]: n for n in graph["nodes"]}
+        str_id_map = {n["id"]: f"{n['type']}:{n['name']}" for n in graph["nodes"]}
+
+        inputs = []
+        outputs = []
+        for edge in graph["edges"]:
+            src = id_to_node.get(edge["source"])
+            tgt = id_to_node.get(edge["target"])
+
+            if edge["type"] == "consumes" and tgt and tgt["id"] == node_id and src:
+                props = edge.get("properties") or {}
+                inputs.append({
+                    "id": str_id_map[src["id"]],
+                    "name": src["name"],
+                    "storage_type": src.get("properties", {}).get("data_type"),
+                    "read_mode": "TRIGGER" if props.get("trigger") else "READ",
+                })
+            elif edge["type"] == "produces" and src and src["id"] == node_id and tgt:
+                props = tgt.get("properties") or {}
+                outputs.append({
+                    "id": str_id_map[tgt["id"]],
+                    "name": tgt["name"],
+                    "storage_type": props.get("data_type"),
+                    "write_mode": props.get("write_mode", "WRITE"),
+                    "consumer_count": 0,
+                })
+
+        formatted_nodes = [
+            {
+                "id": str_id_map[n["id"]],
+                "type": n["type"],
+                "name": n["name"],
+            }
+            for n in graph["nodes"]
+        ]
+        formatted_edges = [
+            {
+                "source": str_id_map[e["source"]],
+                "target": str_id_map[e["target"]],
+                "io": e["type"],
+            }
+            for e in graph["edges"]
+            if e["source"] in str_id_map and e["target"] in str_id_map
+        ]
+
+        return {
+            "job_id": job_id,
+            "inputs": inputs,
+            "outputs": outputs,
+            "graph": {"nodes": formatted_nodes, "edges": formatted_edges},
+        }
+
     async def get_lineage_graph(
         self, node_id: str, depth: int = 1, direction: str = "both"
     ) -> Dict[str, Any]:
@@ -338,6 +411,55 @@ class GraphService:
                 "root_nodes": [n["id"] for n in upstream if n["depth"] == max_depth],
                 "leaf_nodes": [n["id"] for n in downstream if n["depth"] == max_depth],
             }
+
+    async def get_job_run_history(self, job_id: str) -> Dict[str, Any]:
+        """
+        Fetches run history from the job manager and maps it to the UI schema.
+        Response shape: { timeline: [...], summary: { total, running, success, failed } }
+        """
+        raw_runs = await self.job_manager_client.get_job_run_history(job_id)
+
+        status_map = {"running": "running", "success": "success", "failed": "failed", "queued": "queued"}
+
+        timeline = []
+        for item in raw_runs:
+            dag_run_id = item.get("dag_run_id")
+            state = (item.get("state") or "").lower()
+
+            start_str = item.get("start_time")
+            end_str = item.get("finish_time")
+            duration_sec = None
+            if start_str and end_str:
+                try:
+                    from datetime import datetime
+                    start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                    end = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+                    duration_sec = int((end - start).total_seconds())
+                except Exception:
+                    pass
+
+            triggered_by = (
+                dag_run_id.split("__", 1)[0] if dag_run_id and "__" in dag_run_id else None
+            )
+
+            timeline.append({
+                "run_id": dag_run_id,
+                "job_id": job_id,
+                "status": status_map.get(state, state or "unknown"),
+                "start_time": start_str,
+                "end_time": end_str,
+                "duration_sec": duration_sec,
+                "triggered_by": triggered_by,
+            })
+
+        summary = {
+            "total": len(timeline),
+            "running": sum(1 for r in timeline if r["status"] in ("running", "queued")),
+            "success": sum(1 for r in timeline if r["status"] == "success"),
+            "failed": sum(1 for r in timeline if r["status"] == "failed"),
+        }
+
+        return {"timeline": timeline, "summary": summary}
 
     async def get_nodes_batch_details(self, node_ids: List[str]) -> Dict[str, Any]:
         """

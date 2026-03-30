@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.schemas import resources as schemas
 from app.api.v1.schemas.graph import CommandResponse
+from app.api.v1.schemas.lineage import JobLineageHybridResponse
 from app.core.container import Container
 from app.domain.graph.entities.job_node import JobNode as JobEntity
+from app.services.graph_service import GraphService
 from app.services.metadata_service import MetadataService
 
 router = APIRouter()
@@ -67,6 +69,25 @@ async def list_jobs_by_owner(
     service: MetadataService = Depends(Provide[Container.metadata_service]),
 ):
     return await service.list_jobs_by_owner(user_id)
+
+
+@router.get("/{job_id}/run-history")
+@inject
+async def get_job_run_history(
+    job_id: str,
+    service: GraphService = Depends(Provide[Container.graph_service]),
+):
+    return await service.get_job_run_history(job_id)
+
+
+@router.get("/{job_id}/lineage", response_model=JobLineageHybridResponse)
+@inject
+async def get_job_lineage(
+    job_id: str,
+    depth: int = 1,
+    service: GraphService = Depends(Provide[Container.graph_service]),
+):
+    return await service.get_job_lineage_hybrid(job_id, depth)
 
 
 @router.post("/{job_id}/pause", response_model=CommandResponse)

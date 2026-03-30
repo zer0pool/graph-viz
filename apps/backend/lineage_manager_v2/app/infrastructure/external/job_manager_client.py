@@ -69,6 +69,18 @@ class JobManagerClient:
         logger.info(f"Total jobs fetched from Job Manager: {len(all_items)}")
         return all_items
 
+    async def get_job_run_history(self, job_id: str) -> List[Dict[str, Any]]:
+        """Fetches run history for a specific job from the job manager."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(f"{self.base_url}/job/{job_id}/run-history")
+                response.raise_for_status()
+                data = response.json()
+                return data if isinstance(data, list) else []
+            except Exception as e:
+                logger.error(f"[JobManagerClient] Error fetching run history for {job_id}: {e}")
+                return []
+
     async def pause_job(self, job_id: str) -> bool:
         """Calls external API to pause a job."""
         async with httpx.AsyncClient(timeout=10.0) as client:

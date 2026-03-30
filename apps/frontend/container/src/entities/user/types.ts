@@ -23,6 +23,7 @@ export interface UserProfile {
   department?: string;
   title?: string;
   jobTitle?: string;
+  roles?: string[];
   [key: string]: any;
 }
 

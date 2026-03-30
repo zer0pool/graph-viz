@@ -51,12 +51,16 @@ export const JobLineage: React.FC<JobLineageProps> = ({ job, loading }) => {
       const fetchData = async () => {
         setIsFetching(true);
         try {
-          const [healthData, lineageData] = await Promise.all([
+          const [healthResult, lineageResult] = await Promise.allSettled([
             api.fetchJobHealth(job.job_id),
             api.fetchJobLineageHybrid(job.job_id),
           ]);
-          setHealth(healthData.health); // API returns wrapped response
-          setLineage(lineageData);
+          if (healthResult.status === "fulfilled") {
+            setHealth(healthResult.value.health);
+          }
+          if (lineageResult.status === "fulfilled") {
+            setLineage(lineageResult.value);
+          }
         } catch (err) {
           console.error("Failed to fetch lineage data", err);
           setError("Failed to load lineage data.");
