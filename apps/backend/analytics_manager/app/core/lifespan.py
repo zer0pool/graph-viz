@@ -15,15 +15,14 @@ logger = logging.getLogger(__name__)
 async def _warmup_jobs_cache() -> None:
     """Pre-populate the Redis job ranking cache on startup to avoid cold-start latency."""
     try:
-        from app.application.usecase.job_explorer.search_jobs import \
-            SearchJobsUseCase
-        from app.core.redis import get_redis_client
-        from app.infrastructure.gateway.http_lineage_gateway import \
-            HttpLineageGateway
+        from app.application.usecase.job_explorer.search_jobs import SearchJobsUseCase
+        from app.infrastructure.cache.redis import get_redis_client
+        from app.infrastructure.gateway.http_lineage_gateway import HttpLineageGateway
         from app.infrastructure.gcp.bigquery import BigQueryClient
         from app.infrastructure.lineage_client import LineageClient
-        from app.infrastructure.repository.bq_job_repository import \
-            BigQueryJobExplorerRepository
+        from app.infrastructure.repository.bq_job_repository import (
+            BigQueryJobExplorerRepository,
+        )
 
         bq_client = BigQueryClient()
         repo = BigQueryJobExplorerRepository(bq_client)

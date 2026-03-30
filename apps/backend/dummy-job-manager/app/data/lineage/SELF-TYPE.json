@@ -1,7 +1,7 @@
 {
   "items": [
     {
-      "job_id": "default-project.SELF-TYPE_L1_JOB_001",
+      "job_id": "default_project-SELF_TYPE_L1_JOB_001",
       "upstreams": [
         {
           "type": "table",
@@ -22,11 +22,13 @@
         }
       ],
       "metadata": {
-        "project_name": "default-project",
-        "name": "SELF-TYPE_L1_JOB_001",
-        "owner": ["alice"],
+        "project_name": "default_project",
+        "name": "SELF_TYPE_L1_JOB_001",
+        "owner": [
+          "alice"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -42,7 +44,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "analytics"
           }
@@ -57,7 +59,7 @@
       }
     },
     {
-      "job_id": "ecommerce.SELF-TYPE_L1_JOB_002",
+      "job_id": "ecommerce-SELF_TYPE_L1_JOB_002",
       "upstreams": [
         {
           "type": "table",
@@ -73,11 +75,14 @@
         }
       ],
       "metadata": {
-        "project": "ecommerce-analytics",
-        "name": "SELF-TYPE_L1_JOB_002",
-        "owner": ["bob", "charlie"],
+        "project": "ecommerce_analytics",
+        "name": "SELF_TYPE_L1_JOB_002",
+        "owner": [
+          "bob",
+          "charlie"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -93,7 +98,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "sales"
           }
@@ -104,7 +109,7 @@
       }
     },
     {
-      "job_id": "ml-platform.SELF-TYPE_L2_JOB_003",
+      "job_id": "ml_platform-SELF_TYPE_L2_JOB_003",
       "upstreams": [
         {
           "type": "table",
@@ -125,11 +130,13 @@
         }
       ],
       "metadata": {
-        "project_name": "ml-platform",
-        "name": "SELF-TYPE_L2_JOB_003",
-        "owner": ["david"],
+        "project_name": "ml_platform",
+        "name": "SELF_TYPE_L2_JOB_003",
+        "owner": [
+          "david"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "spark",
           "is_deleted": false,
           "is_dag_active": true,
@@ -145,7 +152,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "ml"
           }
@@ -161,7 +168,7 @@
       }
     },
     {
-      "job_id": "data-lake.SELF-TYPE_L1_JOB_004",
+      "job_id": "data_lake-SELF_TYPE_L1_JOB_004",
       "upstreams": [
         {
           "type": "table",
@@ -177,11 +184,13 @@
         }
       ],
       "metadata": {
-        "project": "data-lake",
-        "name": "SELF-TYPE_L1_JOB_004",
-        "owner": ["eve"],
+        "project": "data_lake",
+        "name": "SELF_TYPE_L1_JOB_004",
+        "owner": [
+          "eve"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -197,7 +206,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "dev",
             "team": "platform"
           }
@@ -213,7 +222,7 @@
       }
     },
     {
-      "job_id": "reporting.SELF-TYPE_L2_JOB_005",
+      "job_id": "reporting-SELF_TYPE_L2_JOB_005",
       "upstreams": [
         {
           "type": "table",
@@ -235,10 +244,13 @@
       ],
       "metadata": {
         "project_name": "reporting",
-        "name": "SELF-TYPE_L2_JOB_005",
-        "owner": ["frank", "grace"],
+        "name": "SELF_TYPE_L2_JOB_005",
+        "owner": [
+          "frank",
+          "grace"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -254,7 +266,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "bi"
           }
@@ -265,7 +277,7 @@
       }
     },
     {
-      "job_id": "customer-360.SELF-TYPE_L1_JOB_006",
+      "job_id": "customer_360-SELF_TYPE_L1_JOB_006",
       "upstreams": [
         {
           "type": "table",
@@ -286,11 +298,13 @@
         }
       ],
       "metadata": {
-        "project": "customer-360",
-        "name": "SELF-TYPE_L1_JOB_006",
-        "owner": ["henry"],
+        "project": "customer_360",
+        "name": "SELF_TYPE_L1_JOB_006",
+        "owner": [
+          "henry"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -306,7 +320,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "data"
           }
@@ -321,7 +335,7 @@
       }
     },
     {
-      "job_id": "fraud-detection.SELF-TYPE_L2_JOB_007",
+      "job_id": "fraud_detection-SELF_TYPE_L2_JOB_007",
       "upstreams": [
         {
           "type": "table",
@@ -342,11 +356,14 @@
         }
       ],
       "metadata": {
-        "project_name": "fraud-detection",
-        "name": "SELF-TYPE_L2_JOB_007",
-        "owner": ["iris", "jack"],
+        "project_name": "fraud_detection",
+        "name": "SELF_TYPE_L2_JOB_007",
+        "owner": [
+          "iris",
+          "jack"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -362,7 +379,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "ml"
           }
@@ -377,7 +394,7 @@
       }
     },
     {
-      "job_id": "inventory.SELF-TYPE_L1_JOB_008",
+      "job_id": "inventory-SELF_TYPE_L1_JOB_008",
       "upstreams": [
         {
           "type": "table",
@@ -393,11 +410,13 @@
         }
       ],
       "metadata": {
-        "project": "inventory-management",
-        "name": "SELF-TYPE_L1_JOB_008",
-        "owner": ["kate"],
+        "project": "inventory_management",
+        "name": "SELF_TYPE_L1_JOB_008",
+        "owner": [
+          "kate"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -413,7 +432,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "operations"
           }
@@ -424,7 +443,7 @@
       }
     },
     {
-      "job_id": "marketing.SELF-TYPE_L2_JOB_009",
+      "job_id": "marketing-SELF_TYPE_L2_JOB_009",
       "upstreams": [
         {
           "type": "table",
@@ -445,11 +464,14 @@
         }
       ],
       "metadata": {
-        "project_name": "marketing-automation",
-        "name": "SELF-TYPE_L2_JOB_009",
-        "owner": ["leo", "mary"],
+        "project_name": "marketing_automation",
+        "name": "SELF_TYPE_L2_JOB_009",
+        "owner": [
+          "leo",
+          "mary"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -465,7 +487,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "marketing"
           }
@@ -476,7 +498,7 @@
       }
     },
     {
-      "job_id": "compliance.SELF-TYPE_L1_JOB_010",
+      "job_id": "compliance-SELF_TYPE_L1_JOB_010",
       "upstreams": [
         {
           "type": "table",
@@ -498,10 +520,12 @@
       ],
       "metadata": {
         "project": "compliance",
-        "name": "SELF-TYPE_L1_JOB_010",
-        "owner": ["nancy"],
+        "name": "SELF_TYPE_L1_JOB_010",
+        "owner": [
+          "nancy"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -517,7 +541,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "SELF-TYPE",
+            "type": "SELF_TYPE",
             "env": "prod",
             "team": "compliance"
           }
@@ -532,102 +556,179 @@
       }
     },
     {
-      "job_id": "finance.SELF-TYPE_L1_JOB_011",
+      "job_id": "finance-SELF_TYPE_L1_JOB_011",
       "upstreams": [
-        { "type": "table", "name": "raw.erp.payments", "trigger": true }
+        {
+          "type": "table",
+          "name": "raw.erp.payments",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.finance.revenue_forecast", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.finance.revenue_forecast",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
-        "project": "finance-ops",
-        "name": "SELF-TYPE_L1_JOB_011",
-        "owner": ["alice"],
+        "project": "finance_ops",
+        "name": "SELF_TYPE_L1_JOB_011",
+        "owner": [
+          "alice"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "finance" }
+          "labels": {
+            "layer": "1",
+            "type": "SELF_TYPE",
+            "env": "prod",
+            "team": "finance"
+          }
         }
       }
     },
     {
-      "job_id": "hr.SELF-TYPE_L1_JOB_012",
+      "job_id": "hr-SELF_TYPE_L1_JOB_012",
       "upstreams": [
-        { "type": "table", "name": "raw.hr.employees", "trigger": true }
+        {
+          "type": "table",
+          "name": "raw.hr.employees",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.hr.attrition_metrics", "write_mode": "overwrite" }
+        {
+          "type": "table",
+          "name": "analytics.hr.attrition_metrics",
+          "write_mode": "overwrite"
+        }
       ],
       "metadata": {
-        "project": "hr-analytics",
-        "name": "SELF-TYPE_L1_JOB_012",
-        "owner": ["alice", "BOB"],
+        "project": "hr_analytics",
+        "name": "SELF_TYPE_L1_JOB_012",
+        "owner": [
+          "alice",
+          "BOB"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "hr" }
+          "labels": {
+            "layer": "1",
+            "type": "SELF_TYPE",
+            "env": "prod",
+            "team": "hr"
+          }
         }
       }
     },
     {
-      "job_id": "supply-chain.SELF-TYPE_L2_JOB_013",
+      "job_id": "supply_chain-SELF_TYPE_L2_JOB_013",
       "upstreams": [
-        { "type": "table", "name": "analytics.inventory.daily_snapshot", "trigger": true }
+        {
+          "type": "table",
+          "name": "analytics.inventory.daily_snapshot",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "reporting.supply_chain.optimization", "write_mode": "overwrite" }
+        {
+          "type": "table",
+          "name": "reporting.supply_chain.optimization",
+          "write_mode": "overwrite"
+        }
       ],
       "metadata": {
-        "project_name": "supply-chain",
-        "name": "SELF-TYPE_L2_JOB_013",
-        "owner": ["alice"],
+        "project_name": "supply_chain",
+        "name": "SELF_TYPE_L2_JOB_013",
+        "owner": [
+          "alice"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "spark",
           "status": "RUNNING",
-          "labels": { "layer": "2", "type": "SELF-TYPE", "env": "prod", "team": "logistics" }
+          "labels": {
+            "layer": "2",
+            "type": "SELF_TYPE",
+            "env": "prod",
+            "team": "logistics"
+          }
         }
       }
     },
     {
-      "job_id": "it-ops.SELF-TYPE_L1_JOB_014",
+      "job_id": "it_ops-SELF_TYPE_L1_JOB_014",
       "upstreams": [
-        { "type": "table", "name": "raw.nagios.alerts", "trigger": true }
+        {
+          "type": "table",
+          "name": "raw.nagios.alerts",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.it.incident_summary", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.it.incident_summary",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
-        "project": "it-infrastructure",
-        "name": "SELF-TYPE_L1_JOB_014",
-        "owner": ["charlie"],
+        "project": "it_infrastructure",
+        "name": "SELF_TYPE_L1_JOB_014",
+        "owner": [
+          "charlie"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "it" }
+          "labels": {
+            "layer": "1",
+            "type": "SELF_TYPE",
+            "env": "prod",
+            "team": "it"
+          }
         }
       }
     },
     {
-      "job_id": "legal.SELF-TYPE_L1_JOB_015",
+      "job_id": "legal-SELF_TYPE_L1_JOB_015",
       "upstreams": [
-        { "type": "table", "name": "raw.legal.contracts", "trigger": true }
+        {
+          "type": "table",
+          "name": "raw.legal.contracts",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "compliance.legal.review_queue", "write_mode": "overwrite" }
+        {
+          "type": "table",
+          "name": "compliance.legal.review_queue",
+          "write_mode": "overwrite"
+        }
       ],
       "metadata": {
-        "project": "legal-tech",
-        "name": "SELF-TYPE_L1_JOB_015",
-        "owner": ["CHARLIE", "david"],
+        "project": "legal_tech",
+        "name": "SELF_TYPE_L1_JOB_015",
+        "owner": [
+          "CHARLIE",
+          "david"
+        ],
         "job_meta": {
-          "type": "SELF-TYPE",
+          "type": "SELF_TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "SELF-TYPE", "env": "prod", "team": "legal" }
+          "labels": {
+            "layer": "1",
+            "type": "SELF_TYPE",
+            "env": "prod",
+            "team": "legal"
+          }
         }
       }
     }

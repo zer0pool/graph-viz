@@ -10,21 +10,41 @@ import strawberry
 from strawberry.types import Info
 
 from app.api.graphql.request_cache import RequestCache
-from app.api.graphql.schema import (Job, JobAggregation, JobConfig,
-                                    JobConnection, JobEdge, JobFilter,
-                                    JobRankingItem, JobRun, JobRunFilter,
-                                    JobRunFilterFacets, JobStats, MetricGroups,
-                                    PageInfo, Project, RecentJobRunsResponse,
-                                    SortOrder, Table, TableConfig,
-                                    TableConnection, TableEdge, TableFilter,
-                                    TableStats, User)
+from app.api.graphql.schema import (
+    Job,
+    JobAggregation,
+    JobConfig,
+    JobConnection,
+    JobEdge,
+    JobFilter,
+    JobRankingItem,
+    JobRun,
+    JobRunFilter,
+    JobRunFilterFacets,
+    JobStats,
+    MetricGroups,
+    PageInfo,
+    Project,
+    RecentJobRunsResponse,
+    SortOrder,
+    Table,
+    TableConfig,
+    TableConnection,
+    TableEdge,
+    TableFilter,
+    TableStats,
+    User,
+)
 from app.domain.job_explorer.job_run_helpers import (
-    apply_job_run_filters, calculate_facets_from_runs, sort_job_runs)
-
+    apply_job_run_filters,
+    calculate_facets_from_runs,
+    sort_job_runs,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _process_job_runs(
     all_runs: List[Dict[str, Any]],
@@ -58,7 +78,6 @@ def _process_job_runs(
 
 @strawberry.type
 class Query:
-
     # -------------------------------------------------------------------------
     # Metrics
     # -------------------------------------------------------------------------
@@ -96,7 +115,9 @@ class Query:
     ) -> JobConnection:
         jobs_uc = info.context["jobs_uc"]
         cache: RequestCache = info.context["cache"]
-        job_runs = await cache.get_or_compute("jobs:30d", lambda: jobs_uc.execute(days=30))
+        job_runs = await cache.get_or_compute(
+            "jobs:30d", lambda: jobs_uc.execute(days=30)
+        )
 
         if filter:
             job_runs = apply_job_run_filters(
@@ -178,12 +199,18 @@ class Query:
         cache: RequestCache = info.context["cache"]
 
         # refresh=True bypasses Redis cache in the use case — skip request-cache too
-        cache_key = f"jobs:30d:refresh" if refresh else "jobs:30d"
-        all_runs = await cache.get_or_compute(cache_key, lambda: jobs_uc.execute(days=30, refresh=refresh))
+        cache_key = "jobs:30d:refresh" if refresh else "jobs:30d"
+        all_runs = await cache.get_or_compute(
+            cache_key, lambda: jobs_uc.execute(days=30, refresh=refresh)
+        )
 
         # Offload CPU-bound filter/sort work off the event loop
         facet_data, filtered = await asyncio.to_thread(
-            _process_job_runs, all_runs, filter, str(sort_by) if sort_by else None, sort_order
+            _process_job_runs,
+            all_runs,
+            filter,
+            str(sort_by) if sort_by else None,
+            sort_order,
         )
 
         facets = JobRunFilterFacets(
@@ -253,7 +280,11 @@ class Query:
                     id=strawberry.ID(str(t["id"])),
                     fqn=str(t["fqn"]),
                     config=TableConfig(owners=list(t["owners"])),  # type: ignore
-                    stats=TableStats(row_count=int(t["row_count"]), update_mode=str(t["update_mode"]), last_update_time="2026-02-24T12:00:00Z"),  # type: ignore
+                    stats=TableStats(
+                        row_count=int(t["row_count"]),
+                        update_mode=str(t["update_mode"]),
+                        last_update_time="2026-02-24T12:00:00Z",
+                    ),  # type: ignore
                 ),
                 cursor="0",
             )

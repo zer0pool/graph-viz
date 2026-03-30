@@ -3,12 +3,13 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, status
 
 from app.application.usecase.analytics.get_metrics import GetMetricsUseCase
-from app.application.usecase.analytics.get_top_visited import \
-    GetTopVisitedUseCase
+from app.application.usecase.analytics.get_top_visited import GetTopVisitedUseCase
 from app.application.usecase.analytics.track_event import TrackEventUseCase
-from app.controller.factory.usecase import (get_metrics_usecase,
-                                            get_top_visited_usecase,
-                                            get_track_event_usecase)
+from app.controller.factory.usecase import (
+    get_metrics_usecase,
+    get_top_visited_usecase,
+    get_track_event_usecase,
+)
 from app.controller.schemas.analytics import TrackEventRequest, TrackResponse
 
 router = APIRouter()

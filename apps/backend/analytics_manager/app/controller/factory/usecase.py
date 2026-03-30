@@ -2,21 +2,21 @@ from fastapi import Depends
 from redis.asyncio import Redis
 
 from app.application.usecase.analytics.get_metrics import GetMetricsUseCase
-from app.application.usecase.analytics.get_top_visited import \
-    GetTopVisitedUseCase
+from app.application.usecase.analytics.get_top_visited import GetTopVisitedUseCase
 from app.application.usecase.analytics.track_event import TrackEventUseCase
 from app.application.usecase.data_sync.sync_data import SyncDataUseCase
 from app.application.usecase.job_explorer.job_ranking import JobRankingUseCase
 from app.application.usecase.job_explorer.search_jobs import SearchJobsUseCase
-from app.infrastructure.di.providers import (get_bq_client, get_lineage_client,
-                                             get_redis)
+from app.infrastructure.di.providers import get_bq_client, get_lineage_client, get_redis
 from app.infrastructure.gateway.http_lineage_gateway import HttpLineageGateway
 from app.infrastructure.gcp.bigquery import BigQueryClient
 from app.infrastructure.lineage_client import LineageClient
-from app.infrastructure.repository.bq_analytics_repository import \
-    BigQueryAnalyticsRepository
-from app.infrastructure.repository.bq_job_repository import \
-    BigQueryJobExplorerRepository
+from app.infrastructure.repository.bq_analytics_repository import (
+    BigQueryAnalyticsRepository,
+)
+from app.infrastructure.repository.bq_job_repository import (
+    BigQueryJobExplorerRepository,
+)
 
 
 def get_track_event_usecase() -> TrackEventUseCase:

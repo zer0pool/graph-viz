@@ -89,7 +89,9 @@ class GetMetricsUseCase:
                 else (
                     "Request"
                     if jtype == "REQUEST-TYPE"
-                    else "Other" if jtype == "OTHER" else jtype
+                    else "Other"
+                    if jtype == "OTHER"
+                    else jtype
                 )
             )
             breakdown.append(
@@ -189,8 +191,13 @@ class GetMetricsUseCase:
         return stats or {}
 
     async def get_job_aggregation_stats(self) -> Any:
-        from app.api.graphql.schema import (DepartmentCount, JobAggregation,
-                                            MonthCount, OwnerCount, TypeCount)
+        from app.api.graphql.schema import (
+            DepartmentCount,
+            JobAggregation,
+            MonthCount,
+            OwnerCount,
+            TypeCount,
+        )
 
         stats = await self._get_internal_stats()
         job_data = stats.get("jobs", {})

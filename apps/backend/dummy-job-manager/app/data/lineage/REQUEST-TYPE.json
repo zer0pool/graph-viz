@@ -1,7 +1,7 @@
 {
   "items": [
     {
-      "job_id": "api-gateway.REQUEST-TYPE_L1_JOB_001",
+      "job_id": "api_gateway-REQUEST_TYPE_L1_JOB_001",
       "upstreams": [
         {
           "type": "table",
@@ -17,11 +17,13 @@
         }
       ],
       "metadata": {
-        "project_name": "api-gateway",
-        "name": "REQUEST-TYPE_L1_JOB_001",
-        "owner": ["oliver"],
+        "project_name": "api_gateway",
+        "name": "REQUEST_TYPE_L1_JOB_001",
+        "owner": [
+          "oliver"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -37,7 +39,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "platform"
           }
@@ -48,7 +50,7 @@
       }
     },
     {
-      "job_id": "webhooks.REQUEST-TYPE_L1_JOB_002",
+      "job_id": "webhooks-REQUEST_TYPE_L1_JOB_002",
       "upstreams": [
         {
           "type": "table",
@@ -64,11 +66,14 @@
         }
       ],
       "metadata": {
-        "project": "webhook-processor",
-        "name": "REQUEST-TYPE_L1_JOB_002",
-        "owner": ["paul", "quinn"],
+        "project": "webhook_processor",
+        "name": "REQUEST_TYPE_L1_JOB_002",
+        "owner": [
+          "paul",
+          "quinn"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -84,7 +89,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "integrations"
           }
@@ -95,7 +100,7 @@
       }
     },
     {
-      "job_id": "payment-gateway.REQUEST-TYPE_L1_JOB_003",
+      "job_id": "payment_gateway-REQUEST_TYPE_L1_JOB_003",
       "upstreams": [
         {
           "type": "table",
@@ -111,11 +116,13 @@
         }
       ],
       "metadata": {
-        "project_name": "payment-gateway",
-        "name": "REQUEST-TYPE_L1_JOB_003",
-        "owner": ["rachel"],
+        "project_name": "payment_gateway",
+        "name": "REQUEST_TYPE_L1_JOB_003",
+        "owner": [
+          "rachel"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -131,7 +138,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "payments"
           }
@@ -146,7 +153,7 @@
       }
     },
     {
-      "job_id": "notification.REQUEST-TYPE_L2_JOB_004",
+      "job_id": "notification-REQUEST_TYPE_L2_JOB_004",
       "upstreams": [
         {
           "type": "table",
@@ -167,9 +174,12 @@
         }
       ],
       "metadata": {
-        "project": "notification-service",
-        "name": "REQUEST-TYPE_L2_JOB_004",
-        "owner": ["sam", "tina"],
+        "project": "notification_service",
+        "name": "REQUEST_TYPE_L2_JOB_004",
+        "owner": [
+          "sam",
+          "tina"
+        ],
         "job_meta": {
           "logic_type": "python",
           "is_deleted": false,
@@ -186,7 +196,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "platform"
           }
@@ -197,7 +207,7 @@
       }
     },
     {
-      "job_id": "search-indexer.REQUEST-TYPE_L1_JOB_005",
+      "job_id": "search_indexer-REQUEST_TYPE_L1_JOB_005",
       "upstreams": [
         {
           "type": "table",
@@ -213,11 +223,13 @@
         }
       ],
       "metadata": {
-        "project_name": "search-platform",
-        "name": "REQUEST-TYPE_L1_JOB_005",
-        "owner": ["uma"],
+        "project_name": "search_platform",
+        "name": "REQUEST_TYPE_L1_JOB_005",
+        "owner": [
+          "uma"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "spark",
           "is_deleted": false,
           "is_dag_active": true,
@@ -233,7 +245,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "search"
           }
@@ -244,7 +256,7 @@
       }
     },
     {
-      "job_id": "auth-service.REQUEST-TYPE_L1_JOB_006",
+      "job_id": "auth_service-REQUEST_TYPE_L1_JOB_006",
       "upstreams": [
         {
           "type": "table",
@@ -260,11 +272,14 @@
         }
       ],
       "metadata": {
-        "project": "auth-service",
-        "name": "REQUEST-TYPE_L1_JOB_006",
-        "owner": ["victor", "wendy"],
+        "project": "auth_service",
+        "name": "REQUEST_TYPE_L1_JOB_006",
+        "owner": [
+          "victor",
+          "wendy"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -280,7 +295,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "security"
           }
@@ -295,7 +310,7 @@
       }
     },
     {
-      "job_id": "cdn-analytics.REQUEST-TYPE_L2_JOB_007",
+      "job_id": "cdn_analytics-REQUEST_TYPE_L2_JOB_007",
       "upstreams": [
         {
           "type": "table",
@@ -316,11 +331,13 @@
         }
       ],
       "metadata": {
-        "project_name": "cdn-analytics",
-        "name": "REQUEST-TYPE_L2_JOB_007",
-        "owner": ["xavier"],
+        "project_name": "cdn_analytics",
+        "name": "REQUEST_TYPE_L2_JOB_007",
+        "owner": [
+          "xavier"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -336,7 +353,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "infrastructure"
           }
@@ -347,7 +364,7 @@
       }
     },
     {
-      "job_id": "rate-limiter.REQUEST-TYPE_L1_JOB_008",
+      "job_id": "rate_limiter-REQUEST_TYPE_L1_JOB_008",
       "upstreams": [
         {
           "type": "table",
@@ -363,11 +380,14 @@
         }
       ],
       "metadata": {
-        "project": "rate-limiter",
-        "name": "REQUEST-TYPE_L1_JOB_008",
-        "owner": ["yara", "zack"],
+        "project": "rate_limiter",
+        "name": "REQUEST_TYPE_L1_JOB_008",
+        "owner": [
+          "yara",
+          "zack"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -383,7 +403,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "platform"
           }
@@ -394,7 +414,7 @@
       }
     },
     {
-      "job_id": "cache-analytics.REQUEST-TYPE_L2_JOB_009",
+      "job_id": "cache_analytics-REQUEST_TYPE_L2_JOB_009",
       "upstreams": [
         {
           "type": "table",
@@ -415,11 +435,13 @@
         }
       ],
       "metadata": {
-        "project_name": "cache-analytics",
-        "name": "REQUEST-TYPE_L2_JOB_009",
-        "owner": ["adam"],
+        "project_name": "cache_analytics",
+        "name": "REQUEST_TYPE_L2_JOB_009",
+        "owner": [
+          "adam"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "sql",
           "is_deleted": false,
           "is_dag_active": true,
@@ -435,7 +457,7 @@
           },
           "labels": {
             "layer": "2",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "infrastructure"
           }
@@ -446,7 +468,7 @@
       }
     },
     {
-      "job_id": "api-versioning.REQUEST-TYPE_L1_JOB_010",
+      "job_id": "api_versioning-REQUEST_TYPE_L1_JOB_010",
       "upstreams": [
         {
           "type": "table",
@@ -462,11 +484,14 @@
         }
       ],
       "metadata": {
-        "project": "api-versioning",
-        "name": "REQUEST-TYPE_L1_JOB_010",
-        "owner": ["bella", "carlos"],
+        "project": "api_versioning",
+        "name": "REQUEST_TYPE_L1_JOB_010",
+        "owner": [
+          "bella",
+          "carlos"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "is_deleted": false,
           "is_dag_active": true,
@@ -482,7 +507,7 @@
           },
           "labels": {
             "layer": "1",
-            "type": "REQUEST-TYPE",
+            "type": "REQUEST_TYPE",
             "env": "prod",
             "team": "platform"
           }
@@ -493,123 +518,219 @@
       }
     },
     {
-      "job_id": "billing.REQUEST-TYPE_L1_JOB_011",
+      "job_id": "billing-REQUEST_TYPE_L1_JOB_011",
       "upstreams": [
-        { "type": "table", "name": "external.stripe.invoices", "trigger": true }
+        {
+          "type": "table",
+          "name": "external.stripe.invoices",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.finance.billing_history", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.finance.billing_history",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
-        "project": "billing-service",
-        "name": "REQUEST-TYPE_L1_JOB_011",
-        "owner": ["alice"],
+        "project": "billing_service",
+        "name": "REQUEST_TYPE_L1_JOB_011",
+        "owner": [
+          "alice"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "finance" }
+          "labels": {
+            "layer": "1",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "finance"
+          }
         }
       }
     },
     {
-      "job_id": "support.REQUEST-TYPE_L1_JOB_012",
+      "job_id": "support-REQUEST_TYPE_L1_JOB_012",
       "upstreams": [
-        { "type": "table", "name": "external.zendesk.tickets", "trigger": true }
+        {
+          "type": "table",
+          "name": "external.zendesk.tickets",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.support.ticket_metrics", "write_mode": "overwrite" }
+        {
+          "type": "table",
+          "name": "analytics.support.ticket_metrics",
+          "write_mode": "overwrite"
+        }
       ],
       "metadata": {
-        "project": "customer-support",
-        "name": "REQUEST-TYPE_L1_JOB_012",
-        "owner": ["alice", "bob"],
+        "project": "customer_support",
+        "name": "REQUEST_TYPE_L1_JOB_012",
+        "owner": [
+          "alice",
+          "bob"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "status": "RUNNING",
-          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "support" }
+          "labels": {
+            "layer": "1",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "support"
+          }
         }
       }
     },
     {
-      "job_id": "realtime.REQUEST-TYPE_L1_JOB_013",
+      "job_id": "realtime-REQUEST_TYPE_L1_JOB_013",
       "upstreams": [
-        { "type": "table", "name": "external.kafka.clicks", "trigger": true }
+        {
+          "type": "table",
+          "name": "external.kafka.clicks",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.realtime.clickstream", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.realtime.clickstream",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
-        "project": "streaming-platform",
-        "name": "REQUEST-TYPE_L1_JOB_013",
-        "owner": ["charlie"],
+        "project": "streaming_platform",
+        "name": "REQUEST_TYPE_L1_JOB_013",
+        "owner": [
+          "charlie"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "spark",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "data" }
+          "labels": {
+            "layer": "1",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "data"
+          }
         }
       }
     },
     {
-      "job_id": "recommendation.REQUEST-TYPE_L2_JOB_014",
+      "job_id": "recommendation-REQUEST_TYPE_L2_JOB_014",
       "upstreams": [
-        { "type": "table", "name": "analytics.realtime.clickstream", "trigger": true },
-        { "type": "table", "name": "analytics.api.request_logs", "trigger": false }
+        {
+          "type": "table",
+          "name": "analytics.realtime.clickstream",
+          "trigger": true
+        },
+        {
+          "type": "table",
+          "name": "analytics.api.request_logs",
+          "trigger": false
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "ml.reco.user_preferences", "write_mode": "overwrite" }
+        {
+          "type": "table",
+          "name": "ml.reco.user_preferences",
+          "write_mode": "overwrite"
+        }
       ],
       "metadata": {
-        "project_name": "reco-engine",
-        "name": "REQUEST-TYPE_L2_JOB_014",
-        "owner": ["charlie", "david"],
+        "project_name": "reco_engine",
+        "name": "REQUEST_TYPE_L2_JOB_014",
+        "owner": [
+          "charlie",
+          "david"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "python",
           "status": "DEPLOYED",
-          "labels": { "layer": "2", "type": "REQUEST-TYPE", "env": "prod", "team": "ml" }
+          "labels": {
+            "layer": "2",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "ml"
+          }
         }
       }
     },
     {
-      "job_id": "monitoring.REQUEST-TYPE_L1_JOB_015",
+      "job_id": "monitoring-REQUEST_TYPE_L1_JOB_015",
       "upstreams": [
-        { "type": "table", "name": "external.prometheus.metrics", "trigger": true }
+        {
+          "type": "table",
+          "name": "external.prometheus.metrics",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.infra.health_checks", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.infra.health_checks",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
         "project": "observability",
-        "name": "REQUEST-TYPE_L1_JOB_015",
-        "owner": ["Frank"],
+        "name": "REQUEST_TYPE_L1_JOB_015",
+        "owner": [
+          "Frank"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "sre" }
+          "labels": {
+            "layer": "1",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "sre"
+          }
         }
       }
     },
     {
-      "job_id": "admin-audit.REQUEST-TYPE_L1_JOB_016",
+      "job_id": "admin_audit-REQUEST_TYPE_L1_JOB_016",
       "upstreams": [
-        { "type": "table", "name": "external.admin.actions", "trigger": true }
+        {
+          "type": "table",
+          "name": "external.admin.actions",
+          "trigger": true
+        }
       ],
       "downstreams": [
-        { "type": "table", "name": "analytics.security.admin_audit", "write_mode": "append" }
+        {
+          "type": "table",
+          "name": "analytics.security.admin_audit",
+          "write_mode": "append"
+        }
       ],
       "metadata": {
-        "project": "admin-ops",
-        "name": "REQUEST-TYPE_L1_JOB_016",
-        "owner": ["frank"],
+        "project": "admin_ops",
+        "name": "REQUEST_TYPE_L1_JOB_016",
+        "owner": [
+          "frank"
+        ],
         "job_meta": {
-          "type": "REQUEST-TYPE",
+          "type": "REQUEST_TYPE",
           "logic_type": "sql",
           "status": "DEPLOYED",
-          "labels": { "layer": "1", "type": "REQUEST-TYPE", "env": "prod", "team": "security" }
+          "labels": {
+            "layer": "1",
+            "type": "REQUEST_TYPE",
+            "env": "prod",
+            "team": "security"
+          }
         }
       }
     }

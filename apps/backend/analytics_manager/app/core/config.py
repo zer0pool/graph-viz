@@ -58,8 +58,8 @@ class Settings(BaseSettings):
     BIGQUERY_JOB_RUN_HISTORY_TABLE: str = (
         "test_project_name.tmp_sss_993.admin_finish_history"
     )
-    BIGQUERY_SLOT_USAGE_TABLE: str = "gizmopool.test_data.daily_slot_usage"
-    BIGQUERY_RUNNING_TIME_TABLE: str = "gizmopool.test_data.daily_running_time"
+    BIGQUERY_SLOT_USAGE_TABLE: str = "test_project_name.test_data.daily_slot_usage"
+    BIGQUERY_RUNNING_TIME_TABLE: str = "test_project_name.test_data.daily_running_time"
 
     LINEAGE_MANAGER_URL: str = "http://localhost:5003"
 
@@ -124,10 +124,6 @@ class Settings(BaseSettings):
     @property
     def JOB_RUN_HISTORY_TABLE(self) -> str:
         return self.bigquery.job_run_history_table
-
-    @property
-    def LINEAGE_MANAGER_URL(self) -> str:
-        return self.external.lineage_manager_url
 
 
 settings = Settings()

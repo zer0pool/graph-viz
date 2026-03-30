@@ -1,5 +1,9 @@
-# Build stage: install dependencies via uv
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+# Build stage
+FROM python:3.12-slim-bookworm AS builder
+
+# Install uv
+RUN pip install uv
+
 
 WORKDIR /app
 
@@ -11,7 +15,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Final stage
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
