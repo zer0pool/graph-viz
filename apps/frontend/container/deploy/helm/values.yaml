@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-console-app
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-shell
   pullPolicy: Always
   tag: "latest"
 
@@ -41,7 +41,7 @@ resources:
     cpu: 200m
     memory: 256Mi
 
-fullnameOverride: "admin-console-app"
+fullnameOverride: "admin-shell"
 
 env:
   BASE_URL: "/admin-console"

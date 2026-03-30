@@ -1,2 +1,2 @@
 image:
-  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-console-app
+  repository: asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-shell

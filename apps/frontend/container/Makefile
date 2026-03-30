@@ -8,17 +8,17 @@ ENV_NAME ?= dev
 ifeq ($(ENV_NAME),prd)
   NAMESPACE := self-scheduling-prd
   # Note: Adjust image repo for production if it's different
-  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-console-app
+  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-prd/self-scheduling-prd/admin-shell
 else ifeq ($(ENV_NAME),dev-1)
   NAMESPACE := self-scheduling-dev-1
-  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev-1/self-scheduling/admin-console-app
+  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling-dev1/admin-shell
 else
   # Default development environment
   NAMESPACE := self-scheduling
-  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-console-app
+  IMAGE_REPO := asia-northeast3-docker.pkg.dev/sec-bdp-user-dev/self-scheduling/admin-shell
 endif
 
-CHART_NAME := admin-console-app
+CHART_NAME := admin-shell
 CHART_PATH := ./deploy/helm
 IMAGE_TAG := latest
 

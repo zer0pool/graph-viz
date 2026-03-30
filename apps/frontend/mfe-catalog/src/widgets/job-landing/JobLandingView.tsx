@@ -13,11 +13,12 @@ import {
 } from "lucide-react";
 import { JobSummary } from "../../entities/job/JobSummary";
 import { JobTopLists } from "../../entities/job/JobTopLists";
-import { Job, JobMetric, JobRankingItem, JobRunFilterFacets } from "./useJobLanding";
+import { JobMetric, JobRankingItem, JobRunFilterFacets } from "./useJobLanding";
+import { JobListItem } from "../../entities/job/job";
 import { useJobLandingState } from "./useJobLandingState";
 
 interface JobLandingViewProps {
-  jobs: Job[];
+  jobs: JobListItem[];
   metrics: JobMetric[];
   facets: JobRunFilterFacets | null;
   slotRanking?: JobRankingItem[];

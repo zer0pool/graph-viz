@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useApiClient } from "../../shared/api/ApiContext";
-import { Job } from "./useJobLanding";
+import { JobListItem } from "../../entities/job/job";
 
 // GraphQL shape returned from analytics-manager.jobs
 export interface GqlJob {
@@ -35,7 +35,7 @@ export interface JobFilterInput {
 }
 
 export interface JobFilterResult {
-  jobs: Job[];
+  jobs: JobListItem[];
   loading: boolean;
   error: string | null;
   search: (filter: JobFilterInput) => Promise<void>;
@@ -43,7 +43,7 @@ export interface JobFilterResult {
 
 export function useJobFilter(): JobFilterResult {
   const api = useApiClient();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,15 +63,21 @@ export function useJobFilter(): JobFilterResult {
             job_name: node.displayLabel,
             project_id: node.config?.projectId,
             owners: node.config?.owner ? [node.config.owner] : [],
-            running_status: node.stats?.lastRunStatus,
-            updated_at: node.stats?.updatedAt,
+            status: node.stats?.lastRunStatus,
             duration: node.stats?.duration,
             progress: node.stats?.progress,
-            // Newly added fields (mocked or empty for metadata search)
             type: "N/A",
             issuer: "System",
-            startTime: node.stats?.updatedAt,
-          };
+            start_time: node.stats?.updatedAt || "",
+            // Additional required fields for JobListItem
+            dag_id: "",
+            destination: "",
+            next_start_time: "",
+            period: "",
+            date: "",
+            hour: "",
+            publish_time: "",
+          } as JobListItem;
         });
         setJobs(adaptedJobs);
       } catch (err) {
