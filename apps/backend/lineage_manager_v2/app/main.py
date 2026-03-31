@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
 from app.core.container import Container
+from app.core.middleware import AccessLogMiddleware
 
 
 class DynamicRootPathMiddleware:
@@ -43,12 +46,13 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="2.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=None,    # Disabled — replaced by session-protected custom route
+        redoc_url=None,
         openapi_url=f"{api_prefix}/openapi.json",
     )
 
     app.add_middleware(DynamicRootPathMiddleware)
+    app.add_middleware(AccessLogMiddleware)
 
     # Middleware
     if settings.BACKEND_CORS_ORIGINS:
@@ -116,6 +120,17 @@ def create_app() -> FastAPI:
 
     # Mount Static Files for Legacy Console
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+    @app.get("/docs", include_in_schema=False)
+    async def swagger_ui(request: Request):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse(url=f"{api_prefix}/auth/login")
+        root = request.scope.get("root_path", "")
+        return get_swagger_ui_html(
+            openapi_url=f"{root}{api_prefix}/openapi.json",
+            title=f"{settings.PROJECT_NAME} - Swagger UI",
+        )
 
     @app.get("/")
     async def root():

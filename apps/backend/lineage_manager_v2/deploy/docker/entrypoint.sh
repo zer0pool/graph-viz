@@ -100,9 +100,14 @@ case "$CMD" in
         wait_for_mysql
         exec celery -A app.core.celery_app worker --loglevel=info "$@"
         ;;
+    beat)
+        echo "Starting Celery Beat for V2..."
+        wait_for_mysql
+        exec celery -A app.core.celery_app beat --loglevel=info "$@"
+        ;;
     *)
         echo >&2 "Error: Invalid command '$CMD'"
-        echo >&2 "Usage: $0 [backend|celery] [args...]"
+        echo >&2 "Usage: $0 [backend|celery|beat] [args...]"
         exit 1
         ;;
 esac

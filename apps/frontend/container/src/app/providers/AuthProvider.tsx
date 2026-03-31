@@ -80,7 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
     // In BFF mode, cookies are handled automatically by the browser.
     // credentials: 'same-origin' is default for fetch, which works for our MFE setup.
-    return fetch(url, options);
+    const headers = new Headers(options.headers);
+    headers.set("X-Request-ID", crypto.randomUUID());
+    return fetch(url, { ...options, headers });
   }, []);
 
   const getToken = useCallback(

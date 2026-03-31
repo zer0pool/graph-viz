@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -175,3 +176,27 @@ class PageVisit(Base):
     title = Column(String(255), nullable=True)
     visitor_id = Column(String(255), nullable=True)
     visited_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
+
+
+class ApiAccessLog(Base):
+    """Records every HTTP API call across all backend services."""
+
+    __tablename__ = "api_access_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(String(64), nullable=False)
+    user_id = Column(String(100), nullable=True)
+    service = Column(String(20), nullable=False)   # 'lineage' | 'analytics'
+    method = Column(String(10), nullable=False)
+    path = Column(String(500), nullable=False)
+    status_code = Column(SmallInteger, nullable=False)
+    duration_ms = Column(Integer, nullable=False)
+    ip_address = Column(String(45), nullable=True)  # supports IPv6
+    requested_at = Column(DateTime(timezone=False), nullable=False)
+
+    __table_args__ = (
+        Index("idx_api_access_log_user_id", "user_id"),
+        Index("idx_api_access_log_path", "path"),
+        Index("idx_api_access_log_requested_at", "requested_at"),
+        Index("idx_api_access_log_request_id", "request_id"),
+    )
