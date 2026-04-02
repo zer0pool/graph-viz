@@ -4,7 +4,7 @@
 LM_DIR=apps/backend/lineage_manager_v2
 DJM_DIR=apps/backend/dummy-job-manager
 
-.PHONY: all venv-lm venv-djm venv-all run-lm run-djm kill-lm kill-djm test-lm test-djm test-all lint-all format-all clean-all help test-integration
+.PHONY: all venv-lm venv-djm venv-all run-lm run-djm kill-lm kill-djm beat-lm test-lm test-djm test-all lint-all format-all clean-all help test-integration
 
 all: help
 
@@ -46,6 +46,9 @@ test-lm:
 
 kill-lm:
 	$(MAKE) -C $(LM_DIR) kill
+
+beat-lm:
+	$(MAKE) -C $(LM_DIR) beat
 
 # Dummy Job Manager delegation
 venv-djm:

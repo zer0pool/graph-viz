@@ -2,7 +2,7 @@ APP_NAME=Lineage-Manager-v2
 PORT=5003
 
 VENV=.venv
-.PHONY: venv sync run dev worker test lint format db-revision db-upgrade
+.PHONY: venv sync run dev worker beat test lint format db-revision db-upgrade
 
 # Environment Configuration (Default: dev)
 # Usage: make <target> ENV_NAME=prd
@@ -78,6 +78,10 @@ kill:
 # Run celery worker
 worker:
 	PYTHONPATH=. .venv/bin/python -m celery -A app.core.celery_app worker --loglevel=info --pool=solo
+
+# Run celery beat scheduler
+beat:
+	PYTHONPATH=. .venv/bin/python -m celery -A app.core.celery_app beat --loglevel=info
 
 # Run tests
 test:
