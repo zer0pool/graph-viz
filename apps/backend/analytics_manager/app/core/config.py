@@ -42,6 +42,7 @@ class FeatureFlags(BaseModel):
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Analytics Manager"
     API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = "changethis"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
     ANALYTICS_CACHE_TTL_SEC: int = 3600
     ANALYTICS_CACHE_TTL_EMPTY_SEC: int = 60  # Short TTL when BQ returns empty

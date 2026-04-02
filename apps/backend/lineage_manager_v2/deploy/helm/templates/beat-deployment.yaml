@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lineage-manager.fullname" . }}-beat
+  labels:
+    {{- include "lineage-manager.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  # Beat MUST be a singleton — duplicate instances cause duplicate scheduled tasks.
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "lineage-manager.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  template:
+    metadata:
+      labels:
+        {{- include "lineage-manager.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: beat
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: {{ .Chart.Name }}-beat
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/entrypoint.sh"]
+          args: ["beat"]
+          resources:
+            {{- toYaml .Values.resources.beat | nindent 12 }}
+          env:
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+
+        # Cloud SQL Proxy (beat also needs DB access for wait_for_mysql)
+        {{- if .Values.cloudSqlProxy.enabled }}
+        - name: cloud-sql-proxy
+          image: {{ .Values.cloudSqlProxy.image }}
+          imagePullPolicy: Always
+          command:
+            - /cloud_sql_proxy
+            - -ip_address_types=PRIVATE
+            - -instances={{ .Values.cloudSqlProxy.instanceConnectionName }}=tcp:{{ .Values.cloudSqlProxy.port }}
+          securityContext:
+            runAsNonRoot: true
+        {{- end }}

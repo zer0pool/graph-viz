@@ -26,11 +26,11 @@ function formatDuration(sec: number): string {
 }
 
 function shortJobName(jobId: string): string {
-  return jobId.split(".").pop() ?? jobId;
+  return jobId.split("-").pop() ?? jobId;
 }
 
 function shortProjectName(jobId: string): string {
-  return jobId.split(".")[0] ?? jobId;
+  return jobId.split("-")[0] ?? jobId;
 }
 
 // ---------------------------------------------------------------------------

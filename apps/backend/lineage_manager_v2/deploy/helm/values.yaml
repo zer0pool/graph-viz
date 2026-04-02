@@ -52,6 +52,14 @@ resources:
     requests:
       cpu: 500m
       memory: 1Gi
+  beat:
+    # Beat is lightweight — only schedules tasks, does no heavy computation
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
 
 cloudSqlProxy:
   enabled: true
@@ -60,6 +68,9 @@ cloudSqlProxy:
   port: 3306
 
 env:
+  # Session — must match analytics_manager SECRET_KEY (shared session cookie)
+  SECRET_KEY: "magic_word"
+
   # Database Settings
   DB_HOST: "127.0.0.1"
   DB_PORT: "3306"

@@ -41,6 +41,7 @@ services:
       - JOB_MANAGER_URL=http://job-dummy:9000
       - ROOT_PATH=/admin-console/lineage-manager
       - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
+      - SECRET_KEY=${SESSION_SECRET_KEY:-magic_word}
     depends_on:
       - mysql-db
       - redis-cache
@@ -70,6 +71,28 @@ services:
     networks:
       - admin-console-network
 
+  lineage-beat:
+    build:
+      context: ./lineage_manager_v2
+      dockerfile: deploy/docker/Dockerfile
+    image: admin-console/lineage-worker
+    container_name: lineage-beat
+    command: ["beat"]
+    env_file:
+      - ./lineage_manager_v2/.env
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JOB_MANAGER_URL=http://job-dummy:9000
+    depends_on:
+      - mysql-db
+      - redis-cache
+      - lineage-worker
+    networks:
+      - admin-console-network
+
   # --- Analytics Backend ---
   analytics-api:
     build:
@@ -88,6 +111,7 @@ services:
       - ROOT_PATH=/admin-console/analytics-manager
       - CORS_ALLOWED_ORIGINS=["http://localhost:5100","http://127.0.0.1:5100","${EXTERNAL_CORS_ORIGIN:-http://localhost:5100}"]
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+      - SECRET_KEY=${SESSION_SECRET_KEY:-magic_word}
     volumes:
       - ~/.config/gcloud:/root/.config/gcloud:ro
     depends_on:

@@ -22,3 +22,5 @@ async def send_email(data: EmailRequest):
     return CommandResponse(
         status="accepted", task_id=task.id, message="Email task queued"
     )
+
+

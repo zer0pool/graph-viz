@@ -275,43 +275,49 @@ Guarantees the buffer always holds the **10,000 most recent** log entries regard
 
 ### 6.4 Celery Beat Flush Task
 
-A scheduled Celery task running every 30 seconds in `lineage-manager-v2`.
+The flush task runs in `lineage-manager-v2` and uses an **adaptive self-rescheduling** strategy instead of a fixed interval.
 
-```python
-# tasks/access_log_tasks.py
-@celery_app.task(name="flush_access_logs")
-def flush_access_logs():
-    redis = get_redis_client()
-    entries = []
+#### Scheduling Strategy
 
-    for service in ["lineage", "analytics"]:
-        key = f"api:access:log:{service}"
-        # Atomic: get all entries and clear the list
-        pipe = redis.pipeline()
-        pipe.lrange(key, 0, -1)
-        pipe.delete(key)
-        results, _ = pipe.execute()
-        entries.extend(results)
-
-    if not entries:
-        return
-
-    records = [json.loads(e) for e in entries]
-    # Bulk insert
-    with get_db_session() as db:
-        db.bulk_insert_mappings(ApiAccessLog, records)
-        db.commit()
-
-    logger.info(f"[AccessLog] Flushed {len(records)} entries to DB")
+```
+[Boot] beat kickstart fires (10 min fixed interval — dead man's switch)
+          │
+          ▼
+    flush_access_logs runs
+          │
+     inserted > 0?
+     ┌────┴────┐
+    YES        NO
+     │          │
+    60s       600s
+     │          │
+     └────┬─────┘
+          ▼
+    apply_async(countdown=N)
+    → schedules next run
 ```
 
-**Celery beat schedule:**
+| Mode | Condition | Next interval |
+|------|-----------|---------------|
+| **Active** | Entries were flushed (`inserted > 0`) | 60 seconds |
+| **Idle** | Buffer was empty | 600 seconds (10 min) |
+| **Dead man's switch** | Task chain broken (crash, restart) | Beat re-fires within 10 min |
+
+The task reschedules itself via `apply_async(countdown=N)` at the end of each run. The Celery beat entry serves only as a kickstart on first boot and as a safety net if the self-scheduling chain ever breaks.
+
+**Intervals (defined in `app/tasks/access_log_tasks.py`):**
+```python
+SHORT_INTERVAL = 60    # seconds — active mode
+LONG_INTERVAL  = 600   # seconds — idle mode
+```
+
+**Celery beat entry (kickstart + dead man's switch):**
 ```python
 # core/celery_app.py
 beat_schedule = {
-    "flush-access-logs": {
-        "task": "flush_access_logs",
-        "schedule": 30.0,  # every 30 seconds
+    "flush-access-logs-kickstart": {
+        "task": "app.tasks.access_log_tasks.flush_access_logs",
+        "schedule": 600.0,  # 10 minutes — matches LONG_INTERVAL (idle fallback)
     },
 }
 ```
@@ -456,7 +462,7 @@ Once Swagger UI requires login, all "Try it out" calls will carry the session co
 | Separate Redis keys per service | Yes (`lineage` / `analytics`) | Flood from one service doesn't affect the other's buffer |
 | Lua atomic push | Yes | Prevents race conditions under concurrent requests |
 | Buffer cap | 10,000 entries | ~5 min of logs at 33 req/s; tunable via `LTRIM` argument |
-| Flush interval | 30 seconds | Balance between data freshness and DB write frequency |
+| Flush interval | Adaptive: 60s (active) / 600s (idle) | Reduces DB load during quiet periods; stays responsive under traffic |
 | Log ownership | `lineage-manager-v2` | Already has Celery worker + AuditService infrastructure |
 | Path filtering | Skip `/health`, `/metrics` | Reduces noise; these are infra-level, not user actions |
 | `user_id` source | Session (backend-verified) | Cannot trust client-supplied headers for identity |
