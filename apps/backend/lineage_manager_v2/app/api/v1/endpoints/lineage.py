@@ -1,10 +1,11 @@
 from typing import Any, Dict
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.v1.schemas.lineage import (
     GraphResponse,
+    ImpactAnalysisResponse,
     LineageRegistration,
     MermaidGraphResponse,
 )
@@ -44,6 +45,24 @@ async def get_nodes_batch_details(
 ):
     node_ids = payload.get("node_ids", [])
     return await service.get_nodes_batch_details(node_ids)
+
+
+@router.get("/tables/{table_name:path}/impact", response_model=ImpactAnalysisResponse)
+@inject
+async def get_table_impact(
+    table_name: str,
+    max_depth: int = Query(3, ge=1, le=10, description="Max downstream traversal depth"),
+    include_jobs: bool = Query(True, description="Include writer jobs per downstream table"),
+    service: GraphService = Depends(Provide[Container.graph_service]),
+):
+    """
+    Return all downstream tables impacted by changes to the given table,
+    along with the writer jobs for each downstream table.
+    """
+    result = await service.get_table_impact(table_name, max_depth, include_jobs)
+    if isinstance(result, dict) and result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result.get("message"))
+    return result
 
 
 @router.get("/tables/{table_name:path}/hierarchy")

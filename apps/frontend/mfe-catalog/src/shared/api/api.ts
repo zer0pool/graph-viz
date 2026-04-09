@@ -1,7 +1,7 @@
 import { AuthClient } from "../types/auth";
 import { JobDetail, JobRunHistoryResponse, Job } from "../types/job";
 import { TableDetail, TableSchemaResponse, TableTimelinessResponse } from "../types/table";
-import { JobHealthResponse, JobLineageHybridResponse } from "./types/lineage";
+import { JobHealthResponse, JobLineageHybridResponse, ImpactAnalysisResponse } from "./types/lineage";
 import { SummaryMetricsResponse, PaginatedResponse } from "../types";
 
 export class ApiClient {
@@ -151,6 +151,20 @@ export class ApiClient {
       tableName
     )}/lineage-summary${queryString ? `?${queryString}` : ""}`;
     return this.request(url);
+  }
+
+  async fetchTableImpact(
+    tableName: string,
+    options: { maxDepth?: number; includeJobs?: boolean } = {}
+  ): Promise<ImpactAnalysisResponse> {
+    const params = new URLSearchParams();
+    if (options.maxDepth !== undefined) params.set("max_depth", String(options.maxDepth));
+    if (options.includeJobs !== undefined) params.set("include_jobs", String(options.includeJobs));
+    const queryString = params.toString();
+    const url = `/lineage-manager/api/v1/tables/${encodeURIComponent(tableName)}/impact${
+      queryString ? `?${queryString}` : ""
+    }`;
+    return this.request<ImpactAnalysisResponse>(url);
   }
 
   async fetchTables(limit: number = 20, offset: number = 0): Promise<any> {

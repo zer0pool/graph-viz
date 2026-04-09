@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
+import { GitBranch } from "lucide-react";
 import { TableLineageSummary } from "../../shared/types/table";
 import { useMfeNavigate } from "../../shared/lib/navigation";
+import { ImpactAnalysisModal } from "../../features/impact-analysis";
 
 interface TableLineageProps {
   lineage: TableLineageSummary | null;
@@ -10,6 +12,7 @@ interface TableLineageProps {
 
 export const TableLineage: React.FC<TableLineageProps> = ({ lineage, loading, tableName }) => {
   const navigate = useMfeNavigate();
+  const [isImpactOpen, setIsImpactOpen] = useState(false);
 
   if (loading) {
     return (
@@ -25,6 +28,16 @@ export const TableLineage: React.FC<TableLineageProps> = ({ lineage, loading, ta
   const metrics = lineage?.metrics;
 
   return (
+    <>
+    <div className="flex justify-end mb-4">
+      <button
+        onClick={() => setIsImpactOpen(true)}
+        className="h-8 px-3 flex items-center gap-1.5 border border-slate-200 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50"
+      >
+        <GitBranch className="h-3.5 w-3.5" />
+        Impact Analysis
+      </button>
+    </div>
     <div className="flex flex-col h-full bg-white space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upstream Summary */}
@@ -62,6 +75,14 @@ export const TableLineage: React.FC<TableLineageProps> = ({ lineage, loading, ta
         </div>
       </div>
     </div>
+
+    {isImpactOpen && (
+      <ImpactAnalysisModal
+        tableName={tableName}
+        onClose={() => setIsImpactOpen(false)}
+      />
+    )}
+    </>
   );
 };
 

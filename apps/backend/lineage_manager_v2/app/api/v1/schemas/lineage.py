@@ -112,3 +112,24 @@ class MermaidGraphResponse(BaseModel):
     nodes: List[MermaidNode]
     edges: List[MermaidEdge]
     metadata: MermaidMetadata
+
+
+# Impact Analysis Schemas
+
+class ImpactDownstreamEntry(BaseModel):
+    depth: int
+    table: str
+    writer_jobs: List[str] = []
+    description: Optional[str] = None
+
+
+class ImpactAnalysisSummary(BaseModel):
+    total_depth: int
+    total_downstream_tables: int
+    total_writer_jobs: int
+
+
+class ImpactAnalysisResponse(BaseModel):
+    base_table: str
+    downstream: List[ImpactDownstreamEntry]
+    summary: ImpactAnalysisSummary

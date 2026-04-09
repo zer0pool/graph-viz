@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.domain.graph.entities.edge import Edge as EdgeEntity
 from app.infrastructure.models import GraphClosure, GraphEdge, GraphNode
@@ -218,6 +219,40 @@ class GraphRepository:
         )
         result = await self.db.execute(query)
         return result.scalar()
+
+    async def get_writer_jobs_for_tables(
+        self, table_node_names: List[str]
+    ) -> Dict[str, List[str]]:
+        """
+        Batch-fetch writer job names for a set of downstream table names.
+        Returns {table_fqn: [job_name, ...]} in a single SQL query.
+
+        Edge direction: job_node --[produces]--> table_node
+        """
+        if not table_node_names:
+            return {}
+
+        job_node = aliased(GraphNode, name="job_node")
+        table_node = aliased(GraphNode, name="table_node")
+
+        query = (
+            select(
+                table_node.name.label("table_name"),
+                job_node.name.label("job_name"),
+            )
+            .select_from(GraphEdge)
+            .join(job_node, and_(GraphEdge.source_node_id == job_node.id, job_node.node_type == "job"))
+            .join(table_node, and_(GraphEdge.target_node_id == table_node.id, table_node.node_type.in_(["table", "storage"])))
+            .where(
+                GraphEdge.edge_type == "produces",
+                table_node.name.in_(table_node_names),
+            )
+        )
+        result = await self.db.execute(query)
+        mapping: Dict[str, List[str]] = {}
+        for row in result.all():
+            mapping.setdefault(row.table_name, []).append(row.job_name)
+        return mapping
 
     async def get_table_hierarchy_bfs(
         self, start_id: int, start_name: str, direction: str, max_depth: int

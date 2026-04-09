@@ -80,3 +80,23 @@ export interface JobLineageHybridResponse {
   outputs: OutputTableInfo[];
   graph: LineageGraphData;
 }
+
+// Impact Analysis API Types
+export interface ImpactDownstreamEntry {
+  depth: number;
+  table: string;
+  writer_jobs: string[];
+  description?: string;
+}
+
+export interface ImpactAnalysisSummary {
+  total_depth: number;
+  total_downstream_tables: number;
+  total_writer_jobs: number;
+}
+
+export interface ImpactAnalysisResponse {
+  base_table: string;
+  downstream: ImpactDownstreamEntry[];
+  summary: ImpactAnalysisSummary;
+}
