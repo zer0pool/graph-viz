@@ -396,7 +396,7 @@ export function JobLandingView({
                   return (
                     <th
                       key={col.id}
-                      className="px-6 py-4 cursor-pointer hover:bg-slate-50 transition-colors group"
+                      className="px-4 py-2 cursor-pointer hover:bg-slate-50 transition-colors group"
                       onClick={() => handleSort(col.id)}
                     >
                       <div className="flex items-center gap-1.5">
@@ -455,7 +455,7 @@ export function JobLandingView({
                     className="hover:bg-slate-50/80 transition-colors group"
                   >
                     {isColumnVisible("job") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <button
                           onClick={() => onNavigateToJob(job.job_id)}
                           className="text-start font-semibold text-blue-600 hover:text-blue-800 transition-colors"
@@ -465,38 +465,38 @@ export function JobLandingView({
                       </td>
                     )}
                     {isColumnVisible("publish_time") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.publish_time)}
                       </td>
                     )}
                     {isColumnVisible("dag") && (
-                      <td className="px-6 py-4 text-slate-600">{job.dag_id || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600">{job.dag_id || "-"}</td>
                     )}
                     {isColumnVisible("type") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <span className="px-2 py-1 rounded bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
                           {job.type || "N/A"}
                         </span>
                       </td>
                     )}
                     {isColumnVisible("project") && (
-                      <td className="px-6 py-4 text-slate-600 font-medium">
+                      <td className="px-4 py-2 text-slate-600 font-medium">
                         {job.project_id || "-"}
                       </td>
                     )}
                     {isColumnVisible("destination") && (
                       <td
-                        className="px-6 py-4 text-slate-500 text-xs truncate max-w-[150px]"
+                        className="px-4 py-2 text-slate-500 text-xs truncate max-w-[150px]"
                         title={job.destination}
                       >
                         {job.destination || "-"}
                       </td>
                     )}
                     {isColumnVisible("issuer") && (
-                      <td className="px-6 py-4 text-slate-600 text-xs">{job.issuer || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 text-xs">{job.issuer || "-"}</td>
                     )}
                     {isColumnVisible("owner") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-2 text-slate-600">
                           {job.owners && job.owners.length > 0 ? job.owners[0] : "-"}
                           {job.owners && job.owners.length > 1 && (
@@ -508,28 +508,28 @@ export function JobLandingView({
                       </td>
                     )}
                     {isColumnVisible("period") && (
-                      <td className="px-6 py-4 text-slate-600 text-xs italic">
+                      <td className="px-4 py-2 text-slate-600 text-xs italic">
                         {job.period || "-"}
                       </td>
                     )}
                     {isColumnVisible("date") && (
-                      <td className="px-6 py-4 text-slate-600 tabular-nums">{job.date || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 tabular-nums">{job.date || "-"}</td>
                     )}
                     {isColumnVisible("hour") && (
-                      <td className="px-6 py-4 text-slate-600 tabular-nums">{job.hour || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 tabular-nums">{job.hour || "-"}</td>
                     )}
                     {isColumnVisible("start_time") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.start_time)}
                       </td>
                     )}
                     {isColumnVisible("next_start") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.next_start_time)}
                       </td>
                     )}
                     {isColumnVisible("status") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-tight ${getStatusColor(job.status || "")}`}
                         >

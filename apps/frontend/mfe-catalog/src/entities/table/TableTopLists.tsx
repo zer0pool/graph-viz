@@ -197,7 +197,7 @@ function RankingRow({
   sparkColor: string;
 }) {
   return (
-    <div className="flex items-center gap-3 text-xs h-10">
+    <div className="flex items-center gap-3 text-xs">
       <span className="text-slate-400 font-medium w-6 flex-shrink-0 text-right">
         #{index + 1}
       </span>
