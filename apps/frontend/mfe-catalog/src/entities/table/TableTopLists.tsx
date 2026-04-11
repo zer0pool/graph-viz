@@ -245,7 +245,8 @@ export function TableTopLists({
 
   if (loading && sizeRanking.length === 0 && rowsRanking.length === 0) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SkeletonCard
           icon={<HardDrive className="h-4 w-4 text-indigo-600" />}
           iconBg="bg-indigo-50"
@@ -258,12 +259,14 @@ export function TableTopLists({
           title={`Top ${limit} Tables by Rows Written`}
           rowCount={limit}
         />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="space-y-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
       {/* ── Top by Size ── */}
       <Card className="border-slate-200 shadow-sm">
@@ -341,6 +344,7 @@ export function TableTopLists({
         </CardContent>
       </Card>
 
+      </div>
     </div>
   );
 }
