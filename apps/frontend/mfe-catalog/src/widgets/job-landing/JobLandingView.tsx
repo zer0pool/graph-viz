@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { GCPDateTimePicker } from "../../shared/ui/GCPDateTimePicker";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../shared/ui/card";
 import {
   RefreshCw,
   Filter,
@@ -177,15 +178,16 @@ export function JobLandingView({
         <JobTopLists slotRanking={slotRanking} durationRanking={durationRanking} loading={loading} />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-4 animate-fade-in-up delay-300">
-        {/* Table Header / Toolbar */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h3 className="font-semibold text-slate-700">
-            Recently Finished Jobs{" "}
-            <span className="text-slate-400 font-normal text-xs">
-              ({totalCount.toLocaleString()} in last {timeRange})
-            </span>
-          </h3>
+      <Card className="border border-slate-200 shadow-sm rounded-xl mt-4 animate-fade-in-up delay-300">
+        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 bg-slate-50/50 border-b border-slate-100">
+          <div>
+            <CardTitle className="font-semibold text-slate-700">
+              Recently Finished Jobs
+            </CardTitle>
+            <CardDescription className="text-[11px] font-medium text-slate-400 mt-0.5">
+              {totalCount.toLocaleString()} in last {timeRange}
+            </CardDescription>
+          </div>
 
           <div className="flex items-center gap-3">
             {/* Time Range Selector */}
@@ -380,11 +382,12 @@ export function JobLandingView({
               )}
             </div>
           </div>
-        </div>
+        </CardHeader>
 
-        {/* Jobs Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <CardContent className="p-0">
+          {/* Jobs Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
             <thead className="bg-white border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               <tr>
                 {availableColumns.map((col) => {
@@ -538,8 +541,9 @@ export function JobLandingView({
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+        </CardContent>
 
         {/* Pagination UI */}
         {totalCount > 0 && (
@@ -596,7 +600,7 @@ export function JobLandingView({
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Filter Slide-over */}
       {showFilter && (

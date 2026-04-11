@@ -17,4 +17,7 @@ window.__APP_CONFIG__ = {
   OIDC_SCOPE: "openid profile email",
   OIDC_RESOURCE: "",
   OIDC_USERINFO_ENDPOINT: "",
+  REQUIRE_SIGNIN: "",
+  REST_API_DOCS_URL: "",
+  GRAPHQL_API_DOCS_URL: "",
 };

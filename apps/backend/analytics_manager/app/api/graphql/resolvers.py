@@ -32,6 +32,10 @@ from app.api.graphql.schema import (
     TableConnection,
     TableEdge,
     TableFilter,
+    TableListFilter,
+    TableListItem,
+    TableListResponse,
+    TableRankingItem,
     TableStats,
     User,
 )
@@ -295,6 +299,107 @@ class Query:
             page_info=PageInfo(has_next_page=False, end_cursor="0"),
             total_count=1,
         )
+
+    # -------------------------------------------------------------------------
+    # Table Landing — paginated list sorted by last_modified DESC
+    # -------------------------------------------------------------------------
+
+    @strawberry.field(
+        description="Paginated BigQuery table list, sorted by publish_time DESC."
+    )
+    async def table_list(
+        self,
+        info: Info,
+        offset: int = 0,
+        limit: int = 10,
+        sort_order: SortOrder = SortOrder.DESC,
+        filter: Optional[TableListFilter] = None,
+    ) -> TableListResponse:
+        table_list_uc = info.context["table_list_uc"]
+        cache: RequestCache = info.context["cache"]
+
+        all_rows = await cache.get_or_compute(
+            "table_explorer:table_list", lambda: table_list_uc.execute()
+        )
+
+        # Apply filters in-process (client-side on the cached dataset)
+        if filter:
+            if filter.table:
+                term = filter.table.lower()
+                all_rows = [r for r in all_rows if term in r.get("table_name", "").lower()]
+            if filter.dataset:
+                term = filter.dataset.lower()
+                all_rows = [r for r in all_rows if term in r.get("dataset_name", "").lower()]
+
+        # Sort by publish_time
+        reverse = sort_order == SortOrder.DESC
+        all_rows = sorted(all_rows, key=lambda r: r.get("publish_time", ""), reverse=reverse)
+
+        total_count = len(all_rows)
+        page = all_rows[offset: offset + limit]
+
+        items = [
+            TableListItem(
+                project=r["project_name"],
+                dataset=r["dataset_name"],
+                table=r["table_name"],
+                last_modified=str(r["publish_time"]),
+                size_bytes=float(r["total_logical_size"]) if r.get("total_logical_size") else None,
+                rows_written=float(r["total_row_cnt"]) if r.get("total_row_cnt") else None,
+                write_mode=r.get("write_mode"),
+            )
+            for r in page
+        ]
+
+        return TableListResponse(items=items, total_count=total_count)
+
+    # -------------------------------------------------------------------------
+    # Table Rankings (Size & Rows Written)
+    # -------------------------------------------------------------------------
+
+    @strawberry.field(
+        description="Top N tables ranked by yesterday's total size in bytes (7-day sparkline)."
+    )
+    async def table_size_ranking(
+        self, info: Info, limit: int = 30
+    ) -> List[TableRankingItem]:
+        ranking_uc = info.context["table_ranking_uc"]
+        rows = await ranking_uc.get_size_ranking(limit)
+        return [
+            TableRankingItem(
+                table_id=r["table_id"],
+                project=r["project_name"],
+                dataset=r["dataset_name"],
+                table=r["table_name"],
+                value_yesterday=r["value_yesterday"],
+                value_7d_avg=r["value_7d_avg"],
+                change_pct=r["change_pct"],
+                history_7d=r["history_7d"],
+            )
+            for r in rows
+        ]
+
+    @strawberry.field(
+        description="Top N tables ranked by yesterday's rows_written count (7-day sparkline)."
+    )
+    async def table_rows_ranking(
+        self, info: Info, limit: int = 30
+    ) -> List[TableRankingItem]:
+        ranking_uc = info.context["table_ranking_uc"]
+        rows = await ranking_uc.get_rows_ranking(limit)
+        return [
+            TableRankingItem(
+                table_id=r["table_id"],
+                project=r["project_name"],
+                dataset=r["dataset_name"],
+                table=r["table_name"],
+                value_yesterday=r["value_yesterday"],
+                value_7d_avg=r["value_7d_avg"],
+                change_pct=r["change_pct"],
+                history_7d=r["history_7d"],
+            )
+            for r in rows
+        ]
 
     # -------------------------------------------------------------------------
     # Stubs — User / Project / JobStats

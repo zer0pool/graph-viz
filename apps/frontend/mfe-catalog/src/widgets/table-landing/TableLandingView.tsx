@@ -154,7 +154,7 @@ export function TableLandingView({
       </header>
 
       {/* Top Lists */}
-      <div className="animate-fade-in-up delay-100">
+      <div className="animate-fade-in-up delay-200">
         <TableTopLists
           sizeRanking={sizeRanking}
           rowsRanking={rowsRanking}
@@ -164,7 +164,7 @@ export function TableLandingView({
 
       {/* Table Card */}
       <Card className="border border-slate-200 shadow-sm rounded-xl animate-fade-in-up delay-300">
-        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-3 bg-slate-50/50 border-b border-slate-100">
+        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 bg-slate-50/50 border-b border-slate-100">
           <div>
             <CardTitle className="font-semibold text-slate-700 flex items-center gap-2">
               <Database className="h-4 w-4 text-indigo-500" />

@@ -1,11 +1,13 @@
 import React, { useCallback } from "react";
 import { useMfeNavigate } from "../../shared/lib/navigation";
 import { useDatasetsTable } from "./useDatasetsTable";
+import { useTableFilter } from "./useTableFilter";
 import { DatasetsTableView } from "./DatasetsTableView";
 
 export function DatasetsTable() {
   const navigate = useMfeNavigate();
-  const { search, setSearch, filteredDatasets, maxSize } = useDatasetsTable();
+  const { datasets, maxSize, loading } = useDatasetsTable();
+  const tableFilter = useTableFilter(datasets);
 
   const handleViewDetail = useCallback(
     (name: string) => {
@@ -16,10 +18,9 @@ export function DatasetsTable() {
 
   return (
     <DatasetsTableView
-      search={search}
-      onSearchChange={setSearch}
-      datasets={filteredDatasets}
+      {...tableFilter}
       maxSize={maxSize}
+      loading={loading}
       onViewDetail={handleViewDetail}
     />
   );
