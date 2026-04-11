@@ -1,35 +1,136 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useApiClient } from "../../shared/api/ApiContext";
-import { datasetsData } from "../../shared/api/mockData";
+import {
+  TableListItem,
+  TableListResponse,
+  TableRankingItem,
+} from "../../shared/api/types/lineage";
 import { MetricData } from "../../shared/ui/SummaryGrid";
-import { MetricEntry } from "../../shared/types";
 
 export type TableMetric = MetricData;
 
-const DEFAULT_TABLE_METRICS: TableMetric[] = [
-  { type: "total_tables", value: 1392, subtext: "+23 today" },
-  { type: "total_datasets", value: 8, subtext: "6 schemas" },
-  { type: "total_size", value: "148.0 TB", subtext: "+2.1 TB/day" },
-  { type: "expiring_soon", value: 23, subtext: "< 7 days left" },
-  { type: "lineage_coverage", value: "80.7%", subtext: "1124 / 1392" },
-];
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
 
-import { useLandingPageData } from "../../shared/hooks/useLandingPageData";
+const TABLE_LIST_QUERY = `
+  query GetTableList(
+    $offset: Int
+    $limit: Int
+    $sortOrder: SortOrder
+    $filter: TableListFilter
+  ) {
+    tableList(offset: $offset, limit: $limit, sortOrder: $sortOrder, filter: $filter) {
+      items {
+        project
+        dataset
+        table
+        lastModified
+        sizeBytes
+        rowsWritten
+        writeMode
+      }
+      totalCount
+    }
+  }
+`;
+
+const TABLE_RANKING_QUERY = `
+  query GetTableRanking($limit: Int) {
+    tableSizeRanking(limit: $limit) {
+      tableId project dataset table
+      valueYesterday value7dAvg changePct history7d
+    }
+    tableRowsRanking(limit: $limit) {
+      tableId project dataset table
+      valueYesterday value7dAvg changePct history7d
+    }
+  }
+`;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface TableListFilter {
+  table?: string;
+  dataset?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export function useTableLanding() {
-  const { metrics, entities, loading, error, refresh } = useLandingPageData("tables", {
-    first: 20,
-  });
+  const api = useApiClient();
 
-  const datasets = useMemo(() => {
-    return (entities?.edges || []).map((edge) => edge.node);
-  }, [entities]);
+  const [tables, setTables] = useState<TableListItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [sizeRanking, setSizeRanking] = useState<TableRankingItem[]>([]);
+  const [rowsRanking, setRowsRanking] = useState<TableRankingItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(
+    async (options: {
+      offset?: number;
+      limit?: number;
+      sortOrder?: "ASC" | "DESC";
+      filter?: TableListFilter | null;
+    } = {}) => {
+      const { offset = 0, limit = 10, sortOrder = "DESC", filter = null } = options;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await api.graphqlRequest<{ tableList: TableListResponse }>(
+          TABLE_LIST_QUERY,
+          { offset, limit, sortOrder, filter }
+        );
+        setTables(result.tableList.items);
+        setTotalCount(result.tableList.totalCount);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch table list");
+        setTables([]);
+        setTotalCount(0);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api]
+  );
+
+  const fetchRanking = useCallback(
+    async (limit: number = 30) => {
+      setRankingLoading(true);
+      try {
+        const result = await api.graphqlRequest<{
+          tableSizeRanking: TableRankingItem[];
+          tableRowsRanking: TableRankingItem[];
+        }>(TABLE_RANKING_QUERY, { limit });
+        setSizeRanking(result.tableSizeRanking ?? []);
+        setRowsRanking(result.tableRowsRanking ?? []);
+      } catch (err) {
+        setSizeRanking([]);
+        setRowsRanking([]);
+      } finally {
+        setRankingLoading(false);
+      }
+    },
+    [api]
+  );
 
   return {
-    metrics,
-    datasets: datasets.length > 0 ? datasets : datasetsData, // Fallback to mock if empty
+    tables,
+    totalCount,
+    sizeRanking,
+    rowsRanking,
     loading,
-    error: error ? error.message : null,
-    refresh,
+    rankingLoading,
+    error,
+    fetchData,
+    fetchRanking,
+    refresh: () => fetchData(),
   };
 }

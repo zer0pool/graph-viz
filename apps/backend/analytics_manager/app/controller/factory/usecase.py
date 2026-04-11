@@ -7,6 +7,8 @@ from app.application.usecase.analytics.track_event import TrackEventUseCase
 from app.application.usecase.data_sync.sync_data import SyncDataUseCase
 from app.application.usecase.job_explorer.job_ranking import JobRankingUseCase
 from app.application.usecase.job_explorer.search_jobs import SearchJobsUseCase
+from app.application.usecase.table_explorer.get_table_list import GetTableListUseCase
+from app.application.usecase.table_explorer.get_table_ranking import GetTableRankingUseCase
 from app.infrastructure.di.providers import get_bq_client, get_lineage_client, get_redis
 from app.infrastructure.gateway.http_lineage_gateway import HttpLineageGateway
 from app.infrastructure.gcp.bigquery import BigQueryClient
@@ -16,6 +18,9 @@ from app.infrastructure.repository.bq_analytics_repository import (
 )
 from app.infrastructure.repository.bq_job_repository import (
     BigQueryJobExplorerRepository,
+)
+from app.infrastructure.repository.bq_table_repository import (
+    BigQueryTableListRepository,
 )
 
 
@@ -55,6 +60,21 @@ def get_job_ranking_usecase(
 ) -> JobRankingUseCase:
     repo = BigQueryJobExplorerRepository(bq_client)
     return JobRankingUseCase(repo=repo, redis=redis)
+
+
+def get_table_list_usecase(
+    bq_client: BigQueryClient = Depends(get_bq_client),
+    redis: Redis = Depends(get_redis),
+) -> GetTableListUseCase:
+    repo = BigQueryTableListRepository(bq_client)
+    return GetTableListUseCase(repo=repo, redis=redis)
+
+
+def get_table_ranking_usecase(
+    bq_client: BigQueryClient = Depends(get_bq_client),
+) -> GetTableRankingUseCase:
+    repo = BigQueryTableListRepository(bq_client)
+    return GetTableRankingUseCase(repo=repo)
 
 
 def get_sync_data_usecase(

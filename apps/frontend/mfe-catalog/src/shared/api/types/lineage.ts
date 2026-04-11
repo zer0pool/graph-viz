@@ -1,3 +1,30 @@
+// Table Landing — GraphQL tableList types
+export interface TableListItem {
+  project: string;
+  dataset: string;
+  table: string;
+  lastModified: string;                   // ISO datetime string (from publish_time)
+  sizeBytes: number | null;               // from total_logical_size
+  rowsWritten: number | null;             // from total_row_cnt (daily aggregate)
+  writeMode: string | null;               // "append" | "fulldump" | "upsert" | null
+}
+
+export interface TableListResponse {
+  items: TableListItem[];
+  totalCount: number;
+}
+
+export interface TableRankingItem {
+  tableId: string;       // "project.dataset.table_name"
+  project: string;
+  dataset: string;
+  table: string;
+  valueYesterday: number;
+  value7dAvg: number;
+  changePct: number;
+  history7d: number[];   // 7 daily values, oldest → newest
+}
+
 // Basic Lineage Types (Legacy)
 export interface LineageNode {
   id: string;

@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     )
     BIGQUERY_SLOT_USAGE_TABLE: str = "test_project_name.test_data.daily_slot_usage"
     BIGQUERY_RUNNING_TIME_TABLE: str = "test_project_name.test_data.daily_running_time"
+    BIGQUERY_TABLE_LIST_TABLE: str = "test_project.test_data.table_metadata_list"
 
     LINEAGE_MANAGER_URL: str = "http://localhost:5003"
 

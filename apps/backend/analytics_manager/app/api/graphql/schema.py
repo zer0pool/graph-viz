@@ -302,6 +302,54 @@ class TableFilter:
     update_mode: Optional[str] = None
 
 
+# ---------------------------------------------------------------------------
+# Table Landing — flat list with BigQuery metadata
+# ---------------------------------------------------------------------------
+
+
+@strawberry.type
+class TableListItem:
+    """A single row in the table landing page list."""
+
+    project: str
+    dataset: str
+    table: str
+    last_modified: str                        # ISO datetime string (from publish_time)
+    size_bytes: Optional[float] = None        # from total_logical_size (64-bit safe)
+    rows_written: Optional[float] = None      # from total_row_cnt (daily delta aggregate, 64-bit safe)
+    write_mode: Optional[str] = None          # "append" | "fulldump" | "upsert" | None
+
+
+@strawberry.input
+class TableListFilter:
+    """Filter input for the table landing list."""
+
+    table: Optional[str] = None    # partial match on table name
+    dataset: Optional[str] = None  # partial match on dataset name
+
+
+@strawberry.type
+class TableListResponse:
+    """Paginated response for the table landing list."""
+
+    items: List[TableListItem]
+    total_count: int
+
+
+@strawberry.type
+class TableRankingItem:
+    """Per-table ranking entry: yesterday value, 7-day average, trend, and daily history."""
+
+    table_id: str          # "project.dataset.table_name"
+    project: str
+    dataset: str
+    table: str
+    value_yesterday: float  # raw value (size_bytes or rows_written)
+    value_7d_avg: float     # 7-day average — used as ranking key
+    change_pct: float       # (yesterday - avg) / avg * 100
+    history_7d: List[float] # 7 daily values, oldest → newest (for Sparkline)
+
+
 @strawberry.type
 class User:
     """Represents a user entity."""

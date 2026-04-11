@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { GCPDateTimePicker } from "../../shared/ui/GCPDateTimePicker";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../shared/ui/card";
 import {
   RefreshCw,
   Filter,
@@ -163,8 +164,8 @@ export function JobLandingView({
   }, [currentPage, activeFilters, timeRange, customRange.since, customRange.until, sortState]);
 
   return (
-    <div className="p-6">
-      <header className="mb-8 animate-fade-in-up">
+    <div className="p-4">
+      <header className="mb-6 animate-fade-in-up">
         <h1 className="text-2xl font-bold text-slate-900">Job Monitoring</h1>
         <p className="text-slate-500">Monitor and manage all data pipelines</p>
       </header>
@@ -177,15 +178,16 @@ export function JobLandingView({
         <JobTopLists slotRanking={slotRanking} durationRanking={durationRanking} loading={loading} />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-8 animate-fade-in-up delay-300">
-        {/* Table Header / Toolbar */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h3 className="font-semibold text-slate-700">
-            Recently Finished Jobs{" "}
-            <span className="text-slate-400 font-normal text-xs">
-              ({totalCount.toLocaleString()} in last {timeRange})
-            </span>
-          </h3>
+      <Card className="border border-slate-200 shadow-sm rounded-xl mt-4 animate-fade-in-up delay-300">
+        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 bg-slate-50/50 border-b border-slate-100">
+          <div>
+            <CardTitle className="font-semibold text-slate-700">
+              Recently Finished Jobs
+            </CardTitle>
+            <CardDescription className="text-[11px] font-medium text-slate-400 mt-0.5">
+              {totalCount.toLocaleString()} in last {timeRange}
+            </CardDescription>
+          </div>
 
           <div className="flex items-center gap-3">
             {/* Time Range Selector */}
@@ -380,11 +382,12 @@ export function JobLandingView({
               )}
             </div>
           </div>
-        </div>
+        </CardHeader>
 
-        {/* Jobs Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <CardContent className="p-0">
+          {/* Jobs Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
             <thead className="bg-white border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               <tr>
                 {availableColumns.map((col) => {
@@ -393,7 +396,7 @@ export function JobLandingView({
                   return (
                     <th
                       key={col.id}
-                      className="px-6 py-4 cursor-pointer hover:bg-slate-50 transition-colors group"
+                      className="px-4 py-2 cursor-pointer hover:bg-slate-50 transition-colors group"
                       onClick={() => handleSort(col.id)}
                     >
                       <div className="flex items-center gap-1.5">
@@ -452,7 +455,7 @@ export function JobLandingView({
                     className="hover:bg-slate-50/80 transition-colors group"
                   >
                     {isColumnVisible("job") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <button
                           onClick={() => onNavigateToJob(job.job_id)}
                           className="text-start font-semibold text-blue-600 hover:text-blue-800 transition-colors"
@@ -462,38 +465,38 @@ export function JobLandingView({
                       </td>
                     )}
                     {isColumnVisible("publish_time") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.publish_time)}
                       </td>
                     )}
                     {isColumnVisible("dag") && (
-                      <td className="px-6 py-4 text-slate-600">{job.dag_id || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600">{job.dag_id || "-"}</td>
                     )}
                     {isColumnVisible("type") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <span className="px-2 py-1 rounded bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
                           {job.type || "N/A"}
                         </span>
                       </td>
                     )}
                     {isColumnVisible("project") && (
-                      <td className="px-6 py-4 text-slate-600 font-medium">
+                      <td className="px-4 py-2 text-slate-600 font-medium">
                         {job.project_id || "-"}
                       </td>
                     )}
                     {isColumnVisible("destination") && (
                       <td
-                        className="px-6 py-4 text-slate-500 text-xs truncate max-w-[150px]"
+                        className="px-4 py-2 text-slate-500 text-xs truncate max-w-[150px]"
                         title={job.destination}
                       >
                         {job.destination || "-"}
                       </td>
                     )}
                     {isColumnVisible("issuer") && (
-                      <td className="px-6 py-4 text-slate-600 text-xs">{job.issuer || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 text-xs">{job.issuer || "-"}</td>
                     )}
                     {isColumnVisible("owner") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-2 text-slate-600">
                           {job.owners && job.owners.length > 0 ? job.owners[0] : "-"}
                           {job.owners && job.owners.length > 1 && (
@@ -505,28 +508,28 @@ export function JobLandingView({
                       </td>
                     )}
                     {isColumnVisible("period") && (
-                      <td className="px-6 py-4 text-slate-600 text-xs italic">
+                      <td className="px-4 py-2 text-slate-600 text-xs italic">
                         {job.period || "-"}
                       </td>
                     )}
                     {isColumnVisible("date") && (
-                      <td className="px-6 py-4 text-slate-600 tabular-nums">{job.date || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 tabular-nums">{job.date || "-"}</td>
                     )}
                     {isColumnVisible("hour") && (
-                      <td className="px-6 py-4 text-slate-600 tabular-nums">{job.hour || "-"}</td>
+                      <td className="px-4 py-2 text-slate-600 tabular-nums">{job.hour || "-"}</td>
                     )}
                     {isColumnVisible("start_time") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.start_time)}
                       </td>
                     )}
                     {isColumnVisible("next_start") && (
-                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
+                      <td className="px-4 py-2 text-slate-500 text-xs tabular-nums">
                         {formatNumericDate(job.next_start_time)}
                       </td>
                     )}
                     {isColumnVisible("status") && (
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-tight ${getStatusColor(job.status || "")}`}
                         >
@@ -538,8 +541,9 @@ export function JobLandingView({
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+        </CardContent>
 
         {/* Pagination UI */}
         {totalCount > 0 && (
@@ -596,7 +600,7 @@ export function JobLandingView({
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Filter Slide-over */}
       {showFilter && (
@@ -616,7 +620,7 @@ export function JobLandingView({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* identification group */}
               <div className="space-y-4">
                 <div className="space-y-1">
