@@ -12,7 +12,7 @@ import { config } from "../../shared/api/config";
 import { SummaryGrid } from "../../shared/ui/SummaryGrid";
 import { Badge } from "../../shared/ui/Badge";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
-import { formatDateTime } from "../../shared/lib/utils";
+import { formatDateTime, getAvatarColor } from "../../shared/lib/utils";
 
 // --- Types ---
 type Role = "PM" | "OPERATOR" | "DEVELOPER" | "VIEWER";
@@ -291,14 +291,22 @@ export function UsersPage() {
                   <tr key={user.user_id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div
-                        className="flex items-center gap-3 cursor-pointer"
+                        className="flex items-center gap-3 cursor-pointer group"
                         onClick={() => navigate(`/users/${encodeURIComponent(user.user_id)}`)}
                       >
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-semibold group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                          {user.name
+                        {(() => {
+                          const colors = getAvatarColor(user.name);
+                          const initials = user.name
                             ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-                            : "?"}
-                        </div>
+                            : "?";
+                          return (
+                            <div
+                              className={`w-8 h-8 rounded-full ${colors.bg} flex items-center justify-center ${colors.text} text-xs font-semibold ${colors.hover} group-hover:text-white transition-colors`}
+                            >
+                              {initials}
+                            </div>
+                          );
+                        })()}
                         <div>
                           <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                             {user.name}
