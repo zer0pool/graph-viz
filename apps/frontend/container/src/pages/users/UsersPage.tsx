@@ -6,7 +6,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  User as UserIcon,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { config } from "../../shared/api/config";
@@ -39,6 +38,22 @@ const getRoleBadgeVariant = (role: Role) => {
       return "destructive";
     default:
       return "outline";
+  }
+};
+
+const formatDateTime = (iso?: string) => {
+  if (!iso) return "Never";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "Never";
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${mo}-${day} ${h}:${mi}`;
+  } catch {
+    return "Never";
   }
 };
 
@@ -179,7 +194,7 @@ export function UsersPage() {
   };
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
+    <div className="flex-1 p-4 space-y-4 overflow-auto bg-gray-50/50 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -294,8 +309,10 @@ export function UsersPage() {
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => navigate(`/users/${encodeURIComponent(user.user_id)}`)}
                       >
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                          <UserIcon className="w-4 h-4" />
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-semibold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          {user.name
+                            ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+                            : "?"}
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -327,7 +344,7 @@ export function UsersPage() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-400">
-                      {user.updated_at ? new Date(user.updated_at).toLocaleString() : "Never"}
+                      {formatDateTime(user.updated_at)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
