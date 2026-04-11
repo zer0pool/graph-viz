@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { config } from "../../shared/api/config";
 import { SummaryGrid, MetricData } from "../../shared/ui/SummaryGrid";
+import { formatDateTime } from "../../shared/lib/utils";
 
 // --- Types (Matched with Backend Schemas) ---
 type CommandStatus = "SUCCESS" | "PARTIAL" | "FAILED";
@@ -106,22 +107,6 @@ const getStatusBadge = (status: CommandStatus | EventStatus) => {
       );
     default:
       return null;
-  }
-};
-
-const formatDateTime = (iso?: string) => {
-  if (!iso) return "—";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return `${y}-${mo}-${day} ${h}:${mi}`;
-  } catch {
-    return "—";
   }
 };
 
@@ -348,7 +333,7 @@ export function AuditPage() {
                           <ChevronRight className="h-4 w-4 text-gray-400" />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono text-gray-600">{formatDateTime(command.timestamp)}</td>
+                      <td className="px-4 py-3 font-mono text-gray-600">{formatDateTime(command.timestamp, "—")}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
                           {command.type}
@@ -403,7 +388,7 @@ export function AuditPage() {
                                 >
                                   <div className="mt-0.5">{getStatusIcon(event.status)}</div>
                                   <span className="font-mono text-xs text-gray-500 w-32 pt-0.5">
-                                    {formatDateTime(event.timestamp)}
+                                    {formatDateTime(event.timestamp, "—")}
                                   </span>
                                   <span className="text-gray-700 flex-1">{event.description}</span>
                                   {event.status !== "SUCCESS" && (

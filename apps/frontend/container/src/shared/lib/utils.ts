@@ -24,3 +24,24 @@ export function formatWindowHours(hours: number): string {
   }
   return `${hours} hour${hours > 1 ? "s" : ""}`;
 }
+
+/**
+ * Formats an ISO 8601 datetime string to YYYY-MM-DD HH:mm format
+ * @param iso ISO 8601 datetime string (e.g., "2026-05-31T08:48:30Z")
+ * @returns Formatted string or fallback value if invalid
+ */
+export function formatDateTime(iso?: string | null, fallback = "Never"): string {
+  if (!iso) return fallback;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return fallback;
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${mo}-${day} ${h}:${mi}`;
+  } catch {
+    return fallback;
+  }
+}

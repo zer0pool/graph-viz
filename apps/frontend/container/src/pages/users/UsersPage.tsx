@@ -12,6 +12,7 @@ import { config } from "../../shared/api/config";
 import { SummaryGrid } from "../../shared/ui/SummaryGrid";
 import { Badge } from "../../shared/ui/Badge";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
+import { formatDateTime } from "../../shared/lib/utils";
 
 // --- Types ---
 type Role = "PM" | "OPERATOR" | "DEVELOPER" | "VIEWER";
@@ -38,22 +39,6 @@ const getRoleBadgeVariant = (role: Role) => {
       return "destructive";
     default:
       return "outline";
-  }
-};
-
-const formatDateTime = (iso?: string) => {
-  if (!iso) return "Never";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "Never";
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return `${y}-${mo}-${day} ${h}:${mi}`;
-  } catch {
-    return "Never";
   }
 };
 
