@@ -193,13 +193,13 @@ function SkeletonCard({
 }) {
   return (
     <Card className="border-slate-200 shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader className="p-3 border-b border-slate-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn("p-1.5 rounded-lg", iconBg)}>{icon}</div>
             <div>
-              <CardTitle className="text-lg text-slate-800">{title}</CardTitle>
-              <CardDescription className="text-[11px] font-medium text-slate-500">
+              <CardTitle className="text-sm font-semibold text-slate-700">{title}</CardTitle>
+              <CardDescription className="text-[11px] font-medium text-slate-400">
                 Ranked by yesterday · % change vs 7d avg
               </CardDescription>
             </div>
@@ -208,8 +208,8 @@ function SkeletonCard({
           <div className="h-7 w-24 bg-slate-100 rounded-lg border border-slate-200 animate-pulse" />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4 pt-2">
+      <CardContent className="p-0">
+        <div className="space-y-3 p-3">
           {Array.from({ length: rowCount }).map((_, i) => (
             <SkeletonRow key={i} />
           ))}
@@ -295,8 +295,8 @@ export function JobTopLists({
 
   if (loading && slotRanking.length === 0 && durationRanking.length === 0) {
     return (
-      <div className="space-y-6 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <SkeletonCard
             icon={<Cpu className="h-4 w-4 text-blue-600" />}
             iconBg="bg-blue-50"
@@ -318,22 +318,22 @@ export function JobTopLists({
   const durationItems = durationRanking.slice(0, limit);
 
   return (
-    <div className="space-y-6 mt-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* ── Top Slot Usage ── */}
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
                   <Cpu className="h-4 w-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-slate-800">
+                  <CardTitle className="text-sm font-semibold text-slate-700">
                     Top {limit} Jobs by Slot Usage
                   </CardTitle>
-                  <CardDescription className="text-[11px] font-medium text-slate-500">
+                  <CardDescription className="text-[11px] font-medium text-slate-400">
                     Ranked by yesterday · % change vs 7d avg
                   </CardDescription>
                 </div>
@@ -341,8 +341,8 @@ export function JobTopLists({
               <LimitSelector limit={limit} onChange={setLimit} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4 pt-2">
+          <CardContent className="p-0">
+            <div className="space-y-3 p-3">
               {slotItems.map((item, i) => (
                 <RankingRow
                   key={item.jobId}
@@ -358,17 +358,17 @@ export function JobTopLists({
 
         {/* ── Top Long Running ── */}
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
                   <Clock className="h-4 w-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-slate-800">
+                  <CardTitle className="text-sm font-semibold text-slate-700">
                     Top {limit} Long Running Jobs
                   </CardTitle>
-                  <CardDescription className="text-[11px] font-medium text-slate-500">
+                  <CardDescription className="text-[11px] font-medium text-slate-400">
                     Ranked by yesterday · % change vs 7d avg
                   </CardDescription>
                 </div>
@@ -376,8 +376,8 @@ export function JobTopLists({
               <LimitSelector limit={limit} onChange={setLimit} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4 pt-2">
+          <CardContent className="p-0">
+            <div className="space-y-3 p-3">
               {durationItems.map((item, i) => (
                 <RankingRow
                   key={item.jobId}

@@ -163,8 +163,8 @@ export function JobLandingView({
   }, [currentPage, activeFilters, timeRange, customRange.since, customRange.until, sortState]);
 
   return (
-    <div className="p-6">
-      <header className="mb-8 animate-fade-in-up">
+    <div className="p-4">
+      <header className="mb-6 animate-fade-in-up">
         <h1 className="text-2xl font-bold text-slate-900">Job Monitoring</h1>
         <p className="text-slate-500">Monitor and manage all data pipelines</p>
       </header>
@@ -177,7 +177,7 @@ export function JobLandingView({
         <JobTopLists slotRanking={slotRanking} durationRanking={durationRanking} loading={loading} />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-8 animate-fade-in-up delay-300">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-4 animate-fade-in-up delay-300">
         {/* Table Header / Toolbar */}
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h3 className="font-semibold text-slate-700">
@@ -616,7 +616,7 @@ export function JobLandingView({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* identification group */}
               <div className="space-y-4">
                 <div className="space-y-1">
