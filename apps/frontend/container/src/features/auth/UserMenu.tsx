@@ -54,10 +54,6 @@ export const UserMenu: React.FC = () => {
               );
             })()
           )}
-          <span className="user-name">
-            {user.name || user.preferred_username || user.email || user.sub}
-          </span>
-          <span className="caret">▼</span>
         </div>
       )}
 
