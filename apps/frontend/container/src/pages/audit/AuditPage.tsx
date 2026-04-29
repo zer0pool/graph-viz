@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { config } from "../../shared/api/config";
 import { SummaryGrid, MetricData } from "../../shared/ui/SummaryGrid";
+import { formatDateTime } from "../../shared/lib/utils";
 
 // --- Types (Matched with Backend Schemas) ---
 type CommandStatus = "SUCCESS" | "PARTIAL" | "FAILED";
@@ -165,7 +166,7 @@ export function AuditPage() {
   });
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
+    <div className="flex-1 p-4 space-y-4 overflow-auto bg-gray-50/50 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -332,7 +333,7 @@ export function AuditPage() {
                           <ChevronRight className="h-4 w-4 text-gray-400" />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono text-gray-600">{command.timestamp}</td>
+                      <td className="px-4 py-3 font-mono text-gray-600">{formatDateTime(command.timestamp, "—")}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
                           {command.type}
@@ -386,8 +387,8 @@ export function AuditPage() {
                                   className="flex items-start gap-3 text-sm group"
                                 >
                                   <div className="mt-0.5">{getStatusIcon(event.status)}</div>
-                                  <span className="font-mono text-xs text-gray-500 w-20 pt-0.5">
-                                    {event.timestamp}
+                                  <span className="font-mono text-xs text-gray-500 w-32 pt-0.5">
+                                    {formatDateTime(event.timestamp, "—")}
                                   </span>
                                   <span className="text-gray-700 flex-1">{event.description}</span>
                                   {event.status !== "SUCCESS" && (

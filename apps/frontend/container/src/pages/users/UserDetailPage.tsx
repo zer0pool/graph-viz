@@ -247,7 +247,7 @@ export function UserDetailPage() {
       <Card>
         <CardContent className="pt-8">
           <div className="flex items-start gap-8">
-            <Avatar initials={initials} />
+            <Avatar initials={initials} name={user.name} />
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-semibold text-gray-900">{user.name}</h2>

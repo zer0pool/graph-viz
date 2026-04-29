@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../app/providers/AuthProvider";
-import { User } from "lucide-react";
 import "../../styles/components/UserMenu.css";
+import { getAvatarColor } from "../../shared/lib/utils";
 
 export const UserMenu: React.FC = () => {
   const [showProfile, setShowProfile] = useState(false);
@@ -35,30 +35,53 @@ export const UserMenu: React.FC = () => {
           {user.picture ? (
             <img id="user-avatar" src={user.picture} alt="User profile" />
           ) : (
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 mr-2">
-              <User className="w-4 h-4 text-gray-500" />
-            </div>
+            (() => {
+              const displayName = user.name || user.email || user.sub || "User";
+              const colors = getAvatarColor(displayName);
+              const initials = displayName
+                .split(/[\s.@]/)
+                .filter((s) => s.length > 0)
+                .slice(0, 2)
+                .map((s) => s[0])
+                .join("")
+                .toUpperCase();
+              return (
+                <div
+                  className={`flex items-center justify-center w-8 h-8 rounded-full ${colors.bg} ${colors.text} text-xs font-semibold mr-2`}
+                >
+                  {initials || "?"}
+                </div>
+              );
+            })()
           )}
-          <span className="user-name">
-            {user.name || user.preferred_username || user.email || user.sub}
-          </span>
-          <span className="caret">▼</span>
         </div>
       )}
 
       {user && showProfile && (
         <div id="profile-panel">
           <div className="profile-header">
-            <img
-              src={
-                user.picture ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user.name || user.email || user.sub
-                )}&background=3b82f6&color=fff&size=64`
-              }
-              alt="Profile"
-              className="profile-avatar-large"
-            />
+            {user.picture ? (
+              <img src={user.picture} alt="Profile" className="profile-avatar-large" />
+            ) : (
+              (() => {
+                const displayName = user.name || user.email || user.sub || "User";
+                const colors = getAvatarColor(displayName);
+                const initials = displayName
+                  .split(/[\s.@]/)
+                  .filter((s) => s.length > 0)
+                  .slice(0, 2)
+                  .map((s) => s[0])
+                  .join("")
+                  .toUpperCase();
+                return (
+                  <div
+                    className={`w-16 h-16 rounded-xl ${colors.bg} ${colors.text} text-2xl font-bold flex items-center justify-center`}
+                  >
+                    {initials || "?"}
+                  </div>
+                );
+              })()
+            )}
             <h3 className="profile-name">{user.name || user.preferred_username || user.sub}</h3>
             <div className="profile-email">{user.email}</div>
             {(user.title || user.jobTitle) && (

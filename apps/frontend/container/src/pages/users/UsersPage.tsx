@@ -6,13 +6,13 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  User as UserIcon,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { config } from "../../shared/api/config";
 import { SummaryGrid } from "../../shared/ui/SummaryGrid";
 import { Badge } from "../../shared/ui/Badge";
 import { useLandingPageData } from "../../shared/lib/hooks/useLandingPageData";
+import { formatDateTime, getAvatarColor } from "../../shared/lib/utils";
 
 // --- Types ---
 type Role = "PM" | "OPERATOR" | "DEVELOPER" | "VIEWER";
@@ -179,7 +179,7 @@ export function UsersPage() {
   };
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50/50 min-h-screen">
+    <div className="flex-1 p-4 space-y-4 overflow-auto bg-gray-50/50 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -291,12 +291,22 @@ export function UsersPage() {
                   <tr key={user.user_id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div
-                        className="flex items-center gap-3 cursor-pointer"
+                        className="flex items-center gap-3 cursor-pointer group"
                         onClick={() => navigate(`/users/${encodeURIComponent(user.user_id)}`)}
                       >
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                          <UserIcon className="w-4 h-4" />
-                        </div>
+                        {(() => {
+                          const colors = getAvatarColor(user.name);
+                          const initials = user.name
+                            ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+                            : "?";
+                          return (
+                            <div
+                              className={`w-8 h-8 rounded-full ${colors.bg} flex items-center justify-center ${colors.text} text-xs font-semibold ${colors.hover} group-hover:text-white transition-colors`}
+                            >
+                              {initials}
+                            </div>
+                          );
+                        })()}
                         <div>
                           <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                             {user.name}
@@ -327,7 +337,7 @@ export function UsersPage() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-400">
-                      {user.updated_at ? new Date(user.updated_at).toLocaleString() : "Never"}
+                      {formatDateTime(user.updated_at)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
