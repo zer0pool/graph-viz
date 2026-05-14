@@ -25,9 +25,23 @@ export const Navbar: React.FC<{
     }
   };
 
-  const handleSearch = (query: string) => {
-    // Navigate to users page with the search query as owner search
-    navigate(`/users?q=${encodeURIComponent(query)}`);
+  const handleSearch = (query: string, firstResult?: any) => {
+    // If there's a search result, navigate to the appropriate page based on type
+    if (firstResult) {
+      if (firstResult.type === "table") {
+        navigate(`/tables/${encodeURIComponent(firstResult.id)}`);
+      } else if (firstResult.type === "job") {
+        navigate(`/jobs/${encodeURIComponent(firstResult.id)}`);
+      } else if (firstResult.type === "user") {
+        navigate(`/users/${encodeURIComponent(firstResult.id)}`);
+      } else {
+        // Fallback: search for the query in users
+        navigate(`/users?q=${encodeURIComponent(query)}`);
+      }
+    } else {
+      // No search results, navigate to users page with the search query
+      navigate(`/users?q=${encodeURIComponent(query)}`);
+    }
   };
 
   return (
