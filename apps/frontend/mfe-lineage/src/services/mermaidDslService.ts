@@ -4,6 +4,7 @@ export interface DslOptions {
   graphData: GraphState;
   orientation: LayoutOrientation;
   layout: "dagre" | "elk";
+  selectedNodeId?: string;
 }
 
 /**
@@ -33,8 +34,8 @@ export class MermaidDslService {
       }
     }
 
-    // Truncate if still too long (Show more as requested)
-    const MAX_LENGTH = 50;
+    // Truncate if still too long - shorter for better UI
+    const MAX_LENGTH = 20;
     if (displayName.length > MAX_LENGTH) {
       return displayName.substring(0, MAX_LENGTH - 3) + "...";
     }
@@ -58,8 +59,10 @@ export class MermaidDslService {
   /**
    * Generates the complete Mermaid DSL string.
    */
-  static generate({ graphData, orientation, layout }: DslOptions): string {
+  static generate({ graphData, orientation, layout, selectedNodeId }: DslOptions): string {
     if (!graphData || graphData.nodes.length === 0) return "";
+
+    console.log("[MermaidDslService.generate] Called with selectedNodeId:", selectedNodeId, "nodes count:", graphData.nodes.length);
 
     // 1. Config Section (Directive style is often more reliable in v11)
     let dsl = `%%{init: {"flowchart": {"defaultRenderer": "${layout === "dagre" ? "dagre-wrapper" : "elk"}"}}}%%\n`;
@@ -84,12 +87,19 @@ export class MermaidDslService {
         dsl += `  ${safeId}("${label}")\n`;
         dsl += `  ${safeId}:::groupNode\n`;
       } else {
-        const displayName = this.getShortenedName(node.label || node.name, node.type);
+        // Use full name if node is selected, otherwise use shortened name
+        const isSelected = selectedNodeId === node.id;
+        const displayName = isSelected
+          ? (node.label || node.name)
+          : this.getShortenedName(node.label || node.name, node.type);
+        if (isSelected) {
+          console.log("[MermaidDslService.generate] Node " + node.id + " is SELECTED - using full name: " + displayName);
+        }
         const platform =
           (node as any).platform || (node.type === "table" ? "bigquery" : "bigquery");
 
         const richLabel =
-          `<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;padding:10px 12px;margin:0;height:auto;min-width:120px;white-space:nowrap;box-sizing:border-box;'><div style='font-weight:bold;font-size:11px;margin:0;'>${displayName}</div><div style='width:100%;height:1px;background:rgba(0,0,0,0.1);margin:4px 0;'></div><div style='font-size:10px;color:#666;margin:0;'>${node.type} | ${platform}</div></div>`.replace(
+          `<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;padding:2px 4px;margin:0;height:auto;white-space:nowrap;box-sizing:border-box;'><div style='font-weight:bold;font-size:11px;margin:0;'>${displayName}</div><div style='width:100%;height:1px;background:rgba(0,0,0,0.1);margin:1px 0;'></div><div style='font-size:10px;color:#666;margin:0;'>${node.type} | ${platform}</div></div>`.replace(
             />\s+</g,
             "><"
           );
