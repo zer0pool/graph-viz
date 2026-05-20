@@ -558,27 +558,42 @@ class GraphQueryService:
                 "owners": [o["name"] for o in owners],
             }
 
-        # Fuzzy Search Logic
+        # Fuzzy Search Logic with Improved Scoring
         corpus = self._get_fuzzy_search_corpus()
         if not corpus:
             return {"query": term, "tables": [], "jobs": [], "owners": []}
 
-        # Extract matches
+        # Extract matches with better scorer and higher cutoff
         # choices is list of strings: [item['text'] for item in corpus]
         choices = [item["text"] for item in corpus]
-        
-        # rapidfuzz returns list of (match, score, index)
+
+        # Use token_set_ratio for better accuracy (handles word order variations)
+        # score_cutoff=60 to filter out weak matches
         results = process.extract(
-            term, choices, limit=limit, scorer=fuzz.partial_ratio, score_cutoff=40
+            term, choices, limit=limit*2, scorer=fuzz.token_set_ratio, score_cutoff=60
         )
+
+        # Build results with score for sorting
+        results_with_corpus = []
+        for match, score, idx in results:
+            item = corpus[idx]
+            results_with_corpus.append({
+                "score": score,
+                "item": item,
+            })
+
+        # Sort by score (descending) for relevance ordering
+        results_with_corpus.sort(key=lambda x: x["score"], reverse=True)
 
         matched_jobs = []
         matched_tables = []
         seen_owners = set()
         matched_owners = []
 
-        for match, score, idx in results:
-            item = corpus[idx]
+        for result in results_with_corpus:
+            score = result["score"]
+            item = result["item"]
+
             if item["type"] == "job":
                 job_owners = item["data"].get("owners") or []
                 matched_jobs.append(
@@ -586,6 +601,7 @@ class GraphQueryService:
                         "job_id": item["id"],
                         "name": item["data"].get("name"),
                         "owners": job_owners,
+                        "relevance_score": score,
                     }
                 )
                 for owner in job_owners:
@@ -600,12 +616,19 @@ class GraphQueryService:
                         "table_name": item["data"].get("table_name"),
                         "project": item["data"].get("project"),
                         "dataset": item["data"].get("dataset"),
+                        "relevance_score": score,
                     }
                 )
 
-        # Separate owner search: also fuzz match purely on owners if needed?
-        # The user requested "JOB_ID, OWNER, TABLE_NAME". 
-        # My corpus text construction should include OWNER so they are found in the main loop.
+            # Stop if we have enough results
+            if len(matched_jobs) >= limit and len(matched_tables) >= limit:
+                break
+
+        # Trim to limit
+        matched_jobs = matched_jobs[:limit]
+        matched_tables = matched_tables[:limit]
+
+        logger.info(f"Search '{term}': found {len(matched_jobs)} jobs, {len(matched_tables)} tables")
 
         return {
             "query": term,
