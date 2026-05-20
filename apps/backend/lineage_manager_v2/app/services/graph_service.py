@@ -426,6 +426,83 @@ class GraphService:
                 "leaf_nodes": [n["id"] for n in downstream if n["depth"] == max_depth],
             }
 
+    async def get_table_impact(
+        self,
+        table_name: str,
+        max_depth: int = 3,
+        include_jobs: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Return all downstream tables impacted by changes to the given table,
+        along with the writer jobs for each.
+
+        Reuses get_table_hierarchy_bfs (downstream direction) and filters to
+        table/storage nodes only.
+
+        Graph structure:
+          base_table --[consumes]--> job --[produces]--> downstream_table
+          Each table-to-table hop = 2 graph edges.
+          max_depth here refers to table distance, so BFS runs up to max_depth*2 graph hops.
+
+        Response shape:
+          {
+            "base_table": str,
+            "downstream": [{"depth": int, "table": str, "writer_jobs": [...], "description": str}],
+            "summary": {"total_depth": int, "total_downstream_tables": int, "total_writer_jobs": int}
+          }
+        """
+        async with self.uow:
+            node_id = await self.uow.graph.get_node_id("table", table_name)
+            if not node_id:
+                node_id = await self.uow.graph.get_node_id("storage", table_name)
+
+            if not node_id:
+                return {
+                    "status": "error",
+                    "message": f"Table '{table_name}' not found in lineage graph",
+                }
+
+            # Reuse existing BFS; multiply depth by 2 because each table hop
+            # traverses two graph edges (table→job→table).
+            all_nodes = await self.uow.graph.get_table_hierarchy_bfs(
+                node_id, table_name, "downstream", max_depth * 2
+            )
+
+            # Keep only table/storage nodes; convert graph-hop depth to table distance.
+            table_nodes = [
+                n for n in all_nodes if n["type"] in ("table", "storage")
+            ]
+            table_names = [n["id"] for n in table_nodes]
+
+            writer_jobs_map: Dict[str, List[str]] = {}
+            if include_jobs and table_names:
+                writer_jobs_map = await self.uow.graph.get_writer_jobs_for_tables(
+                    table_names
+                )
+
+        downstream = [
+            {
+                "depth": n["depth"] // 2,
+                "table": n["id"],
+                "writer_jobs": writer_jobs_map.get(n["id"], []),
+                "description": f"Downstream table at distance {n['depth'] // 2}",
+            }
+            for n in table_nodes
+        ]
+
+        total_writer_jobs = sum(len(e["writer_jobs"]) for e in downstream)
+        total_depth = max((e["depth"] for e in downstream), default=0)
+
+        return {
+            "base_table": table_name,
+            "downstream": downstream,
+            "summary": {
+                "total_depth": total_depth,
+                "total_downstream_tables": len(downstream),
+                "total_writer_jobs": total_writer_jobs,
+            },
+        }
+
     async def get_job_run_history(self, job_id: str) -> Dict[str, Any]:
         """
         Fetches run history from the job manager and maps it to the UI schema.
