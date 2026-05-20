@@ -28,14 +28,17 @@ export function useMermaidRenderer({
   onExpandGroup,
   layout,
 }: UseMermaidRendererOptions) {
+  console.log("[useMermaidRenderer] Hook initialized with graphData:", graphData?.nodes.length, "nodes");
   const mermaidRef = useRef<HTMLDivElement>(null);
   const prevOrientationRef = useRef<LayoutOrientation>(orientation);
   const prevLayoutRef = useRef<"dagre" | "elk">(layout);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  console.log("[useMermaidRenderer] State initialized, selectedNode:", selectedNode?.id);
 
   const selectNode = useCallback(
     (node: GraphNode | null, action?: "click" | "showDetail") => {
+      console.log("[selectNode] Called with node:", node ? { id: node.id, name: node.name, type: node.type } : null, "action:", action);
       setSelectedNode(node);
       if (onSelect) {
         if (!node) {
@@ -81,27 +84,6 @@ export function useMermaidRenderer({
     });
   }, [selectNode]);
 
-  // Effect to toggle .selected class on nodes when state changes
-  useEffect(() => {
-    if (!mermaidRef.current) return;
-    const container = mermaidRef.current;
-
-    const previousSelected = container.querySelectorAll(".node.selected");
-    previousSelected.forEach((el) => el.classList.remove("selected"));
-
-    if (selectedNode) {
-      const nodeEls = container.querySelectorAll(
-        "g.node, .jobNode, .tableNode, [id*='flowchart-']"
-      );
-      const safeId = MermaidDslService.sanitizeId(selectedNode.id);
-
-      nodeEls.forEach((el) => {
-        if (el.id.includes(safeId)) {
-          el.classList.add("selected");
-        }
-      });
-    }
-  }, [selectedNode]);
 
   const onSmartExpandRef = useRef(onSmartExpand);
   useEffect(() => {
@@ -109,59 +91,58 @@ export function useMermaidRenderer({
   }, [onSmartExpand]);
 
   const dsl = useMemo(() => {
-    return MermaidDslService.generate({
+    const newDsl = MermaidDslService.generate({
       graphData: graphData!,
       orientation,
       layout,
+      selectedNodeId: selectedNode?.id,
     });
-  }, [graphData, orientation, layout]);
+    console.log("[DSL Memo] Recomputed DSL. selectedNodeId:", selectedNode?.id, "graphNodes:", graphData?.nodes.length, "dsl preview:", newDsl.split('\n').slice(0, 10).join('\n'));
+    return newDsl;
+  }, [graphData, orientation, layout, selectedNode]);
 
   useEffect(() => {
     if (!dsl || !mermaidRef.current) return;
+
+    console.log("[renderGraph Effect] Starting render. selectedNode:", selectedNode ? { id: selectedNode.id, name: selectedNode.name } : null);
 
     let isCancelled = false;
 
     const renderGraph = async () => {
       try {
+        console.log("[renderGraph] Rendering started...");
         const container = mermaidRef.current;
         if (!container || isCancelled) return;
+        console.log("[renderGraph] Container ready");
 
         // Clear previous content
         container.innerHTML = "";
         container.setAttribute("data-layout", layout);
 
-        // Set stable config
+        // Set minimal config with compact spacing
         mermaid.initialize({
           startOnLoad: false,
           theme: "default",
           securityLevel: "loose",
           flowchart: {
             useMaxWidth: false,
-            htmlLabels: true,
-            curve: layout === "dagre" ? "basis" : "linear",
-            nodeSpacing: 50,
-            rankSpacing: 50,
-            padding: 10, // Significantly increase for standard nodes (like Group)
+            htmlLabels: false,
             defaultRenderer: layout === "dagre" ? "dagre-wrapper" : "elk",
+            padding: 0,
+            nodeSpacing: 20,
+            rankSpacing: 40,
           } as any,
-          themeVariables: {
-            fontSize: "12px",
-            fontFamily: "Inter, -apple-system, sans-serif",
-            labelPadding: 10,
-            nodePadding: 20,
-            primaryColor: "#E8F0FE",
-            primaryBorderColor: "#1A73E8",
-            primaryTextColor: "#202124",
-            lineColor: "#666666",
-            secondaryColor: "#E6F4EA",
-            secondaryBorderColor: "#1E8E3E",
-          },
         });
 
         const renderId = "mermaid-svg-" + Math.floor(Math.random() * 10000);
+        console.log("[renderGraph] Calling mermaid.render with dsl lines:", dsl.split('\n').length);
         const { svg } = await (mermaid as any).render(renderId, dsl, container);
 
-        if (isCancelled) return;
+        if (isCancelled) {
+          console.log("[renderGraph] Render cancelled, returning");
+          return;
+        }
+        console.log("[renderGraph] SVG rendered, inserting into container");
         container.innerHTML = svg;
 
         const newSvg = container.querySelector("svg");
@@ -189,8 +170,21 @@ export function useMermaidRenderer({
           const isLayoutChange = prevLayoutRef.current !== layout;
           const isInitialLoad = pan.x === 0 && pan.y === 0 && zoomLevel === 1;
           const isFullReload = graphData ? graphData.nodes.length < 5 : true;
+          const isNodeSelectionChange = selectedNode !== undefined;
 
-          if (isInitialLoad || isLayoutChange || (isFullReload && !isOrientationChange)) {
+          console.log("[renderGraph Layout] Conditions:", {
+            isInitialLoad,
+            isLayoutChange,
+            isNodeSelectionChange,
+            isFullReload,
+            isOrientationChange,
+            selectedNodeId: selectedNode?.id,
+            pan,
+            zoomLevel,
+          });
+
+          if (isInitialLoad || isLayoutChange || isNodeSelectionChange || (isFullReload && !isOrientationChange)) {
+            console.log("[renderGraph Layout] Triggering layout recalculation (isNodeSelectionChange, etc.)");
             const scale = 1.0;
             const cx = containerRect.width / 2;
             const cy = containerRect.height / 2;
@@ -225,6 +219,39 @@ export function useMermaidRenderer({
             const transform = d3.zoomIdentity.translate(pan.x, pan.y).scale(zoomLevel);
             d3.select(innerG).attr("transform", transform.toString());
           }
+        }
+
+        // Apply .selected class to selected node after SVG is fully rendered
+        console.log("[renderGraph Selected Class] Starting to apply selected class. selectedNode:", selectedNode?.id);
+        const previousSelected = container.querySelectorAll(".node.selected");
+        console.log("[renderGraph Selected Class] Found " + previousSelected.length + " previously selected elements, removing class");
+        previousSelected.forEach((el) => el.classList.remove("selected"));
+
+        if (selectedNode) {
+          const selectedNodeEls = container.querySelectorAll(
+            "g.node, .jobNode, .tableNode, [id*='flowchart-']"
+          );
+          console.log("[renderGraph Selected Class] Found " + selectedNodeEls.length + " total node elements");
+          const safeId = MermaidDslService.sanitizeId(selectedNode.id);
+          console.log("[renderGraph Selected Class] Looking for node with ID containing: " + safeId);
+
+          let found = false;
+          selectedNodeEls.forEach((el) => {
+            const elId = el.id;
+            if (elId.includes(safeId)) {
+              console.log("[renderGraph Selected Class] FOUND match! Element ID: " + elId + " adding .selected class");
+              el.classList.add("selected");
+              found = true;
+            }
+          });
+
+          if (!found) {
+            console.warn("[renderGraph Selected Class] NO MATCH FOUND for safeId: " + safeId);
+            const availableIds = Array.from(selectedNodeEls).map((el: any) => el.id).slice(0, 10);
+            console.warn("[renderGraph Selected Class] Available element IDs: " + JSON.stringify(availableIds));
+          }
+        } else {
+          console.log("[renderGraph Selected Class] No selectedNode, skipping class application");
         }
 
         const nodeEls = container.querySelectorAll(
@@ -280,16 +307,18 @@ export function useMermaidRenderer({
             });
           }
         });
+        console.log("[renderGraph] Render complete! Event listeners attached to", nodeEls.length, "nodes");
       } catch (err) {
-        console.error("Mermaid render error:", err);
+        console.error("[renderGraph] RENDER ERROR:", err);
       }
     };
     renderGraph();
 
     return () => {
+      console.log("[renderGraph Effect] Cleanup: setting isCancelled = true");
       isCancelled = true;
     };
-  }, [dsl]);
+  }, [dsl, selectedNode]);
 
   return {
     mermaidRef,

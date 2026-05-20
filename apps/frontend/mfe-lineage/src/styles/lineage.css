@@ -376,12 +376,12 @@
 }
 
 .legend-job {
-  background: #e8f0fe;
-  border: 1px solid #1a73e8;
+  background: #e6f4ea;
+  border: 1px solid #1e8e3e;
 }
 .legend-table {
-  background: #f1f3f4;
-  border: 1px solid #5f6368;
+  background: #e8f0fe;
+  border: 1px solid #1a73e8;
 }
 
 .graph-status {
@@ -601,12 +601,13 @@ foreignObject {
   overflow: visible !important;
 }
 
+/* Node type styling - Job and Table colors */
 .tableNode > rect,
 .tableNode > polygon,
 .tableNode > path,
 .tableNode > circle {
-  fill: #e6f4ea !important; /* Green */
-  stroke: #1e8e3e !important;
+  fill: #e8f0fe !important; /* Blue */
+  stroke: #1a73e8 !important;
   stroke-width: 1.5px !important;
 }
 
@@ -614,79 +615,11 @@ foreignObject {
 .jobNode > polygon,
 .jobNode > path,
 .jobNode > circle {
-  fill: #e8f0fe !important; /* Blue */
-  stroke: #1a73e8 !important;
+  fill: #e6f4ea !important; /* Green */
+  stroke: #1e8e3e !important;
   stroke-width: 1.5px !important;
 }
 
-.tableNode .nodeLabel,
-.jobNode .nodeLabel {
-  color: #111827 !important;
-  padding: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 0 !important;
-}
-
-.tableNode hr,
-.jobNode hr {
-  display: none; /* We use a div in the DSL now */
-}
-
-.tableNode sub,
-.jobNode sub {
-  color: #6b7280;
-  font-size: 9px;
-  line-height: 1;
-}
-
-/* Ensure text color is applied */
-g.tableNode text,
-g.jobNode text {
-  fill: #111827 !important;
-}
-
-.node .label {
-  text-align: center;
-  width: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.node foreignObject {
-  overflow: visible !important;
-}
-
-.nodeLabel {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  height: auto !important;
-  min-height: 100% !important;
-  overflow: visible !important; /* Allow expansion */
-}
-
-/* Ensure sub and b tags don't break flex alignment */
-.nodeLabel b,
-.nodeLabel sub,
-.nodeLabel font,
-.nodeLabel div {
-  display: block !important; /* Stack vertically */
-  line-height: 1 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-g.table text {
-  fill: #202124 !important;
-}
 
 /* ========================================
    MERMAID SVG STYLES (from legacy mermaid-styles.css)
@@ -714,150 +647,64 @@ g.table text {
   font-size: 16px;
 }
 
-/* Fix for Thick Edges (Aggressive Fill Removal) */
-.mermaid svg path,
-.mermaid svg [class*="edge-"] path,
-.mermaid svg .path,
-.mermaid svg g.edge path,
-.mermaid svg g.edgePath path {
-  fill: none !important;
-}
-
-/* Re-enable fill ONLY for node shapes (rect, polygon, circle, etc.) */
-.node rect,
-.node polygon,
-.node circle,
-.node ellipse,
-.node path:not(.edgePath) {
-  /* Default white, overridden by specific types */
-  fill: #ffffff;
-}
-
-/* Ensure markers (arrowheads) maintain their color and no fill glitch */
-.mermaid .marker,
-.mermaid marker path,
-.mermaid .marker path {
-  fill: #666666 !important;
-  stroke: none !important;
-}
 
 /* Mermaid SVG Styling */
 .mermaid svg {
   display: block;
   overflow: visible !important;
-  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
   cursor: grab;
-  min-width: 600px;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
 }
 
 .mermaid svg:active {
   cursor: grabbing;
 }
 
-/* Critical: SVG Text Centering - Fixes label alignment */
-.mermaid svg text {
-  dominant-baseline: central !important;
-  text-anchor: middle !important;
-  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
-}
-
-.mermaid .nodeLabel {
-  font-family: "Google Sans", "Roboto", "Helvetica Neue", sans-serif !important;
-}
-
-/* Node label specific centering */
-.node text,
-.nodeLabel,
-g.node text {
-  dominant-baseline: central !important;
-  text-anchor: middle !important;
-}
-
-/* Edge Labels - Center alignment */
+/* Edge Labels - SVG Text Only */
 .edgeLabel {
-  background-color: #ffffff !important;
-  padding: 2px 6px !important;
-  border-radius: 3px !important;
+  background-color: transparent !important;
+  transform: translate(60px, 10px) !important;
+}
+
+.edgeLabel rect {
+  display: none !important;
 }
 
 .edgeLabel text {
   fill: #5f6368 !important;
   font-size: 11px !important;
   font-weight: 500 !important;
-  dominant-baseline: central !important;
   text-anchor: middle !important;
-}
-
-/* Edge label centering */
-g.edgeLabel text {
-  dominant-baseline: central !important;
-  text-anchor: middle !important;
-}
-
-/* Fix for Thick Edges (Weird Fill issue) */
-.mermaid .edgePaths path,
-.mermaid .edgePath path,
-.mermaid [class*="edge-thickness-"] path,
-.mermaid path.path,
-.mermaid svg path.edge {
-  fill: none !important;
-  stroke: #666666 !important;
-  stroke-width: 1.5px !important;
-}
-
-/* Ensure markers (arrowheads) don't get messed up */
-.mermaid .marker,
-.mermaid marker path {
-  fill: #666666 !important;
-  stroke: none !important;
-}
-
-/* ========================================
-   ADDITIONAL FIXES FOR LABEL ALIGNMENT
-   ======================================== */
-
-/* Force vertical centering for all SVG text elements */
-.mermaid svg text,
-.mermaid svg .nodeLabel,
-.mermaid svg tspan {
   dominant-baseline: middle !important;
-  alignment-baseline: middle !important;
+  paint-order: stroke !important;
+  stroke: #f5f5f5 !important;
+  stroke-width: 6px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.edgeLabel tspan {
+  paint-order: stroke !important;
+  stroke: #f5f5f5 !important;
+  stroke-width: 6px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.edgeLabel text {
+  fill: #5f6368 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
   text-anchor: middle !important;
-}
-
-/* Fix for foreignObject-based labels */
-.node foreignObject {
-  overflow: visible !important;
-}
-
-.node foreignObject > div {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  width: 100% !important;
-}
-
-/* Specific fixes for job and table nodes */
-.job text,
-.table text {
   dominant-baseline: middle !important;
-  alignment-baseline: middle !important;
 }
 
-/* Edge label vertical centering */
-.edgeLabel foreignObject,
-.edgeLabel foreignObject > div {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background-color: transparent !important;
-}
-
-/* Ensure the wrapper can expand */
-#mermaid-graph > div {
-  overflow: visible;
+/* Search dropdown z-index fix */
+[role="listbox"],
+[role="menu"],
+.dropdown,
+.search-results,
+.autocomplete-results {
+  z-index: 9999 !important;
 }
